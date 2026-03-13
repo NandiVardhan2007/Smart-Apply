@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: smartapply
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URI
+        sync: false        # Set this in Render Dashboard
+      - key: JWT_SECRET
+        sync: false        # Set this in Render Dashboard
+      - key: SMTP_PASS
+        sync: false        # Set this in Render Dashboard
+      - key: SMTP_USER
+        sync: false
+      - key: BROWSERLESS_API_KEY
+        value: 2U8qE922A3wUFje73af3acf67061fe881d4135c168e40e52f
+      - key: BOT_ENABLED
+        value: "true"
+      - key: DB_NAME
+        value: smartapply
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_HOURS
+        value: "24"
+      - key: OPENROUTER_MODEL
+        value: mistralai/mistral-7b-instruct:free

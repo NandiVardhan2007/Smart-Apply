@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — SmartApply</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .bot-control-card {
+      background: linear-gradient(135deg, rgba(79,124,255,0.08), rgba(126,232,162,0.04));
+      border: 1px solid rgba(79,124,255,0.2);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin-bottom: 28px;
+    }
+    .bot-status-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .platform-select { display: flex; gap: 10px; flex-wrap: wrap; }
+    .platform-btn {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-2);
+      border: 1.5px solid var(--border);
+      color: var(--text-2);
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .platform-btn.selected {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(79,124,255,0.08);
+    }
+    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-btn {
+      padding: 7px 14px;
+      border-radius: 9999px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .empty-state { text-align: center; padding: 56px 20px; }
+    .empty-state .icon { font-size: 52px; margin-bottom: 16px; }
+    .empty-state h4 { margin-bottom: 8px; }
+    .result-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 9999px;
+      font-size: 12px; font-weight: 500;
+    }
+    .result-Applied  { background: rgba(126,232,162,0.1); color: var(--accent); }
+    .result-Failed   { background: rgba(255,107,107,0.1); color: var(--danger); }
+    .result-Skipped  { background: rgba(148,163,200,0.1); color: var(--text-2); }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div id="toast-container"></div>
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
+      <div class="nav-links">
+        <a href="resume.html" class="btn btn-ghost btn-sm hide-mobile">Resumes</a>
+        <a href="profile.html" class="btn btn-ghost btn-sm hide-mobile">Profile</a>
+        <button onclick="auth.logout()" class="btn btn-ghost btn-sm">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="dashboard-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div style="padding:0 12px;margin-bottom:20px">
+          <div style="font-weight:600;font-size:15px" id="sidebar-name">Loading…</div>
+          <div class="text-muted text-sm" id="sidebar-email"></div>
+        </div>
+        <div class="sidebar-section-label">Navigation</div>
+        <button class="sidebar-link active" onclick="showTab('overview', this)"><span class="icon">📊</span> Overview</button>
+        <button class="sidebar-link" onclick="showTab('history', this)"><span class="icon">📋</span> Applications</button>
+        <button class="sidebar-link" onclick="showTab('bot', this)"><span class="icon">🤖</span> Bot Control</button>
+        <button class="sidebar-link" onclick="showTab('resumes', this)"><span class="icon">📄</span> Resumes</button>
+        <div class="sidebar-section-label">Account</div>
+        <a href="profile.html" class="sidebar-link"><span class="icon">👤</span> Edit Profile</a>
+        <button class="sidebar-link" onclick="auth.logout()"><span class="icon">🚪</span> Logout</button>
+      </aside>
+
+      <!-- Main -->
+      <main class="main-content">
+        <!-- Welcome bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px">
+          <div>
+            <h3 id="welcome-msg">Welcome back!</h3>
+            <p class="text-muted text-sm" id="welcome-sub">Here's your job application overview</p>
+          </div>
+          <div style="display:flex;gap:10px">
+            <a href="resume.html" class="btn btn-ghost btn-sm">+ Upload Resume</a>
+            <button class="btn btn-primary btn-sm" onclick="showTab('bot', document.querySelector('[onclick*=\'bot\']'))">
+              🤖 Run Bot
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Overview Tab ── -->
+        <div id="tab-overview" class="tab-pane">
+          <div class="grid-3 stagger" id="stats-grid">
+            <div class="stat-card skeleton" style="height:96px"></div>
+            <div class="stat-card skeleton" style="height:96px"></div>
+            <div class="stat-card skeleton" style="height:96px"></div>
+          </div>
+
+          <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:24px" id="overview-panels">
+            <!-- Recent activity -->
+            <div class="card">
+              <h4 style="margin-bottom:16px">Recent Applications</h4>
+              <div id="recent-apps">
+                <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
+                <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
+                <div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div>
+              </div>
+              <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary" style="display:block;margin-top:12px">View all →</a>
+            </div>
+            <!-- Platform stats -->
+            <div class="card">
+              <h4 style="margin-bottom:16px">By Platform</h4>
+              <div id="platform-stats"><div class="skeleton" style="height:120px;border-radius:var(--radius-sm)"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── History Tab ── -->
+        <div id="tab-history" class="tab-pane hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+            <h4>Application History</h4>
+            <div class="filter-bar" style="margin-bottom:0">
+              <button class="filter-btn active" onclick="filterHistory(null, this)">All</button>
+              <button class="filter-btn" onclick="filterHistory('Applied', this)">✓ Applied</button>
+              <button class="filter-btn" onclick="filterHistory('Failed', this)">✕ Failed</button>
+              <button class="filter-btn" onclick="filterHistory('Skipped', this)">— Skipped</button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Job Title</th>
+                  <th>Company</th>
+                  <th>Platform</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-2)">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="history-pagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px"></div>
+        </div>
+
+        <!-- ── Bot Control Tab ── -->
+        <div id="tab-bot" class="tab-pane hidden">
+          <div class="bot-control-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
+              <div>
+                <h4 style="margin-bottom:6px">Automation Bot</h4>
+                <div class="bot-status-row">
+                  <span id="bot-status-badge" class="badge badge-neutral">
+                    <span class="status-dot stopped" id="bot-status-dot"></span>
+                    <span id="bot-status-text">Idle</span>
+                  </span>
+                  <span id="bot-session-info" class="text-sm text-muted"></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn btn-primary" id="start-bot-btn" onclick="startBot()">
+                  <span class="spinner"></span><span class="btn-text">▶ Start Bot</span>
+                </button>
+                <button class="btn btn-danger btn-sm" id="stop-bot-btn" onclick="stopBot()" style="display:none">⏹ Stop</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px">
+            <h4 style="margin-bottom:16px">Select Platform</h4>
+            <div class="platform-select" id="platform-select">
+              <button class="platform-btn selected" data-platform="linkedin" onclick="selectPlatform(this)">💼 LinkedIn</button>
+              <button class="platform-btn" data-platform="indeed" onclick="selectPlatform(this)">🔍 Indeed <span class="badge badge-warning" style="margin-left:6px;font-size:10px">Coming soon</span></button>
+              <button class="platform-btn" data-platform="internshala" onclick="selectPlatform(this)">🎓 Internshala <span class="badge badge-warning" style="margin-left:6px;font-size:10px">Coming soon</span></button>
+              <button class="platform-btn" data-platform="naukri" onclick="selectPlatform(this)">📋 Naukri <span class="badge badge-warning" style="margin-left:6px;font-size:10px">Coming soon</span></button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4 style="margin-bottom:16px">Bot Session Log</h4>
+            <div id="bot-log" style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;font-family:monospace;font-size:13px;min-height:200px;max-height:400px;overflow-y:auto;color:var(--text-2)">
+              <span class="text-muted">No session running. Start the bot to see logs.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Resumes Tab ── -->
+        <div id="tab-resumes" class="tab-pane hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+            <h4>Your Resumes</h4>
+            <a href="resume.html" class="btn btn-primary btn-sm">+ Upload New</a>
+          </div>
+          <div id="dash-resumes">
+            <div class="skeleton" style="height:70px;border-radius:var(--radius);margin-bottom:10px"></div>
+            <div class="skeleton" style="height:70px;border-radius:var(--radius)"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!auth.requireAuth()) throw new Error();
+
+    let currentPlatform = 'linkedin';
+    let historyFilter = null;
+    let historyPage = 0;
+    const PAGE_SIZE = 20;
+    let botPollTimer = null;
+    let logPollTimer = null;
+    let logOffset = 0;
+
+    // ── Tab switching ─────────────────────────────────────────────────────
+    function showTab(name, navItem) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+      document.getElementById('tab-' + name).classList.remove('hidden');
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      if (navItem) navItem.classList.add('active');
+      if (name === 'history') loadHistory();
+      if (name === 'bot') loadBotStatus();
+      if (name === 'resumes') loadDashResumes();
+    }
+
+    // ── Load stats ────────────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const data = await api.get('/jobs/stats');
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card fade-in">
+            <div class="stat-label">Total Applied</div>
+            <div class="stat-value">${data.total}</div>
+            <div class="stat-sub">across all platforms</div>
+          </div>
+          <div class="stat-card fade-in">
+            <div class="stat-label">Successful</div>
+            <div class="stat-value" style="color:var(--accent)">${data.applied}</div>
+            <div class="stat-sub">${data.total ? Math.round(data.applied/data.total*100) : 0}% success rate</div>
+          </div>
+          <div class="stat-card fade-in">
+            <div class="stat-label">Failed / Skipped</div>
+            <div class="stat-value" style="color:var(--text-2)">${data.failed + data.skipped}</div>
+            <div class="stat-sub">${data.failed} failed · ${data.skipped} skipped</div>
+          </div>
+        `;
+
+        // Platform breakdown
+        const platforms = data.by_platform || {};
+        const platformHtml = Object.entries(platforms).length
+          ? Object.entries(platforms).map(([p, c]) => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+                <span style="text-transform:capitalize;font-size:14px">${p}</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:100px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden">
+                    <div style="width:${data.total ? Math.round(c/data.total*100) : 0}%;height:100%;background:var(--primary);border-radius:3px"></div>
+                  </div>
+                  <span style="font-weight:600;font-size:14px;min-width:28px;text-align:right">${c}</span>
+                </div>
+              </div>
+            `).join('')
+          : '<p class="text-muted text-sm">No applications yet</p>';
+        document.getElementById('platform-stats').innerHTML = platformHtml;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ── Recent apps ───────────────────────────────────────────────────────
+    async function loadRecent() {
+      try {
+        const data = await api.get('/jobs/history?limit=5');
+        const apps = data.applications || [];
+        if (!apps.length) {
+          document.getElementById('recent-apps').innerHTML = `
+            <div class="empty-state" style="padding:24px 0">
+              <div style="font-size:32px">📭</div>
+              <p class="text-muted text-sm" style="margin-top:8px">No applications yet. Start the bot!</p>
+            </div>
+          `;
+          return;
+        }
+        document.getElementById('recent-apps').innerHTML = apps.map(a => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div>
+              <div class="text-muted text-sm">${escHtml(a.company)} · ${timeAgo(a.applied_at)}</div>
+            </div>
+            <span class="result-pill result-${a.result}">${a.result}</span>
+          </div>
+        `).join('');
+      } catch {}
+    }
+
+    // ── History ───────────────────────────────────────────────────────────
+    async function loadHistory(page = 0) {
+      historyPage = page;
+      const params = new URLSearchParams({ skip: page * PAGE_SIZE, limit: PAGE_SIZE });
+      if (historyFilter) params.append('result', historyFilter);
+      const tbody = document.getElementById('history-tbody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr>';
+
+      try {
+        const data = await api.get('/jobs/history?' + params);
+        const apps = data.applications || [];
+        if (!apps.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-2)">No applications found</td></tr>';
+          return;
+        }
+        tbody.innerHTML = apps.map(a => `
+          <tr>
+            <td>${escHtml(a.job_title)}</td>
+            <td>${escHtml(a.company)}</td>
+            <td><span class="badge badge-neutral" style="text-transform:capitalize">${escHtml(a.platform)}</span></td>
+            <td><span class="result-pill result-${a.result}">${a.result}</span></td>
+            <td class="text-muted">${formatDate(a.applied_at)}</td>
+          </tr>
+        `).join('');
+
+        // Pagination
+        const totalPages = Math.ceil(data.total / PAGE_SIZE);
+        const pagination = document.getElementById('history-pagination');
+        pagination.innerHTML = '';
+        for (let i = 0; i < totalPages; i++) {
+          const btn = document.createElement('button');
+          btn.className = 'filter-btn' + (i === page ? ' active' : '');
+          btn.textContent = i + 1;
+          btn.onclick = () => loadHistory(i);
+          pagination.appendChild(btn);
+        }
+      } catch { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>'; }
+    }
+
+    function filterHistory(result, btn) {
+      historyFilter = result;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadHistory(0);
+    }
+
+    // ── Bot Control ───────────────────────────────────────────────────────
+    function selectPlatform(btn) {
+      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      currentPlatform = btn.dataset.platform;
+    }
+
+    async function startBot() {
+      const btn = document.getElementById('start-bot-btn');
+      setLoading(btn, true);
+      try {
+        await api.post('/jobs/bot/start', { platform: currentPlatform });
+        showToast('Bot starting…', 'success');
+        btn.style.display = 'none';
+        document.getElementById('stop-bot-btn').style.display = '';
+        startBotPoll();
+      } catch (err) {
+        showToast(err.detail || err.message || 'Could not start bot', 'error');
+        setLoading(btn, false);
+      }
+    }
+
+    async function stopBot() {
+      const btn = document.getElementById('stop-bot-btn');
+      btn.disabled = true;
+      btn.textContent = 'Stopping…';
+      try {
+        await api.post('/jobs/bot/stop');
+        showToast('Bot stopped', 'info');
+      } catch (err) {
+        showToast(err.detail || 'Could not stop bot', 'error');
+      } finally {
+        // Always stop polling and reset UI — don't re-query the DB,
+        // which might still show a stale "starting" status.
+        stopBotPoll();
+        await pollBotLogs(); // grab any final log lines
+        btn.disabled = false;
+        btn.textContent = '⏹ Stop';
+        // Force UI to idle without re-checking DB (avoids the restart loop)
+        _applyBotStatus('stopped');
+      }
+    }
+
+    function startBotPoll() {
+      clearInterval(botPollTimer);
+      clearInterval(logPollTimer);
+      logOffset = 0;
+      document.getElementById('bot-log').innerHTML = '<span class="text-muted">Waiting for bot to start...</span>';
+      botPollTimer = setInterval(() => loadBotStatus(true), 3000);
+      logPollTimer = setInterval(() => pollBotLogs(), 2000);
+    }
+
+    function stopBotPoll() {
+      clearInterval(botPollTimer);
+      clearInterval(logPollTimer);
+      botPollTimer = null;
+      logPollTimer = null;
+    }
+
+    // Shared helper that updates all bot UI elements given a status string
+    function _applyBotStatus(status, data) {
+      const dotEl    = document.getElementById('bot-status-dot');
+      const textEl   = document.getElementById('bot-status-text');
+      const badgeEl  = document.getElementById('bot-status-badge');
+      const startBtn = document.getElementById('start-bot-btn');
+      const stopBtn  = document.getElementById('stop-bot-btn');
+      const infoEl   = document.getElementById('bot-session-info');
+
+      const isActive = status === 'running' || status === 'starting';
+      dotEl.className  = 'status-dot ' + (status === 'running' ? 'running' : isActive ? 'starting' : 'stopped');
+      textEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      badgeEl.className  = `badge ${status === 'running' ? 'badge-success' : isActive ? 'badge-warning' : 'badge-neutral'}`;
+
+      if (isActive) {
+        startBtn.style.display = 'none';
+        stopBtn.style.display  = '';
+        if (data?.session) {
+          infoEl.textContent = `${data.platform || ''} · ${data.session.jobs_applied || 0} applied, ${data.session.jobs_failed || 0} failed`;
+        }
+      } else {
+        startBtn.style.display = '';
+        stopBtn.style.display  = 'none';
+        setLoading(startBtn, false);
+        if (infoEl) infoEl.textContent = '';
+      }
+    }
+
+    async function pollBotLogs() {
+      try {
+        const data = await api.get(`/jobs/bot/logs?offset=${logOffset}`);
+        if (data.lines && data.lines.length > 0) {
+          const logEl = document.getElementById('bot-log');
+          // Remove placeholder text on first real log line
+          if (logEl.querySelector('.text-muted')) logEl.innerHTML = '';
+          data.lines.forEach(line => {
+            const div = document.createElement('div');
+            div.style.cssText = 'margin-bottom:4px;opacity:0.9;word-break:break-word;';
+            // Colour-code key events
+            if (/error|failed|exception/i.test(line)) div.style.color = 'var(--error, #f87171)';
+            else if (/successfully|applied|success/i.test(line)) div.style.color = 'var(--success, #4ade80)';
+            else if (/skipping|skipped/i.test(line)) div.style.color = '#facc15';
+            div.textContent = line;
+            logEl.appendChild(div);
+          });
+          // Auto-scroll to bottom
+          logEl.scrollTop = logEl.scrollHeight;
+          logOffset = data.next_offset;
+        }
+      } catch {}
+    }
+
+    async function loadBotStatus(polling = false) {
+      try {
+        const data = await api.get('/jobs/bot/status');
+        const status = data.status;
+
+        _applyBotStatus(status, data);
+
+        if (status === 'running' || status === 'starting') {
+          if (!polling) startBotPoll();  // only start poll on manual load, not on each poll tick
+        } else {
+          stopBotPoll();
+          if (status === 'completed' && polling) {
+            // Only toast on auto-completion, not on page load
+            await pollBotLogs();
+            showToast('Bot session completed!', 'success');
+            loadStats();
+            loadRecent();
+          }
+        }
+      } catch {}
+    }
+
+    // ── Dash resumes ──────────────────────────────────────────────────────
+    async function loadDashResumes() {
+      try {
+        const data = await api.get('/resume/list');
+        const el = document.getElementById('dash-resumes');
+        if (!data.resumes.length) {
+          el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><h4>No resumes uploaded</h4><a href="resume.html" class="btn btn-primary" style="margin-top:16px">Upload Resume</a></div>`;
+          return;
+        }
+        el.innerHTML = data.resumes.map(r => `
+          <div class="card card-sm" style="margin-bottom:10px;display:flex;align-items:center;gap:14px">
+            <span style="font-size:28px">📄</span>
+            <div>
+              <div style="font-weight:500">${escHtml(r.label || r.filename)}</div>
+              <div class="text-muted text-sm">${escHtml(r.parsed_name || '')} · ${formatDate(r.uploaded_at)}</div>
+            </div>
+            <a href="resume.html" class="btn btn-ghost btn-sm" style="margin-left:auto">Manage</a>
+          </div>
+        `).join('');
+      } catch {}
+    }
+
+    // ── Profile info ──────────────────────────────────────────────────────
+    async function loadProfile() {
+      try {
+        const data = await api.get('/profile/me');
+        const user = auth.user;
+        const fn = data.profile?.first_name || '';
+        const ln = data.profile?.last_name || '';
+        const name = fn || ln ? `${fn} ${ln}`.trim() : (user?.email?.split('@')[0] || 'User');
+        document.getElementById('sidebar-name').textContent = name;
+        document.getElementById('sidebar-email').textContent = user?.email || '';
+        document.getElementById('welcome-msg').textContent = `Welcome back, ${fn || name}!`;
+      } catch {}
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────
+    loadProfile();
+    loadStats();
+    loadRecent();
+    loadBotStatus();
+  </script>
+</body>
+</html>

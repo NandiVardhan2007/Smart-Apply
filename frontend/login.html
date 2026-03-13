@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — SmartApply</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div id="toast-container"></div>
+
+  <div class="auth-wrapper">
+    <div class="auth-card fade-in">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        Smart<span>Apply</span>
+      </div>
+      <h2>Welcome back</h2>
+      <p class="subtitle">Sign in to your account</p>
+
+      <div id="login-error" class="alert alert-error hidden" style="margin-bottom:16px"></div>
+      <div id="login-success" class="alert alert-success hidden" style="margin-bottom:16px"></div>
+
+      <form id="login-form" novalidate>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
+            <span class="field-error"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="password">
+              Password
+              <a href="forgot-password.html" style="float:right;font-size:13px;text-transform:none;letter-spacing:0">Forgot password?</a>
+            </label>
+            <div style="position:relative">
+              <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" id="toggle-pw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-2);cursor:pointer;font-size:16px">👁</button>
+            </div>
+            <span class="field-error"></span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
+            <span class="spinner"></span>
+            <span class="btn-text">Sign In</span>
+          </button>
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="signup.html">Create one free</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (auth.isAuth) window.location.href = 'dashboard.html';
+
+    // Check for messages from redirect
+    const msg = getParam('msg');
+    if (msg === 'verified') document.getElementById('login-success').textContent = 'Email verified! You can now log in.', document.getElementById('login-success').classList.remove('hidden');
+    if (msg === 'reset') document.getElementById('login-success').textContent = 'Password reset successfully. Please sign in.', document.getElementById('login-success').classList.remove('hidden');
+
+    // Toggle password visibility
+    document.getElementById('toggle-pw').addEventListener('click', () => {
+      const input = document.getElementById('password');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors();
+      const btn = document.getElementById('login-btn');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('login-error');
+      errEl.classList.add('hidden');
+
+      let hasError = false;
+      if (!email) { markFieldError('email', 'Email is required'); hasError = true; }
+      if (!password) { markFieldError('password', 'Password is required'); hasError = true; }
+      if (hasError) return;
+
+      setLoading(btn, true);
+      try {
+        const data = await api.post('/auth/login', { email, password });
+        auth.save(data.access_token, data.user);
+        showToast('Welcome back!', 'success');
+        // Redirect based on profile completeness
+        setTimeout(() => {
+          if (!data.user.has_profile) window.location.href = 'profile.html';
+          else window.location.href = 'dashboard.html';
+        }, 800);
+      } catch (err) {
+        errEl.textContent = err.detail || 'Invalid email or password';
+        errEl.classList.remove('hidden');
+        if (err.status === 403) {
+          errEl.innerHTML = `${err.detail} <a href="signup.html" style="color:var(--primary)">Resend verification</a>`;
+        }
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  </script>
+</body>
+</html>
