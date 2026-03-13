@@ -170,3 +170,75 @@ async def extract_skills_from_description(job_description: str) -> list[str]:
 
     # Fallback: split by comma or newline
     return [s.strip().strip('"') for s in raw.replace("\n", ",").split(",") if s.strip()]
+
+
+async def analyze_ats(resume_text: str, job_description: str) -> dict:
+    """
+    Full ATS resume analysis against a job description.
+    Returns score, matched/missing keywords, section scores, and improvement tips.
+    """
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are an expert ATS (Applicant Tracking System) resume analyzer. "
+                "Analyze the resume against the job description and return ONLY a valid JSON object "
+                "with exactly this structure (no markdown, no explanation):\n"
+                "{\n"
+                '  "ats_score": <integer 0-100>,\n'
+                '  "summary": "<2 sentence overall assessment>",\n'
+                '  "matched_keywords": ["keyword1", "keyword2", ...],\n'
+                '  "missing_keywords": ["keyword1", "keyword2", ...],\n'
+                '  "section_scores": {\n'
+                '    "skills_match": <0-100>,\n'
+                '    "experience_relevance": <0-100>,\n'
+                '    "education_match": <0-100>,\n'
+                '    "keyword_density": <0-100>\n'
+                '  },\n'
+                '  "improvements": [\n'
+                '    {"priority": "high"|"medium"|"low", "tip": "<actionable suggestion>"},\n'
+                '    ...\n'
+                '  ],\n'
+                '  "strengths": ["<strength1>", "<strength2>", ...]\n'
+                "}\n"
+                "Be accurate and strict. ATS score reflects real ATS software likelihood of passing."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"JOB DESCRIPTION:\n{job_description[:3000]}\n\n"
+                f"RESUME:\n{resume_text[:4000]}"
+            ),
+        },
+    ]
+
+    raw = await _chat(messages, max_tokens=1200)
+
+    # Strip markdown fences if present
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    try:
+        return json.loads(raw)
+    except Exception:
+        # Return a safe fallback if parsing fails
+        return {
+            "ats_score": 0,
+            "summary": "Analysis failed — please try again.",
+            "matched_keywords": [],
+            "missing_keywords": [],
+            "section_scores": {
+                "skills_match": 0,
+                "experience_relevance": 0,
+                "education_match": 0,
+                "keyword_density": 0,
+            },
+            "improvements": [{"priority": "high", "tip": "Could not parse AI response. Please retry."}],
+            "strengths": [],
+            "raw": raw,
+        }

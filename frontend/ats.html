@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATS Resume Analyzer — SmartApply</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    /* ── ATS-specific styles ───────────────────────────────────────────── */
+    .ats-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 860px) { .ats-layout { grid-template-columns: 1fr; } }
+
+    .score-ring-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 28px 0 20px;
+    }
+    .score-ring {
+      position: relative;
+      width: 148px;
+      height: 148px;
+    }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-number {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-sub { font-size: 11px; color: var(--text-2); font-weight: 500; letter-spacing:.05em; text-transform:uppercase; margin-top:4px; }
+
+    .section-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .section-bar-label { width: 160px; font-size: 13px; color: var(--text-2); flex-shrink:0; }
+    .section-bar-track {
+      flex: 1;
+      height: 7px;
+      background: var(--bg-3);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .section-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 1s cubic-bezier(.4,0,.2,1);
+    }
+    .section-bar-val { font-size: 13px; font-weight: 600; width: 36px; text-align: right; flex-shrink:0; }
+
+    .keyword-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chip {
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+    .chip-match  { background: rgba(126,232,162,0.12); border-color: rgba(126,232,162,0.3); color: var(--accent); }
+    .chip-miss   { background: rgba(255,107,107,0.10); border-color: rgba(255,107,107,0.3); color: var(--danger); }
+
+    .tip-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      background: var(--bg-3);
+      border-left: 3px solid transparent;
+    }
+    .tip-high   { border-left-color: var(--danger); }
+    .tip-medium { border-left-color: var(--accent-2); }
+    .tip-low    { border-left-color: var(--primary); }
+    .tip-badge  { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; text-transform:uppercase; flex-shrink:0; margin-top:2px; }
+    .badge-high   { background: rgba(255,107,107,0.18); color: var(--danger); }
+    .badge-medium { background: rgba(255,209,102,0.18); color: var(--accent-2); }
+    .badge-low    { background: rgba(79,124,255,0.18);  color: var(--primary); }
+
+    .strength-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 14px;
+      background: rgba(126,232,162,0.07);
+      border: 1px solid rgba(126,232,162,0.15);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 13.5px;
+    }
+
+    .upload-tab-btns { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-2);
+      font-size: 14px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .drop-zone {
+      border: 2px dashed var(--border-glow);
+      border-radius: var(--radius);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--primary);
+      background: rgba(79,124,255,0.06);
+    }
+    .drop-icon { font-size: 2.4rem; margin-bottom: 10px; }
+
+    .resume-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 8px;
+    }
+    .resume-option:hover { border-color: var(--primary); background: rgba(79,124,255,0.06); }
+    .resume-option.selected { border-color: var(--primary); background: rgba(79,124,255,0.1); }
+
+    .result-section { margin-bottom: 28px; }
+    .result-section h4 { font-size: 14px; color: var(--text-2); text-transform: uppercase; letter-spacing:.08em; margin-bottom: 14px; }
+
+    #results-panel { display: none; }
+    #results-panel.visible { display: block; }
+
+    .analyzing-anim {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; padding: 48px 0; color: var(--text-2);
+    }
+    .pulse-ring {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid var(--primary);
+      animation: pulseRing 1.2s ease-in-out infinite;
+    }
+    @keyframes pulseRing {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.18); opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
+      <div class="nav-links" id="nav-actions"></div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="container" style="padding-top:40px;padding-bottom:72px;max-width:1080px">
+
+      <!-- Header -->
+      <div style="margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7b61ff);display:flex;align-items:center;justify-content:center;font-size:1.4rem">🎯</div>
+          <div>
+            <h2 style="margin:0">ATS Resume Analyzer</h2>
+            <div class="text-muted text-sm">Check how well your resume passes Applicant Tracking Systems for a specific job</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ats-layout">
+
+        <!-- ── LEFT: Input Panel ─────────────────────────────────────── -->
+        <div>
+          <!-- Resume Input -->
+          <div class="card" style="margin-bottom:20px">
+            <h4 style="margin-bottom:16px">📄 Your Resume</h4>
+
+            <div class="upload-tab-btns">
+              <button class="tab-btn active" onclick="switchTab('upload', this)">Upload PDF</button>
+              <button class="tab-btn" onclick="switchTab('saved', this)">Saved Resumes</button>
+              <button class="tab-btn" onclick="switchTab('paste', this)">Paste Text</button>
+            </div>
+
+            <!-- Upload PDF -->
+            <div class="tab-pane active" id="tab-upload">
+              <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
+                <div class="drop-icon">📂</div>
+                <div style="font-weight:600;margin-bottom:4px" id="drop-label">Drop your resume PDF here</div>
+                <div class="text-muted text-sm">or click to browse · Max 5MB</div>
+                <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handlePdfSelect(this)">
+              </div>
+            </div>
+
+            <!-- Saved Resumes -->
+            <div class="tab-pane" id="tab-saved">
+              <div id="saved-list">
+                <div class="text-muted text-sm" style="padding:12px 0">Loading your saved resumes…</div>
+              </div>
+            </div>
+
+            <!-- Paste Text -->
+            <div class="tab-pane" id="tab-paste">
+              <textarea id="resume-text-input" placeholder="Paste your resume text here…"
+                style="width:100%;height:220px;resize:vertical;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;color:var(--text);font-size:13.5px;font-family:inherit;line-height:1.6"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Job Description -->
+          <div class="card" style="margin-bottom:20px">
+            <h4 style="margin-bottom:12px">💼 Job Description</h4>
+            <textarea id="jd-input" placeholder="Paste the job description here…"
+              style="width:100%;height:200px;resize:vertical;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;color:var(--text);font-size:13.5px;font-family:inherit;line-height:1.6"
+            ></textarea>
+          </div>
+
+          <button class="btn btn-primary w-full" id="analyze-btn" onclick="runAnalysis()" style="padding:14px;font-size:15px;font-weight:700">
+            🎯 Analyze My Resume
+          </button>
+
+          <div id="error-msg" class="text-danger text-sm" style="margin-top:10px;display:none"></div>
+        </div>
+
+        <!-- ── RIGHT: Results Panel ──────────────────────────────────── -->
+        <div id="results-panel">
+
+          <!-- Analyzing spinner -->
+          <div id="analyzing-state" class="card" style="display:none">
+            <div class="analyzing-anim">
+              <div class="pulse-ring"></div>
+              <div style="font-weight:600">Analyzing your resume…</div>
+              <div class="text-muted text-sm">Comparing against job requirements</div>
+            </div>
+          </div>
+
+          <!-- Score card -->
+          <div class="card" id="score-card" style="margin-bottom:20px;display:none">
+            <div class="score-ring-wrap">
+              <div class="score-ring">
+                <svg width="148" height="148" viewBox="0 0 148 148">
+                  <circle cx="74" cy="74" r="62" fill="none" stroke="var(--bg-3)" stroke-width="10"/>
+                  <circle id="score-arc" cx="74" cy="74" r="62" fill="none" stroke="var(--primary)"
+                    stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="389.6" stroke-dashoffset="389.6"
+                    style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)"/>
+                </svg>
+                <div class="score-ring-label">
+                  <div class="score-number" id="score-num">0</div>
+                  <div class="score-sub">ATS Score</div>
+                </div>
+              </div>
+              <div id="score-verdict" style="font-size:15px;font-weight:600;text-align:center"></div>
+            </div>
+            <p id="score-summary" class="text-muted text-sm" style="text-align:center;padding:0 12px;line-height:1.7"></p>
+          </div>
+
+          <!-- Section Scores -->
+          <div class="card" id="sections-card" style="margin-bottom:20px;display:none">
+            <h4 style="margin-bottom:18px">📊 Section Breakdown</h4>
+            <div id="section-bars"></div>
+          </div>
+
+          <!-- Keywords -->
+          <div class="card" id="keywords-card" style="margin-bottom:20px;display:none">
+            <h4 style="margin-bottom:6px">🔑 Keyword Analysis</h4>
+
+            <div style="margin-bottom:16px">
+              <div class="text-sm" style="color:var(--accent);font-weight:600;margin-bottom:6px">
+                ✅ Matched Keywords <span id="match-count" style="opacity:.7"></span>
+              </div>
+              <div class="keyword-chips" id="matched-chips"></div>
+            </div>
+
+            <div>
+              <div class="text-sm" style="color:var(--danger);font-weight:600;margin-bottom:6px">
+                ❌ Missing Keywords <span id="miss-count" style="opacity:.7"></span>
+              </div>
+              <div class="keyword-chips" id="missing-chips"></div>
+            </div>
+          </div>
+
+          <!-- Strengths -->
+          <div class="card" id="strengths-card" style="margin-bottom:20px;display:none">
+            <h4 style="margin-bottom:14px">💪 Resume Strengths</h4>
+            <div id="strengths-list"></div>
+          </div>
+
+          <!-- Improvements -->
+          <div class="card" id="improvements-card" style="display:none">
+            <h4 style="margin-bottom:14px">🛠️ Improvement Tips</h4>
+            <div id="improvements-list"></div>
+          </div>
+
+        </div><!-- /results-panel -->
+      </div><!-- /ats-layout -->
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!auth.requireAuth()) throw new Error('Not authenticated');
+
+    let selectedFileId   = null;
+    let selectedPdfBytes = null;
+    let activeTab        = 'upload';
+
+    // ── Nav ───────────────────────────────────────────────────────────────
+    (function renderNav() {
+      const el = document.getElementById('nav-actions');
+      if (!el) return;
+      el.innerHTML = `
+        <a href="dashboard.html" class="btn btn-ghost btn-sm hide-mobile">Dashboard</a>
+        <a href="resume.html"    class="btn btn-ghost btn-sm hide-mobile">Resumes</a>
+        <a href="ats.html"       class="btn btn-ghost btn-sm hide-mobile" style="color:var(--primary)">ATS Analyzer</a>
+        <button onclick="auth.logout()" class="btn btn-ghost btn-sm">Logout</button>
+      `;
+    })();
+
+    // ── Tab switching ─────────────────────────────────────────────────────
+    function switchTab(name, btn) {
+      activeTab = name;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'saved') loadSavedResumes();
+    }
+
+    // ── PDF Upload ────────────────────────────────────────────────────────
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) processPdfFile(file);
+    });
+
+    function handlePdfSelect(input) {
+      if (input.files[0]) processPdfFile(input.files[0]);
+    }
+
+    function processPdfFile(file) {
+      if (file.type !== 'application/pdf') { showError('Please upload a PDF file.'); return; }
+      if (file.size > 5 * 1024 * 1024)    { showError('File too large. Max 5MB.');   return; }
+      selectedPdfBytes = file;
+      selectedFileId   = null;
+      document.getElementById('drop-label').textContent = '✅ ' + file.name;
+      dropZone.style.borderColor = 'var(--accent)';
+    }
+
+    // ── Saved Resumes ─────────────────────────────────────────────────────
+    async function loadSavedResumes() {
+      const el = document.getElementById('saved-list');
+      el.innerHTML = '<div class="text-muted text-sm" style="padding:12px 0">Loading…</div>';
+      try {
+        const data = await api('/resume/list');
+        const resumes = data.resumes || [];
+        if (!resumes.length) {
+          el.innerHTML = '<div class="text-muted text-sm" style="padding:12px 0">No saved resumes. <a href="resume.html">Upload one →</a></div>';
+          return;
+        }
+        el.innerHTML = resumes.map(r => `
+          <div class="resume-option" id="opt-${r.file_id}" onclick="selectSavedResume('${r.file_id}', this)">
+            <span style="font-size:1.3rem">📄</span>
+            <div>
+              <div style="font-weight:600;font-size:14px">${r.label || r.filename}</div>
+              <div class="text-muted text-sm">${r.filename} · ${new Date(r.uploaded_at).toLocaleDateString()}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        el.innerHTML = '<div class="text-danger text-sm">Failed to load resumes.</div>';
+      }
+    }
+
+    function selectSavedResume(fileId, el) {
+      document.querySelectorAll('.resume-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedFileId   = fileId;
+      selectedPdfBytes = null;
+    }
+
+    // ── Run Analysis ──────────────────────────────────────────────────────
+    async function runAnalysis() {
+      const jd = document.getElementById('jd-input').value.trim();
+      if (!jd) { showError('Please paste a job description.'); return; }
+
+      let resumeText = '';
+      let fileId     = null;
+
+      if (activeTab === 'paste') {
+        resumeText = document.getElementById('resume-text-input').value.trim();
+        if (!resumeText) { showError('Please paste your resume text.'); return; }
+      } else if (activeTab === 'upload') {
+        if (!selectedPdfBytes) { showError('Please upload a resume PDF.'); return; }
+        // Extract text client-side is not reliable — upload and let backend handle
+        // We'll use the file_id flow: upload to /resume/upload first, get file_id
+        try {
+          const form = new FormData();
+          form.append('file', selectedPdfBytes);
+          form.append('label', 'ATS Temp');
+          const token = localStorage.getItem('token');
+          const res = await fetch('/api/resume/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: form,
+          });
+          if (!res.ok) throw new Error('Upload failed');
+          const data = await res.json();
+          fileId = data.file_id;
+        } catch (e) {
+          showError('Failed to upload PDF: ' + e.message);
+          return;
+        }
+      } else if (activeTab === 'saved') {
+        if (!selectedFileId) { showError('Please select a saved resume.'); return; }
+        fileId = selectedFileId;
+      }
+
+      // Show analyzing state
+      showError('');
+      setAnalyzing(true);
+      document.getElementById('results-panel').classList.add('visible');
+
+      try {
+        const payload = { job_description: jd };
+        if (resumeText) payload.resume_text = resumeText;
+        if (fileId)     payload.file_id     = fileId;
+
+        const result = await api('/ai/ats-analyze', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        renderResults(result);
+      } catch (e) {
+        setAnalyzing(false);
+        showError('Analysis failed: ' + (e.message || 'Unknown error'));
+      }
+    }
+
+    function setAnalyzing(on) {
+      document.getElementById('analyzing-state').style.display = on ? 'block' : 'none';
+      document.getElementById('score-card').style.display       = on ? 'none' : '';
+      document.getElementById('sections-card').style.display    = on ? 'none' : '';
+      document.getElementById('keywords-card').style.display    = on ? 'none' : '';
+      document.getElementById('strengths-card').style.display   = on ? 'none' : '';
+      document.getElementById('improvements-card').style.display= on ? 'none' : '';
+      const btn = document.getElementById('analyze-btn');
+      btn.disabled    = on;
+      btn.textContent = on ? '⏳ Analyzing…' : '🎯 Analyze My Resume';
+    }
+
+    // ── Render Results ────────────────────────────────────────────────────
+    function renderResults(r) {
+      setAnalyzing(false);
+
+      // Score ring
+      const score  = Math.max(0, Math.min(100, r.ats_score || 0));
+      const circ   = 2 * Math.PI * 62;
+      const offset = circ - (circ * score / 100);
+      const arc    = document.getElementById('score-arc');
+      const color  = score >= 75 ? 'var(--accent)' : score >= 50 ? 'var(--accent-2)' : 'var(--danger)';
+      arc.style.stroke = color;
+      setTimeout(() => { arc.style.strokeDashoffset = offset; }, 50);
+
+      // Animate number
+      let cur = 0;
+      const step = () => {
+        cur = Math.min(cur + Math.ceil(score / 40), score);
+        document.getElementById('score-num').textContent = cur;
+        if (cur < score) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+
+      const verdict = score >= 80 ? '🟢 Excellent Match' : score >= 60 ? '🟡 Good Match' : score >= 40 ? '🟠 Needs Improvement' : '🔴 Poor Match';
+      document.getElementById('score-verdict').textContent = verdict;
+      document.getElementById('score-verdict').style.color = color;
+      document.getElementById('score-summary').textContent = r.summary || '';
+
+      document.getElementById('score-card').style.display = 'block';
+
+      // Section bars
+      const sections = r.section_scores || {};
+      const sectionLabels = {
+        skills_match:          'Skills Match',
+        experience_relevance:  'Experience Relevance',
+        education_match:       'Education Match',
+        keyword_density:       'Keyword Density',
+      };
+      const barsEl = document.getElementById('section-bars');
+      barsEl.innerHTML = Object.entries(sectionLabels).map(([k, label]) => {
+        const val = sections[k] || 0;
+        const c   = val >= 75 ? 'var(--accent)' : val >= 50 ? 'var(--accent-2)' : 'var(--danger)';
+        return `
+          <div class="section-bar-row">
+            <div class="section-bar-label">${label}</div>
+            <div class="section-bar-track">
+              <div class="section-bar-fill" style="width:${val}%;background:${c}"></div>
+            </div>
+            <div class="section-bar-val" style="color:${c}">${val}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('sections-card').style.display = 'block';
+
+      // Keywords
+      const matched = r.matched_keywords || [];
+      const missing = r.missing_keywords || [];
+      document.getElementById('match-count').textContent = `(${matched.length})`;
+      document.getElementById('miss-count').textContent  = `(${missing.length})`;
+      document.getElementById('matched-chips').innerHTML =
+        matched.length ? matched.map(k => `<span class="chip chip-match">${k}</span>`).join('') : '<span class="text-muted text-sm">None found</span>';
+      document.getElementById('missing-chips').innerHTML =
+        missing.length ? missing.map(k => `<span class="chip chip-miss">${k}</span>`).join('') : '<span class="text-muted text-sm" style="color:var(--accent)">All keywords matched! 🎉</span>';
+      document.getElementById('keywords-card').style.display = 'block';
+
+      // Strengths
+      const strengths = r.strengths || [];
+      document.getElementById('strengths-list').innerHTML = strengths.length
+        ? strengths.map(s => `<div class="strength-item"><span>✅</span><span>${s}</span></div>`).join('')
+        : '<div class="text-muted text-sm">No specific strengths identified.</div>';
+      document.getElementById('strengths-card').style.display = 'block';
+
+      // Improvements
+      const tips = r.improvements || [];
+      document.getElementById('improvements-list').innerHTML = tips.length
+        ? tips.map(t => `
+            <div class="tip-row tip-${t.priority}">
+              <span class="tip-badge badge-${t.priority}">${t.priority}</span>
+              <span style="font-size:13.5px">${t.tip}</span>
+            </div>
+          `).join('')
+        : '<div class="text-muted text-sm">No improvements needed!</div>';
+      document.getElementById('improvements-card').style.display = 'block';
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.style.display = msg ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

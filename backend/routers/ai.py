@@ -44,3 +44,48 @@ async def get_cover_letter(body: CoverLetterRequest, current_user: dict = Depend
 async def get_skills(body: SkillsRequest, current_user: dict = Depends(get_current_user)):
     skills = await extract_skills_from_description(body.job_description)
     return {"skills": skills}
+
+
+class ATSRequest(BaseModel):
+    job_description: str
+    resume_text: Optional[str] = None
+    file_id: Optional[str] = None
+
+
+@router.post("/ats-analyze")
+async def ats_analyze(body: ATSRequest, current_user: dict = Depends(get_current_user)):
+    """
+    ATS Resume Analyzer.
+    Accepts either raw resume_text OR a file_id to fetch from GridFS.
+    """
+    from backend.database import get_db, get_gridfs
+    from bson import ObjectId
+    import io
+
+    resume_text = body.resume_text or ""
+
+    # If file_id provided, fetch PDF from GridFS and extract text
+    if body.file_id and not resume_text:
+        try:
+            gridfs = get_gridfs()
+            stream = await gridfs.open_download_stream(ObjectId(body.file_id))
+            pdf_bytes = await stream.read()
+
+            try:
+                from pdfminer.high_level import extract_text as pdf_extract
+                resume_text = pdf_extract(io.BytesIO(pdf_bytes))
+            except Exception:
+                raise HTTPException(500, detail="Could not extract text from PDF.")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(400, detail=f"Could not load resume file: {e}")
+
+    if not resume_text or len(resume_text.strip()) < 50:
+        raise HTTPException(400, detail="Resume text is too short or empty.")
+    if not body.job_description or len(body.job_description.strip()) < 30:
+        raise HTTPException(400, detail="Job description is too short or empty.")
+
+    from backend.services.openrouter_service import analyze_ats
+    result = await analyze_ats(resume_text, body.job_description)
+    return result
