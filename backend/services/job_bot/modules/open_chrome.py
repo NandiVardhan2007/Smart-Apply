@@ -2,7 +2,8 @@
 open_chrome.py — SmartApply (Browserless.io Cloud Edition)
 
 Uses Browserless.io remote Chrome instead of a local browser.
-Set BROWSERLESS_API_KEY in your environment / .env file.
+Token is passed as a capability (NOT a query param) — this is the correct v1 method.
+Set BROWSERLESS_API_KEY in your .env or Render environment variables.
 '''
 
 import os
@@ -34,19 +35,24 @@ except ImportError:
 
 # ── Browserless.io Configuration ──────────────────────────────────────────────
 
-def _get_browserless_url() -> str:
+BROWSERLESS_ENDPOINT = "https://chrome.browserless.io/webdriver"
+
+
+def _build_options() -> Options:
     api_key = os.environ.get("BROWSERLESS_API_KEY", "")
     if not api_key:
         raise RuntimeError(
             "BROWSERLESS_API_KEY is not set.\n"
             "Add it to your .env file or Render environment variables."
         )
-    return f"https://chrome.browserless.io/webdriver?token={api_key}"
 
-
-def _build_options() -> Options:
     options = Options()
+
+    # ✅ Correct way — pass token as capability, NOT as URL query param
+    options.set_capability("browserless:token", api_key)
+
     options.add_argument("--no-sandbox")
+    options.add_argument("--headless")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
@@ -58,6 +64,7 @@ def _build_options() -> Options:
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/125.0.0.0 Safari/537.36"
     )
+
     return options
 
 
@@ -69,16 +76,17 @@ def createChromeSession(isRetry: bool = False):
         generated_resume_path + "/temp",
     ])
 
-    options = _build_options()
-    browserless_url = _get_browserless_url()
     print_lg("[Browserless] Connecting to cloud Chrome at Browserless.io ...")
 
     try:
+        options = _build_options()
         driver = webdriver.Remote(
-            command_executor=browserless_url,
+            command_executor=BROWSERLESS_ENDPOINT,
             options=options,
         )
         print_lg("[Browserless] Cloud Chrome session started successfully.")
+    except RuntimeError:
+        raise
     except Exception as e:
         raise RuntimeError(
             f"Failed to connect to Browserless.io.\n"
