@@ -212,7 +212,15 @@ async def save_linkedin_cookies(
     if "li_at" not in names:
         raise HTTPException(
             status_code=400,
-            detail="li_at cookie not found. Make sure you ran the extractor script on linkedin.com while logged in."
+            detail="li_at cookie not found. Follow the setup instructions to copy it from DevTools → Application → Cookies."
+        )
+
+    # Validate li_at value is non-empty and looks plausible
+    li_at_cookie = next((c for c in body.cookies if c.get("name") == "li_at"), None)
+    if not li_at_cookie or len(li_at_cookie.get("value", "")) < 50:
+        raise HTTPException(
+            status_code=400,
+            detail="li_at value looks invalid (too short). Make sure you copied the full value from DevTools."
         )
 
     user_id = current_user["user_id"]
