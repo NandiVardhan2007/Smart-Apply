@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from backend.auth import get_current_user
-from backend.services.openrouter_service import (
+from backend.services.nvidia_service import (
     answer_job_question,
     generate_cover_letter,
     extract_skills_from_description,
@@ -94,7 +94,7 @@ async def ats_analyze(body: ATSRequest, current_user: dict = Depends(get_current
     if not resume_text or len(resume_text.strip()) < 50:
         raise HTTPException(400, detail="Resume text is too short or empty.")
 
-    from backend.services.openrouter_service import analyze_ats
+    from backend.services.nvidia_service import analyze_ats
     try:
         result = await analyze_ats(resume_text, body.job_description or "")
     except RuntimeError as e:

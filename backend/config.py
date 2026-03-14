@@ -37,17 +37,23 @@ BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "SmartApply")
 APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
-# ── OpenRouter keys ───────────────────────────────────────────────────────────
+# ── NVIDIA NIM API keys ───────────────────────────────────────────────────────
 # Keys are stored ONLY in Render environment variables, never in code files.
-# Set OPENROUTER_KEYS in Render as a comma-separated string of keys.
-OPENROUTER_KEYS: list[str] = []
+# Set NVIDIA_API_KEYS in Render as a comma-separated string of keys.
+# Get free API keys from https://build.nvidia.com/models (click "Get API Key")
+NVIDIA_API_KEYS: list[str] = []
 
-_keys_env = os.getenv("OPENROUTER_KEYS", "")
+_keys_env = os.getenv("NVIDIA_API_KEYS", "")
 if _keys_env:
-    OPENROUTER_KEYS = [k.strip() for k in _keys_env.split(",") if k.strip()]
+    NVIDIA_API_KEYS = [k.strip() for k in _keys_env.split(",") if k.strip()]
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL   = _admin_cfg.get("openrouter_model") or os.getenv("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")
+# NVIDIA NIM API endpoint (OpenAI-compatible)
+NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+
+# Default model (all these are FREE on NVIDIA NIM!)
+# Recommended: meta/llama-3.3-70b-instruct (70B, excellent for most tasks)
+# Other options: google/gemma-3-27b-it, mistralai/mistral-large-3-675b-instruct
+NVIDIA_MODEL = _admin_cfg.get("nvidia_model") or os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
 
 BOT_ENABLED = os.getenv("BOT_ENABLED", "false").lower() == "true"
 
