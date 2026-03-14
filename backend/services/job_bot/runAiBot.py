@@ -183,12 +183,55 @@ def is_logged_in_LN() -> bool:
     return True
 
 
+def _cookie_path() -> str:
+    return logs_folder_path + "linkedin_session.json"
+
+
+def _save_cookies() -> None:
+    '''Save current browser cookies to disk so the next run can skip login.'''
+    import json
+    try:
+        cookies = driver.get_cookies()
+        with open(_cookie_path(), 'w', encoding='utf-8') as f:
+            json.dump(cookies, f)
+        print_lg(f"[Session] Saved {len(cookies)} cookies → {_cookie_path()}")
+    except Exception as e:
+        print_lg(f"[Session] Could not save cookies: {e}")
+
+
+def _load_cookies() -> bool:
+    '''
+    Load cookies from disk and inject them into the browser.
+    Must be called AFTER navigating to linkedin.com (cookies are domain-scoped).
+    Returns True if cookies were loaded, False if no saved session exists.
+    '''
+    import json, os
+    path = _cookie_path()
+    if not os.path.exists(path):
+        print_lg("[Session] No saved session found — will log in fresh.")
+        return False
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            cookies = json.load(f)
+        for cookie in cookies:
+            # Remove keys Selenium doesn't accept
+            for k in ('expiry', 'sameSite'):
+                cookie.pop(k, None)
+            try:
+                driver.add_cookie(cookie)
+            except Exception:
+                pass
+        print_lg(f"[Session] Loaded {len(cookies)} saved cookies.")
+        return True
+    except Exception as e:
+        print_lg(f"[Session] Could not load cookies: {e}")
+        return False
+
+
 def login_LN() -> None:
     '''
-    Function to login for LinkedIn.
-    Uses human-like delays and types credentials character by character
-    to reduce LinkedIn's headless-browser detection rate.
-    Raises RuntimeError (via manual_login_retry) if login cannot be confirmed.
+    Log in to LinkedIn via the browser form.
+    On success, saves session cookies so the next run can skip this step.
     '''
     import time as _t, random as _r
 
@@ -199,56 +242,51 @@ def login_LN() -> None:
 
     print_lg("Navigating to LinkedIn login page...")
     _driver_get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin", "login")
-    _t.sleep(_r.uniform(3.5, 5.0))  # longer settle — proxy latency can be high
+    _t.sleep(_r.uniform(2.0, 3.5))
 
-    # Verify the login page actually loaded (proxy may have returned an error page)
+    # Log what the page looks like so we can see if it loaded correctly
     try:
-        _login_title = driver.title.lower()
-        _login_url = driver.current_url
-        print_lg(f"[Debug] Login page title: '{driver.title}' URL: {_login_url[:80]}")
-        if "linkedin" not in _login_title and "sign" not in _login_title:
-            print_lg(f"[Debug] Warning: login page title unexpected — proxy may have intercepted.")
-            try:
-                driver.save_screenshot(f"{logs_folder_path}login_page_load.png")
-                print_lg(f"[Debug] Login page load snapshot saved.")
-            except Exception:
-                pass
+        print_lg(f"[Debug] Login page — title: '{driver.title}'  url: {driver.current_url[:80]}")
+        if _is_chrome_error_page():
+            print_lg("ERROR: Chrome error page on login URL — cannot reach LinkedIn.")
+            return
     except Exception:
         pass
 
     try:
-        # Wait up to 20s for the username field — proxy latency can be significant
         _login_wait = WebDriverWait(driver, 20)
-        _login_wait.until(EC.presence_of_element_located((By.ID, "username")))
-        print_lg("[Debug] Login form found — entering credentials.")
 
-        # Type email with slight human-like delay
-        email_field = driver.find_element(By.ID, "username")
+        # Wait for username field to be clickable (not just present) — eager load
+        # can return before the form is interactive
+        email_field = _login_wait.until(EC.element_to_be_clickable((By.ID, "username")))
+        print_lg("[Debug] Login form ready — entering credentials.")
+
+        email_field.clear()
         email_field.click()
-        _t.sleep(_r.uniform(0.3, 0.7))
+        _t.sleep(_r.uniform(0.3, 0.6))
         for char in username:
             email_field.send_keys(char)
-            _t.sleep(_r.uniform(0.04, 0.12))
+            _t.sleep(_r.uniform(0.03, 0.09))
 
-        _t.sleep(_r.uniform(0.4, 0.9))
+        _t.sleep(_r.uniform(0.4, 0.8))
 
-        # Type password with slight human-like delay
-        pass_field = driver.find_element(By.ID, "password")
+        pass_field = _login_wait.until(EC.element_to_be_clickable((By.ID, "password")))
+        pass_field.clear()
         pass_field.click()
-        _t.sleep(_r.uniform(0.3, 0.7))
+        _t.sleep(_r.uniform(0.3, 0.6))
         for char in password:
             pass_field.send_keys(char)
-            _t.sleep(_r.uniform(0.04, 0.12))
+            _t.sleep(_r.uniform(0.03, 0.09))
 
-        _t.sleep(_r.uniform(0.5, 1.2))
+        _t.sleep(_r.uniform(0.5, 1.0))
 
-        # Click Sign in
-        driver.find_element(By.XPATH, '//button[@type="submit"]').click()
+        # Click Sign in button — wait for it to be clickable
+        submit_btn = _login_wait.until(EC.element_to_be_clickable((By.XPATH, '//button[@type="submit"]')))
+        submit_btn.click()
         print_lg("Credentials submitted, waiting for redirect...")
 
     except Exception as e1:
         print_lg(f"Login form interaction failed: {e1}")
-        # Dump the login page so we can see what the proxy/LinkedIn actually returned
         try:
             _lshot = f"{logs_folder_path}login_failure.png"
             _lhtml = f"{logs_folder_path}login_failure.html"
@@ -256,39 +294,45 @@ def login_LN() -> None:
             with open(_lhtml, 'w', encoding='utf-8', errors='replace') as _lf:
                 _lf.write(driver.page_source)
             print_lg(f"[Debug] Login failure snapshot → {_lshot}")
-            print_lg(f"[Debug] Login page HTML preview: {driver.page_source[:600].replace(chr(10),' ')}")
-        except Exception as _ld:
-            print_lg(f"[Debug] Could not save login failure snapshot: {_ld}")
-        # Try profile button fallback
-        try:
-            find_by_class(driver, "profile__details").click()
+            print_lg(f"[Debug] Login page HTML preview: {driver.page_source[:400].replace(chr(10),' ')}")
         except Exception:
             pass
 
-    # Wait for LinkedIn to redirect away from the login page
+    # Wait for redirect away from login page
     _t.sleep(3)
     try:
         wait.until(EC.url_changes("https://www.linkedin.com/login"))
-        _t.sleep(2)  # settle for secondary redirects / checkpoint pages
+        _t.sleep(2)
     except Exception:
-        pass  # timed out — check current state anyway
+        pass
+
+    current = driver.current_url
+    print_lg(f"[Debug] Post-login URL: {current[:80]}")
 
     if is_logged_in_LN():
-        return print_lg("Login successful!")
+        print_lg("Login successful!")
+        _save_cookies()   # persist session for next run
+        return
 
-    # Landed on checkpoint or unknown page
-    current = driver.current_url
-    print_lg(f"Login redirect landed on: {current}")
-    if "checkpoint" in current or "challenge" in current:
+    # Still not logged in — check for known failure pages
+    if "checkpoint" in current:
         print_lg(
-            "LinkedIn security checkpoint detected!\n"
-            "This happens when LinkedIn flags a new headless session.\n"
-            "FIX: Log into LinkedIn manually in a real browser, complete any "
-            "verification prompts, then retry the bot."
+            "LinkedIn security checkpoint reached.\n"
+            "LinkedIn wants you to verify your identity.\n"
+            "Fix: Log in manually in a real browser from the same IP, complete the verification,\n"
+            "then restart the bot. If this keeps happening, disable the residential proxy."
         )
+    elif "login" in current or "authwall" in current:
+        print_lg(
+            "Still on login/auth page — credentials may be wrong.\n"
+            f"Check username/password in config/secrets.py\n"
+            f"Current URL: {current}"
+        )
+    else:
+        print_lg(f"Login redirect landed on unexpected page: {current}")
+
     manual_login_retry(is_logged_in_LN, 2)
 #>
-
 
 
 def get_applied_job_ids() -> set[str]:
@@ -1565,8 +1609,17 @@ def main() -> None:
         # Try going directly to feed first — if LinkedIn remembers the session
         # (cookies from a previous run) we skip the login form entirely.
         tabs_count = len(driver.window_handles)
+        # ── Session restore: load saved cookies before checking login ────────
+        # Navigate to linkedin.com first (cookies are domain-scoped — must be on
+        # the domain before add_cookie() works), then inject saved cookies and
+        # refresh so LinkedIn sees them.
         print_lg("Checking LinkedIn session status...")
-        _driver_get("https://www.linkedin.com/feed/", "session-check")
+        _driver_get("https://www.linkedin.com/", "cookie-domain-setup")
+        if _load_cookies():
+            # Reload the page with cookies injected so LinkedIn recognises the session
+            _driver_get("https://www.linkedin.com/feed/", "session-check-with-cookies")
+        else:
+            _driver_get("https://www.linkedin.com/feed/", "session-check")
         import time as _t2; _t2.sleep(1)
         if not is_logged_in_LN():
             print_lg("Not logged in — attempting credential login...")
