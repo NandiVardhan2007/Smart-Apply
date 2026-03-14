@@ -123,65 +123,71 @@ set_gemini_key(llm_api_key)
 #< Login Functions
 def is_logged_in_LN() -> bool:
     '''
-    Check if user is logged in to LinkedIn.
-    Returns True only when we have positive evidence of an authenticated session.
-    With pageLoadStrategy="none", the page may still be loading when this is called,
-    so we first wait briefly for the document body to appear.
+    Check if the current browser session is authenticated with LinkedIn.
+    Uses LinkedIn's internal voyager API — returns JSON in <1s and is unambiguous.
+    Falls back to URL/source check if the API call fails for any reason.
+    Logs a clear status message either way.
     '''
+    print_lg("[Login] Checking LinkedIn session...")
     try:
-        # Give the browser up to 10s to at least produce a document body
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        # Hit LinkedIn's me-endpoint — returns 200+JSON when authenticated, 401/403 when not.
+        # Using execute_script so we stay in the same browser context (cookies included).
+        result = driver.execute_script("""
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/voyager/api/identity/profiles/me', false);  // synchronous
+                xhr.setRequestHeader('csrf-token', (document.cookie.match(/JSESSIONID=\\"?([^\\";]+)/) || ['',''])[1].replace('ajax:',''));
+                xhr.send();
+                return {status: xhr.status, body: xhr.responseText.substring(0, 200)};
+            } catch(e) {
+                return {status: -1, body: String(e)};
+            }
+        """)
+        if result and result.get('status') == 200:
+            print_lg("[Login] Session valid — LinkedIn API returned 200.")
+            return True
+        if result and result.get('status') in (401, 403):
+            print_lg(f"[Login] Session invalid — LinkedIn API returned {result.get('status')}.")
+            return False
+        print_lg(f"[Login] API check inconclusive (status={result.get('status') if result else 'none'}) — falling back to page check.")
+    except Exception as e:
+        print_lg(f"[Login] API check failed ({e}) — falling back to page check.")
+
+    # ── Fallback: page source markers ────────────────────────────────────────
+    try:
         url = driver.current_url
         src = driver.page_source or ""
     except Exception:
         return False
 
-    # ── Hard negative: guest page markers ────────────────────────────────────
-    # If the page source explicitly identifies this as a guest/unauthenticated view,
-    # return False immediately regardless of URL.
-    _GUEST_MARKERS = [
-        'd_jobs_guest_search',   # guest job search page
-        'pageKey" content="d_',  # any other guest pageKey
-        '"authwall"',            # LinkedIn auth wall
-        'authwall-join-form',
-        'join-form',
-    ]
+    _GUEST_MARKERS = ['d_jobs_guest_search', 'pageKey" content="d_', '"authwall"', 'authwall-join-form', 'join-form']
     if any(m in src for m in _GUEST_MARKERS):
-        print_lg("Guest/unauthenticated page markers detected — treating as logged out.")
+        print_lg("[Login] Guest page markers found — not logged in.")
         return False
 
-    # ── URL path check + DOM confirmation ────────────────────────────────────
     _LOGGED_IN_PATHS = ("/feed", "/jobs", "/mynetwork", "/in/", "/notifications", "/messaging")
     if any(path in url for path in _LOGGED_IN_PATHS):
-        _AUTH_XPATHS = [
-            "//*[contains(@id,'profile-nav-item') or contains(@class,'global-nav__me')]",
-            "//*[@aria-label='Me']",
-            "//nav[contains(@class,'global-nav')]",
-            "//div[contains(@class,'feed-identity-module')]",
-            "//div[contains(@class,'scaffold-layout')]",
-        ]
-        for _xp in _AUTH_XPATHS:
-            try:
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, _xp))
-                )
-                return True
-            except Exception:
-                continue
-        # No auth element found — but also no hard guest marker — check for Sign in link
-        if try_linkText(driver, "Sign in") or try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):
-            print_lg("URL looks authenticated but Sign-in element found — treating as logged out.")
+        # One combined XPath, single 8s wait — not five separate waits
+        try:
+            WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.XPATH,
+                "//*[contains(@id,'profile-nav-item') or contains(@class,'global-nav__me') "
+                "or contains(@class,'global-nav') or contains(@class,'scaffold-layout')]"
+            )))
+            print_lg("[Login] Authenticated nav element found.")
+            return True
+        except Exception:
+            pass
+        if try_linkText(driver, "Sign in"):
+            print_lg("[Login] Sign-in link found — not logged in.")
             return False
-        print_lg("URL looks authenticated and no sign-in indicators found — assuming logged in.")
+        print_lg("[Login] On authenticated URL path, no sign-in link — assuming logged in.")
         return True
 
-    # ── Explicit logout/landing page indicators ───────────────────────────────
-    if try_linkText(driver, "Sign in"): return False
-    if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'): return False
-    if try_linkText(driver, "Join now"): return False
-    print_lg("Didn't find Sign in link, so assuming user is logged in!")
+    if try_linkText(driver, "Sign in") or try_linkText(driver, "Join now"):
+        print_lg("[Login] Sign-in/Join link found — not logged in.")
+        return False
+
+    print_lg("[Login] No definitive signals — assuming logged in.")
     return True
 
 
@@ -253,14 +259,13 @@ def login_LN() -> None:
         print_lg("=" * 60)
         raise RuntimeError("No LinkedIn session cookies — see instructions above.")
 
-    # Cookies exist — navigate to linkedin.com domain first, inject, then reload
+    # Cookies exist — navigate to linkedin.com domain first, inject, then verify via API
     print_lg("[Session] Injecting saved LinkedIn cookies...")
-    _driver_get("https://www.linkedin.com/", "cookie-domain", settle=1.0)
+    _driver_get("https://www.linkedin.com/", "cookie-domain", settle=1.5)
     if not _load_cookies():
         raise RuntimeError("Failed to load cookies from disk.")
 
-    # Navigate to feed and verify session is valid
-    _driver_get("https://www.linkedin.com/feed/", "post-cookie-feed", settle=2.0)
+    # Verify session using the voyager API — no need to navigate to /feed/
     if is_logged_in_LN():
         print_lg("Login successful via saved session cookies!")
         return
@@ -1572,15 +1577,12 @@ def main() -> None:
         # Try going directly to feed first — if LinkedIn remembers the session
         # (cookies from a previous run) we skip the login form entirely.
         tabs_count = len(driver.window_handles)
-        # ── Session restore: load saved cookies before checking login ────────
-        # Navigate to linkedin.com first (cookies are domain-scoped), inject
-        # saved cookies, then navigate to /feed/ and wait for the nav element.
+        # ── Session restore ───────────────────────────────────────────────────
+        # Navigate to linkedin.com first (required for cookie domain), inject cookies,
+        # then use the voyager API check — no need to navigate to /feed/ and wait for React.
         print_lg("Checking LinkedIn session status...")
-        _driver_get("https://www.linkedin.com/", "cookie-domain-setup", settle=1.0)
+        _driver_get("https://www.linkedin.com/", "cookie-domain-setup", settle=1.5)
         _load_cookies()
-        # Always navigate to /feed/ after cookie injection — with "none" strategy
-        # this returns immediately; is_logged_in_LN waits for body/nav elements.
-        _driver_get("https://www.linkedin.com/feed/", "session-check", settle=2.0)
         import time as _t2; _t2.sleep(1)
         if not is_logged_in_LN():
             print_lg("Not logged in — attempting credential login...")
