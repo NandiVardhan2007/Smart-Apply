@@ -317,10 +317,16 @@ overwrite_previous_answers = True
         _llm_model   = NVIDIA_MODEL
         _llm_spec    = "openai"
 
+    _li_email = platform_accounts.get('linkedin_email', '')
+    _li_pass  = platform_accounts.get('linkedin_password', '')
+    # Diagnostic — log credential status WITHOUT revealing the actual password
+    print(f"[bot_service] LinkedIn email   : '{_li_email}'")
+    print(f"[bot_service] LinkedIn password: {'SET (' + str(len(_li_pass)) + ' chars)' if _li_pass else 'EMPTY — credentials missing!'}")
+
     (cfg / "secrets.py").write_text(
         f"""\
-username          = {_j(platform_accounts.get('linkedin_email', ''))}
-password          = {_j(platform_accounts.get('linkedin_password', ''))}
+username          = {_j(_li_email)}
+password          = {_j(_li_pass)}
 use_AI            = {bool(ai_key or gemini_key)}
 ai_provider       = {_j(_ai_provider)}
 llm_api_url       = {_j(_llm_api_url)}

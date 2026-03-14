@@ -175,12 +175,22 @@ def manual_login_retry(is_logged_in: callable, limit: int = 2) -> None:
     '''
     Retries login check automatically without any popups.
     Waits 5 seconds between each attempt, up to `limit` retries.
+    Raises RuntimeError if all retries fail — this aborts the bot cleanly
+    instead of continuing into job search with an unauthenticated session.
     '''
     count = 0
     while not is_logged_in():
         if count >= limit:
-            print_lg("Auto-login failed after retries. Check LinkedIn credentials in config/secrets.py")
-            return
+            msg = (
+                "Auto-login failed after retries. Possible causes:\n"
+                "  1. Wrong LinkedIn credentials — check email/password in your profile settings\n"
+                "  2. LinkedIn security checkpoint (headless browser detected by LinkedIn)\n"
+                "  3. Account needs email/phone verification\n"
+                "Fix: Log into LinkedIn manually in a real browser from the same network, "
+                "complete any verification, then retry the bot."
+            )
+            print_lg(msg)
+            raise RuntimeError(msg)  # abort — never proceed unauthenticated into job search
         print_lg(f"Waiting for LinkedIn login... attempt {count + 1}/{limit}")
         sleep(5)
         count += 1

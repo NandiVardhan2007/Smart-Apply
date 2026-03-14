@@ -141,54 +141,79 @@ def is_logged_in_LN() -> bool:
 
 def login_LN() -> None:
     '''
-    Function to login for LinkedIn
-    * Tries to login using given `username` and `password` from `secrets.py`
-    * If failed, tries to login using saved LinkedIn profile button if available
-    * If both failed, asks user to login manually
+    Function to login for LinkedIn.
+    Uses human-like delays and types credentials character by character
+    to reduce LinkedIn's headless-browser detection rate.
+    Raises RuntimeError (via manual_login_retry) if login cannot be confirmed.
     '''
-    # Find the username and password fields and fill them with user credentials
-    driver.get("https://www.linkedin.com/login")
+    import time as _t, random as _r
+
     if username == "username@example.com" and password == "example_password":
-        print_lg("Username/password not configured in secrets.py - cannot auto-login")
-        print_lg("User did not configure username and password in secrets.py, hence can't login automatically! Please login manually!")
+        print_lg("Username/password not configured — cannot auto-login")
         manual_login_retry(is_logged_in_LN, 2)
         return
-    try:
-        wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Forgot password?")))
-        try:
-            text_input_by_ID(driver, "username", username, 1)
-        except Exception as e:
-            print_lg("Couldn't find username field.")
-            # print_lg(e)
-        try:
-            text_input_by_ID(driver, "password", password, 1)
-        except Exception as e:
-            print_lg("Couldn't find password field.")
-            # print_lg(e)
-        # Find the login submit button and click it
-        driver.find_element(By.XPATH, '//button[@type="submit" and contains(text(), "Sign in")]').click()
-    except Exception as e1:
-        try:
-            profile_button = find_by_class(driver, "profile__details")
-            profile_button.click()
-        except Exception as e2:
-            # print_lg(e1, e2)
-            print_lg("Couldn't Login!")
+
+    print_lg("Navigating to LinkedIn login page...")
+    driver.get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin")
+    _t.sleep(_r.uniform(2.0, 3.5))  # human-like pause before interacting
 
     try:
-        # Wait until LinkedIn redirects away from the login page.
-        # Browserless headless sessions may land on /jobs, /checkpoint, /mynetwork, etc.
-        # instead of /feed/ — accept any post-login URL.
+        wait.until(EC.presence_of_element_located((By.ID, "username")))
+
+        # Type email with slight human-like delay
+        email_field = driver.find_element(By.ID, "username")
+        email_field.click()
+        _t.sleep(_r.uniform(0.3, 0.7))
+        for char in username:
+            email_field.send_keys(char)
+            _t.sleep(_r.uniform(0.04, 0.12))
+
+        _t.sleep(_r.uniform(0.4, 0.9))
+
+        # Type password with slight human-like delay
+        pass_field = driver.find_element(By.ID, "password")
+        pass_field.click()
+        _t.sleep(_r.uniform(0.3, 0.7))
+        for char in password:
+            pass_field.send_keys(char)
+            _t.sleep(_r.uniform(0.04, 0.12))
+
+        _t.sleep(_r.uniform(0.5, 1.2))
+
+        # Click Sign in
+        driver.find_element(By.XPATH, '//button[@type="submit"]').click()
+        print_lg("Credentials submitted, waiting for redirect...")
+
+    except Exception as e1:
+        print_lg(f"Login form interaction failed: {e1}")
+        # Try profile button fallback
+        try:
+            find_by_class(driver, "profile__details").click()
+        except Exception:
+            pass
+
+    # Wait for LinkedIn to redirect away from the login page
+    _t.sleep(3)
+    try:
         wait.until(EC.url_changes("https://www.linkedin.com/login"))
-        import time as _time_login; _time_login.sleep(2)  # settle for secondary redirects
-        if is_logged_in_LN():
-            return print_lg("Login successful!")
-        print_lg("Landed on checkpoint/captcha page after login attempt")
-    except Exception as e:
-        pass  # url_changes timed out — proceed to manual retry check
-    if not is_logged_in_LN():
-        print_lg("Seems like login attempt failed! Possibly due to wrong credentials or already logged in! Try logging in manually!")
-        manual_login_retry(is_logged_in_LN, 2)
+        _t.sleep(2)  # settle for secondary redirects / checkpoint pages
+    except Exception:
+        pass  # timed out — check current state anyway
+
+    if is_logged_in_LN():
+        return print_lg("Login successful!")
+
+    # Landed on checkpoint or unknown page
+    current = driver.current_url
+    print_lg(f"Login redirect landed on: {current}")
+    if "checkpoint" in current or "challenge" in current:
+        print_lg(
+            "LinkedIn security checkpoint detected!\n"
+            "This happens when LinkedIn flags a new headless session.\n"
+            "FIX: Log into LinkedIn manually in a real browser, complete any "
+            "verification prompts, then retry the bot."
+        )
+    manual_login_retry(is_logged_in_LN, 2)
 #>
 
 
@@ -1240,9 +1265,17 @@ def main() -> None:
             useNewResume = False
         
         # Login to LinkedIn
+        # Try going directly to feed first — if LinkedIn remembers the session
+        # (cookies from a previous run) we skip the login form entirely.
         tabs_count = len(driver.window_handles)
-        driver.get("https://www.linkedin.com/login")
-        if not is_logged_in_LN(): login_LN()
+        print_lg("Checking LinkedIn session status...")
+        driver.get("https://www.linkedin.com/feed/")
+        import time as _t2; _t2.sleep(3)
+        if not is_logged_in_LN():
+            print_lg("Not logged in — attempting credential login...")
+            login_LN()
+        else:
+            print_lg("Already logged in — skipping login form.")
         
         linkedIn_tab = driver.current_window_handle
 
