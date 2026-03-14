@@ -178,11 +178,16 @@
                   <span id="bot-session-info" class="text-sm text-muted"></span>
                 </div>
               </div>
-              <div style="display:flex;gap:10px">
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <button class="btn btn-primary" id="start-bot-btn" onclick="startBot()">
                   <span class="spinner"></span><span class="btn-text">▶ Start Bot</span>
                 </button>
                 <button class="btn btn-danger btn-sm" id="stop-bot-btn" onclick="stopBot()" style="display:none">⏹ Stop</button>
+                <a href="/cookie-setup.html" class="btn btn-sm" id="session-setup-btn"
+                   style="background:#1e293b;border:1px solid #334155;color:#94a3b8;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:0.82rem;"
+                   title="Set up LinkedIn session cookies">
+                  🔑 <span id="session-label">Setup LinkedIn Session</span>
+                </a>
               </div>
             </div>
           </div>
@@ -532,6 +537,24 @@
     loadStats();
     loadRecent();
     loadBotStatus();
+
+    // Check if LinkedIn session cookies are saved — update button label
+    (async () => {
+      try {
+        const s = await api.get('/jobs/linkedin-cookies/status');
+        const btn = document.getElementById('session-setup-btn');
+        const lbl = document.getElementById('session-label');
+        if (s.has_li_at) {
+          lbl.textContent = 'Session Active ✓';
+          btn.style.borderColor = '#16a34a';
+          btn.style.color = '#4ade80';
+        } else {
+          lbl.textContent = 'Setup LinkedIn Session ⚠';
+          btn.style.borderColor = '#ca8a04';
+          btn.style.color = '#facc15';
+        }
+      } catch (_) {}
+    })();
   </script>
 </body>
 </html>

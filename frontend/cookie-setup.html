@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Session Setup — SmartApply</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; margin: 0; min-height: 100vh; }
+    .page-wrap { max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; text-decoration: none; }
+    .logo svg { width: 32px; height: 32px; }
+    .logo span { font-size: 1.4rem; font-weight: 700; color: #fff; }
+
+    h1 { font-size: 1.75rem; font-weight: 700; color: #fff; margin: 0 0 8px; }
+    .subtitle { color: #94a3b8; font-size: 0.95rem; margin: 0 0 36px; line-height: 1.6; }
+
+    .steps { counter-reset: step; display: flex; flex-direction: column; gap: 28px; margin-bottom: 40px; }
+    .step { display: flex; gap: 16px; }
+    .step-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #6366f1; color: #fff;
+                font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+    .step-body h3 { margin: 4px 0 6px; font-size: 1rem; color: #f1f5f9; }
+    .step-body p  { margin: 0; font-size: 0.88rem; color: #94a3b8; line-height: 1.6; }
+
+    .code-block {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 16px 18px; margin: 10px 0 0; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.78rem; color: #7dd3fc; white-space: pre-wrap; word-break: break-all; position: relative;
+    }
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px; background: #334155; border: none; border-radius: 6px;
+      color: #94a3b8; font-size: 0.75rem; padding: 4px 10px; cursor: pointer; transition: background .15s;
+    }
+    .copy-btn:hover { background: #475569; color: #f1f5f9; }
+
+    .paste-area {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      width: 100%; min-height: 140px; padding: 14px; color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; resize: vertical;
+      box-sizing: border-box; outline: none; transition: border-color .2s;
+    }
+    .paste-area:focus { border-color: #6366f1; }
+    .paste-area.ok  { border-color: #22c55e; }
+    .paste-area.err { border-color: #ef4444; }
+
+    .save-btn {
+      margin-top: 14px; width: 100%; padding: 13px; border: none; border-radius: 10px;
+      background: #6366f1; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+    .save-btn:hover:not(:disabled) { background: #4f46e5; }
+    .save-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .status-msg { margin-top: 14px; border-radius: 10px; padding: 13px 16px; font-size: 0.88rem; display: none; }
+    .status-msg.success { background: #052e16; border: 1px solid #16a34a; color: #86efac; display: block; }
+    .status-msg.error   { background: #2d0707; border: 1px solid #dc2626; color: #fca5a5; display: block; }
+
+    .info-box { background: #172033; border: 1px solid #1e3a5f; border-radius: 10px; padding: 16px 18px;
+                font-size: 0.85rem; color: #93c5fd; line-height: 1.65; margin-bottom: 28px; }
+    .info-box strong { color: #bfdbfe; }
+
+    label { display: block; font-size: 0.88rem; color: #94a3b8; margin-bottom: 8px; }
+
+    @media (max-width: 520px) { .page-wrap { padding: 28px 16px 60px; } h1 { font-size: 1.4rem; } }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <a class="logo" href="/dashboard.html">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="10" fill="#6366f1"/>
+      <path d="M12 28L20 12L28 28M15.5 22H24.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>SmartApply</span>
+  </a>
+
+  <h1>LinkedIn Session Setup</h1>
+  <p class="subtitle">
+    Log in to LinkedIn on your personal laptop, export your session cookies using the
+    script below, paste them here, and the bot will use your authenticated session —
+    no password needed on the server.
+  </p>
+
+  <div class="info-box">
+    <strong>Why this works:</strong> LinkedIn blocks headless browsers trying to log in from new IPs.
+    By exporting your existing session cookies from a browser where you're already logged in,
+    the bot inherits that trusted session and skips the login step entirely.
+    Cookies typically last <strong>1–2 years</strong> before needing a refresh.
+  </div>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Open LinkedIn in your browser</h3>
+        <p>Go to <strong>linkedin.com</strong> and make sure you're logged in to your account.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Open Developer Tools → Console</h3>
+        <p>Press <strong>F12</strong> (Windows/Linux) or <strong>Cmd+Option+J</strong> (Mac) to open DevTools,
+           then click the <strong>Console</strong> tab.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Paste and run this script</h3>
+        <p>Copy the code below, paste it into the console, and press Enter.
+           It will copy your LinkedIn cookies to your clipboard automatically.</p>
+        <div class="code-block" id="extractor-code">copy(JSON.stringify(document.cookie.split(';').map(c=>{const[n,...v]=c.trim().split('=');return{name:n,value:v.join('='),domain:'.linkedin.com',path:'/',secure:true,httpOnly:false,sameSite:'None'}}), null, 2))</div>
+        <button class="copy-btn" onclick="copyCode()">Copy</button>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Paste the result below and save</h3>
+        <p>Your clipboard now contains the cookie JSON. Paste it in the box below and click Save.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <label for="cookie-input">Paste your LinkedIn cookies JSON here:</label>
+  <textarea class="paste-area" id="cookie-input" placeholder='Paste the JSON array here, e.g. [{"name":"li_at","value":"..."},...]'></textarea>
+
+  <button class="save-btn" id="save-btn" onclick="saveCookies()">Save Session Cookies</button>
+  <div class="status-msg" id="status-msg"></div>
+
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+function copyCode() {
+  const code = document.getElementById('extractor-code').innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+}
+
+async function saveCookies() {
+  const raw = document.getElementById('cookie-input').value.trim();
+  const btn = document.getElementById('save-btn');
+  const ta = document.getElementById('cookie-input');
+
+  if (!raw) {
+    showStatus('Please paste your cookie JSON first.', 'error');
+    ta.classList.add('err');
+    return;
+  }
+
+  let cookies;
+  try {
+    cookies = JSON.parse(raw);
+    if (!Array.isArray(cookies)) throw new Error('Expected a JSON array');
+    ta.classList.remove('err');
+    ta.classList.add('ok');
+  } catch (e) {
+    showStatus('Invalid JSON — make sure you copied the full output from the console script.', 'error');
+    ta.classList.add('err');
+    ta.classList.remove('ok');
+    return;
+  }
+
+  // Quick sanity check — LinkedIn session must contain li_at cookie
+  const hasLiAt = cookies.some(c => c.name === 'li_at');
+  if (!hasLiAt) {
+    showStatus('Warning: "li_at" cookie not found. Make sure you ran the script on linkedin.com while logged in.', 'error');
+    ta.classList.add('err');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const token = localStorage.getItem('token') || getCookieValue('token');
+    const res = await fetch('/api/jobs/linkedin-cookies', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: JSON.stringify({ cookies }),
+    });
+
+    if (res.ok) {
+      showStatus('✓ Session cookies saved! The bot will use these to log in automatically. You can now start the bot from the dashboard.', 'success');
+      btn.textContent = 'Saved ✓';
+    } else {
+      const data = await res.json().catch(() => ({}));
+      showStatus('Error saving cookies: ' + (data.detail || res.status), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Save Session Cookies';
+    }
+  } catch (err) {
+    showStatus('Network error: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Save Session Cookies';
+  }
+}
+
+function getCookieValue(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+}
+</script>
+</body>
+</html>

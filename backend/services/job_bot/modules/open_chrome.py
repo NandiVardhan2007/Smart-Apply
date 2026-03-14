@@ -62,10 +62,11 @@ BROWSERLESS_ENDPOINT = "https://chrome.browserless.io/webdriver"
 
 def _stealth_options(headless: bool = True) -> Options:
     options = Options()
-    # "eager" = return from driver.get() as soon as DOM is interactive (DOMContentLoaded),
-    # without waiting for images, fonts, or XHR to complete.
-    # LinkedIn's feed fires endless background requests so "normal" mode hangs indefinitely.
-    options.page_load_strategy = "eager"
+    # "none" = driver.get() returns immediately after the browser begins navigation.
+    # We then use explicit WebDriverWait for specific elements rather than waiting
+    # for any page load event. This prevents hangs on slow servers / LinkedIn's
+    # XHR-heavy pages that never truly "complete" under normal or eager strategy.
+    options.page_load_strategy = "none"
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")

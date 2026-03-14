@@ -186,3 +186,69 @@ async def bot_logs(
                 lines = [ln for ln in chunk.splitlines() if ln.strip()]
 
     return {"lines": lines, "next_offset": next_offset}
+
+
+class LinkedInCookiesRequest(BaseModel):
+    cookies: list
+
+
+@router.post("/linkedin-cookies")
+async def save_linkedin_cookies(
+    body: LinkedInCookiesRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Accept LinkedIn session cookies exported from the user's browser and save
+    them to the user's workspace so the bot can use them to authenticate.
+    """
+    import json, os
+    from pathlib import Path
+
+    if not body.cookies or not isinstance(body.cookies, list):
+        raise HTTPException(status_code=400, detail="cookies must be a non-empty array")
+
+    # Require li_at — the primary LinkedIn auth cookie
+    names = [c.get("name", "") for c in body.cookies]
+    if "li_at" not in names:
+        raise HTTPException(
+            status_code=400,
+            detail="li_at cookie not found. Make sure you ran the extractor script on linkedin.com while logged in."
+        )
+
+    user_id = current_user["user_id"]
+    ws = Path(os.path.expanduser("~")) / ".smartapply" / "workspaces" / user_id
+    logs_dir = ws / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    cookie_path = logs_dir / "linkedin_session.json"
+    with open(cookie_path, "w", encoding="utf-8") as f:
+        json.dump(body.cookies, f, indent=2)
+
+    return {
+        "ok": True,
+        "message": f"Saved {len(body.cookies)} cookies. The bot will use these to authenticate.",
+        "cookie_count": len(body.cookies),
+        "has_li_at": True,
+    }
+
+
+@router.get("/linkedin-cookies/status")
+async def linkedin_cookies_status(current_user: dict = Depends(get_current_user)):
+    """Check whether saved LinkedIn session cookies exist for this user."""
+    import json, os
+    from pathlib import Path
+
+    user_id = current_user["user_id"]
+    ws = Path(os.path.expanduser("~")) / ".smartapply" / "workspaces" / user_id
+    cookie_path = ws / "logs" / "linkedin_session.json"
+
+    if not cookie_path.exists():
+        return {"exists": False, "cookie_count": 0, "has_li_at": False}
+
+    try:
+        with open(cookie_path, "r", encoding="utf-8") as f:
+            cookies = json.load(f)
+        has_li_at = any(c.get("name") == "li_at" for c in cookies)
+        return {"exists": True, "cookie_count": len(cookies), "has_li_at": has_li_at}
+    except Exception:
+        return {"exists": False, "cookie_count": 0, "has_li_at": False}
