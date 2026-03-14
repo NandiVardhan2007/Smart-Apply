@@ -14,7 +14,7 @@ from pathlib import Path
 
 from backend.database import get_db
 from backend.auth import get_current_user
-from backend.config import OPENROUTER_KEYS, OPENROUTER_MODEL, SMTP_USER
+from backend.config import NVIDIA_API_KEYS, NVIDIA_MODEL, SMTP_USER
 from backend.email_utils import send_verification_email
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -42,15 +42,15 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
     db = get_db()
     cfg = _load_cfg()
 
-    total_users       = await db.users.count_documents({})
-    total_applications= await db.applications.count_documents({})
-    active_sessions   = await db.bot_sessions.count_documents({"status": "running"})
+    total_users        = await db.users.count_documents({})
+    total_applications = await db.applications.count_documents({})
+    active_sessions    = await db.bot_sessions.count_documents({"status": "running"})
 
     return {
         "total_users": total_users,
         "total_applications": total_applications,
         "active_sessions": active_sessions,
-        "openrouter_keys": len(OPENROUTER_KEYS),
+        "nvidia_keys": len(NVIDIA_API_KEYS),
         "smtp_configured": bool(cfg.get("smtp_user") or SMTP_USER),
         "smtp_user": cfg.get("smtp_user") or SMTP_USER or "",
     }
@@ -100,7 +100,7 @@ async def test_smtp(body: TestEmailRequest, current_user: dict = Depends(get_cur
         raise HTTPException(500, detail=f"SMTP error: {e}")
 
 
-# ── OpenRouter Keys ───────────────────────────────────────────────────────────
+# ── NVIDIA API Keys ───────────────────────────────────────────────────────────
 
 class KeysUpdate(BaseModel):
     keys: list[str]
@@ -110,11 +110,10 @@ class KeysUpdate(BaseModel):
 @router.get("/keys")
 async def get_keys(current_user: dict = Depends(get_current_user)):
     cfg = _load_cfg()
-    # Merge stored keys with working_keys.json
-    all_keys = cfg.get("openrouter_keys") or OPENROUTER_KEYS
+    all_keys = cfg.get("nvidia_keys") or NVIDIA_API_KEYS
     return {
         "keys": all_keys,
-        "model": cfg.get("openrouter_model") or OPENROUTER_MODEL,
+        "model": cfg.get("nvidia_model") or NVIDIA_MODEL,
     }
 
 
@@ -122,21 +121,21 @@ async def get_keys(current_user: dict = Depends(get_current_user)):
 async def update_keys(body: KeysUpdate, current_user: dict = Depends(get_current_user)):
     # Validate format
     for k in body.keys:
-        if not k.startswith("sk-or-v1-"):
+        if not k.startswith("nvapi-"):
             raise HTTPException(400, detail=f"Invalid key format: {k[:20]}…")
 
     cfg = _load_cfg()
-    cfg["openrouter_keys"] = body.keys
+    cfg["nvidia_keys"] = body.keys
     if body.model:
-        cfg["openrouter_model"] = body.model
+        cfg["nvidia_model"] = body.model
     _save_cfg(cfg)
 
     # Update live
     import backend.config as c
-    c.OPENROUTER_KEYS.clear()
-    c.OPENROUTER_KEYS.extend(body.keys)
+    c.NVIDIA_API_KEYS.clear()
+    c.NVIDIA_API_KEYS.extend(body.keys)
     if body.model:
-        c.OPENROUTER_MODEL = body.model
+        c.NVIDIA_MODEL = body.model
 
     return {"message": f"Saved {len(body.keys)} keys"}
 
