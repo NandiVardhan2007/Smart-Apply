@@ -543,7 +543,7 @@
     }
 
     function copyAuthToken() {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('sa_token');
       const btn = document.getElementById('copy-token-btn');
       if (!token) {
         showToast('No token found — please log in first.', 'error');

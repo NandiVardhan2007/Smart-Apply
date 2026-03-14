@@ -178,7 +178,7 @@ async function doSave() {
   }
 
   try {
-    var token = localStorage.getItem('token') || '';
+    var token = localStorage.getItem('sa_token') || '';
     var headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
 
