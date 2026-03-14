@@ -315,11 +315,14 @@ def _build_search_url(keyword: str, location: str) -> str:
         params['f_WT'] = ','.join(_wt_codes)
 
     return 'https://www.linkedin.com/jobs/search/?' + _up.urlencode(params)
+
+
+def get_applied_job_ids() -> set:
     '''
     Function to get a `set` of applied job's Job IDs
     * Returns a set of Job IDs from existing applied jobs history csv file
     '''
-    job_ids: set[str] = set()
+    job_ids: set = set()
     try:
         with open(file_name, 'r', encoding='utf-8') as file:
             reader = csv.reader(file)
