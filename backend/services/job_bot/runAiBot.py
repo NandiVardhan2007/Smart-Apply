@@ -123,14 +123,28 @@ set_gemini_key(llm_api_key)
 #< Login Functions
 def is_logged_in_LN() -> bool:
     '''
-    Function to check if user is logged-in in LinkedIn
-    * Returns: `True` if user is logged-in or `False` if not
+    Function to check if user is logged-in in LinkedIn.
+    * Returns: `True` if user is logged-in or `False` if not.
+    First checks URL, then verifies a real authenticated UI element is present
+    (the global-nav "Me" button) to avoid false positives on interstitial pages.
     '''
     url = driver.current_url
     # Accept any authenticated LinkedIn destination (feed, jobs, mynetwork, profile, etc.)
     # Browserless headless sessions often redirect to /jobs or /mynetwork instead of /feed/
     _LOGGED_IN_PATHS = ("/feed", "/jobs", "/mynetwork", "/in/", "/notifications", "/messaging")
-    if any(path in url for path in _LOGGED_IN_PATHS): return True
+    if any(path in url for path in _LOGGED_IN_PATHS):
+        # Secondary check: confirm the nav "Me" element is actually in the DOM
+        try:
+            WebDriverWait(driver, 8).until(
+                EC.presence_of_element_located((By.XPATH,
+                    "//*[contains(@id,'profile-nav-item') or "
+                    "contains(@class,'global-nav__me') or "
+                    "contains(@aria-label,'Me')]"))
+            )
+            return True
+        except Exception:
+            print_lg("URL looks authenticated but profile/nav element not found — treating as logged out.")
+            return False
     # Explicit logout/landing page indicators
     if try_linkText(driver, "Sign in"): return False
     if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):  return False
@@ -267,16 +281,33 @@ def apply_filters() -> None:
                 raise e  # re-raise so outer handler catches it
 
             # Try to find the All filters button — if LinkedIn layout changed or
-            # page didn't load fully, skip filters and continue with defaults
+            # page didn't load fully, skip filters and continue with defaults.
+            # Use a broad selector to handle localized text / LinkedIn DOM changes.
             _filter_wait = WebDriverWait(driver, 30)
+            _FILTER_XPATHS = [
+                '//button[normalize-space()="All filters"]',
+                '//button[normalize-space()="Show all filters"]',
+                '//button[contains(@aria-label,"filters") or contains(@aria-label,"Filters")]',
+                '//button[contains(normalize-space(),"filters") or contains(normalize-space(),"Filters")]',
+            ]
+            _filter_btn = None
             try:
-                _filter_wait.until(EC.presence_of_element_located((By.XPATH, '//button[normalize-space()="All filters"]')))
+                for _xp in _FILTER_XPATHS:
+                    try:
+                        _filter_btn = WebDriverWait(driver, 8).until(
+                            EC.presence_of_element_located((By.XPATH, _xp))
+                        )
+                        break
+                    except Exception:
+                        continue
+                if _filter_btn is None:
+                    raise Exception("No filter button found with any selector")
             except Exception:
                 print_lg("All filters button not found after 30s — skipping filters, continuing with default results.")
                 return
 
             time.sleep(1)
-            driver.find_element(By.XPATH, '//button[normalize-space()="All filters"]').click()
+            _filter_btn.click()
             buffer(recommended_wait)
 
             wait_span_click(driver, sort_by)
@@ -1001,6 +1032,22 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         if _loc:
             _search_url += f"&location={_loc}"
         driver.get(_search_url)
+
+        # Dismiss cookie / GDPR consent banners that block the page before any interaction
+        try:
+            _banner_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH,
+                "//button[contains(normalize-space(),'Accept') or "
+                "contains(normalize-space(),'Accept all') or "
+                "contains(normalize-space(),'I agree') or "
+                "contains(normalize-space(),'Agree') or "
+                "contains(@aria-label,'Accept')]"
+            )))
+            _banner_btn.click()
+            print_lg("[Debug] Dismissed cookie/consent banner.")
+            time.sleep(1)
+        except Exception:
+            pass  # No banner present — fine
+
         print_lg("\n________________________________________________________________________________________________________________________\n")
         print_lg(f'\n>>>> Now searching for "{searchTerm}" <<<<\n\n')
 
@@ -1028,6 +1075,22 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     # Log page title and URL to diagnose what LinkedIn showed
                     try:
                         print_lg(f"Job listings not found. Page title: '{driver.title}' URL: {driver.current_url[:100]}")
+                        # Dump screenshot + HTML so the user can inspect what LinkedIn returned
+                        try:
+                            import re as _re
+                            _safe_term = _re.sub(r'[^a-zA-Z0-9_-]', '_', searchTerm)[:40]
+                            _shot_path = f"{logs_folder_path}failure_{_safe_term}.png"
+                            _html_path = f"{logs_folder_path}failure_{_safe_term}.html"
+                            driver.save_screenshot(_shot_path)
+                            with open(_html_path, 'w', encoding='utf-8', errors='replace') as _hf:
+                                _hf.write(driver.page_source)
+                            print_lg(f"[Debug] Saved failure snapshot → {_shot_path}")
+                            print_lg(f"[Debug] Saved failure HTML   → {_html_path}")
+                            # Print first 600 chars of HTML inline so it appears in the log viewer
+                            _preview = driver.page_source[:600].replace('\n', ' ')
+                            print_lg(f"[Debug] HTML preview: {_preview}")
+                        except Exception as _dump_err:
+                            print_lg(f"[Debug] Could not save failure snapshot: {_dump_err}")
                         # Check if we hit a LinkedIn error/redirect page
                         if "authwall" in driver.current_url or "login" in driver.current_url:
                             print_lg("Session expired — LinkedIn redirected to login. Aborting.")

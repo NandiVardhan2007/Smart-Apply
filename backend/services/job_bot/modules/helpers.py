@@ -138,12 +138,19 @@ __logs_file_path = get_log_path()
 def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bool = False, from_critical: bool = False) -> None:
     '''
     Function to log and print. **Note that, `end` and `flush` parameters are ignored if `pretty = True`**
+    When running as a subprocess (stdout redirected to log file by bot_service), we skip
+    the direct file write to avoid every line appearing twice in the log.
     '''
+    import sys as _sys
+    _stdout_is_redirected = not _sys.stdout.isatty()
     try:
         for message in msgs:
             pprint(message) if pretty else print(message, end=end, flush=flush)
-            with open(__logs_file_path, 'a+', encoding="utf-8") as file:
-                file.write(str(message) + end)
+            # Only write directly to log file when stdout is NOT already captured
+            # (i.e. when running interactively / locally without subprocess redirection)
+            if not _stdout_is_redirected:
+                with open(__logs_file_path, 'a+', encoding="utf-8") as file:
+                    file.write(str(message) + end)
     except Exception as e:
         trail = f'Skipped saving this message: "{message}" to log.txt!' if from_critical else "We'll try one more time to log..."
         print(f"WARNING: Could not write to log.txt: {trail}")
