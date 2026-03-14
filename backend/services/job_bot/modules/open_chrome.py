@@ -2,15 +2,13 @@
 open_chrome.py — SmartApply
 
 Supports two modes:
-1. BROWSERLESS (cloud) — set BROWSERLESS_API_KEY env var
-   Uses Browserless.io remote Chrome. Requires a paid plan for sessions > 60s.
+1. LOCAL CHROME via selenium-manager (default, free, no timeout)
+   Selenium 4.x auto-downloads Chrome + chromedriver via selenium-manager.
+   No apt-get needed. Works on Render free tier.
 
-2. LOCAL CHROME (self-hosted) — no BROWSERLESS_API_KEY needed
-   Installs and runs Chromium directly on the Render server.
-   No session timeout. Completely free. Recommended.
-
-Set USE_LOCAL_CHROME=true in Render env vars to force local mode even if
-BROWSERLESS_API_KEY is set.
+2. BROWSERLESS (cloud) — set BROWSERLESS_API_KEY and USE_LOCAL_CHROME=false
+   Uses Browserless.io. Free plan limited to 60s sessions (not enough).
+   Only use if you have a paid Browserless plan.
 '''
 
 import os
@@ -43,7 +41,7 @@ except ImportError:
     default_resume_path = "all resumes/default/resume.pdf"
 
 
-# ── Stealth JS — masks all common headless/automation signals ─────────────────
+# ── Stealth JS ────────────────────────────────────────────────────────────────
 _STEALTH_JS = """
 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
 Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
@@ -62,8 +60,7 @@ window.navigator.permissions.query = (parameters) => (
 BROWSERLESS_ENDPOINT = "https://chrome.browserless.io/webdriver"
 
 
-def _stealth_options() -> Options:
-    """Build Chrome options with anti-detection flags."""
+def _stealth_options(headless: bool = True) -> Options:
     options = Options()
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -79,6 +76,15 @@ def _stealth_options() -> Options:
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/125.0.0.0 Safari/537.36"
     )
+    if headless:
+        options.add_argument("--headless=new")
+    # Residential proxy
+    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
+    if proxy_url:
+        options.add_argument(f"--proxy-server={proxy_url}")
+        print_lg("[Chrome] Residential proxy configured.")
+    else:
+        print_lg("[Chrome] No RESIDENTIAL_PROXY set.")
     return options
 
 
@@ -93,113 +99,45 @@ def _inject_stealth(driver):
         print_lg(f"[Chrome] Warning: stealth injection failed (non-fatal): {e}")
 
 
-def _install_chromium():
-    """Install Chromium + chromedriver on Render (Ubuntu 24)."""
-    print_lg("[Chrome] Installing Chromium on Render server...")
+def _install_chrome_via_selenium_manager():
+    """
+    Use Selenium Manager (built into selenium>=4.6) to auto-download
+    Chrome + chromedriver. No apt-get required.
+    """
+    print_lg("[Chrome] Using Selenium Manager to auto-download Chrome...")
     try:
-        subprocess.run(
-            ["apt-get", "install", "-y", "chromium-browser", "chromium-chromedriver"],
-            check=True, capture_output=True
-        )
-        print_lg("[Chrome] Chromium installed successfully.")
-    except Exception:
-        # Try snap or alternative paths
-        try:
-            subprocess.run(
-                ["apt-get", "install", "-y", "chromium", "chromium-driver"],
-                check=True, capture_output=True
-            )
-            print_lg("[Chrome] Chromium (alt package) installed successfully.")
-        except Exception as e:
-            print_lg(f"[Chrome] apt install failed: {e} — trying chromium-browser path directly")
-
-
-def _find_chromedriver():
-    """Find chromedriver binary path."""
-    candidates = [
-        "/usr/bin/chromedriver",
-        "/usr/lib/chromium-browser/chromedriver",
-        "/usr/lib/chromium/chromedriver",
-        "/snap/bin/chromium.chromedriver",
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
-    # Try which
-    try:
-        result = subprocess.run(["which", "chromedriver"], capture_output=True, text=True)
-        if result.stdout.strip():
-            return result.stdout.strip()
-    except Exception:
-        pass
-    return None
-
-
-def _find_chrome_binary():
-    """Find Chrome/Chromium binary path."""
-    candidates = [
-        "/usr/bin/chromium-browser",
-        "/usr/bin/chromium",
-        "/snap/bin/chromium",
-        "/usr/bin/google-chrome",
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
-    try:
-        result = subprocess.run(["which", "chromium-browser"], capture_output=True, text=True)
-        if result.stdout.strip():
-            return result.stdout.strip()
-        result = subprocess.run(["which", "chromium"], capture_output=True, text=True)
-        if result.stdout.strip():
-            return result.stdout.strip()
-    except Exception:
-        pass
-    return None
+        import selenium.webdriver.common.selenium_manager as sm
+        # Trigger selenium-manager to download chrome
+        result = sm.SeleniumManager().binary_paths(["--browser", "chrome"])
+        print_lg(f"[Chrome] Selenium Manager result: {result}")
+        return result
+    except Exception as e:
+        print_lg(f"[Chrome] Selenium Manager direct call failed: {e}")
+        return None
 
 
 def _create_local_session():
-    """Launch a local Chromium session on the Render server."""
-    print_lg("[Chrome] Starting local Chromium session on Render server...")
+    """
+    Launch local Chrome using selenium-manager auto-download.
+    Works on Render free tier — no apt-get, no pre-installed Chrome needed.
+    """
+    print_lg("[Chrome] Mode: LOCAL Chrome via Selenium Manager (free, no timeout)")
 
-    # Install if not present
-    if not _find_chromedriver():
-        _install_chromium()
-
-    chromedriver_path = _find_chromedriver()
-    chrome_binary = _find_chrome_binary()
-
-    if not chromedriver_path:
-        raise RuntimeError(
-            "chromedriver not found after installation attempt. "
-            "Check Render build logs."
-        )
-
-    print_lg(f"[Chrome] Using chromedriver: {chromedriver_path}")
-    if chrome_binary:
-        print_lg(f"[Chrome] Using Chrome binary: {chrome_binary}")
-
-    options = _stealth_options()
-    options.add_argument("--headless=new")  # new headless mode (less detectable)
+    options = _stealth_options(headless=True)
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-setuid-sandbox")
-    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument("--remote-debugging-port=0")  # random port to avoid conflicts
 
-    if chrome_binary:
-        options.binary_location = chrome_binary
-
-    # Add residential proxy if configured
-    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
-    if proxy_url:
-        options.add_argument(f"--proxy-server={proxy_url}")
-        print_lg("[Chrome] Residential proxy configured.")
-    else:
-        print_lg("[Chrome] No proxy set — running without proxy.")
-
-    service = Service(executable_path=chromedriver_path)
-    driver = webdriver.Chrome(service=service, options=options)
-    print_lg("[Chrome] Local Chromium session started successfully.")
-    return driver
+    # selenium-manager auto-downloads Chrome + chromedriver on first run
+    # Just create the driver — Selenium handles everything
+    try:
+        print_lg("[Chrome] Starting Chrome (selenium-manager will auto-download if needed)...")
+        driver = webdriver.Chrome(options=options)
+        print_lg("[Chrome] Local Chrome session started successfully!")
+        return driver
+    except Exception as e:
+        print_lg(f"[Chrome] webdriver.Chrome() failed: {e}")
+        raise
 
 
 def _create_browserless_session():
@@ -209,16 +147,9 @@ def _create_browserless_session():
         raise RuntimeError("BROWSERLESS_API_KEY is not set.")
 
     print_lg("[Browserless] Connecting to cloud Chrome at Browserless.io ...")
-    options = _stealth_options()
+    options = _stealth_options(headless=False)  # Browserless is headless server-side
     options.set_capability("browserless:token", api_key)
-    options.set_capability("browserless:timeout", 300000)  # 5 min (paid plans only)
-
-    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
-    if proxy_url:
-        options.add_argument(f"--proxy-server={proxy_url}")
-        print_lg("[Browserless] Residential proxy configured.")
-    else:
-        print_lg("[Browserless] WARNING: No RESIDENTIAL_PROXY — LinkedIn may block datacenter IP.")
+    options.set_capability("browserless:timeout", 300000)
 
     driver = webdriver.Remote(
         command_executor=BROWSERLESS_ENDPOINT,
@@ -236,19 +167,19 @@ def createChromeSession(isRetry: bool = False):
         generated_resume_path + "/temp",
     ])
 
-    use_local = os.environ.get("USE_LOCAL_CHROME", "").lower() in ("true", "1", "yes")
+    use_local = os.environ.get("USE_LOCAL_CHROME", "true").lower() in ("true", "1", "yes")
     has_browserless = bool(os.environ.get("BROWSERLESS_API_KEY", "").strip())
 
-    if use_local or not has_browserless:
-        print_lg("[Chrome] Mode: LOCAL Chromium (no session timeout, free)")
+    if use_local:
         driver = _create_local_session()
-    else:
-        print_lg("[Chrome] Mode: BROWSERLESS cloud Chrome")
+    elif has_browserless:
         try:
             driver = _create_browserless_session()
         except Exception as e:
-            print_lg(f"[Browserless] Failed: {e}\n[Chrome] Falling back to local Chromium...")
+            print_lg(f"[Browserless] Failed: {e}\n[Chrome] Falling back to local Chrome...")
             driver = _create_local_session()
+    else:
+        driver = _create_local_session()
 
     _inject_stealth(driver)
     driver.set_page_load_timeout(120)
@@ -265,10 +196,9 @@ try:
 
 except Exception as e:
     msg = (
-        "Failed to start Chrome session.\n\n"
-        "If using Browserless: check BROWSERLESS_API_KEY.\n"
-        "If using local Chrome: check Render build logs for Chromium install errors.\n"
-        f"Error: {e}"
+        "Failed to start Chrome session.\n"
+        f"Error: {e}\n\n"
+        "Check that selenium>=4.6 is in requirements.txt (enables selenium-manager)."
     )
     print_lg(msg)
     critical_error_log("In Opening Chrome Session", e)
