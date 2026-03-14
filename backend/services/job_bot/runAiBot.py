@@ -124,70 +124,43 @@ set_gemini_key(llm_api_key)
 def is_logged_in_LN() -> bool:
     '''
     Check if the current browser session is authenticated with LinkedIn.
-    Uses LinkedIn's internal voyager API — returns JSON in <1s and is unambiguous.
-    Falls back to URL/source check if the API call fails for any reason.
-    Logs a clear status message either way.
+    Method: navigate to /feed/ and check the final URL after redirect.
+    - If LinkedIn keeps us on /feed/ (or /jobs/, /mynetwork/ etc.) → logged in
+    - If LinkedIn redirects to /login or /authwall → not logged in
+    This is reliable, fast, and requires no DOM element waiting.
     '''
-    print_lg("[Login] Checking LinkedIn session...")
+    print_lg("[Login] Checking LinkedIn session via /feed/ redirect test...")
     try:
-        # Hit LinkedIn's me-endpoint — returns 200+JSON when authenticated, 401/403 when not.
-        # Using execute_script so we stay in the same browser context (cookies included).
-        result = driver.execute_script("""
-            try {
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', '/voyager/api/identity/profiles/me', false);  // synchronous
-                xhr.setRequestHeader('csrf-token', (document.cookie.match(/JSESSIONID=\\"?([^\\";]+)/) || ['',''])[1].replace('ajax:',''));
-                xhr.send();
-                return {status: xhr.status, body: xhr.responseText.substring(0, 200)};
-            } catch(e) {
-                return {status: -1, body: String(e)};
-            }
-        """)
-        if result and result.get('status') == 200:
-            print_lg("[Login] Session valid — LinkedIn API returned 200.")
-            return True
-        if result and result.get('status') in (401, 403):
-            print_lg(f"[Login] Session invalid — LinkedIn API returned {result.get('status')}.")
-            return False
-        print_lg(f"[Login] API check inconclusive (status={result.get('status') if result else 'none'}) — falling back to page check.")
-    except Exception as e:
-        print_lg(f"[Login] API check failed ({e}) — falling back to page check.")
-
-    # ── Fallback: page source markers ────────────────────────────────────────
-    try:
+        _driver_get("https://www.linkedin.com/feed/", "login-check", settle=3.0)
         url = driver.current_url
-        src = driver.page_source or ""
-    except Exception:
+        print_lg(f"[Login] Landed on: {url[:80]}")
+    except Exception as e:
+        print_lg(f"[Login] Navigation error: {e}")
         return False
 
-    _GUEST_MARKERS = ['d_jobs_guest_search', 'pageKey" content="d_', '"authwall"', 'authwall-join-form', 'join-form']
-    if any(m in src for m in _GUEST_MARKERS):
-        print_lg("[Login] Guest page markers found — not logged in.")
+    # Definitive NOT logged in — LinkedIn redirected away from feed
+    if any(bad in url for bad in ("/login", "/authwall", "/signup", "/join", "/uas/")):
+        print_lg("[Login] Redirected to login/auth page — not logged in.")
         return False
 
-    _LOGGED_IN_PATHS = ("/feed", "/jobs", "/mynetwork", "/in/", "/notifications", "/messaging")
-    if any(path in url for path in _LOGGED_IN_PATHS):
-        # One combined XPath, single 8s wait — not five separate waits
-        try:
-            WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.XPATH,
-                "//*[contains(@id,'profile-nav-item') or contains(@class,'global-nav__me') "
-                "or contains(@class,'global-nav') or contains(@class,'scaffold-layout')]"
-            )))
-            print_lg("[Login] Authenticated nav element found.")
-            return True
-        except Exception:
-            pass
-        if try_linkText(driver, "Sign in"):
-            print_lg("[Login] Sign-in link found — not logged in.")
-            return False
-        print_lg("[Login] On authenticated URL path, no sign-in link — assuming logged in.")
+    # Definitive logged in — stayed on an authenticated path
+    _AUTH_PATHS = ("/feed", "/jobs", "/mynetwork", "/notifications", "/messaging", "/in/")
+    if any(p in url for p in _AUTH_PATHS):
+        print_lg("[Login] Session valid — on authenticated LinkedIn page.")
         return True
 
-    if try_linkText(driver, "Sign in") or try_linkText(driver, "Join now"):
-        print_lg("[Login] Sign-in/Join link found — not logged in.")
-        return False
+    # Unexpected URL — check page source for guest markers
+    try:
+        src = driver.page_source or ""
+        _GUEST = ['d_jobs_guest_search', '"authwall"', 'authwall-join-form',
+                  'join-form__main-heading', 'guest_homepage']
+        if any(m in src for m in _GUEST):
+            print_lg("[Login] Guest page markers in source — not logged in.")
+            return False
+    except Exception:
+        pass
 
-    print_lg("[Login] No definitive signals — assuming logged in.")
+    print_lg(f"[Login] Unexpected URL ({url[:60]}) — assuming logged in.")
     return True
 
 
@@ -259,13 +232,13 @@ def login_LN() -> None:
         print_lg("=" * 60)
         raise RuntimeError("No LinkedIn session cookies — see instructions above.")
 
-    # Cookies exist — navigate to linkedin.com domain first, inject, then verify via API
+    # Cookies exist — navigate to linkedin.com to set cookie domain, inject, then verify
     print_lg("[Session] Injecting saved LinkedIn cookies...")
     _driver_get("https://www.linkedin.com/", "cookie-domain", settle=1.5)
     if not _load_cookies():
         raise RuntimeError("Failed to load cookies from disk.")
 
-    # Verify session using the voyager API — no need to navigate to /feed/
+    # is_logged_in_LN() navigates to /feed/ and checks the final URL
     if is_logged_in_LN():
         print_lg("Login successful via saved session cookies!")
         return
@@ -1578,8 +1551,8 @@ def main() -> None:
         # (cookies from a previous run) we skip the login form entirely.
         tabs_count = len(driver.window_handles)
         # ── Session restore ───────────────────────────────────────────────────
-        # Navigate to linkedin.com first (required for cookie domain), inject cookies,
-        # then use the voyager API check — no need to navigate to /feed/ and wait for React.
+        # Navigate to linkedin.com to set cookie domain, inject saved cookies,
+        # then is_logged_in_LN() navigates to /feed/ and checks the redirect.
         print_lg("Checking LinkedIn session status...")
         _driver_get("https://www.linkedin.com/", "cookie-domain-setup", settle=1.5)
         _load_cookies()
