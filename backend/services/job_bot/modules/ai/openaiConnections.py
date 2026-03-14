@@ -1,6 +1,6 @@
 '''
 openaiConnections.py — SmartApply
-Rewritten to use httpx + OpenRouter directly.
+Uses httpx with NVIDIA NIM (OpenAI-compatible) or Gemini as the AI backend.
 No `openai` package required — uses only httpx (already in requirements).
 '''
 
@@ -19,11 +19,12 @@ from typing import Literal
 
 apiCheckInstructions = """
 1. Make sure your AI API connection details (url, key, model) are correct in config/secrets.py.
-2. Check if OPENROUTER_API_KEY / llm_api_key is set in your environment.
+2. Check if NVIDIA_API_KEYS / llm_api_key is set in your environment.
 ERROR:
 """
 
-OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
+# NVIDIA NIM endpoint (OpenAI-compatible) — used as default if llm_api_url is empty
+NVIDIA_ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 
 
 def ai_error_alert(message: str, stackTrace, title: str = "AI Connection Error") -> None:
@@ -40,32 +41,32 @@ def ai_create_openai_client() -> dict:
     Returns a config dict for OpenRouter. No SDK client needed.
     """
     try:
-        print_lg("Initialising OpenRouter client (httpx) ...")
+        print_lg("Initialising NVIDIA NIM / AI client (httpx) ...")
         if not use_AI:
             raise ValueError("AI is not enabled! Set use_AI = True in config/secrets.py.")
         if not llm_api_key:
-            raise ValueError("llm_api_key is empty. Set OPENROUTER_API_KEY in your environment.")
+            raise ValueError("llm_api_key is empty. Set NVIDIA_API_KEYS in your Render environment variables.")
 
         client = {
-            "api_url":  llm_api_url or OPENROUTER_ENDPOINT,
+            "api_url":  llm_api_url or NVIDIA_ENDPOINT,
             "api_key":  llm_api_key,
             "model":    llm_model,
         }
 
-        print_lg("---- SUCCESSFULLY CREATED OPENROUTER CLIENT (httpx) ----")
+        print_lg("---- SUCCESSFULLY CREATED NVIDIA/AI CLIENT (httpx) ----")
         print_lg(f"Using API URL : {client['api_url']}")
         print_lg(f"Using Model   : {client['model']}")
         print_lg("--------------------------------------------------------")
         return client
 
     except Exception as e:
-        ai_error_alert(f"Error creating OpenRouter client. {apiCheckInstructions}", e)
+        ai_error_alert(f"Error creating NVIDIA/AI client. {apiCheckInstructions}", e)
         return None
 
 
 def ai_close_openai_client(client) -> None:
     """No persistent connection to close for httpx."""
-    print_lg("OpenRouter client closed (no-op for httpx).")
+    print_lg("NVIDIA/AI client closed (no-op for httpx).")
 
 
 # ── Core completion call via httpx ────────────────────────────────────────────

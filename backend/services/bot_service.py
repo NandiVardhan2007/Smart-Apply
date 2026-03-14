@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from bson import ObjectId
-from backend.config import BOT_ENABLED
+from backend.config import BOT_ENABLED, NVIDIA_API_KEYS, NVIDIA_API_URL, NVIDIA_MODEL
 from backend.database import get_db
 from backend.email_utils import send_application_result_email
 
@@ -217,7 +217,8 @@ def _build_workspace(user_id, profile, platform_accounts, job_prefs, resume_file
 
 def _write_config(cfg: Path, p: dict, platform_accounts: dict, jp: dict):
     """Write all six config/*.py files for the user."""
-    ai_key = OPENROUTER_KEYS[0] if OPENROUTER_KEYS else ""
+    # Use NVIDIA NIM as the AI backend for the bot
+    ai_key = NVIDIA_API_KEYS[0] if NVIDIA_API_KEYS else ""
 
     # ── Enum sanitizers — fall back to safe defaults for unknown/junk values ──
     _ETHNICITY_VALS = {
@@ -291,7 +292,7 @@ overwrite_previous_answers = True
 
     # ── secrets.py ───────────────────────────────────────────────────────────
     # Prefer Gemini (direct) if a Gemini key is stored on the profile,
-    # otherwise fall back to OpenRouter (openai-compatible).
+    # otherwise fall back to NVIDIA NIM (OpenAI-compatible).
     gemini_key   = p.get("gemini_api_key", "")
     gemini_model = (p.get("gemini_model") or "gemini-2.0-flash").strip()
     # Only allow known safe model names to prevent injection
@@ -309,10 +310,11 @@ overwrite_previous_answers = True
         _llm_model   = gemini_model
         _llm_spec    = "gemini"
     else:
+        # Fall back to NVIDIA NIM (OpenAI-compatible endpoint)
         _ai_provider = "openai"
-        _llm_api_url = "https://openrouter.ai/api/v1/chat/completions"
-        _llm_api_key = ai_key
-        _llm_model   = OPENROUTER_MODEL
+        _llm_api_url = NVIDIA_API_URL
+        _llm_api_key = ai_key   # first NVIDIA_API_KEY
+        _llm_model   = NVIDIA_MODEL
         _llm_spec    = "openai"
 
     (cfg / "secrets.py").write_text(
