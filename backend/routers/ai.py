@@ -7,6 +7,7 @@ from backend.services.nvidia_service import (
     answer_job_question,
     generate_cover_letter,
     extract_skills_from_description,
+    analyze_ats,
 )
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -26,6 +27,12 @@ class CoverLetterRequest(BaseModel):
 
 class SkillsRequest(BaseModel):
     job_description: str
+
+
+class ATSRequest(BaseModel):
+    job_description: Optional[str] = None
+    resume_text: Optional[str] = None
+    file_id: Optional[str] = None
 
 
 @router.post("/answer-question")
@@ -53,12 +60,6 @@ async def get_skills(body: SkillsRequest, current_user: dict = Depends(get_curre
     except RuntimeError as e:
         raise HTTPException(503, detail=f"AI service unavailable: {e}")
     return {"skills": skills}
-
-
-class ATSRequest(BaseModel):
-    job_description: Optional[str] = None
-    resume_text: Optional[str] = None
-    file_id: Optional[str] = None
 
 
 @router.post("/ats-analyze")
@@ -94,7 +95,6 @@ async def ats_analyze(body: ATSRequest, current_user: dict = Depends(get_current
     if not resume_text or len(resume_text.strip()) < 50:
         raise HTTPException(400, detail="Resume text is too short or empty.")
 
-    from backend.services.nvidia_service import analyze_ats
     try:
         result = await analyze_ats(resume_text, body.job_description or "")
     except RuntimeError as e:

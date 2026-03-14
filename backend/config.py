@@ -29,7 +29,6 @@ SMTP_PASS       = _admin_cfg.get("smtp_pass") or os.getenv("SMTP_PASS", "")
 SMTP_FROM       = os.getenv("SMTP_FROM", f"SmartApply <{SMTP_USER}>")
 
 # ── Brevo (HTTP email API — works on Render, 300 emails/day free) ─────────────
-# Sign up free at https://brevo.com — no domain needed, sends to anyone
 BREVO_API_KEY   = os.getenv("BREVO_API_KEY", "")
 BREVO_FROM      = os.getenv("BREVO_FROM", "kovvurinandivardhanreddy7@gmail.com")
 BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "SmartApply")
@@ -37,12 +36,11 @@ BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "SmartApply")
 APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
-# ── NVIDIA NIM API keys ───────────────────────────────────────────────────────
-# Keys are stored ONLY in Render environment variables, never in code files.
-# Set NVIDIA_API_KEYS in Render as a comma-separated string of keys.
-# Get free API keys from https://build.nvidia.com/models (click "Get API Key")
+# ── NVIDIA NIM API ────────────────────────────────────────────────────────────
+# Free API keys from https://build.nvidia.com/models (click "Get API Key")
+# Set NVIDIA_API_KEYS in your .env or Render environment variables.
+# Multiple keys can be comma-separated for fallback: key1,key2,key3
 NVIDIA_API_KEYS: list[str] = []
-
 _keys_env = os.getenv("NVIDIA_API_KEYS", "")
 if _keys_env:
     NVIDIA_API_KEYS = [k.strip() for k in _keys_env.split(",") if k.strip()]
@@ -50,9 +48,13 @@ if _keys_env:
 # NVIDIA NIM API endpoint (OpenAI-compatible)
 NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 
-# Default model (all these are FREE on NVIDIA NIM!)
-# Recommended: meta/llama-3.3-70b-instruct (70B, excellent for most tasks)
-# Other options: google/gemma-3-27b-it, mistralai/mistral-large-3-675b-instruct
+# Default model — all are FREE on NVIDIA NIM
+# Options (change via NVIDIA_MODEL env var):
+#   meta/llama-3.3-70b-instruct           (70B, best overall — default)
+#   meta/llama-3.1-70b-instruct           (70B, Llama 3.1)
+#   google/gemma-3-27b-it                 (27B, fast)
+#   nvidia/llama-3.1-nemotron-70b-instruct (70B, NVIDIA-tuned)
+#   mistralai/mixtral-8x7b-instruct-v0.1  (47B, Mixtral)
 NVIDIA_MODEL = _admin_cfg.get("nvidia_model") or os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
 
 BOT_ENABLED = os.getenv("BOT_ENABLED", "false").lower() == "true"
