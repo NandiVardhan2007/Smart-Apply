@@ -36,4 +36,4 @@ services:
       - key: JWT_EXPIRE_HOURS
         value: "24"
       - key: OPENROUTER_MODEL
-        value: mistralai/mistral-7b-instruct:free
+        value: meta-llama/llama-3.3-70b-instruct:free

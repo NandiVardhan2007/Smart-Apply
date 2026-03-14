@@ -30,19 +30,28 @@ class SkillsRequest(BaseModel):
 
 @router.post("/answer-question")
 async def answer_question(body: QuestionRequest, current_user: dict = Depends(get_current_user)):
-    answer = await answer_job_question(body.question, body.user_info, body.options)
+    try:
+        answer = await answer_job_question(body.question, body.user_info, body.options)
+    except RuntimeError as e:
+        raise HTTPException(503, detail=f"AI service unavailable: {e}")
     return {"answer": answer}
 
 
 @router.post("/cover-letter")
 async def get_cover_letter(body: CoverLetterRequest, current_user: dict = Depends(get_current_user)):
-    letter = await generate_cover_letter(body.user_info, body.job_title, body.company)
+    try:
+        letter = await generate_cover_letter(body.user_info, body.job_title, body.company)
+    except RuntimeError as e:
+        raise HTTPException(503, detail=f"AI service unavailable: {e}")
     return {"cover_letter": letter}
 
 
 @router.post("/extract-skills")
 async def get_skills(body: SkillsRequest, current_user: dict = Depends(get_current_user)):
-    skills = await extract_skills_from_description(body.job_description)
+    try:
+        skills = await extract_skills_from_description(body.job_description)
+    except RuntimeError as e:
+        raise HTTPException(503, detail=f"AI service unavailable: {e}")
     return {"skills": skills}
 
 
@@ -86,5 +95,11 @@ async def ats_analyze(body: ATSRequest, current_user: dict = Depends(get_current
         raise HTTPException(400, detail="Resume text is too short or empty.")
 
     from backend.services.openrouter_service import analyze_ats
-    result = await analyze_ats(resume_text, body.job_description or "")
+    try:
+        result = await analyze_ats(resume_text, body.job_description or "")
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"AI service temporarily unavailable: {str(e)}. Please try again in a moment.",
+        )
     return result

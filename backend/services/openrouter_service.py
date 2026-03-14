@@ -33,12 +33,15 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
     if not keys:
         raise RuntimeError("No OpenRouter API keys configured.")
 
-    # Model fallback list — tries primary model first, then fallbacks
+    # Model fallback list — tries primary model first, then fallbacks.
+    # Check https://openrouter.ai/models?q=free for currently live free models.
     models_to_try = [
         OPENROUTER_MODEL,
-        "mistralai/mistral-7b-instruct:free",
-        "google/gemma-3-1b-it:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemma-3-27b-it:free",
+        "google/gemma-2-9b-it:free",
+        "mistralai/mistral-small-3.1-24b-instruct:free",
+        "qwen/qwen-2.5-72b-instruct:free",
     ]
     # Deduplicate while preserving order
     seen = set()
