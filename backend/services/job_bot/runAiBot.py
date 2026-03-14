@@ -258,7 +258,63 @@ def login_LN() -> None:
 #>
 
 
-def get_applied_job_ids() -> set[str]:
+def _build_search_url(keyword: str, location: str) -> str:
+    '''
+    Build a LinkedIn job search URL with all filters encoded as parameters.
+    This replaces the UI filter interaction (which requires waiting for slow DOM elements)
+    with direct URL parameters that LinkedIn applies server-side immediately.
+
+    LinkedIn URL filter parameters:
+      sortBy    : R=Most relevant, DD=Most recent
+      f_TPR     : Time posted — r86400=24h, r604800=week, r2592000=month
+      f_AL      : true = Easy Apply only
+      f_E       : Experience — 1=Internship,2=Entry,3=Associate,4=Mid,5=Director,6=Executive
+      f_JT      : Job type — F=Full-time,P=Part-time,C=Contract,T=Temporary,I=Internship
+      f_WT      : Work type — 1=On-site,2=Remote,3=Hybrid
+    '''
+    import urllib.parse as _up
+
+    params = {}
+    params['keywords'] = keyword
+    if location.strip():
+        params['location'] = location.strip()
+
+    # Sort
+    _SORT = {'most recent': 'DD', 'most relevant': 'R'}
+    params['sortBy'] = _SORT.get((sort_by or '').lower().strip(), 'DD')
+
+    # Date posted
+    _DATE = {'past 24 hours': 'r86400', 'past week': 'r604800',
+             'past month': 'r2592000', 'any time': ''}
+    _tpr = _DATE.get((date_posted or '').lower().strip(), '')
+    if _tpr:
+        params['f_TPR'] = _tpr
+
+    # Easy Apply
+    if easy_apply_only:
+        params['f_AL'] = 'true'
+
+    # Experience level
+    _EXP = {'internship': '1', 'entry level': '2', 'associate': '3',
+            'mid-senior level': '4', 'director': '5', 'executive': '6'}
+    _exp_codes = [_EXP[e.lower().strip()] for e in (experience_level or []) if e.lower().strip() in _EXP]
+    if _exp_codes:
+        params['f_E'] = ','.join(_exp_codes)
+
+    # Job type
+    _JT = {'full-time': 'F', 'part-time': 'P', 'contract': 'C',
+           'temporary': 'T', 'internship': 'I', 'volunteer': 'V', 'other': 'O'}
+    _jt_codes = [_JT[j.lower().strip()] for j in (job_type or []) if j.lower().strip() in _JT]
+    if _jt_codes:
+        params['f_JT'] = ','.join(_jt_codes)
+
+    # Work type (on_site)
+    _WT = {'on-site': '1', 'remote': '2', 'hybrid': '3'}
+    _wt_codes = [_WT[w.lower().strip()] for w in (on_site or []) if w.lower().strip() in _WT]
+    if _wt_codes:
+        params['f_WT'] = ','.join(_wt_codes)
+
+    return 'https://www.linkedin.com/jobs/search/?' + _up.urlencode(params)
     '''
     Function to get a `set` of applied job's Job IDs
     * Returns a set of Job IDs from existing applied jobs history csv file
@@ -1048,20 +1104,16 @@ def apply_to_jobs(search_terms: list[str]) -> None:
 
     if randomize_search_order:  shuffle(search_terms)
     for searchTerm in search_terms:
-        # Encode both keyword and location directly into the URL.
-        # This is more reliable than trying to type into the DOM location input
-        # (which fails when the element isn't found, e.g. after a login redirect).
-        import urllib.parse as _urlparse
-        _kw = _urlparse.quote(searchTerm, safe='')
-        _loc = _urlparse.quote(search_location.strip(), safe='') if search_location.strip() else ''
-        _search_url = f"https://www.linkedin.com/jobs/search/?keywords={_kw}"
-        if _loc:
-            _search_url += f"&location={_loc}"
-        _driver_get(_search_url, f"search:{searchTerm[:30]}")
+        # Build URL with all filters encoded — no UI filter interaction needed
+        _search_url = _build_search_url(searchTerm, search_location)
+        print_lg("\n________________________________________________________________________________________________________________________\n")
+        print_lg(f'\n>>>> Now searching for "{searchTerm}" <<<<')
+        print_lg(f'[Search] URL: {_search_url[:120]}')
+        _driver_get(_search_url, f"search:{searchTerm[:30]}", settle=3.0)
 
-        # Dismiss cookie / GDPR consent banners that block the page before any interaction
+        # Dismiss cookie / GDPR consent banners
         try:
-            _banner_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH,
+            _banner_btn = WebDriverWait(driver, 4).until(EC.element_to_be_clickable((By.XPATH,
                 "//button[contains(normalize-space(),'Accept') or "
                 "contains(normalize-space(),'Accept all') or "
                 "contains(normalize-space(),'I agree') or "
@@ -1072,27 +1124,16 @@ def apply_to_jobs(search_terms: list[str]) -> None:
             print_lg("[Debug] Dismissed cookie/consent banner.")
             time.sleep(1)
         except Exception:
-            pass  # No banner present — fine
+            pass
 
-        print_lg("\n________________________________________________________________________________________________________________________\n")
-        print_lg(f'\n>>>> Now searching for "{searchTerm}" <<<<\n\n')
-
-        apply_filters()
-
-        # Wait for LinkedIn to reload results
-        time.sleep(2)
-
-        # Verify session is still alive and check for guest page (not logged in)
+        # Verify session — if redirected to guest page, re-login and retry
         try:
             current_url = driver.current_url
             print_lg(f"Session alive, current page: {current_url[:80]}")
-            # Re-check login state on the search page itself — guest search has different DOM
-            if not is_logged_in_LN():
-                print_lg("WARNING: Job search page shows guest/unauthenticated state — attempting re-login.")
+            if any(bad in current_url for bad in ("/login", "/authwall", "/signup")):
+                print_lg("WARNING: Redirected to login/auth page — attempting re-login.")
                 login_LN()
-                # Re-navigate to search URL after login
-                _driver_get(_search_url, f"post-login search:{searchTerm[:30]}")
-                time.sleep(3)
+                _driver_get(_search_url, f"post-login search:{searchTerm[:30]}", settle=3.0)
         except (NoSuchWindowException, WebDriverException) as e:
             print_lg("Browser session lost before job listings could load.")
             raise e
