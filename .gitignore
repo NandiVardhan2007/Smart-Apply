@@ -1,0 +1,18 @@
+# Never commit these
+.env
+working_keys.json
+admin_config.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Misc
+.DS_Store
+*.log

@@ -1,15 +1,4 @@
 {
   "company_name": "Smart Apply",
-  "smtp_host": "smtp.gmail.com",
-  "smtp_port": "587",
-  "smtp_user": "kovvurinandivardhanreddy7@gmail.com",
-  "smtp_pass": "jnyajgkkvwkrwrxh",
-  "openrouter_keys": [
-    "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",
-    "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",
-    "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",
-    "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",
-    "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"
-  ],
   "openrouter_model": "stepfun/step-3.5-flash:free"
 }

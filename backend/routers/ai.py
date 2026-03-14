@@ -47,7 +47,7 @@ async def get_skills(body: SkillsRequest, current_user: dict = Depends(get_curre
 
 
 class ATSRequest(BaseModel):
-    job_description: str
+    job_description: Optional[str] = None
     resume_text: Optional[str] = None
     file_id: Optional[str] = None
 
@@ -57,6 +57,7 @@ async def ats_analyze(body: ATSRequest, current_user: dict = Depends(get_current
     """
     ATS Resume Analyzer.
     Accepts either raw resume_text OR a file_id to fetch from GridFS.
+    Job description is optional — analysis works on resume alone.
     """
     from backend.database import get_db, get_gridfs
     from bson import ObjectId
@@ -83,9 +84,7 @@ async def ats_analyze(body: ATSRequest, current_user: dict = Depends(get_current
 
     if not resume_text or len(resume_text.strip()) < 50:
         raise HTTPException(400, detail="Resume text is too short or empty.")
-    if not body.job_description or len(body.job_description.strip()) < 30:
-        raise HTTPException(400, detail="Job description is too short or empty.")
 
     from backend.services.openrouter_service import analyze_ats
-    result = await analyze_ats(resume_text, body.job_description)
+    result = await analyze_ats(resume_text, body.job_description or "")
     return result

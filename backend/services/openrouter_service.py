@@ -41,7 +41,7 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
                     headers={
                         "Authorization": f"Bearer {key}",
                         "Content-Type": "application/json",
-                        "HTTP-Referer": "http://localhost:8000",
+                        "HTTP-Referer": "https://smart-apply-7zty.onrender.com",
                         "X-Title": "SmartApply",
                     },
                     json={
@@ -172,18 +172,39 @@ async def extract_skills_from_description(job_description: str) -> list[str]:
     return [s.strip().strip('"') for s in raw.replace("\n", ",").split(",") if s.strip()]
 
 
-async def analyze_ats(resume_text: str, job_description: str) -> dict:
+async def analyze_ats(resume_text: str, job_description: str = "") -> dict:
     """
-    Full ATS resume analysis against a job description.
-    Returns score, matched/missing keywords, section scores, and improvement tips.
+    Full ATS resume analysis. Job description is optional.
+    If provided, compares resume against JD. Otherwise does general ATS analysis.
     """
+    has_jd = bool(job_description and len(job_description.strip()) > 20)
+
+    if has_jd:
+        system_context = (
+            "Analyze the resume against the provided job description. "
+            "matched_keywords and missing_keywords should reflect JD keywords. "
+            "section_scores should reflect how well the resume fits the JD."
+        )
+        user_content = (
+            f"JOB DESCRIPTION:\n{job_description[:3000]}\n\n"
+            f"RESUME:\n{resume_text[:4000]}"
+        )
+    else:
+        system_context = (
+            "Analyze the resume for general ATS compatibility and quality. "
+            "matched_keywords should list strong keywords present in the resume. "
+            "missing_keywords should list commonly expected keywords that are absent. "
+            "section_scores should reflect overall resume quality and ATS-friendliness."
+        )
+        user_content = f"RESUME:\n{resume_text[:4000]}"
+
     messages = [
         {
             "role": "system",
             "content": (
                 "You are an expert ATS (Applicant Tracking System) resume analyzer. "
-                "Analyze the resume against the job description and return ONLY a valid JSON object "
-                "with exactly this structure (no markdown, no explanation):\n"
+                f"{system_context} "
+                "Return ONLY a valid JSON object with exactly this structure (no markdown, no explanation):\n"
                 "{\n"
                 '  "ats_score": <integer 0-100>,\n'
                 '  "summary": "<2 sentence overall assessment>",\n'
@@ -206,10 +227,7 @@ async def analyze_ats(resume_text: str, job_description: str) -> dict:
         },
         {
             "role": "user",
-            "content": (
-                f"JOB DESCRIPTION:\n{job_description[:3000]}\n\n"
-                f"RESUME:\n{resume_text[:4000]}"
-            ),
+            "content": user_content,
         },
     ]
 
@@ -226,7 +244,6 @@ async def analyze_ats(resume_text: str, job_description: str) -> dict:
     try:
         return json.loads(raw)
     except Exception:
-        # Return a safe fallback if parsing fails
         return {
             "ats_score": 0,
             "summary": "Analysis failed — please try again.",

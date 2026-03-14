@@ -38,28 +38,15 @@ APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
 # ── OpenRouter keys ───────────────────────────────────────────────────────────
-# Priority: admin_config.json → working_keys.json
+# Keys are stored ONLY in Render environment variables, never in code files.
+# Set OPENROUTER_KEYS in Render as a comma-separated string of keys.
 OPENROUTER_KEYS: list[str] = []
 
-if _admin_cfg.get("openrouter_keys"):
-    OPENROUTER_KEYS = _admin_cfg["openrouter_keys"]
-
-if not OPENROUTER_KEYS:
-    for _candidate in [
-        Path(__file__).parent.parent / "working_keys.json",
-        Path(__file__).parent.parent.parent / "working_keys.json",
-    ]:
-        if _candidate.exists():
-            try:
-                with open(_candidate) as f:
-                    data = json.load(f)
-                    OPENROUTER_KEYS = data.get("keys", [])
-                break
-            except Exception:
-                pass
+_keys_env = os.getenv("OPENROUTER_KEYS", "")
+if _keys_env:
+    OPENROUTER_KEYS = [k.strip() for k in _keys_env.split(",") if k.strip()]
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-# Use the model from admin_config if set, else a known free model
 OPENROUTER_MODEL   = _admin_cfg.get("openrouter_model") or os.getenv("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")
 
 BOT_ENABLED = os.getenv("BOT_ENABLED", "false").lower() == "true"

@@ -187,7 +187,7 @@
           <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7b61ff);display:flex;align-items:center;justify-content:center;font-size:1.4rem">🎯</div>
           <div>
             <h2 style="margin:0">ATS Resume Analyzer</h2>
-            <div class="text-muted text-sm">Check how well your resume passes Applicant Tracking Systems for a specific job</div>
+            <div class="text-muted text-sm">Check how well your resume passes Applicant Tracking Systems — no job description needed</div>
           </div>
         </div>
       </div>
@@ -231,14 +231,7 @@
             </div>
           </div>
 
-          <!-- Job Description -->
-          <div class="card" style="margin-bottom:20px">
-            <h4 style="margin-bottom:12px">💼 Job Description</h4>
-            <textarea id="jd-input" placeholder="Paste the job description here…"
-              style="width:100%;height:200px;resize:vertical;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;color:var(--text);font-size:13.5px;font-family:inherit;line-height:1.6"
-            ></textarea>
-          </div>
-
+          <!-- Analyze Button -->
           <button class="btn btn-primary w-full" id="analyze-btn" onclick="runAnalysis()" style="padding:14px;font-size:15px;font-weight:700">
             🎯 Analyze My Resume
           </button>
@@ -380,7 +373,7 @@
       const el = document.getElementById('saved-list');
       el.innerHTML = '<div class="text-muted text-sm" style="padding:12px 0">Loading…</div>';
       try {
-        const data = await api('/resume/list');
+        const data = await api.get('/resume/list');
         const resumes = data.resumes || [];
         if (!resumes.length) {
           el.innerHTML = '<div class="text-muted text-sm" style="padding:12px 0">No saved resumes. <a href="resume.html">Upload one →</a></div>';
@@ -409,9 +402,6 @@
 
     // ── Run Analysis ──────────────────────────────────────────────────────
     async function runAnalysis() {
-      const jd = document.getElementById('jd-input').value.trim();
-      if (!jd) { showError('Please paste a job description.'); return; }
-
       let resumeText = '';
       let fileId     = null;
 
@@ -420,13 +410,11 @@
         if (!resumeText) { showError('Please paste your resume text.'); return; }
       } else if (activeTab === 'upload') {
         if (!selectedPdfBytes) { showError('Please upload a resume PDF.'); return; }
-        // Extract text client-side is not reliable — upload and let backend handle
-        // We'll use the file_id flow: upload to /resume/upload first, get file_id
         try {
           const form = new FormData();
           form.append('file', selectedPdfBytes);
           form.append('label', 'ATS Temp');
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('sa_token');
           const res = await fetch('/api/resume/upload', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
@@ -450,19 +438,15 @@
       document.getElementById('results-panel').classList.add('visible');
 
       try {
-        const payload = { job_description: jd };
+        const payload = {};
         if (resumeText) payload.resume_text = resumeText;
         if (fileId)     payload.file_id     = fileId;
 
-        const result = await api('/ai/ats-analyze', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-
+        const result = await api.post('/ai/ats-analyze', payload);
         renderResults(result);
       } catch (e) {
         setAnalyzing(false);
-        showError('Analysis failed: ' + (e.message || 'Unknown error'));
+        showError('Analysis failed: ' + (e.detail || e.message || 'Unknown error'));
       }
     }
 
