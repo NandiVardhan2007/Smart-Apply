@@ -1144,21 +1144,35 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         current_count = 0
         try:
             while current_count < switch_number:
-                # ── Wait for job cards ──────────────────────────────────────
-                # Step 1: wait for the results container/header — loads before cards
-                print_lg("[Search] Waiting for results to load...")
-                try:
-                    WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH,
-                        "//*[contains(@class,'jobs-search-results') or "
-                        "contains(@class,'jobs-search__results') or "
-                        "contains(@class,'scaffold-layout__list') or "
-                        "contains(@id,'main-content')]"
-                    )))
-                    print_lg("[Search] Results container found — waiting for job cards...")
-                except Exception:
-                    print_lg("[Search] Results container not found — trying job cards directly...")
+                # ── Wait for page to be ready, then find job cards ──────────
+                # With pageLoadStrategy="none" we poll document.readyState via JS
+                # instead of waiting for specific LinkedIn class names (which change).
+                print_lg("[Search] Waiting for page to finish loading...")
+                _page_ready = False
+                for _i in range(30):  # poll up to 30s
+                    try:
+                        _state = driver.execute_script("return document.readyState")
+                        _title = driver.title or ""
+                        if _state == "complete":
+                            print_lg(f"[Search] Page ready. Title: '{_title[:60]}'")
+                            _page_ready = True
+                            break
+                        if _i % 5 == 0:
+                            print_lg(f"[Search] Still loading... readyState={_state} title='{_title[:40]}'")
+                    except Exception as _pe:
+                        print_lg(f"[Search] Page poll error: {_pe}")
+                        break
+                    time.sleep(1)
+                if not _page_ready:
+                    print_lg("[Search] Page did not fully load — attempting job card search anyway.")
 
-                # Step 2: scroll to trigger lazy render, then find cards
+                # Scroll slightly to trigger lazy rendering
+                try:
+                    driver.execute_script("window.scrollTo(0, 300);")
+                    time.sleep(1)
+                except Exception:
+                    pass
+
                 _JOB_CARD_XPATHS = [
                     "//li[@data-occludable-job-id]",
                     "//li[contains(@class,'jobs-search-results__list-item')]",
@@ -1168,14 +1182,14 @@ def apply_to_jobs(search_terms: list[str]) -> None:
 
                 def _wait_for_job_cards(scroll_attempt: int = 0):
                     if scroll_attempt > 0:
-                        driver.execute_script("window.scrollTo(0, 300);")
-                        time.sleep(1.5)
+                        driver.execute_script("window.scrollTo(0, 600);")
+                        time.sleep(2)
                     for _xp in _JOB_CARD_XPATHS:
                         try:
                             WebDriverWait(driver, 10).until(
                                 EC.presence_of_element_located((By.XPATH, _xp))
                             )
-                            print_lg(f"[Search] Job cards found with: {_xp[:60]}")
+                            print_lg(f"[Search] Job cards found.")
                             return _xp
                         except Exception:
                             continue
@@ -1183,7 +1197,7 @@ def apply_to_jobs(search_terms: list[str]) -> None:
 
                 _working_xp = _wait_for_job_cards(scroll_attempt=0)
                 if _working_xp is None:
-                    print_lg("[Search] Scrolling to trigger lazy render...")
+                    print_lg("[Search] Scrolling to trigger lazy render and retrying...")
                     _working_xp = _wait_for_job_cards(scroll_attempt=1)
 
                 if _working_xp is None:

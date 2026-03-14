@@ -260,3 +260,28 @@ async def linkedin_cookies_status(current_user: dict = Depends(get_current_user)
         return {"exists": True, "cookie_count": len(cookies), "has_li_at": has_li_at}
     except Exception:
         return {"exists": False, "cookie_count": 0, "has_li_at": False}
+
+
+@router.get("/extension/download")
+async def download_extension(current_user: dict = Depends(get_current_user)):
+    """Serve the SmartApply Chrome extension as a downloadable zip."""
+    import zipfile, io, os
+    from fastapi.responses import StreamingResponse
+    from pathlib import Path
+
+    ext_dir = Path(__file__).parent.parent.parent / "extension"
+    if not ext_dir.exists():
+        raise HTTPException(status_code=404, detail="Extension not found on server.")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for f in ext_dir.rglob('*'):
+            if f.is_file():
+                zf.write(f, f.relative_to(ext_dir))
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=smartapply-extension.zip"}
+    )

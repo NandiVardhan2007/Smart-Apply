@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>SmartApply</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{width:340px;background:#0f172a;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;font-size:13px}
+    
+    .header{background:#1e293b;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #334155}
+    .logo{width:26px;height:26px;background:#6366f1;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .logo svg{width:16px;height:16px}
+    .title{font-weight:700;font-size:14px;color:#fff}
+    .version{font-size:10px;color:#64748b;margin-left:auto}
+
+    .section{padding:14px 16px;border-bottom:1px solid #1e293b}
+    label{display:block;font-size:11px;color:#64748b;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+    input,select{width:100%;padding:8px 10px;background:#1e293b;border:1px solid #334155;border-radius:7px;
+                  color:#f1f5f9;font-size:12px;outline:none;transition:border-color .15s}
+    input:focus,select:focus{border-color:#6366f1}
+    .row{display:flex;gap:8px;margin-top:8px}
+    .row input,.row select{margin-top:0}
+
+    /* Status bar */
+    .status-bar{padding:10px 16px;display:flex;align-items:center;gap:8px;background:#0f1f33;border-bottom:1px solid #1e3a5f}
+    .dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex-shrink:0}
+    .dot.running{background:#22c55e;animation:pulse 1.5s infinite}
+    .dot.error{background:#ef4444}
+    .dot.done{background:#6366f1}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .status-text{font-size:11px;color:#94a3b8;flex:1}
+    
+    /* Stats */
+    .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#334155}
+    .stat{background:#1e293b;padding:10px 0;text-align:center}
+    .stat-num{font-size:18px;font-weight:700;color:#6366f1}
+    .stat-label{font-size:10px;color:#64748b;margin-top:2px}
+
+    /* Buttons */
+    .btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-primary{background:#6366f1;color:#fff}
+    .btn-primary:hover:not(:disabled){background:#4f46e5}
+    .btn-danger{background:#dc2626;color:#fff;margin-top:8px}
+    .btn-danger:hover:not(:disabled){background:#b91c1c}
+    .btn-secondary{background:#1e293b;border:1px solid #334155;color:#94a3b8;margin-top:8px}
+    .btn-secondary:hover{background:#334155;color:#f1f5f9}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+
+    /* Log */
+    .log-wrap{padding:10px 16px}
+    .log-title{font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+    .log{background:#0a1628;border:1px solid #1e293b;border-radius:7px;height:110px;overflow-y:auto;padding:8px;
+         font-family:'JetBrains Mono',monospace;font-size:10px;color:#7dd3fc;line-height:1.5}
+    .log .err{color:#fca5a5}
+    .log .ok{color:#86efac}
+    .log .warn{color:#fde68a}
+
+    /* Auth section */
+    #auth-section{padding:14px 16px}
+    .auth-note{font-size:11px;color:#64748b;line-height:1.6;margin-bottom:12px}
+    .link-btn{background:none;border:none;color:#818cf8;cursor:pointer;font-size:11px;text-decoration:underline;padding:0}
+
+    .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+    .tag.easy{background:#052e16;color:#4ade80;border:1px solid #16a34a}
+    .tag.ext{background:#1c1f2e;color:#818cf8;border:1px solid #4f46e5}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 40 40" fill="none"><path d="M10 30L20 10L30 30M14 22H26" stroke="white" stroke-width="3.5" stroke-linecap="round"/></svg>
+  </div>
+  <span class="title">SmartApply</span>
+  <span class="version">v1.0</span>
+</div>
+
+<!-- Auth / Setup -->
+<div id="auth-section">
+  <p class="auth-note">Enter your SmartApply server URL and paste your auth token to connect.</p>
+  <div style="margin-bottom:10px">
+    <label>Server URL</label>
+    <input type="text" id="server-url" placeholder="https://your-app.onrender.com" />
+  </div>
+  <div style="margin-bottom:12px">
+    <label>Auth Token</label>
+    <input type="password" id="auth-token" placeholder="Paste your token from dashboard" />
+  </div>
+  <button class="btn btn-primary" id="connect-btn" onclick="connect()">Connect & Save</button>
+  <div id="connect-msg" style="font-size:11px;margin-top:8px;color:#64748b"></div>
+</div>
+
+<!-- Main UI (hidden until connected) -->
+<div id="main-section" style="display:none">
+
+  <div class="status-bar">
+    <div class="dot" id="status-dot"></div>
+    <span class="status-text" id="status-text">Ready</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="stat-applied">0</div><div class="stat-label">Applied</div></div>
+    <div class="stat"><div class="stat-num" id="stat-skipped">0</div><div class="stat-label">Skipped</div></div>
+    <div class="stat"><div class="stat-num" id="stat-failed">0</div><div class="stat-label">Failed</div></div>
+  </div>
+
+  <div class="section">
+    <label>Job Search Term</label>
+    <input type="text" id="search-term" placeholder="e.g. Python Developer Intern" />
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1">
+        <label>Location</label>
+        <input type="text" id="search-loc" placeholder="India" />
+      </div>
+      <div style="flex:1">
+        <label>Date Posted</label>
+        <select id="date-posted">
+          <option value="r2592000">Past month</option>
+          <option value="r604800">Past week</option>
+          <option value="r86400">Past 24h</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1">
+        <label>Max Jobs</label>
+        <input type="number" id="max-jobs" value="20" min="1" max="100" />
+      </div>
+      <div style="flex:1;display:flex;align-items:flex-end;padding-bottom:1px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12px;margin-bottom:0;color:#94a3b8">
+          <input type="checkbox" id="easy-only" checked style="width:auto;padding:0" />
+          Easy Apply only
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="display:flex;gap:8px;flex-direction:column">
+    <button class="btn btn-primary" id="run-btn" onclick="startBot()">▶ Start Applying</button>
+    <button class="btn btn-danger" id="stop-btn" onclick="stopBot()" style="display:none">⏹ Stop</button>
+    <button class="btn btn-secondary" onclick="openLinkedIn()">🔗 Open LinkedIn Jobs</button>
+  </div>
+
+  <div class="log-wrap">
+    <div class="log-title">Activity Log</div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div style="padding:8px 16px 14px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+    <button class="link-btn" onclick="disconnect()">Disconnect</button>
+    <button class="link-btn" onclick="clearLog()">Clear log</button>
+    <span id="user-email" style="font-size:10px;color:#475569"></span>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
