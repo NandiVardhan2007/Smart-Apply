@@ -100,6 +100,23 @@ def _build_options() -> Options:
     # ✅ Pass token as capability (correct v1 method)
     options.set_capability("browserless:token", api_key)
 
+    # ── Residential proxy (routes traffic through a real home IP) ─────────────
+    # LinkedIn blocks datacenter IPs (Render, AWS, GCP). A residential proxy
+    # makes the session appear to come from a normal home internet connection.
+    # Set RESIDENTIAL_PROXY in Render env vars in the format:
+    #   http://user:pass@host:port   (e.g. from Webshare, Oxylabs, Bright Data)
+    # If not set, the bot runs without a proxy (will likely hit LinkedIn checkpoint).
+    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
+    if proxy_url:
+        options.add_argument(f"--proxy-server={proxy_url}")
+        print_lg(f"[Browserless] Residential proxy configured.")
+    else:
+        print_lg(
+            "[Browserless] WARNING: No RESIDENTIAL_PROXY set. "
+            "LinkedIn may block logins from Render's datacenter IP. "
+            "Set RESIDENTIAL_PROXY in your Render environment variables."
+        )
+
     # ── Core flags ────────────────────────────────────────────────────────────
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -110,8 +127,6 @@ def _build_options() -> Options:
     options.add_argument("--start-maximized")
 
     # ── Anti-detection: remove all automation indicators ─────────────────────
-    # Do NOT pass --headless — Browserless runs headless by default server-side.
-    # Passing --headless explicitly sets navigator.webdriver=true in older Chrome.
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
