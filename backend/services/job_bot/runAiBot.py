@@ -124,47 +124,60 @@ set_gemini_key(llm_api_key)
 def is_logged_in_LN() -> bool:
     '''
     Function to check if user is logged-in in LinkedIn.
-    * Returns: `True` if user is logged-in or `False` if not.
-    First checks URL, then verifies a real authenticated UI element is present
-    (the global-nav "Me" button) to avoid false positives on interstitial pages.
+    Returns True only when we have positive evidence of an authenticated session.
+    Uses three signals in order:
+      1. Hard negative: page source contains guest-search/authwall markers
+      2. URL path check + DOM nav element presence
+      3. Absence of explicit "Sign in" links
     '''
-    url = driver.current_url
-    # Accept any authenticated LinkedIn destination (feed, jobs, mynetwork, profile, etc.)
-    # Browserless headless sessions often redirect to /jobs or /mynetwork instead of /feed/
+    try:
+        url = driver.current_url
+        src = driver.page_source or ""
+    except Exception:
+        return False
+
+    # ── Hard negative: guest page markers ────────────────────────────────────
+    # If the page source explicitly identifies this as a guest/unauthenticated view,
+    # return False immediately regardless of URL.
+    _GUEST_MARKERS = [
+        'd_jobs_guest_search',   # guest job search page
+        'pageKey" content="d_',  # any other guest pageKey
+        '"authwall"',            # LinkedIn auth wall
+        'authwall-join-form',
+        'join-form',
+    ]
+    if any(m in src for m in _GUEST_MARKERS):
+        print_lg("Guest/unauthenticated page markers detected — treating as logged out.")
+        return False
+
+    # ── URL path check + DOM confirmation ────────────────────────────────────
     _LOGGED_IN_PATHS = ("/feed", "/jobs", "/mynetwork", "/in/", "/notifications", "/messaging")
     if any(path in url for path in _LOGGED_IN_PATHS):
-        # Secondary DOM check — try several selectors covering different LinkedIn UI versions.
-        # Use a generous 15s wait because headless + proxy can be slow to render the nav.
-        # If none match, fall back to checking for explicit logout markers before giving up.
         _AUTH_XPATHS = [
             "//*[contains(@id,'profile-nav-item') or contains(@class,'global-nav__me')]",
             "//*[@aria-label='Me']",
             "//nav[contains(@class,'global-nav')]",
             "//div[contains(@class,'feed-identity-module')]",
-            "//div[contains(@class,'jobs-search-results')]",   # jobs page
-            "//div[contains(@class,'scaffold-layout')]",        # generic authenticated layout
+            "//div[contains(@class,'scaffold-layout')]",
         ]
         for _xp in _AUTH_XPATHS:
             try:
-                WebDriverWait(driver, 15).until(
+                WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, _xp))
                 )
                 return True
             except Exception:
                 continue
-        # None found — check for explicit logout markers before concluding logged out
-        if try_linkText(driver, "Sign in"):
-            print_lg("URL looks authenticated but 'Sign in' link found — treating as logged out.")
+        # No auth element found — but also no hard guest marker — check for Sign in link
+        if try_linkText(driver, "Sign in") or try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):
+            print_lg("URL looks authenticated but Sign-in element found — treating as logged out.")
             return False
-        if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):
-            print_lg("URL looks authenticated but Sign-in button found — treating as logged out.")
-            return False
-        # No auth element but also no logout marker — benefit of the doubt, assume logged in
-        print_lg("Warning: nav element not confirmed but no sign-in indicators found — assuming logged in.")
+        print_lg("URL looks authenticated and no sign-in indicators found — assuming logged in.")
         return True
-    # Explicit logout/landing page indicators
+
+    # ── Explicit logout/landing page indicators ───────────────────────────────
     if try_linkText(driver, "Sign in"): return False
-    if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):  return False
+    if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'): return False
     if try_linkText(driver, "Join now"): return False
     print_lg("Didn't find Sign in link, so assuming user is logged in!")
     return True
@@ -1102,10 +1115,17 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         # Wait for LinkedIn to reload results
         time.sleep(2)
 
-        # Verify session is still alive before starting job loop
+        # Verify session is still alive and check for guest page (not logged in)
         try:
             current_url = driver.current_url
             print_lg(f"Session alive, current page: {current_url[:80]}")
+            # Re-check login state on the search page itself — guest search has different DOM
+            if not is_logged_in_LN():
+                print_lg("WARNING: Job search page shows guest/unauthenticated state — attempting re-login.")
+                login_LN()
+                # Re-navigate to search URL after login
+                _driver_get(_search_url, f"post-login search:{searchTerm[:30]}")
+                time.sleep(3)
         except (NoSuchWindowException, WebDriverException) as e:
             print_lg("Browser session lost before job listings could load.")
             raise e
@@ -1113,47 +1133,61 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         current_count = 0
         try:
             while current_count < switch_number:
-                # Wait until job listings are loaded — use longer wait for proxy latency
-                _job_wait = WebDriverWait(driver, 45)
-                try:
-                    _job_wait.until(EC.presence_of_all_elements_located((By.XPATH, "//li[@data-occludable-job-id]")))
-                except Exception as _je:
-                    # Log page title and URL to diagnose what LinkedIn showed
+                # With eager page load strategy, React job cards may not be painted yet.
+                # Scroll down to trigger lazy rendering, then wait for job card elements.
+                # Try multiple XPaths — LinkedIn occasionally changes attribute names.
+                _JOB_CARD_XPATHS = [
+                    "//li[@data-occludable-job-id]",
+                    "//li[contains(@class,'jobs-search-results__list-item')]",
+                    "//li[contains(@class,'job-card-container')]",
+                    "//div[@data-job-id]",
+                ]
+
+                def _wait_for_job_cards(scroll_attempt: int = 0):
+                    '''Scroll to trigger lazy render, then wait up to 15s for any job card XPath.'''
+                    if scroll_attempt > 0:
+                        driver.execute_script("window.scrollTo(0, 400);")
+                        time.sleep(1)
+                        driver.execute_script("window.scrollTo(0, 800);")
+                        time.sleep(1)
+                    for _xp in _JOB_CARD_XPATHS:
+                        try:
+                            WebDriverWait(driver, 15).until(
+                                EC.presence_of_element_located((By.XPATH, _xp))
+                            )
+                            return _xp  # return the working XPath
+                        except Exception:
+                            continue
+                    return None
+
+                _working_xp = _wait_for_job_cards(scroll_attempt=0)
+                if _working_xp is None:
+                    # One retry with scroll
+                    print_lg("[Debug] Job cards not found after initial wait — scrolling and retrying...")
+                    _working_xp = _wait_for_job_cards(scroll_attempt=1)
+
+                if _working_xp is None:
+                    # All XPaths failed — run failure diagnostics
                     try:
+                        import re as _re
                         print_lg(f"Job listings not found. Page title: '{driver.title}' URL: {driver.current_url[:100]}")
-                        # Detect Chrome's own error page — means proxy/network failure
                         if _is_chrome_error_page():
                             print_lg("=" * 60)
                             print_lg("PROXY/NETWORK ERROR: Chrome returned an error page instead of LinkedIn.")
                             proxy_set = bool(os.environ.get("RESIDENTIAL_PROXY", "").strip())
-                            if proxy_set:
-                                print_lg("Your RESIDENTIAL_PROXY is set but the connection failed.")
-                                print_lg("→ Try unsetting RESIDENTIAL_PROXY and restarting the bot.")
-                            else:
-                                print_lg("→ Check outbound internet access on this server.")
+                            print_lg("→ Try unsetting RESIDENTIAL_PROXY and restarting the bot." if proxy_set else "→ Check outbound internet access on this server.")
                             print_lg("=" * 60)
-                            try:
-                                driver.save_screenshot(f"{logs_folder_path}proxy_failure_{_safe_term if '_safe_term' in dir() else 'search'}.png")
-                            except Exception:
-                                pass
                             raise NoSuchWindowException("Proxy/network failure — Chrome error page")
-                        # Dump screenshot + HTML so the user can inspect what LinkedIn returned
-                        try:
-                            import re as _re
-                            _safe_term = _re.sub(r'[^a-zA-Z0-9_-]', '_', searchTerm)[:40]
-                            _shot_path = f"{logs_folder_path}failure_{_safe_term}.png"
-                            _html_path = f"{logs_folder_path}failure_{_safe_term}.html"
-                            driver.save_screenshot(_shot_path)
-                            with open(_html_path, 'w', encoding='utf-8', errors='replace') as _hf:
-                                _hf.write(driver.page_source)
-                            print_lg(f"[Debug] Saved failure snapshot → {_shot_path}")
-                            print_lg(f"[Debug] Saved failure HTML   → {_html_path}")
-                            # Print first 600 chars of HTML inline so it appears in the log viewer
-                            _preview = driver.page_source[:600].replace('\n', ' ')
-                            print_lg(f"[Debug] HTML preview: {_preview}")
-                        except Exception as _dump_err:
-                            print_lg(f"[Debug] Could not save failure snapshot: {_dump_err}")
-                        # Check if we hit a LinkedIn error/redirect page
+                        _safe_term = _re.sub(r'[^a-zA-Z0-9_-]', '_', searchTerm)[:40]
+                        _shot_path = f"{logs_folder_path}failure_{_safe_term}.png"
+                        _html_path = f"{logs_folder_path}failure_{_safe_term}.html"
+                        driver.save_screenshot(_shot_path)
+                        with open(_html_path, 'w', encoding='utf-8', errors='replace') as _hf:
+                            _hf.write(driver.page_source)
+                        print_lg(f"[Debug] Saved failure snapshot → {_shot_path}")
+                        print_lg(f"[Debug] Saved failure HTML   → {_html_path}")
+                        _preview = driver.page_source[:600].replace('\n', ' ')
+                        print_lg(f"[Debug] HTML preview: {_preview}")
                         if "authwall" in driver.current_url or "login" in driver.current_url:
                             print_lg("Session expired — LinkedIn redirected to login. Aborting.")
                             raise NoSuchWindowException("Session expired")
@@ -1165,13 +1199,16 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     except Exception:
                         pass
                     print_lg("No job listings found on this page — moving to next search term.")
-                    break  # skip to next search term instead of crashing
+                    break
+
+                if _working_xp is None:
+                    break  # already handled above, just guard the code below
 
                 pagination_element, current_page = get_page_info()
 
-                # Find all job listings in current page
+                # Find all job listings in current page using the XPath that worked
                 buffer(3)
-                job_listings = driver.find_elements(By.XPATH, "//li[@data-occludable-job-id]")  
+                job_listings = driver.find_elements(By.XPATH, _working_xp)
 
             
                 for job in job_listings:
