@@ -20,7 +20,8 @@ smartapply_updated/
 │   ├── routers/
 │   │   └── ai.py                     ← Updated AI router
 │   └── services/
-│       └── nvidia_service.py         ← NEW: NVIDIA service
+│       ├── nvidia_service.py         ← NEW: NVIDIA service
+│       └── bot_service.py            ← FIXED: Removed unused imports
 ```
 
 ---
@@ -45,6 +46,7 @@ Copy these files to your project:
 ```bash
 cp smartapply_updated/backend/config.py backend/
 cp smartapply_updated/backend/services/nvidia_service.py backend/services/
+cp smartapply_updated/backend/services/bot_service.py backend/services/
 cp smartapply_updated/backend/routers/ai.py backend/routers/
 cp smartapply_updated/.env .env
 ```

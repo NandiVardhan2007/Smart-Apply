@@ -1,6 +1,6 @@
 # 🎯 Quick Reference: What Changed
 
-## Files to Replace (3 files):
+## Files to Replace (4 files):
 
 ### 1. backend/config.py
 **Lines 40-50 changed:**
@@ -29,7 +29,19 @@ NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
 
 ---
 
-### 3. backend/routers/ai.py
+### 3. backend/services/bot_service.py
+**Line 21 changed:**
+```python
+# OLD:
+from backend.config import BOT_ENABLED, OPENROUTER_KEYS, OPENROUTER_MODEL
+
+# NEW:
+from backend.config import BOT_ENABLED
+```
+
+---
+
+### 4. backend/routers/ai.py
 **Line 6 changed:**
 ```python
 # OLD:
@@ -64,4 +76,4 @@ from backend.services.nvidia_service import analyze_ats
 
 ## That's it! 🎉
 
-Just 3 files changed, 2 environment variables updated.
+Just 4 files changed, 2 environment variables updated.

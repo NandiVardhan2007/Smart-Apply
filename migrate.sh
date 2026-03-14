@@ -58,6 +58,15 @@ else
     exit 1
 fi
 
+# 2b. Update bot_service.py
+if [ -f "$SCRIPT_DIR/backend/services/bot_service.py" ]; then
+    cp "$SCRIPT_DIR/backend/services/bot_service.py" backend/services/
+    echo "   ✓ Updated backend/services/bot_service.py"
+else
+    echo "   ❌ Missing: backend/services/bot_service.py in update package"
+    exit 1
+fi
+
 # 3. Update ai.py
 if [ -f "$SCRIPT_DIR/backend/routers/ai.py" ]; then
     cp "$SCRIPT_DIR/backend/routers/ai.py" backend/routers/

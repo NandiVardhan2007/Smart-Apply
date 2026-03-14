@@ -44,7 +44,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Files Modified: 3                                               │
+│  Files Modified: 4                                               │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  1️⃣  backend/config.py                                           │
@@ -54,7 +54,10 @@
 │  2️⃣  backend/services/nvidia_service.py (NEW FILE)               │
 │      └─ Replaces: openrouter_service.py                         │
 │                                                                  │
-│  3️⃣  backend/routers/ai.py                                       │
+│  3️⃣  backend/services/bot_service.py (FIXED)                     │
+│      └─ Remove: Unused OpenRouter imports                       │
+│                                                                  │
+│  4️⃣  backend/routers/ai.py                                       │
 │      └─ Update imports: openrouter → nvidia                      │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
@@ -235,8 +238,8 @@ Response
 ┌─────────────────────────────────────────────────────────┐
 │  Migration Complexity: ⭐⭐☆☆☆ (Easy)                   │
 ├─────────────────────────────────────────────────────────┤
-│  Files changed:        3                                │
-│  Lines changed:        ~50                              │
+│  Files changed:        4                                │
+│  Lines changed:        ~60                              │
 │  New dependencies:     0 (uses same httpx)              │
 │  Breaking changes:     0 (same API interface)           │
 │  Estimated time:       5-10 minutes                     │

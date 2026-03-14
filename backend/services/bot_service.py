@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from bson import ObjectId
-from backend.config import BOT_ENABLED, OPENROUTER_KEYS, OPENROUTER_MODEL
+from backend.config import BOT_ENABLED
 from backend.database import get_db
 from backend.email_utils import send_application_result_email
 

@@ -9,7 +9,7 @@ Your SmartApply app is now configured with **NVIDIA NIM API**!
 
 ## 📦 What's Been Updated
 
-### Files Changed (3 total):
+### Files Changed (4 total):
 
 1. **`backend/config.py`** - Updated API configuration
    - Changed: OpenRouter → NVIDIA NIM
@@ -19,10 +19,14 @@ Your SmartApply app is now configured with **NVIDIA NIM API**!
    - Replaces: `openrouter_service.py`
    - Functions: Same interface, NVIDIA backend
 
-3. **`backend/routers/ai.py`** - Updated imports
+3. **`backend/services/bot_service.py`** - FIXED
+   - Removed: Unused OpenRouter imports
+   - Now: Only imports `BOT_ENABLED`
+
+4. **`backend/routers/ai.py`** - Updated imports
    - Changed: `from openrouter_service` → `from nvidia_service`
 
-4. **`.env`** - Environment variables
+5. **`.env`** - Environment variables
    - Added: Your NVIDIA API key
    - Model: `meta/llama-3.3-70b-instruct`
 
