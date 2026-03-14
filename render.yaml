@@ -6,13 +6,26 @@ services:
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: MONGO_URI
-        sync: false        # Set this in Render Dashboard
+        sync: false        # Set in Render Dashboard
       - key: JWT_SECRET
-        sync: false        # Set this in Render Dashboard
-      - key: SMTP_PASS
-        sync: false        # Set this in Render Dashboard
-      - key: SMTP_USER
-        sync: false
+        sync: false        # Set in Render Dashboard
+
+      # ── Email — Mailersend (free, 3,000 emails/month, works on Render) ────────
+      # Sign up at https://mailersend.com → API Tokens → Generate token
+      - key: MAILERSEND_API_KEY
+        value: "mlsn.d80adbf201a898b1646b8b7a393ea3fb4339d32ecc722fdc640e61e09010ca87"
+      - key: MAILERSEND_FROM
+        value: "noreply@test-zxk54v8qp0qljy6v.mlsender.net"
+      - key: MAILERSEND_FROM_NAME
+        value: "SmartApply"
+
+      # ── App URL — REQUIRED for correct password reset links ───────────────
+      - key: APP_URL
+        value: "https://smart-apply-7zty.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://smart-apply-7zty.onrender.com"
+
+      # ── Other settings ────────────────────────────────────────────────────
       - key: BROWSERLESS_API_KEY
         value: 2U8qE922A3wUFje73af3acf67061fe881d4135c168e40e52f
       - key: BOT_ENABLED

@@ -1,33 +1,56 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from backend.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, APP_URL
+"""
+email_utils.py
+Sends transactional emails via Mailersend HTTP API (works on Render.com).
+Sign up free at https://mailersend.com — 3,000 emails/month, no credit card.
+"""
+
 import asyncio
+import logging
+import httpx
+
+from backend.config import APP_URL, MAILERSEND_API_KEY, MAILERSEND_FROM, MAILERSEND_FROM_NAME
+
+logger = logging.getLogger(__name__)
 
 
-def _build_html(subject: str, body_html: str) -> MIMEMultipart:
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = SMTP_FROM
-    msg.attach(MIMEText(body_html, "html"))
-    return msg
-
-
-def _send(to: str, msg: MIMEMultipart):
-    if not SMTP_USER or not SMTP_PASS:
-        print(f"[EMAIL MOCK] To: {to}\nSubject: {msg['Subject']}\n(SMTP not configured)")
+async def _send(to: str, subject: str, html: str):
+    """Send email via Mailersend HTTP API."""
+    if not MAILERSEND_API_KEY:
+        logger.warning(f"[EMAIL MOCK] No MAILERSEND_API_KEY set. Would have sent '{subject}' to {to}")
         return
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        msg["To"] = to
-        server.sendmail(SMTP_FROM, to, msg.as_string())
 
+    payload = {
+        "from": {"email": MAILERSEND_FROM, "name": MAILERSEND_FROM_NAME},
+        "to": [{"email": to}],
+        "subject": subject,
+        "html": html,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                "https://api.mailersend.com/v1/email",
+                headers={
+                    "Authorization": f"Bearer {MAILERSEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+        if resp.status_code in (200, 202):
+            logger.info(f"[Mailersend] Email sent to {to}")
+        else:
+            logger.error(f"[Mailersend] Failed ({resp.status_code}): {resp.text}")
+            raise RuntimeError(f"Mailersend error {resp.status_code}: {resp.text}")
+    except httpx.HTTPError as exc:
+        logger.error(f"[Mailersend] HTTP error: {exc}")
+        raise RuntimeError("Email delivery failed. Check your MAILERSEND_API_KEY.") from exc
+
+
+# ── Public helpers ────────────────────────────────────────────────────────────
 
 async def send_verification_email(to: str, pin: str):
-    subject = "SmartApply – Verify Your Account"
-    body = f"""
+    subject = "SmartApply - Verify Your Account"
+    html = f"""
     <html><body style="font-family:Inter,sans-serif;background:#0f172a;color:#e2e8f0;padding:40px">
     <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:40px">
       <h1 style="color:#6366f1;margin:0 0 8px">SmartApply</h1>
@@ -39,14 +62,13 @@ async def send_verification_email(to: str, pin: str):
       <p style="font-size:13px;color:#94a3b8">If you didn't create a SmartApply account, ignore this email.</p>
     </div></body></html>
     """
-    msg = _build_html(subject, body)
-    await asyncio.to_thread(_send, to, msg)
+    await _send(to, subject, html)
 
 
 async def send_reset_email(to: str, token: str):
     reset_url = f"{APP_URL}/forgot-password.html?token={token}"
-    subject = "SmartApply – Reset Your Password"
-    body = f"""
+    subject = "SmartApply - Reset Your Password"
+    html = f"""
     <html><body style="font-family:Inter,sans-serif;background:#0f172a;color:#e2e8f0;padding:40px">
     <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:40px">
       <h1 style="color:#6366f1;margin:0 0 8px">SmartApply</h1>
@@ -57,15 +79,14 @@ async def send_reset_email(to: str, token: str):
       <p style="font-size:13px;color:#94a3b8">If you didn't request a reset, ignore this email.</p>
     </div></body></html>
     """
-    msg = _build_html(subject, body)
-    await asyncio.to_thread(_send, to, msg)
+    await _send(to, subject, html)
 
 
 async def send_application_result_email(to: str, job_title: str, company: str, result: str):
     colour = "#22c55e" if result == "Applied" else "#ef4444"
     icon   = "✅" if result == "Applied" else "❌"
-    subject = f"SmartApply – {icon} Application Update: {job_title}"
-    body = f"""
+    subject = f"SmartApply - {icon} Application Update: {job_title}"
+    html = f"""
     <html><body style="font-family:Inter,sans-serif;background:#0f172a;color:#e2e8f0;padding:40px">
     <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:40px">
       <h1 style="color:#6366f1;margin:0 0 8px">SmartApply</h1>
@@ -78,5 +99,4 @@ async def send_application_result_email(to: str, job_title: str, company: str, r
       <a href="{APP_URL}/dashboard.html" style="display:inline-block;background:#6366f1;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Dashboard</a>
     </div></body></html>
     """
-    msg = _build_html(subject, body)
-    await asyncio.to_thread(_send, to, msg)
+    await _send(to, subject, html)

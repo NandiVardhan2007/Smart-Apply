@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 import re
+import logging
 
 from backend.database import get_db
 from backend.auth import hash_password, verify_password, generate_pin, generate_token, create_access_token
@@ -11,6 +12,7 @@ from backend.utils.email_validator import validate_email_domain
 from backend.config import PIN_EXPIRY_MINUTES, RESET_TOKEN_EXPIRY_HRS, MAX_LOGIN_ATTEMPTS
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 # ── Rate limiting: simple in-memory counters ──────────────────────────────────
 _login_attempts: dict[str, list] = {}
@@ -103,7 +105,11 @@ async def signup(body: SignupRequest):
             {"email": email},
             {"$set": {"verification_pin": pin, "pin_expires": expires, "pin_attempts": 0}}
         )
-        await send_verification_email(email, pin)
+        try:
+            await send_verification_email(email, pin)
+        except Exception as exc:
+            logger.error(f"[signup] Email send failed for {email}: {exc}")
+            raise HTTPException(500, detail="Failed to send verification email. Please try again or contact support.")
         return {"message": "Verification code resent. Please check your email."}
 
     pin = generate_pin()
@@ -124,7 +130,13 @@ async def signup(body: SignupRequest):
     }
 
     await db.users.insert_one(user_doc)
-    await send_verification_email(email, pin)
+
+    try:
+        await send_verification_email(email, pin)
+    except Exception as exc:
+        logger.error(f"[signup] Email send failed for {email}: {exc}")
+        # Account is created but email failed — tell user clearly
+        raise HTTPException(500, detail="Account created but verification email could not be sent. Please contact support.")
 
     return {"message": "Account created. Check your email for the verification code."}
 
@@ -148,7 +160,6 @@ async def verify_email(body: VerifyRequest):
 
     pin_expires = user.get("pin_expires")
     if pin_expires:
-        # MongoDB returns naive datetimes stored in UTC — make them timezone-aware before comparing
         if pin_expires.tzinfo is None:
             pin_expires = pin_expires.replace(tzinfo=timezone.utc)
     if pin_expires and datetime.now(timezone.utc) > pin_expires:
@@ -184,7 +195,11 @@ async def resend_pin(body: ResendRequest):
         {"email": email},
         {"$set": {"verification_pin": pin, "pin_expires": expires, "pin_attempts": 0}}
     )
-    await send_verification_email(email, pin)
+    try:
+        await send_verification_email(email, pin)
+    except Exception as exc:
+        logger.error(f"[resend-pin] Email send failed for {email}: {exc}")
+        raise HTTPException(500, detail="Failed to send verification email. Please try again.")
     return {"message": "New verification code sent"}
 
 
@@ -205,7 +220,6 @@ async def login(body: LoginRequest, response: Response):
 
     token = create_access_token(str(user["_id"]), email)
 
-    # Set cookie for browser-based auth
     response.set_cookie(
         key="access_token", value=token,
         httponly=True, samesite="lax", max_age=86400 * 7
@@ -236,14 +250,18 @@ async def forgot_password(body: ForgotRequest):
     _check_rate_limit(f"reset:{email}", max_attempts=3, window_sec=3600)
 
     user = await db.users.find_one({"email": email})
-    if user:  # Don't reveal if email exists
+    if user:
         token = generate_token()
         expires = datetime.now(timezone.utc) + timedelta(hours=RESET_TOKEN_EXPIRY_HRS)
         await db.users.update_one(
             {"email": email},
             {"$set": {"reset_token": token, "reset_expires": expires}}
         )
-        await send_reset_email(email, token)
+        try:
+            await send_reset_email(email, token)
+        except Exception as exc:
+            logger.error(f"[forgot-password] Email send failed for {email}: {exc}")
+            raise HTTPException(500, detail="Failed to send reset email. Please check email configuration or try again.")
 
     return {"message": "If that email is registered, a reset link has been sent."}
 
@@ -261,7 +279,6 @@ async def reset_password(body: ResetRequest):
 
     expires = user.get("reset_expires")
     if expires:
-        # MongoDB returns naive datetimes stored in UTC — make them timezone-aware before comparing
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
     if expires and datetime.now(timezone.utc) > expires:
