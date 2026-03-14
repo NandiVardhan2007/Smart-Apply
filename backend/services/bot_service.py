@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from bson import ObjectId
-from backend.config import BOT_ENABLED, NVIDIA_API_KEYS, NVIDIA_MODEL, NVIDIA_API_URL
+from backend.config import BOT_ENABLED
 from backend.database import get_db
 from backend.email_utils import send_application_result_email
 
@@ -217,7 +217,7 @@ def _build_workspace(user_id, profile, platform_accounts, job_prefs, resume_file
 
 def _write_config(cfg: Path, p: dict, platform_accounts: dict, jp: dict):
     """Write all six config/*.py files for the user."""
-    nvidia_key = NVIDIA_API_KEYS[0] if NVIDIA_API_KEYS else ""
+    ai_key = OPENROUTER_KEYS[0] if OPENROUTER_KEYS else ""
 
     # ── Enum sanitizers — fall back to safe defaults for unknown/junk values ──
     _ETHNICITY_VALS = {
@@ -303,25 +303,23 @@ overwrite_previous_answers = True
     if gemini_model not in _ALLOWED_GEMINI_MODELS:
         gemini_model = "gemini-2.0-flash"
     if gemini_key:
-        # User has their own Gemini key — use it directly
         _ai_provider = "gemini"
         _llm_api_url = "https://generativelanguage.googleapis.com/v1beta/"
         _llm_api_key = gemini_key
         _llm_model   = gemini_model
         _llm_spec    = "gemini"
     else:
-        # Fall back to NVIDIA NIM (OpenAI-compatible, free)
         _ai_provider = "openai"
-        _llm_api_url = NVIDIA_API_URL
-        _llm_api_key = nvidia_key
-        _llm_model   = NVIDIA_MODEL
+        _llm_api_url = "https://openrouter.ai/api/v1/chat/completions"
+        _llm_api_key = ai_key
+        _llm_model   = OPENROUTER_MODEL
         _llm_spec    = "openai"
 
     (cfg / "secrets.py").write_text(
         f"""\
 username          = {_j(platform_accounts.get('linkedin_email', ''))}
 password          = {_j(platform_accounts.get('linkedin_password', ''))}
-use_AI            = {bool(nvidia_key or gemini_key)}
+use_AI            = {bool(ai_key or gemini_key)}
 ai_provider       = {_j(_ai_provider)}
 llm_api_url       = {_j(_llm_api_url)}
 llm_api_key       = {_j(_llm_api_key)}

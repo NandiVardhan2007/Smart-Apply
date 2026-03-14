@@ -126,7 +126,12 @@ def is_logged_in_LN() -> bool:
     Function to check if user is logged-in in LinkedIn
     * Returns: `True` if user is logged-in or `False` if not
     '''
-    if driver.current_url == "https://www.linkedin.com/feed/": return True
+    url = driver.current_url
+    # Accept any authenticated LinkedIn destination (feed, jobs, mynetwork, profile, etc.)
+    # Browserless headless sessions often redirect to /jobs or /mynetwork instead of /feed/
+    _LOGGED_IN_PATHS = ("/feed", "/jobs", "/mynetwork", "/in/", "/notifications", "/messaging")
+    if any(path in url for path in _LOGGED_IN_PATHS): return True
+    # Explicit logout/landing page indicators
     if try_linkText(driver, "Sign in"): return False
     if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):  return False
     if try_linkText(driver, "Join now"): return False
@@ -171,12 +176,18 @@ def login_LN() -> None:
             print_lg("Couldn't Login!")
 
     try:
-        # Wait until successful redirect, indicating successful login
-        wait.until(EC.url_to_be("https://www.linkedin.com/feed/")) # wait.until(EC.presence_of_element_located((By.XPATH, '//button[normalize-space(.)="Start a post"]')))
-        return print_lg("Login successful!")
+        # Wait until LinkedIn redirects away from the login page.
+        # Browserless headless sessions may land on /jobs, /checkpoint, /mynetwork, etc.
+        # instead of /feed/ — accept any post-login URL.
+        wait.until(EC.url_changes("https://www.linkedin.com/login"))
+        import time as _time_login; _time_login.sleep(2)  # settle for secondary redirects
+        if is_logged_in_LN():
+            return print_lg("Login successful!")
+        print_lg("Landed on checkpoint/captcha page after login attempt")
     except Exception as e:
+        pass  # url_changes timed out — proceed to manual retry check
+    if not is_logged_in_LN():
         print_lg("Seems like login attempt failed! Possibly due to wrong credentials or already logged in! Try logging in manually!")
-        # print_lg(e)
         manual_login_retry(is_logged_in_LN, 2)
 #>
 
@@ -453,8 +464,9 @@ def get_job_description(
             experience_required = "Error in extraction"
             print_lg("Unable to extract years of experience required!")
             # print_lg(e)
-    finally:
-        return jobDescription, experience_required, skip, skipReason, skipMessage
+    # NOTE: return is intentionally outside the finally block.
+    # A return inside finally silently swallows exceptions (SyntaxWarning in Python 3.x).
+    return jobDescription, experience_required, skip, skipReason, skipMessage
         
 
 
@@ -940,7 +952,16 @@ def apply_to_jobs(search_terms: list[str]) -> None:
 
     if randomize_search_order:  shuffle(search_terms)
     for searchTerm in search_terms:
-        driver.get(f"https://www.linkedin.com/jobs/search/?keywords={searchTerm}")
+        # Encode both keyword and location directly into the URL.
+        # This is more reliable than trying to type into the DOM location input
+        # (which fails when the element isn't found, e.g. after a login redirect).
+        import urllib.parse as _urlparse
+        _kw = _urlparse.quote(searchTerm, safe='')
+        _loc = _urlparse.quote(search_location.strip(), safe='') if search_location.strip() else ''
+        _search_url = f"https://www.linkedin.com/jobs/search/?keywords={_kw}"
+        if _loc:
+            _search_url += f"&location={_loc}"
+        driver.get(_search_url)
         print_lg("\n________________________________________________________________________________________________________________________\n")
         print_lg(f'\n>>>> Now searching for "{searchTerm}" <<<<\n\n')
 
