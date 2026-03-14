@@ -170,3 +170,28 @@ async def list_users(
         })
 
     return {"users": users, "total": len(users)}
+
+
+@router.post("/users/{user_id}/verify")
+async def force_verify_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Manually verify a user's email — useful when email delivery fails."""
+    db = get_db()
+    from bson import ObjectId
+    result = await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"is_verified": True}, "$unset": {"verification_pin": "", "pin_expires": "", "pin_attempts": ""}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(404, detail="User not found")
+    return {"message": "User verified successfully"}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a user account."""
+    db = get_db()
+    from bson import ObjectId
+    result = await db.users.delete_one({"_id": ObjectId(user_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(404, detail="User not found")
+    return {"message": "User deleted"}

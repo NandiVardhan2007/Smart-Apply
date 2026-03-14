@@ -27,38 +27,55 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
     """
     Single async OpenRouter chat call.
     Tries every configured key in sequence; raises RuntimeError if all fail.
+    Falls back through multiple free models if the primary returns null content.
     """
     keys = [k for k in OPENROUTER_KEYS if k and not k.startswith("sk-or-v1-YOUR")]
     if not keys:
         raise RuntimeError("No OpenRouter API keys configured.")
 
+    # Model fallback list — tries primary model first, then fallbacks
+    models_to_try = [
+        OPENROUTER_MODEL,
+        "mistralai/mistral-7b-instruct:free",
+        "google/gemma-3-1b-it:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+    ]
+    # Deduplicate while preserving order
+    seen = set()
+    models_to_try = [m for m in models_to_try if not (m in seen or seen.add(m))]
+
     errors = []
     for key in keys:
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.post(
-                    OPENROUTER_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {key}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": "https://smart-apply-7zty.onrender.com",
-                        "X-Title": "SmartApply",
-                    },
-                    json={
-                        "model": OPENROUTER_MODEL,
-                        "messages": messages,
-                        "max_tokens": max_tokens,
-                        "temperature": 0.2,
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"].strip()
-        except Exception as exc:
-            errors.append(str(exc))
-            continue
+        for model in models_to_try:
+            try:
+                async with httpx.AsyncClient(timeout=30) as client:
+                    resp = await client.post(
+                        OPENROUTER_API_URL,
+                        headers={
+                            "Authorization": f"Bearer {key}",
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": "https://smart-apply-7zty.onrender.com",
+                            "X-Title": "SmartApply",
+                        },
+                        json={
+                            "model": model,
+                            "messages": messages,
+                            "max_tokens": max_tokens,
+                            "temperature": 0.2,
+                        },
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content")
+                    if content is None:
+                        errors.append(f"[{model}] null content response")
+                        continue  # try next model with same key
+                    return content.strip()
+            except Exception as exc:
+                errors.append(f"[{model}] {str(exc)}")
+                continue
 
-    raise RuntimeError(f"All OpenRouter keys failed: {'; '.join(errors)}")
+    raise RuntimeError(f"All OpenRouter keys/models failed: {'; '.join(errors[-5:])}")
 
 
 # ── Public API (used by routers/ai.py) ───────────────────────────────────────
