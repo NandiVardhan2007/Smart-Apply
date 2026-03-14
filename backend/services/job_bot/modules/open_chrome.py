@@ -62,6 +62,10 @@ BROWSERLESS_ENDPOINT = "https://chrome.browserless.io/webdriver"
 
 def _stealth_options(headless: bool = True) -> Options:
     options = Options()
+    # "eager" = return from driver.get() as soon as DOM is interactive (DOMContentLoaded),
+    # without waiting for images, fonts, or XHR to complete.
+    # LinkedIn's feed fires endless background requests so "normal" mode hangs indefinitely.
+    options.page_load_strategy = "eager"
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -182,7 +186,7 @@ def createChromeSession(isRetry: bool = False):
         driver = _create_local_session()
 
     _inject_stealth(driver)
-    driver.set_page_load_timeout(120)
+    driver.set_page_load_timeout(30)
     driver.implicitly_wait(10)
 
     wait = WebDriverWait(driver, 30)

@@ -32,7 +32,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, NoSuchWindowException, ElementNotInteractableException, WebDriverException, StaleElementReferenceException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, NoSuchWindowException, ElementNotInteractableException, WebDriverException, StaleElementReferenceException, TimeoutException
 
 from config.personals import *
 from config.questions import *
@@ -185,7 +185,7 @@ def login_LN() -> None:
         return
 
     print_lg("Navigating to LinkedIn login page...")
-    driver.get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin")
+    _driver_get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin", "login")
     _t.sleep(_r.uniform(3.5, 5.0))  # longer settle — proxy latency can be high
 
     # Verify the login page actually loaded (proxy may have returned an error page)
@@ -1077,7 +1077,7 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         _search_url = f"https://www.linkedin.com/jobs/search/?keywords={_kw}"
         if _loc:
             _search_url += f"&location={_loc}"
-        driver.get(_search_url)
+        _driver_get(_search_url, f"search:{searchTerm[:30]}")
 
         # Dismiss cookie / GDPR consent banners that block the page before any interaction
         try:
@@ -1424,6 +1424,26 @@ def run(total_runs: int) -> int:
 chatGPT_tab = False
 linkedIn_tab = False
 
+def _driver_get(url: str, label: str = "") -> bool:
+    '''
+    Safe wrapper around driver.get() that catches page load timeouts.
+    With pageLoadStrategy="eager" this should rarely fire, but if it does
+    (e.g. a redirect chain that stalls) it logs clearly and returns False
+    instead of hanging the bot silently.
+    Returns True if the navigation completed (or eager-returned), False on timeout.
+    '''
+    tag = f" [{label}]" if label else ""
+    try:
+        driver.get(url)
+        return True
+    except TimeoutException:
+        print_lg(f"[Warning]{tag} Page load timed out for: {url[:80]} — continuing anyway.")
+        return False
+    except Exception as e:
+        print_lg(f"[Warning]{tag} driver.get() raised unexpected error: {e}")
+        return False
+
+
 def _is_chrome_error_page() -> bool:
     '''
     Returns True if Chrome is showing its own error page (net::ERR_*) instead
@@ -1456,7 +1476,7 @@ def _check_proxy_connectivity() -> bool:
     proxy_set = bool(os.environ.get("RESIDENTIAL_PROXY", "").strip())
     print_lg(f"[Proxy] {'Residential proxy IS set' if proxy_set else 'No proxy configured'} — checking connectivity...")
     try:
-        driver.get("https://www.linkedin.com/")
+        _driver_get("https://www.linkedin.com/", "connectivity-check")
         import time as _tc; _tc.sleep(3)
         if _is_chrome_error_page():
             src_preview = (driver.page_source or "")[:300].replace("\n", " ")
@@ -1509,7 +1529,7 @@ def main() -> None:
         # (cookies from a previous run) we skip the login form entirely.
         tabs_count = len(driver.window_handles)
         print_lg("Checking LinkedIn session status...")
-        driver.get("https://www.linkedin.com/feed/")
+        _driver_get("https://www.linkedin.com/feed/", "session-check")
         import time as _t2; _t2.sleep(1)
         if not is_logged_in_LN():
             print_lg("Not logged in — attempting credential login...")
