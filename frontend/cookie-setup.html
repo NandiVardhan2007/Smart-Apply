@@ -6,470 +6,208 @@
   <title>LinkedIn Session Setup — SmartApply</title>
   <link rel="stylesheet" href="/css/main.css" />
   <style>
-    body { background: #0f172a; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; margin: 0; min-height: 100vh; }
-    .page-wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
-
-    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; text-decoration: none; }
-    .logo svg { width: 32px; height: 32px; }
-    .logo span { font-size: 1.4rem; font-weight: 700; color: #fff; }
-
-    h1 { font-size: 1.75rem; font-weight: 700; color: #fff; margin: 0 0 8px; }
-    .subtitle { color: #94a3b8; font-size: 0.95rem; margin: 0 0 32px; line-height: 1.65; }
-
-    .info-box { background: #172033; border: 1px solid #1e3a5f; border-radius: 10px;
-                padding: 14px 18px; font-size: 0.85rem; color: #93c5fd; line-height: 1.65; margin-bottom: 32px; }
-    .info-box strong { color: #bfdbfe; }
-
-    .warn-box { background: #1c1408; border: 1px solid #854d0e; border-radius: 10px;
-                padding: 14px 18px; font-size: 0.85rem; color: #fde68a; line-height: 1.65; margin-bottom: 32px; }
-
-    /* Steps */
-    .steps { display: flex; flex-direction: column; gap: 24px; margin-bottom: 36px; }
-    .step { display: flex; gap: 14px; }
-    .step-num { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: #6366f1;
-                color: #fff; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; }
-    .step-body h3 { margin: 3px 0 5px; font-size: 0.97rem; color: #f1f5f9; }
-    .step-body p  { margin: 0 0 8px; font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
-
-    .kbd { display: inline-block; background: #1e293b; border: 1px solid #475569; border-radius: 5px;
-           padding: 1px 7px; font-family: monospace; font-size: 0.82rem; color: #e2e8f0; }
-
-    .screenshot-hint { background: #0f1f33; border: 1px solid #1e3a5f; border-radius: 8px;
-                        padding: 12px 14px; font-size: 0.82rem; color: #7dd3fc; margin-top: 6px;
-                        display: flex; align-items: flex-start; gap: 10px; }
-    .screenshot-hint .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
-
-    /* Input */
-    .input-group { margin-bottom: 20px; }
-    .input-group label { display: block; font-size: 0.88rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
-    .input-group input {
-      width: 100%; padding: 11px 14px; background: #1e293b; border: 1px solid #334155;
-      border-radius: 8px; color: #f1f5f9; font-size: 0.9rem; box-sizing: border-box; outline: none;
-      transition: border-color .2s; font-family: 'JetBrains Mono', monospace;
-    }
-    .input-group input:focus { border-color: #6366f1; }
-    .input-group input.ok  { border-color: #22c55e; }
-    .input-group input.err { border-color: #ef4444; }
-    .input-group .hint { font-size: 0.78rem; color: #64748b; margin-top: 5px; }
-
-    .save-btn {
-      width: 100%; padding: 13px; border: none; border-radius: 10px;
-      background: #6366f1; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
-      transition: background .15s, opacity .15s; margin-top: 6px;
-    }
-    .save-btn:hover:not(:disabled) { background: #4f46e5; }
-    .save-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-    .status-msg { margin-top: 14px; border-radius: 10px; padding: 13px 16px; font-size: 0.88rem; display: none; line-height: 1.6; }
-    .status-msg.success { background: #052e16; border: 1px solid #16a34a; color: #86efac; display: block; }
-    .status-msg.error   { background: #2d0707; border: 1px solid #dc2626; color: #fca5a5; display: block; }
-
-    .divider { border: none; border-top: 1px solid #1e293b; margin: 32px 0; }
-    .section-title { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin: 0 0 16px; }
-
-    @media (max-width: 520px) { .page-wrap { padding: 28px 16px 60px; } h1 { font-size: 1.4rem; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0f172a;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+    .wrap{max-width:700px;margin:0 auto;padding:48px 24px 80px}
+    .logo{display:flex;align-items:center;gap:10px;margin-bottom:40px;text-decoration:none}
+    .logo svg{width:32px;height:32px}
+    .logo-name{font-size:1.4rem;font-weight:700;color:#fff}
+    h1{font-size:1.7rem;font-weight:700;color:#fff;margin-bottom:8px}
+    .sub{color:#94a3b8;font-size:.93rem;line-height:1.65;margin-bottom:28px}
+    .warn{background:#1c1408;border:1px solid #854d0e;border-radius:10px;padding:14px 18px;
+          font-size:.84rem;color:#fde68a;line-height:1.65;margin-bottom:28px}
+    .warn code{background:#2d1f00;padding:1px 5px;border-radius:4px}
+    .steps{display:flex;flex-direction:column;gap:22px;margin-bottom:32px}
+    .step{display:flex;gap:14px}
+    .num{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:#6366f1;
+         color:#fff;font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+    .sbody h3{margin:3px 0 5px;font-size:.96rem;color:#f1f5f9}
+    .sbody p{font-size:.84rem;color:#94a3b8;line-height:1.6;margin-bottom:6px}
+    .sbody p:last-child{margin-bottom:0}
+    kbd{display:inline-block;background:#1e293b;border:1px solid #475569;border-radius:4px;
+        padding:1px 7px;font-family:monospace;font-size:.8rem;color:#e2e8f0}
+    .tip{background:#0f1f33;border:1px solid #1e3a5f;border-radius:7px;padding:10px 13px;
+         font-size:.81rem;color:#7dd3fc;margin-top:7px;display:flex;gap:8px;align-items:flex-start}
+    .field-wrap{margin-bottom:18px}
+    .field-wrap label{display:block;font-size:.86rem;color:#94a3b8;font-weight:500;margin-bottom:7px}
+    .field-wrap input{width:100%;padding:11px 14px;background:#1e293b;border:1px solid #334155;
+                      border-radius:8px;color:#f1f5f9;font-size:.88rem;outline:none;
+                      transition:border-color .18s;font-family:'JetBrains Mono',monospace}
+    .field-wrap input:focus{border-color:#6366f1}
+    .field-wrap input.ok{border-color:#22c55e}
+    .field-wrap input.bad{border-color:#ef4444}
+    .hint{font-size:.76rem;color:#64748b;margin-top:5px}
+    .req{color:#ef4444}
+    .opt{color:#64748b;font-size:.78rem}
+    .btn-save{width:100%;padding:13px;border:none;border-radius:10px;background:#6366f1;
+              color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:background .15s,opacity .15s;margin-top:4px}
+    .btn-save:hover:not(:disabled){background:#4f46e5}
+    .btn-save:disabled{opacity:.5;cursor:not-allowed}
+    .msg{margin-top:14px;border-radius:10px;padding:13px 16px;font-size:.87rem;line-height:1.6;display:none}
+    .msg.ok{background:#052e16;border:1px solid #16a34a;color:#86efac;display:block}
+    .msg.bad{background:#2d0707;border:1px solid #dc2626;color:#fca5a5;display:block}
+    code{background:#1e293b;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:.85em}
+    a.link{color:#818cf8}
   </style>
 </head>
 <body>
-<div class="page-wrap">
+<div class="wrap">
 
   <a class="logo" href="/dashboard.html">
     <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="40" height="40" rx="10" fill="#6366f1"/>
       <path d="M12 28L20 12L28 28M15.5 22H24.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
     </svg>
-    <span>SmartApply</span>
+    <span class="logo-name">SmartApply</span>
   </a>
 
   <h1>LinkedIn Session Setup</h1>
-  <p class="subtitle">
-    The bot needs your LinkedIn session cookie (<code>li_at</code>) to log in as you.
-    This is copied from your browser's DevTools — no password required.
-  </p>
+  <p class="sub">Copy your <code>li_at</code> session cookie from your browser's DevTools. No password needed on the server.</p>
 
-  <div class="warn-box">
-    ⚠️ <strong>Why the console script didn't work:</strong> <code>li_at</code> is an
-    <strong>httpOnly</strong> cookie — JavaScript cannot read it for security reasons.
-    You need to copy it manually from the DevTools <strong>Application</strong> tab instead.
+  <div class="warn">
+    ⚠️ <strong>The console script method does not work</strong> — <code>li_at</code> is an <code>httpOnly</code>
+    cookie, which means JavaScript <em>cannot</em> read it. You must copy it manually from
+    <strong>DevTools → Application → Cookies</strong>.
   </div>
-
-  <p class="section-title">Follow these steps:</p>
 
   <div class="steps">
 
     <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <h3>Open LinkedIn and make sure you're logged in</h3>
-        <p>Go to <strong>linkedin.com</strong> in Chrome, Edge, or Firefox.</p>
+      <div class="num">1</div>
+      <div class="sbody">
+        <h3>Open LinkedIn and confirm you're logged in</h3>
+        <p>Visit <strong>linkedin.com</strong> in Chrome, Edge, or Firefox. Make sure your feed is visible.</p>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
+      <div class="num">2</div>
+      <div class="sbody">
         <h3>Open DevTools</h3>
-        <p>
-          Press <span class="kbd">F12</span> (Windows/Linux) or
-          <span class="kbd">Cmd</span>+<span class="kbd">Option</span>+<span class="kbd">I</span> (Mac)
-        </p>
+        <p>Windows / Linux: <kbd>F12</kbd> &nbsp;|&nbsp; Mac: <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>I</kbd></p>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <h3>Go to Application → Cookies</h3>
-        <p>Click the <strong>Application</strong> tab at the top of DevTools.
-           In the left sidebar expand <strong>Cookies</strong> → click <strong>https://www.linkedin.com</strong>.</p>
-        <div class="screenshot-hint">
-          <span class="icon">💡</span>
-          <span>If you don't see an "Application" tab, click the <strong>≫</strong> arrow at the top of DevTools to find hidden tabs.</span>
-        </div>
+      <div class="num">3</div>
+      <div class="sbody">
+        <h3>Go to Application → Storage → Cookies</h3>
+        <p>Click the <strong>Application</strong> tab at the top of DevTools.<br>
+           In the left sidebar: <strong>Storage</strong> → <strong>Cookies</strong> → <strong>https://www.linkedin.com</strong></p>
+        <div class="tip">💡 Don't see "Application"? Click the <strong>≫</strong> overflow arrow to find hidden tabs.</div>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <h3>Find and copy the <code>li_at</code> value</h3>
-        <p>In the cookie table, find the row where <strong>Name</strong> = <code>li_at</code>.
-           Click that row. At the bottom of the panel you'll see its full <strong>Value</strong>.
-           Copy the entire value (it's a long string starting with <code>AQE</code> or similar).</p>
-        <div class="screenshot-hint">
-          <span class="icon">🔍</span>
-          <span>Use <span class="kbd">Ctrl+F</span> / <span class="kbd">Cmd+F</span> in the cookie table to search for <code>li_at</code> quickly.</span>
-        </div>
+      <div class="num">4</div>
+      <div class="sbody">
+        <h3>Find the <code>li_at</code> row and copy its value</h3>
+        <p>Scroll or use <kbd>Ctrl+F</kbd>/<kbd>Cmd+F</kbd> to find <strong>li_at</strong>.<br>
+           Click the row → at the bottom panel you'll see the full value. Select all and copy it.<br>
+           It's a long string (~400 chars) that starts with <code>AQE</code>.</p>
+        <div class="tip">🔒 This value is your session token — treat it like a password. It expires when you log out of LinkedIn.</div>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">5</div>
-      <div class="step-body">
-        <h3>Also copy <code>JSESSIONID</code> (optional but recommended)</h3>
-        <p>Find the row where Name = <code>JSESSIONID</code> and copy its value too.
-           This helps with API calls the bot makes during applications.</p>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">6</div>
-      <div class="step-body">
-        <h3>Paste both values below and click Save</h3>
+      <div class="num">5</div>
+      <div class="sbody">
+        <h3>Paste below and save</h3>
+        <p>Paste the copied value into the field below and click <strong>Save Session</strong>.</p>
       </div>
     </div>
 
   </div>
 
-  <div class="input-group">
-    <label for="li-at-input">li_at cookie value <span style="color:#ef4444">*</span></label>
-    <input type="text" id="li-at-input" placeholder="AQEDAxxxxxx..." autocomplete="off" spellcheck="false" />
-    <div class="hint">Required — this is your LinkedIn session token. ~300–600 characters long.</div>
+  <div class="field-wrap">
+    <label for="li-at"><code>li_at</code> value <span class="req">*</span></label>
+    <input type="text" id="li-at" placeholder="AQEDAxxxxxx..." autocomplete="off" spellcheck="false" />
+    <div class="hint">Required. ~300–600 characters. Found in DevTools → Application → Cookies → linkedin.com</div>
   </div>
 
-  <div class="input-group">
-    <label for="jsessionid-input">JSESSIONID cookie value <span style="color:#64748b">(optional)</span></label>
-    <input type="text" id="jsessionid-input" placeholder="ajax:xxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false" />
-    <div class="hint">Looks like <code>ajax:1234567890123456789</code></div>
+  <div class="field-wrap">
+    <label for="jsession">JSESSIONID value <span class="opt">(optional)</span></label>
+    <input type="text" id="jsession" placeholder='ajax:1234567890123456789' autocomplete="off" spellcheck="false" />
+    <div class="hint">Also in the cookies table. Looks like <code>ajax:1234567890123456789</code></div>
   </div>
 
-  <button class="save-btn" id="save-btn" onclick="saveCookies()">Save Session</button>
-  <div class="status-msg" id="status-msg"></div>
+  <button class="btn-save" id="save-btn" onclick="doSave()">Save Session</button>
+  <div class="msg" id="msg"></div>
 
 </div>
 
-<script src="/js/app.js"></script>
 <script>
-function showStatus(msg, type) {
-  const el = document.getElementById('status-msg');
-  el.innerHTML = msg;
-  el.className = 'status-msg ' + type;
+function showMsg(html, type) {
+  var el = document.getElementById('msg');
+  el.innerHTML = html;
+  el.className = 'msg ' + type;
 }
 
-async function saveCookies() {
-  const liAt = document.getElementById('li-at-input').value.trim();
-  const jsessionid = document.getElementById('jsessionid-input').value.trim();
-  const btn = document.getElementById('save-btn');
-  const liAtInput = document.getElementById('li-at-input');
+async function doSave() {
+  var liAt = (document.getElementById('li-at').value || '').trim();
+  var jsession = (document.getElementById('jsession').value || '').trim();
+  var liAtEl = document.getElementById('li-at');
+  var btn = document.getElementById('save-btn');
+
+  // Clear previous state
+  liAtEl.classList.remove('ok','bad');
+  document.getElementById('msg').className = 'msg';
 
   if (!liAt) {
-    liAtInput.classList.add('err');
-    showStatus('Please paste your <code>li_at</code> cookie value.', 'error');
+    liAtEl.classList.add('bad');
+    showMsg('Please paste your <code>li_at</code> cookie value first.', 'bad');
     return;
   }
   if (liAt.length < 50) {
-    liAtInput.classList.add('err');
-    showStatus('That <code>li_at</code> value looks too short. Make sure you copied the full value from the DevTools Application tab.', 'error');
+    liAtEl.classList.add('bad');
+    showMsg('That value looks too short. Make sure you copied the <strong>full</strong> <code>li_at</code> value from the DevTools Application tab (should be ~400 characters).', 'bad');
     return;
   }
-  liAtInput.classList.remove('err');
-  liAtInput.classList.add('ok');
 
-  // Build cookie array from the pasted values
-  const cookies = [
-    { name: 'li_at', value: liAt, domain: '.linkedin.com', path: '/', secure: true, httpOnly: true, sameSite: 'None' },
+  liAtEl.classList.add('ok');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  // Build cookie objects
+  var cookies = [
+    { name: 'li_at', value: liAt, domain: '.linkedin.com', path: '/', secure: true, httpOnly: true, sameSite: 'None' }
   ];
-  if (jsessionid) {
-    // Strip surrounding quotes if the user copied them
-    const jsVal = jsessionid.replace(/^"|"$/g, '');
+  if (jsession) {
+    var jsVal = jsession.replace(/^"+|"+$/g, ''); // strip wrapping quotes if present
     cookies.push({ name: 'JSESSIONID', value: jsVal, domain: '.linkedin.com', path: '/', secure: true, httpOnly: false, sameSite: 'None' });
   }
 
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
-
   try {
-    const token = localStorage.getItem('token');
-    const res = await fetch('/api/jobs/linkedin-cookies', {
+    var token = localStorage.getItem('token') || '';
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    var res = await fetch('/api/jobs/linkedin-cookies', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-      },
-      body: JSON.stringify({ cookies }),
+      headers: headers,
+      body: JSON.stringify({ cookies: cookies })
     });
 
+    var data = {};
+    try { data = await res.json(); } catch(e) {}
+
     if (res.ok) {
-      showStatus(
-        '✓ Session saved! The bot will use your <code>li_at</code> cookie to log in automatically.<br>' +
-        'You can now go back to the <a href="/dashboard.html" style="color:#4ade80">dashboard</a> and start the bot.',
-        'success'
-      );
       btn.textContent = 'Saved ✓';
+      showMsg(
+        '✓ Session saved successfully! The bot will use your LinkedIn session to authenticate.<br><br>' +
+        '<a class="link" href="/dashboard.html">← Back to Dashboard</a> to start the bot.',
+        'ok'
+      );
     } else {
-      const data = await res.json().catch(() => ({}));
-      showStatus('Error: ' + (data.detail || res.status), 'error');
       btn.disabled = false;
       btn.textContent = 'Save Session';
+      showMsg('Server error: ' + (data.detail || ('HTTP ' + res.status)), 'bad');
     }
-  } catch (err) {
-    showStatus('Network error: ' + err.message, 'error');
+  } catch(err) {
     btn.disabled = false;
     btn.textContent = 'Save Session';
+    showMsg('Network error: ' + err.message, 'bad');
   }
-}
-</script>
-</body>
-</html>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LinkedIn Session Setup — SmartApply</title>
-  <link rel="stylesheet" href="/css/main.css" />
-  <style>
-    body { background: #0f172a; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; margin: 0; min-height: 100vh; }
-    .page-wrap { max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; }
-
-    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; text-decoration: none; }
-    .logo svg { width: 32px; height: 32px; }
-    .logo span { font-size: 1.4rem; font-weight: 700; color: #fff; }
-
-    h1 { font-size: 1.75rem; font-weight: 700; color: #fff; margin: 0 0 8px; }
-    .subtitle { color: #94a3b8; font-size: 0.95rem; margin: 0 0 36px; line-height: 1.6; }
-
-    .steps { counter-reset: step; display: flex; flex-direction: column; gap: 28px; margin-bottom: 40px; }
-    .step { display: flex; gap: 16px; }
-    .step-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #6366f1; color: #fff;
-                font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
-    .step-body h3 { margin: 4px 0 6px; font-size: 1rem; color: #f1f5f9; }
-    .step-body p  { margin: 0; font-size: 0.88rem; color: #94a3b8; line-height: 1.6; }
-
-    .code-block {
-      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-      padding: 16px 18px; margin: 10px 0 0; font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.78rem; color: #7dd3fc; white-space: pre-wrap; word-break: break-all; position: relative;
-    }
-    .copy-btn {
-      position: absolute; top: 10px; right: 10px; background: #334155; border: none; border-radius: 6px;
-      color: #94a3b8; font-size: 0.75rem; padding: 4px 10px; cursor: pointer; transition: background .15s;
-    }
-    .copy-btn:hover { background: #475569; color: #f1f5f9; }
-
-    .paste-area {
-      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-      width: 100%; min-height: 140px; padding: 14px; color: #e2e8f0;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; resize: vertical;
-      box-sizing: border-box; outline: none; transition: border-color .2s;
-    }
-    .paste-area:focus { border-color: #6366f1; }
-    .paste-area.ok  { border-color: #22c55e; }
-    .paste-area.err { border-color: #ef4444; }
-
-    .save-btn {
-      margin-top: 14px; width: 100%; padding: 13px; border: none; border-radius: 10px;
-      background: #6366f1; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
-      transition: background .15s, opacity .15s;
-    }
-    .save-btn:hover:not(:disabled) { background: #4f46e5; }
-    .save-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-    .status-msg { margin-top: 14px; border-radius: 10px; padding: 13px 16px; font-size: 0.88rem; display: none; }
-    .status-msg.success { background: #052e16; border: 1px solid #16a34a; color: #86efac; display: block; }
-    .status-msg.error   { background: #2d0707; border: 1px solid #dc2626; color: #fca5a5; display: block; }
-
-    .info-box { background: #172033; border: 1px solid #1e3a5f; border-radius: 10px; padding: 16px 18px;
-                font-size: 0.85rem; color: #93c5fd; line-height: 1.65; margin-bottom: 28px; }
-    .info-box strong { color: #bfdbfe; }
-
-    label { display: block; font-size: 0.88rem; color: #94a3b8; margin-bottom: 8px; }
-
-    @media (max-width: 520px) { .page-wrap { padding: 28px 16px 60px; } h1 { font-size: 1.4rem; } }
-  </style>
-</head>
-<body>
-<div class="page-wrap">
-
-  <a class="logo" href="/dashboard.html">
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#6366f1"/>
-      <path d="M12 28L20 12L28 28M15.5 22H24.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
-    <span>SmartApply</span>
-  </a>
-
-  <h1>LinkedIn Session Setup</h1>
-  <p class="subtitle">
-    Log in to LinkedIn on your personal laptop, export your session cookies using the
-    script below, paste them here, and the bot will use your authenticated session —
-    no password needed on the server.
-  </p>
-
-  <div class="info-box">
-    <strong>Why this works:</strong> LinkedIn blocks headless browsers trying to log in from new IPs.
-    By exporting your existing session cookies from a browser where you're already logged in,
-    the bot inherits that trusted session and skips the login step entirely.
-    Cookies typically last <strong>1–2 years</strong> before needing a refresh.
-  </div>
-
-  <div class="steps">
-
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <h3>Open LinkedIn in your browser</h3>
-        <p>Go to <strong>linkedin.com</strong> and make sure you're logged in to your account.</p>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <h3>Open Developer Tools → Console</h3>
-        <p>Press <strong>F12</strong> (Windows/Linux) or <strong>Cmd+Option+J</strong> (Mac) to open DevTools,
-           then click the <strong>Console</strong> tab.</p>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <h3>Paste and run this script</h3>
-        <p>Copy the code below, paste it into the console, and press Enter.
-           It will copy your LinkedIn cookies to your clipboard automatically.</p>
-        <div class="code-block" id="extractor-code">copy(JSON.stringify(document.cookie.split(';').map(c=>{const[n,...v]=c.trim().split('=');return{name:n,value:v.join('='),domain:'.linkedin.com',path:'/',secure:true,httpOnly:false,sameSite:'None'}}), null, 2))</div>
-        <button class="copy-btn" onclick="copyCode()">Copy</button>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <h3>Paste the result below and save</h3>
-        <p>Your clipboard now contains the cookie JSON. Paste it in the box below and click Save.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <label for="cookie-input">Paste your LinkedIn cookies JSON here:</label>
-  <textarea class="paste-area" id="cookie-input" placeholder='Paste the JSON array here, e.g. [{"name":"li_at","value":"..."},...]'></textarea>
-
-  <button class="save-btn" id="save-btn" onclick="saveCookies()">Save Session Cookies</button>
-  <div class="status-msg" id="status-msg"></div>
-
-</div>
-
-<script src="/js/app.js"></script>
-<script>
-function copyCode() {
-  const code = document.getElementById('extractor-code').innerText;
-  navigator.clipboard.writeText(code).then(() => {
-    const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy', 2000);
-  });
-}
-
-function showStatus(msg, type) {
-  const el = document.getElementById('status-msg');
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
-}
-
-async function saveCookies() {
-  const raw = document.getElementById('cookie-input').value.trim();
-  const btn = document.getElementById('save-btn');
-  const ta = document.getElementById('cookie-input');
-
-  if (!raw) {
-    showStatus('Please paste your cookie JSON first.', 'error');
-    ta.classList.add('err');
-    return;
-  }
-
-  let cookies;
-  try {
-    cookies = JSON.parse(raw);
-    if (!Array.isArray(cookies)) throw new Error('Expected a JSON array');
-    ta.classList.remove('err');
-    ta.classList.add('ok');
-  } catch (e) {
-    showStatus('Invalid JSON — make sure you copied the full output from the console script.', 'error');
-    ta.classList.add('err');
-    ta.classList.remove('ok');
-    return;
-  }
-
-  // Quick sanity check — LinkedIn session must contain li_at cookie
-  const hasLiAt = cookies.some(c => c.name === 'li_at');
-  if (!hasLiAt) {
-    showStatus('Warning: "li_at" cookie not found. Make sure you ran the script on linkedin.com while logged in.', 'error');
-    ta.classList.add('err');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
-
-  try {
-    const token = localStorage.getItem('token') || getCookieValue('token');
-    const res = await fetch('/api/jobs/linkedin-cookies', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-      },
-      body: JSON.stringify({ cookies }),
-    });
-
-    if (res.ok) {
-      showStatus('✓ Session cookies saved! The bot will use these to log in automatically. You can now start the bot from the dashboard.', 'success');
-      btn.textContent = 'Saved ✓';
-    } else {
-      const data = await res.json().catch(() => ({}));
-      showStatus('Error saving cookies: ' + (data.detail || res.status), 'error');
-      btn.disabled = false;
-      btn.textContent = 'Save Session Cookies';
-    }
-  } catch (err) {
-    showStatus('Network error: ' + err.message, 'error');
-    btn.disabled = false;
-    btn.textContent = 'Save Session Cookies';
-  }
-}
-
-function getCookieValue(name) {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? match[2] : null;
 }
 </script>
 </body>
