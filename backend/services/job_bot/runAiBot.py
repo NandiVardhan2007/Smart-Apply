@@ -1112,7 +1112,7 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         print_lg("\n________________________________________________________________________________________________________________________\n")
         print_lg(f'\n>>>> Now searching for "{searchTerm}" <<<<')
         print_lg(f'[Search] URL: {_search_url[:120]}')
-        _driver_get(_search_url, f"search:{searchTerm[:30]}", settle=3.0)
+        _driver_get(_search_url, f"search:{searchTerm[:30]}", settle=4.0)
 
         # Dismiss cookie / GDPR consent banners
         try:
@@ -1144,9 +1144,21 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         current_count = 0
         try:
             while current_count < switch_number:
-                # With eager page load strategy, React job cards may not be painted yet.
-                # Scroll down to trigger lazy rendering, then wait for job card elements.
-                # Try multiple XPaths — LinkedIn occasionally changes attribute names.
+                # ── Wait for job cards ──────────────────────────────────────
+                # Step 1: wait for the results container/header — loads before cards
+                print_lg("[Search] Waiting for results to load...")
+                try:
+                    WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH,
+                        "//*[contains(@class,'jobs-search-results') or "
+                        "contains(@class,'jobs-search__results') or "
+                        "contains(@class,'scaffold-layout__list') or "
+                        "contains(@id,'main-content')]"
+                    )))
+                    print_lg("[Search] Results container found — waiting for job cards...")
+                except Exception:
+                    print_lg("[Search] Results container not found — trying job cards directly...")
+
+                # Step 2: scroll to trigger lazy render, then find cards
                 _JOB_CARD_XPATHS = [
                     "//li[@data-occludable-job-id]",
                     "//li[contains(@class,'jobs-search-results__list-item')]",
@@ -1155,26 +1167,23 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                 ]
 
                 def _wait_for_job_cards(scroll_attempt: int = 0):
-                    '''Scroll to trigger lazy render, then wait up to 15s for any job card XPath.'''
                     if scroll_attempt > 0:
-                        driver.execute_script("window.scrollTo(0, 400);")
-                        time.sleep(1)
-                        driver.execute_script("window.scrollTo(0, 800);")
-                        time.sleep(1)
+                        driver.execute_script("window.scrollTo(0, 300);")
+                        time.sleep(1.5)
                     for _xp in _JOB_CARD_XPATHS:
                         try:
-                            WebDriverWait(driver, 15).until(
+                            WebDriverWait(driver, 10).until(
                                 EC.presence_of_element_located((By.XPATH, _xp))
                             )
-                            return _xp  # return the working XPath
+                            print_lg(f"[Search] Job cards found with: {_xp[:60]}")
+                            return _xp
                         except Exception:
                             continue
                     return None
 
                 _working_xp = _wait_for_job_cards(scroll_attempt=0)
                 if _working_xp is None:
-                    # One retry with scroll
-                    print_lg("[Debug] Job cards not found after initial wait — scrolling and retrying...")
+                    print_lg("[Search] Scrolling to trigger lazy render...")
                     _working_xp = _wait_for_job_cards(scroll_attempt=1)
 
                 if _working_xp is None:
