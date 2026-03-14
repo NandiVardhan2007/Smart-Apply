@@ -237,24 +237,10 @@ def get_applied_job_ids() -> set[str]:
 
 def set_search_location() -> None:
     '''
-    Function to set search location
+    Location is now embedded directly in the search URL (see apply_to_jobs).
+    This function is kept as a no-op to avoid breaking the call in apply_filters().
     '''
-    if search_location.strip():
-        try:
-            print_lg(f'Setting search location as: "{search_location.strip()}"')
-            search_location_ele = try_xp(driver, ".//input[@aria-label='City, state, or zip code'and not(@disabled)]", False) #  and not(@aria-hidden='true')]")
-            text_input(actions, search_location_ele, search_location, "Search Location")
-        except ElementNotInteractableException:
-            try_xp(driver, ".//label[@class='jobs-search-box__input-icon jobs-search-box__keywords-label']")
-            actions.send_keys(Keys.TAB, Keys.TAB).perform()
-            actions.key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
-            actions.send_keys(search_location.strip()).perform()
-            sleep(2)
-            actions.send_keys(Keys.ENTER).perform()
-            try_xp(driver, ".//button[@aria-label='Cancel']")
-        except Exception as e:
-            try_xp(driver, ".//button[@aria-label='Cancel']")
-            print_lg("Failed to update search location, continuing with default location!", e)
+    print_lg(f'Search location "{search_location.strip()}" already set via URL parameter — skipping DOM input.')
 
 
 def apply_filters() -> None:
@@ -269,8 +255,10 @@ def apply_filters() -> None:
             recommended_wait = max(1, click_gap)  # Always wait at least 1s between filter groups
 
             # Wait for page to fully settle before looking for filter button
-            time.sleep(2)
-            wait.until(EC.presence_of_element_located((By.XPATH, '//button[normalize-space()="All filters"]')))
+            # Use a longer wait (30s) — proxy + Browserless can be slow to load LinkedIn
+            time.sleep(4)
+            _filter_wait = WebDriverWait(driver, 30)
+            _filter_wait.until(EC.presence_of_element_located((By.XPATH, '//button[normalize-space()="All filters"]')))
             time.sleep(1)
             driver.find_element(By.XPATH, '//button[normalize-space()="All filters"]').click()
             buffer(recommended_wait)

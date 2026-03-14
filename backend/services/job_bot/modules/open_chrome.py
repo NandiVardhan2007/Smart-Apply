@@ -177,10 +177,10 @@ def createChromeSession(isRetry: bool = False):
     except Exception as e:
         print_lg(f"[Browserless] Warning: stealth injection failed (non-fatal): {e}")
 
-    driver.set_page_load_timeout(90)
-    driver.implicitly_wait(10)
+    driver.set_page_load_timeout(120)  # proxy adds latency — give more time
+    driver.implicitly_wait(15)
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, 30)   # increased from 15s for proxy latency
     actions = ActionChains(driver)
     return options, driver, actions, wait
 
