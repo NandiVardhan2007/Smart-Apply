@@ -10,13 +10,12 @@ services:
       - key: JWT_SECRET
         sync: false        # Set in Render Dashboard
 
-      # ── Email — Mailersend (free, 3,000 emails/month, works on Render) ────────
-      # Sign up at https://mailersend.com → API Tokens → Generate token
-      - key: MAILERSEND_API_KEY
-        value: "mlsn.d80adbf201a898b1646b8b7a393ea3fb4339d32ecc722fdc640e61e09010ca87"
-      - key: MAILERSEND_FROM
-        value: "noreply@test-zxk54v8qp0qljy6v.mlsender.net"
-      - key: MAILERSEND_FROM_NAME
+      # ── Email — Brevo (300 emails/day free, sends to anyone, no domain needed) ─
+      - key: BREVO_API_KEY
+        sync: false        # Set in Render Dashboard — never put keys in code!
+      - key: BREVO_FROM
+        value: "kovvurinandivardhanreddy7@gmail.com"
+      - key: BREVO_FROM_NAME
         value: "SmartApply"
 
       # ── App URL — REQUIRED for correct password reset links ───────────────

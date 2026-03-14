@@ -28,11 +28,11 @@ SMTP_USER       = _admin_cfg.get("smtp_user") or os.getenv("SMTP_USER", "")
 SMTP_PASS       = _admin_cfg.get("smtp_pass") or os.getenv("SMTP_PASS", "")
 SMTP_FROM       = os.getenv("SMTP_FROM", f"SmartApply <{SMTP_USER}>")
 
-# ── Mailersend (HTTP email API — works on Render, 3,000 emails/month free) ────
-# Sign up free at https://mailersend.com — no credit card needed
-MAILERSEND_API_KEY   = _admin_cfg.get("mailersend_api_key") or os.getenv("MAILERSEND_API_KEY", "")
-MAILERSEND_FROM      = os.getenv("MAILERSEND_FROM", "noreply@trial-XXXXXXXX.mlsender.net")  # replace with your Mailersend trial/domain
-MAILERSEND_FROM_NAME = os.getenv("MAILERSEND_FROM_NAME", "SmartApply")
+# ── Brevo (HTTP email API — works on Render, 300 emails/day free) ─────────────
+# Sign up free at https://brevo.com — no domain needed, sends to anyone
+BREVO_API_KEY   = os.getenv("BREVO_API_KEY", "")
+BREVO_FROM      = os.getenv("BREVO_FROM", "kovvurinandivardhanreddy7@gmail.com")
+BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "SmartApply")
 
 APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")

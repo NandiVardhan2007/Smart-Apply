@@ -1,49 +1,49 @@
 """
 email_utils.py
-Sends transactional emails via Mailersend HTTP API (works on Render.com).
-Sign up free at https://mailersend.com — 3,000 emails/month, no credit card.
+Sends transactional emails via Brevo (formerly Sendinblue) HTTP API.
+Works on Render.com — no SMTP ports needed.
 """
 
 import asyncio
 import logging
 import httpx
 
-from backend.config import APP_URL, MAILERSEND_API_KEY, MAILERSEND_FROM, MAILERSEND_FROM_NAME
+from backend.config import APP_URL, BREVO_API_KEY, BREVO_FROM, BREVO_FROM_NAME
 
 logger = logging.getLogger(__name__)
 
 
 async def _send(to: str, subject: str, html: str):
-    """Send email via Mailersend HTTP API."""
-    if not MAILERSEND_API_KEY:
-        logger.warning(f"[EMAIL MOCK] No MAILERSEND_API_KEY set. Would have sent '{subject}' to {to}")
+    """Send email via Brevo HTTP API."""
+    if not BREVO_API_KEY:
+        logger.warning(f"[EMAIL MOCK] No BREVO_API_KEY set. Would have sent '{subject}' to {to}")
         return
 
     payload = {
-        "from": {"email": MAILERSEND_FROM, "name": MAILERSEND_FROM_NAME},
-        "to": [{"email": to}],
-        "subject": subject,
-        "html": html,
+        "sender":   {"email": BREVO_FROM, "name": BREVO_FROM_NAME},
+        "to":       [{"email": to}],
+        "subject":  subject,
+        "htmlContent": html,
     }
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                "https://api.mailersend.com/v1/email",
+                "https://api.brevo.com/v3/smtp/email",
                 headers={
-                    "Authorization": f"Bearer {MAILERSEND_API_KEY}",
+                    "api-key": BREVO_API_KEY,
                     "Content-Type": "application/json",
                 },
                 json=payload,
             )
-        if resp.status_code in (200, 202):
-            logger.info(f"[Mailersend] Email sent to {to}")
+        if resp.status_code in (200, 201):
+            logger.info(f"[Brevo] Email sent to {to}")
         else:
-            logger.error(f"[Mailersend] Failed ({resp.status_code}): {resp.text}")
-            raise RuntimeError(f"Mailersend error {resp.status_code}: {resp.text}")
+            logger.error(f"[Brevo] Failed ({resp.status_code}): {resp.text}")
+            raise RuntimeError(f"Brevo error {resp.status_code}: {resp.text}")
     except httpx.HTTPError as exc:
-        logger.error(f"[Mailersend] HTTP error: {exc}")
-        raise RuntimeError("Email delivery failed. Check your MAILERSEND_API_KEY.") from exc
+        logger.error(f"[Brevo] HTTP error: {exc}")
+        raise RuntimeError("Email delivery failed. Check your BREVO_API_KEY.") from exc
 
 
 # ── Public helpers ────────────────────────────────────────────────────────────
