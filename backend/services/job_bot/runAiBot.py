@@ -133,18 +133,35 @@ def is_logged_in_LN() -> bool:
     # Browserless headless sessions often redirect to /jobs or /mynetwork instead of /feed/
     _LOGGED_IN_PATHS = ("/feed", "/jobs", "/mynetwork", "/in/", "/notifications", "/messaging")
     if any(path in url for path in _LOGGED_IN_PATHS):
-        # Secondary check: confirm the nav "Me" element is actually in the DOM
-        try:
-            WebDriverWait(driver, 8).until(
-                EC.presence_of_element_located((By.XPATH,
-                    "//*[contains(@id,'profile-nav-item') or "
-                    "contains(@class,'global-nav__me') or "
-                    "contains(@aria-label,'Me')]"))
-            )
-            return True
-        except Exception:
-            print_lg("URL looks authenticated but profile/nav element not found — treating as logged out.")
+        # Secondary DOM check — try several selectors covering different LinkedIn UI versions.
+        # Use a generous 15s wait because headless + proxy can be slow to render the nav.
+        # If none match, fall back to checking for explicit logout markers before giving up.
+        _AUTH_XPATHS = [
+            "//*[contains(@id,'profile-nav-item') or contains(@class,'global-nav__me')]",
+            "//*[@aria-label='Me']",
+            "//nav[contains(@class,'global-nav')]",
+            "//div[contains(@class,'feed-identity-module')]",
+            "//div[contains(@class,'jobs-search-results')]",   # jobs page
+            "//div[contains(@class,'scaffold-layout')]",        # generic authenticated layout
+        ]
+        for _xp in _AUTH_XPATHS:
+            try:
+                WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.XPATH, _xp))
+                )
+                return True
+            except Exception:
+                continue
+        # None found — check for explicit logout markers before concluding logged out
+        if try_linkText(driver, "Sign in"):
+            print_lg("URL looks authenticated but 'Sign in' link found — treating as logged out.")
             return False
+        if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):
+            print_lg("URL looks authenticated but Sign-in button found — treating as logged out.")
+            return False
+        # No auth element but also no logout marker — benefit of the doubt, assume logged in
+        print_lg("Warning: nav element not confirmed but no sign-in indicators found — assuming logged in.")
+        return True
     # Explicit logout/landing page indicators
     if try_linkText(driver, "Sign in"): return False
     if try_xp(driver, '//button[@type="submit" and contains(text(), "Sign in")]'):  return False
@@ -169,10 +186,28 @@ def login_LN() -> None:
 
     print_lg("Navigating to LinkedIn login page...")
     driver.get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin")
-    _t.sleep(_r.uniform(2.0, 3.5))  # human-like pause before interacting
+    _t.sleep(_r.uniform(3.5, 5.0))  # longer settle — proxy latency can be high
+
+    # Verify the login page actually loaded (proxy may have returned an error page)
+    try:
+        _login_title = driver.title.lower()
+        _login_url = driver.current_url
+        print_lg(f"[Debug] Login page title: '{driver.title}' URL: {_login_url[:80]}")
+        if "linkedin" not in _login_title and "sign" not in _login_title:
+            print_lg(f"[Debug] Warning: login page title unexpected — proxy may have intercepted.")
+            try:
+                driver.save_screenshot(f"{logs_folder_path}login_page_load.png")
+                print_lg(f"[Debug] Login page load snapshot saved.")
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     try:
-        wait.until(EC.presence_of_element_located((By.ID, "username")))
+        # Wait up to 20s for the username field — proxy latency can be significant
+        _login_wait = WebDriverWait(driver, 20)
+        _login_wait.until(EC.presence_of_element_located((By.ID, "username")))
+        print_lg("[Debug] Login form found — entering credentials.")
 
         # Type email with slight human-like delay
         email_field = driver.find_element(By.ID, "username")
@@ -200,6 +235,17 @@ def login_LN() -> None:
 
     except Exception as e1:
         print_lg(f"Login form interaction failed: {e1}")
+        # Dump the login page so we can see what the proxy/LinkedIn actually returned
+        try:
+            _lshot = f"{logs_folder_path}login_failure.png"
+            _lhtml = f"{logs_folder_path}login_failure.html"
+            driver.save_screenshot(_lshot)
+            with open(_lhtml, 'w', encoding='utf-8', errors='replace') as _lf:
+                _lf.write(driver.page_source)
+            print_lg(f"[Debug] Login failure snapshot → {_lshot}")
+            print_lg(f"[Debug] Login page HTML preview: {driver.page_source[:600].replace(chr(10),' ')}")
+        except Exception as _ld:
+            print_lg(f"[Debug] Could not save login failure snapshot: {_ld}")
         # Try profile button fallback
         try:
             find_by_class(driver, "profile__details").click()
@@ -1075,6 +1121,22 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     # Log page title and URL to diagnose what LinkedIn showed
                     try:
                         print_lg(f"Job listings not found. Page title: '{driver.title}' URL: {driver.current_url[:100]}")
+                        # Detect Chrome's own error page — means proxy/network failure
+                        if _is_chrome_error_page():
+                            print_lg("=" * 60)
+                            print_lg("PROXY/NETWORK ERROR: Chrome returned an error page instead of LinkedIn.")
+                            proxy_set = bool(os.environ.get("RESIDENTIAL_PROXY", "").strip())
+                            if proxy_set:
+                                print_lg("Your RESIDENTIAL_PROXY is set but the connection failed.")
+                                print_lg("→ Try unsetting RESIDENTIAL_PROXY and restarting the bot.")
+                            else:
+                                print_lg("→ Check outbound internet access on this server.")
+                            print_lg("=" * 60)
+                            try:
+                                driver.save_screenshot(f"{logs_folder_path}proxy_failure_{_safe_term if '_safe_term' in dir() else 'search'}.png")
+                            except Exception:
+                                pass
+                            raise NoSuchWindowException("Proxy/network failure — Chrome error page")
                         # Dump screenshot + HTML so the user can inspect what LinkedIn returned
                         try:
                             import re as _re
@@ -1362,6 +1424,68 @@ def run(total_runs: int) -> int:
 chatGPT_tab = False
 linkedIn_tab = False
 
+def _is_chrome_error_page() -> bool:
+    '''
+    Returns True if Chrome is showing its own error page (net::ERR_*) instead
+    of a real website. This happens when the proxy blocks or fails the connection.
+    Indicators: title is the raw URL / "www.linkedin.com", and page source contains
+    Chrome's internal error page CSS fingerprint.
+    '''
+    try:
+        src = driver.page_source or ""
+        title = driver.title or ""
+        # Chrome error pages embed this copyright string in their CSS
+        chrome_err = "Chromium Authors" in src or "google-gray" in src
+        # Also catch the generic Chrome offline/ERR page by its known HTML structure
+        err_page_markers = ["id=\"main-frame-error\"", "id=\"error-information-popup\"",
+                            "jd-content", "ERR_", "error-code"]
+        has_marker = any(m in src for m in err_page_markers)
+        # Title of Chrome error page is usually the URL itself or blank
+        suspicious_title = title in ("", "about:blank") or ("linkedin.com" in title and "/" not in title.replace("www.linkedin.com", ""))
+        return chrome_err or has_marker or suspicious_title
+    except Exception:
+        return False
+
+
+def _check_proxy_connectivity() -> bool:
+    '''
+    Quick sanity check: navigate to linkedin.com and verify we get a real page.
+    Returns True if connectivity looks OK, False if proxy is broken.
+    Logs a clear error with diagnosis if broken.
+    '''
+    proxy_set = bool(os.environ.get("RESIDENTIAL_PROXY", "").strip())
+    print_lg(f"[Proxy] {'Residential proxy IS set' if proxy_set else 'No proxy configured'} — checking connectivity...")
+    try:
+        driver.get("https://www.linkedin.com/")
+        import time as _tc; _tc.sleep(3)
+        if _is_chrome_error_page():
+            src_preview = (driver.page_source or "")[:300].replace("\n", " ")
+            print_lg("=" * 60)
+            print_lg("PROXY CONNECTIVITY FAILURE DETECTED")
+            print_lg("Chrome returned an error page instead of LinkedIn.")
+            if proxy_set:
+                print_lg("Your RESIDENTIAL_PROXY env var is set but the proxy is not working.")
+                print_lg("Fix options:")
+                print_lg("  1. Unset RESIDENTIAL_PROXY to connect directly (no proxy)")
+                print_lg("  2. Verify your proxy credentials/host are correct")
+                print_lg("  3. Check if your proxy provider's IP is active")
+            else:
+                print_lg("No proxy is set — check your server's outbound internet access.")
+            print_lg(f"Chrome error page preview: {src_preview}")
+            print_lg("=" * 60)
+            try:
+                driver.save_screenshot(f"{logs_folder_path}proxy_failure.png")
+                print_lg(f"[Debug] Proxy failure screenshot saved → {logs_folder_path}proxy_failure.png")
+            except Exception:
+                pass
+            return False
+        print_lg("[Proxy] Connectivity OK — LinkedIn loaded successfully.")
+        return True
+    except Exception as e:
+        print_lg(f"[Proxy] Connectivity check exception: {e}")
+        return False
+
+
 def main() -> None:
     total_runs = 1
     try:
@@ -1373,6 +1497,13 @@ def main() -> None:
             print_lg('Default resume missing, will use previous LinkedIn upload.')
             useNewResume = False
         
+        # ── Proxy / connectivity check ────────────────────────────────────────
+        # Do this BEFORE the login attempt so a broken proxy is reported clearly
+        # rather than causing a cryptic "Login form interaction failed" crash.
+        if not _check_proxy_connectivity():
+            print_lg("ABORTING: Cannot reach LinkedIn. Fix your proxy or network and restart the bot.")
+            return
+
         # Login to LinkedIn
         # Try going directly to feed first — if LinkedIn remembers the session
         # (cookies from a previous run) we skip the login form entirely.
