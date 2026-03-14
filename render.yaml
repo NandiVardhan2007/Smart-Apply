@@ -2,7 +2,10 @@ services:
   - type: web
     name: smartapply
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: >
+      apt-get update -qq &&
+      apt-get install -y -qq chromium-browser chromium-chromedriver &&
+      pip install -r requirements.txt
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: MONGO_URI
@@ -28,6 +31,8 @@ services:
       - key: BROWSERLESS_API_KEY
         value: 2U8qE922A3wUFje73af3acf67061fe881d4135c168e40e52f
       - key: BOT_ENABLED
+        value: "true"
+      - key: USE_LOCAL_CHROME
         value: "true"
       - key: DB_NAME
         value: smartapply

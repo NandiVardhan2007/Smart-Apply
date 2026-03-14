@@ -256,8 +256,8 @@ def apply_filters() -> None:
         try:
             recommended_wait = max(1, click_gap)
 
-            # Wait for page to fully settle — proxy adds significant latency
-            time.sleep(5)
+            # Brief settle before checking for filter button
+            time.sleep(2)
 
             # Check session is still alive before proceeding
             try:
@@ -1006,8 +1006,16 @@ def apply_to_jobs(search_terms: list[str]) -> None:
 
         apply_filters()
 
-        # Wait for LinkedIn to fully reload results after filters are applied
-        time.sleep(5)
+        # Wait for LinkedIn to reload results
+        time.sleep(2)
+
+        # Verify session is still alive before starting job loop
+        try:
+            _ = driver.current_url
+            print_lg(f"Session alive, current page: {driver.current_url[:80]}")
+        except (NoSuchWindowException, WebDriverException) as e:
+            print_lg("Browser session lost before job listings could load.")
+            raise e
 
         current_count = 0
         try:
@@ -1284,7 +1292,7 @@ def main() -> None:
         tabs_count = len(driver.window_handles)
         print_lg("Checking LinkedIn session status...")
         driver.get("https://www.linkedin.com/feed/")
-        import time as _t2; _t2.sleep(3)
+        import time as _t2; _t2.sleep(1)
         if not is_logged_in_LN():
             print_lg("Not logged in — attempting credential login...")
             login_LN()

@@ -1,17 +1,24 @@
 '''
-open_chrome.py — SmartApply (Browserless.io Cloud Edition)
+open_chrome.py — SmartApply
 
-Uses Browserless.io remote Chrome instead of a local browser.
-Token is passed as a capability (NOT a query param) — this is the correct v1 method.
-Set BROWSERLESS_API_KEY in your .env or Render environment variables.
+Supports two modes:
+1. BROWSERLESS (cloud) — set BROWSERLESS_API_KEY env var
+   Uses Browserless.io remote Chrome. Requires a paid plan for sessions > 60s.
 
-Anti-detection: applies multiple stealth techniques to avoid LinkedIn's
-headless-browser detection that triggers security checkpoints.
+2. LOCAL CHROME (self-hosted) — no BROWSERLESS_API_KEY needed
+   Installs and runs Chromium directly on the Render server.
+   No session timeout. Completely free. Recommended.
+
+Set USE_LOCAL_CHROME=true in Render env vars to force local mode even if
+BROWSERLESS_API_KEY is set.
 '''
 
 import os
+import subprocess
+import sys
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -36,109 +43,189 @@ except ImportError:
     default_resume_path = "all resumes/default/resume.pdf"
 
 
-# ── Browserless.io Configuration ──────────────────────────────────────────────
-
-BROWSERLESS_ENDPOINT = "https://chrome.browserless.io/webdriver"
-
-# Full stealth JS injected before every page load — masks all common automation signals
+# ── Stealth JS — masks all common headless/automation signals ─────────────────
 _STEALTH_JS = """
-// 1. Hide webdriver flag
 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-
-// 2. Restore plugins (headless Chrome has none — dead giveaway)
-Object.defineProperty(navigator, 'plugins', {
-    get: () => [1, 2, 3, 4, 5],
-});
-
-// 3. Restore languages
-Object.defineProperty(navigator, 'languages', {
-    get: () => ['en-US', 'en'],
-});
-
-// 4. Restore hardware concurrency (headless often reports 0 or 1)
+Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
 Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
-
-// 5. Restore device memory
 Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
-
-// 6. Fix Chrome runtime object (missing in headless)
 window.chrome = { runtime: {} };
-
-// 7. Proper permissions API behaviour
 const originalQuery = window.navigator.permissions.query;
 window.navigator.permissions.query = (parameters) => (
     parameters.name === 'notifications'
         ? Promise.resolve({ state: Notification.permission })
         : originalQuery(parameters)
 );
-
-// 8. Mask headless in User-Agent client hints
-Object.defineProperty(navigator, 'userAgentData', {
-    get: () => ({
-        brands: [
-            { brand: 'Google Chrome', version: '125' },
-            { brand: 'Chromium',      version: '125' },
-            { brand: 'Not/A)Brand',   version: '24'  },
-        ],
-        mobile: false,
-        platform: 'Windows',
-    }),
-});
 """
 
+BROWSERLESS_ENDPOINT = "https://chrome.browserless.io/webdriver"
 
-def _build_options() -> Options:
-    api_key = os.environ.get("BROWSERLESS_API_KEY", "")
-    if not api_key:
-        raise RuntimeError(
-            "BROWSERLESS_API_KEY is not set.\n"
-            "Add it to your .env file or Render environment variables."
-        )
 
+def _stealth_options() -> Options:
+    """Build Chrome options with anti-detection flags."""
     options = Options()
-
-    # ✅ Pass token as capability (correct v1 method)
-    options.set_capability("browserless:token", api_key)
-
-    # ── Residential proxy (routes traffic through a real home IP) ─────────────
-    # LinkedIn blocks datacenter IPs (Render, AWS, GCP). A residential proxy
-    # makes the session appear to come from a normal home internet connection.
-    # Set RESIDENTIAL_PROXY in Render env vars in the format:
-    #   http://user:pass@host:port   (e.g. from Webshare, Oxylabs, Bright Data)
-    # If not set, the bot runs without a proxy (will likely hit LinkedIn checkpoint).
-    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
-    if proxy_url:
-        options.add_argument(f"--proxy-server={proxy_url}")
-        print_lg(f"[Browserless] Residential proxy configured.")
-    else:
-        print_lg(
-            "[Browserless] WARNING: No RESIDENTIAL_PROXY set. "
-            "LinkedIn may block logins from Render's datacenter IP. "
-            "Set RESIDENTIAL_PROXY in your Render environment variables."
-        )
-
-    # ── Core flags ────────────────────────────────────────────────────────────
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-infobars")
     options.add_argument("--lang=en-US,en;q=0.9")
-    options.add_argument("--start-maximized")
-
-    # ── Anti-detection: remove all automation indicators ─────────────────────
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
-
-    # ── Realistic User-Agent (matches Chrome 125 on Windows) ─────────────────
     options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/125.0.0.0 Safari/537.36"
     )
-
     return options
+
+
+def _inject_stealth(driver):
+    try:
+        driver.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {"source": _STEALTH_JS},
+        )
+        print_lg("[Chrome] Stealth anti-detection script injected.")
+    except Exception as e:
+        print_lg(f"[Chrome] Warning: stealth injection failed (non-fatal): {e}")
+
+
+def _install_chromium():
+    """Install Chromium + chromedriver on Render (Ubuntu 24)."""
+    print_lg("[Chrome] Installing Chromium on Render server...")
+    try:
+        subprocess.run(
+            ["apt-get", "install", "-y", "chromium-browser", "chromium-chromedriver"],
+            check=True, capture_output=True
+        )
+        print_lg("[Chrome] Chromium installed successfully.")
+    except Exception:
+        # Try snap or alternative paths
+        try:
+            subprocess.run(
+                ["apt-get", "install", "-y", "chromium", "chromium-driver"],
+                check=True, capture_output=True
+            )
+            print_lg("[Chrome] Chromium (alt package) installed successfully.")
+        except Exception as e:
+            print_lg(f"[Chrome] apt install failed: {e} — trying chromium-browser path directly")
+
+
+def _find_chromedriver():
+    """Find chromedriver binary path."""
+    candidates = [
+        "/usr/bin/chromedriver",
+        "/usr/lib/chromium-browser/chromedriver",
+        "/usr/lib/chromium/chromedriver",
+        "/snap/bin/chromium.chromedriver",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    # Try which
+    try:
+        result = subprocess.run(["which", "chromedriver"], capture_output=True, text=True)
+        if result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _find_chrome_binary():
+    """Find Chrome/Chromium binary path."""
+    candidates = [
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+        "/snap/bin/chromium",
+        "/usr/bin/google-chrome",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    try:
+        result = subprocess.run(["which", "chromium-browser"], capture_output=True, text=True)
+        if result.stdout.strip():
+            return result.stdout.strip()
+        result = subprocess.run(["which", "chromium"], capture_output=True, text=True)
+        if result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _create_local_session():
+    """Launch a local Chromium session on the Render server."""
+    print_lg("[Chrome] Starting local Chromium session on Render server...")
+
+    # Install if not present
+    if not _find_chromedriver():
+        _install_chromium()
+
+    chromedriver_path = _find_chromedriver()
+    chrome_binary = _find_chrome_binary()
+
+    if not chromedriver_path:
+        raise RuntimeError(
+            "chromedriver not found after installation attempt. "
+            "Check Render build logs."
+        )
+
+    print_lg(f"[Chrome] Using chromedriver: {chromedriver_path}")
+    if chrome_binary:
+        print_lg(f"[Chrome] Using Chrome binary: {chrome_binary}")
+
+    options = _stealth_options()
+    options.add_argument("--headless=new")  # new headless mode (less detectable)
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-setuid-sandbox")
+    options.add_argument("--remote-debugging-port=9222")
+
+    if chrome_binary:
+        options.binary_location = chrome_binary
+
+    # Add residential proxy if configured
+    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
+    if proxy_url:
+        options.add_argument(f"--proxy-server={proxy_url}")
+        print_lg("[Chrome] Residential proxy configured.")
+    else:
+        print_lg("[Chrome] No proxy set — running without proxy.")
+
+    service = Service(executable_path=chromedriver_path)
+    driver = webdriver.Chrome(service=service, options=options)
+    print_lg("[Chrome] Local Chromium session started successfully.")
+    return driver
+
+
+def _create_browserless_session():
+    """Connect to Browserless.io cloud Chrome."""
+    api_key = os.environ.get("BROWSERLESS_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("BROWSERLESS_API_KEY is not set.")
+
+    print_lg("[Browserless] Connecting to cloud Chrome at Browserless.io ...")
+    options = _stealth_options()
+    options.set_capability("browserless:token", api_key)
+    options.set_capability("browserless:timeout", 300000)  # 5 min (paid plans only)
+
+    proxy_url = os.environ.get("RESIDENTIAL_PROXY", "").strip()
+    if proxy_url:
+        options.add_argument(f"--proxy-server={proxy_url}")
+        print_lg("[Browserless] Residential proxy configured.")
+    else:
+        print_lg("[Browserless] WARNING: No RESIDENTIAL_PROXY — LinkedIn may block datacenter IP.")
+
+    driver = webdriver.Remote(
+        command_executor=BROWSERLESS_ENDPOINT,
+        options=options,
+    )
+    print_lg("[Browserless] Cloud Chrome session started successfully.")
+    return driver
 
 
 def createChromeSession(isRetry: bool = False):
@@ -149,40 +236,27 @@ def createChromeSession(isRetry: bool = False):
         generated_resume_path + "/temp",
     ])
 
-    print_lg("[Browserless] Connecting to cloud Chrome at Browserless.io ...")
+    use_local = os.environ.get("USE_LOCAL_CHROME", "").lower() in ("true", "1", "yes")
+    has_browserless = bool(os.environ.get("BROWSERLESS_API_KEY", "").strip())
 
-    try:
-        options = _build_options()
-        driver = webdriver.Remote(
-            command_executor=BROWSERLESS_ENDPOINT,
-            options=options,
-        )
-        print_lg("[Browserless] Cloud Chrome session started successfully.")
-    except RuntimeError:
-        raise
-    except Exception as e:
-        raise RuntimeError(
-            f"Failed to connect to Browserless.io.\n"
-            f"Check your BROWSERLESS_API_KEY and internet connection.\n"
-            f"Error: {e}"
-        )
+    if use_local or not has_browserless:
+        print_lg("[Chrome] Mode: LOCAL Chromium (no session timeout, free)")
+        driver = _create_local_session()
+    else:
+        print_lg("[Chrome] Mode: BROWSERLESS cloud Chrome")
+        try:
+            driver = _create_browserless_session()
+        except Exception as e:
+            print_lg(f"[Browserless] Failed: {e}\n[Chrome] Falling back to local Chromium...")
+            driver = _create_local_session()
 
-    # ── Inject full stealth script before every page navigation ───────────────
-    try:
-        driver.execute_cdp_cmd(
-            "Page.addScriptToEvaluateOnNewDocument",
-            {"source": _STEALTH_JS},
-        )
-        print_lg("[Browserless] Stealth anti-detection script injected.")
-    except Exception as e:
-        print_lg(f"[Browserless] Warning: stealth injection failed (non-fatal): {e}")
+    _inject_stealth(driver)
+    driver.set_page_load_timeout(120)
+    driver.implicitly_wait(10)
 
-    driver.set_page_load_timeout(120)  # proxy adds latency — give more time
-    driver.implicitly_wait(15)
-
-    wait = WebDriverWait(driver, 30)   # increased from 15s for proxy latency
+    wait = WebDriverWait(driver, 30)
     actions = ActionChains(driver)
-    return options, driver, actions, wait
+    return None, driver, actions, wait
 
 
 try:
@@ -191,15 +265,13 @@ try:
 
 except Exception as e:
     msg = (
-        "Failed to open Browserless.io Chrome session.\n\n"
-        "Possible reasons:\n"
-        "  1. BROWSERLESS_API_KEY is missing or invalid.\n"
-        "  2. No internet connection on the server.\n"
-        "  3. Browserless.io session limit reached (check your plan).\n\n"
+        "Failed to start Chrome session.\n\n"
+        "If using Browserless: check BROWSERLESS_API_KEY.\n"
+        "If using local Chrome: check Render build logs for Chromium install errors.\n"
         f"Error: {e}"
     )
     print_lg(msg)
-    critical_error_log("In Opening Browserless Chrome", e)
+    critical_error_log("In Opening Chrome Session", e)
     try:
         if driver:
             driver.quit()
