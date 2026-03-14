@@ -198,7 +198,7 @@
         `;
 
         // Key status
-        const keyCount = data.openrouter_keys || 0;
+        const keyCount = data.nvidia_keys || 0;
         document.getElementById('key-count').textContent = `${keyCount} key${keyCount !== 1 ? 's' : ''} loaded`;
         document.getElementById('ai-status').textContent = keyCount ? '✓ Active' : '✕ No keys';
         document.getElementById('ai-status').className = `badge ${keyCount ? 'badge-success' : 'badge-danger'}`;
