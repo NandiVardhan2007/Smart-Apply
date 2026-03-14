@@ -1011,8 +1011,8 @@ def apply_to_jobs(search_terms: list[str]) -> None:
 
         # Verify session is still alive before starting job loop
         try:
-            _ = driver.current_url
-            print_lg(f"Session alive, current page: {driver.current_url[:80]}")
+            current_url = driver.current_url
+            print_lg(f"Session alive, current page: {current_url[:80]}")
         except (NoSuchWindowException, WebDriverException) as e:
             print_lg("Browser session lost before job listings could load.")
             raise e
@@ -1020,8 +1020,27 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         current_count = 0
         try:
             while current_count < switch_number:
-                # Wait until job listings are loaded
-                wait.until(EC.presence_of_all_elements_located((By.XPATH, "//li[@data-occludable-job-id]")))
+                # Wait until job listings are loaded — use longer wait for proxy latency
+                _job_wait = WebDriverWait(driver, 45)
+                try:
+                    _job_wait.until(EC.presence_of_all_elements_located((By.XPATH, "//li[@data-occludable-job-id]")))
+                except Exception as _je:
+                    # Log page title and URL to diagnose what LinkedIn showed
+                    try:
+                        print_lg(f"Job listings not found. Page title: '{driver.title}' URL: {driver.current_url[:100]}")
+                        # Check if we hit a LinkedIn error/redirect page
+                        if "authwall" in driver.current_url or "login" in driver.current_url:
+                            print_lg("Session expired — LinkedIn redirected to login. Aborting.")
+                            raise NoSuchWindowException("Session expired")
+                        if "checkpoint" in driver.current_url:
+                            print_lg("LinkedIn checkpoint detected during job search. Aborting.")
+                            raise NoSuchWindowException("Checkpoint")
+                    except (NoSuchWindowException, WebDriverException):
+                        raise
+                    except Exception:
+                        pass
+                    print_lg("No job listings found on this page — moving to next search term.")
+                    break  # skip to next search term instead of crashing
 
                 pagination_element, current_page = get_page_info()
 
@@ -1241,8 +1260,13 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     break
 
         except (NoSuchWindowException, WebDriverException) as e:
-            print_lg("Browser window closed or session is invalid. Ending application process.", e)
-            raise e # Re-raise to be caught by main
+            err_str = str(e).lower()
+            # Distinguish between a real browser death vs a timeout waiting for elements
+            if "timeout" in err_str or "timed out" in err_str:
+                print_lg(f"Timed out waiting for job listings — LinkedIn page may be slow or empty. Skipping this search term.")
+            else:
+                print_lg("Browser window closed or session is invalid. Ending application process.", e)
+                raise e  # Re-raise only real browser deaths to be caught by main
         except Exception as e:
             print_lg("Failed to find Job listings!")
             critical_error_log("In Applier", e)
