@@ -246,19 +246,35 @@ def set_search_location() -> None:
 def apply_filters() -> None:
     '''
     Function to apply job search filters, with retry logic for stale elements.
+    If the All filters button cannot be found (slow proxy load), skips filters
+    and continues with default LinkedIn results rather than crashing.
     '''
     set_search_location()
 
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         try:
-            recommended_wait = max(1, click_gap)  # Always wait at least 1s between filter groups
+            recommended_wait = max(1, click_gap)
 
-            # Wait for page to fully settle before looking for filter button
-            # Use a longer wait (30s) — proxy + Browserless can be slow to load LinkedIn
-            time.sleep(4)
+            # Wait for page to fully settle — proxy adds significant latency
+            time.sleep(5)
+
+            # Check session is still alive before proceeding
+            try:
+                _ = driver.current_url
+            except (NoSuchWindowException, WebDriverException) as e:
+                print_lg("Browser session lost before filters could be applied.")
+                raise e  # re-raise so outer handler catches it
+
+            # Try to find the All filters button — if LinkedIn layout changed or
+            # page didn't load fully, skip filters and continue with defaults
             _filter_wait = WebDriverWait(driver, 30)
-            _filter_wait.until(EC.presence_of_element_located((By.XPATH, '//button[normalize-space()="All filters"]')))
+            try:
+                _filter_wait.until(EC.presence_of_element_located((By.XPATH, '//button[normalize-space()="All filters"]')))
+            except Exception:
+                print_lg("All filters button not found after 30s — skipping filters, continuing with default results.")
+                return
+
             time.sleep(1)
             driver.find_element(By.XPATH, '//button[normalize-space()="All filters"]').click()
             buffer(recommended_wait)
@@ -267,7 +283,7 @@ def apply_filters() -> None:
             wait_span_click(driver, date_posted)
             buffer(recommended_wait)
 
-            multi_sel_noWait(driver, experience_level) 
+            multi_sel_noWait(driver, experience_level)
             multi_sel_noWait(driver, companies, actions)
             if experience_level or companies: buffer(recommended_wait)
 
@@ -276,7 +292,7 @@ def apply_filters() -> None:
             if job_type or on_site: buffer(recommended_wait)
 
             if easy_apply_only: boolean_button_click(driver, actions, "Easy Apply")
-            
+
             multi_sel_noWait(driver, location)
             multi_sel_noWait(driver, industry)
             if location or industry: buffer(recommended_wait)
@@ -290,18 +306,28 @@ def apply_filters() -> None:
 
             wait_span_click(driver, salary)
             buffer(recommended_wait)
-            
+
             multi_sel_noWait(driver, benefits)
             multi_sel_noWait(driver, commitments)
             if benefits or commitments: buffer(recommended_wait)
 
-            show_results_button: WebElement = driver.find_element(By.XPATH, '//button[contains(translate(@aria-label, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "apply current filters to show")]')
-            show_results_button.click()
+            try:
+                show_results_button: WebElement = driver.find_element(By.XPATH, '//button[contains(translate(@aria-label, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "apply current filters to show")]')
+                show_results_button.click()
+            except Exception:
+                print_lg("Show results button not found — closing filter panel and continuing.")
+                try:
+                    driver.find_element(By.XPATH, '//button[@aria-label="Dismiss"]').click()
+                except Exception:
+                    pass
 
             global pause_after_filters
-            pause_after_filters = False  # auto-continue, no popup
+            pause_after_filters = False
             return  # Success
 
+        except (NoSuchWindowException, WebDriverException) as e:
+            # Session is dead — re-raise so the outer applier loop handles it
+            raise e
         except StaleElementReferenceException as e:
             print_lg(f"Stale element on filter attempt {attempt}/{max_retries}, retrying...")
             time.sleep(3)
