@@ -23,6 +23,30 @@
     .ai-btn.ai-loading .ai-spin{display:inline-block}.ai-btn.ai-loading .ai-lbl{display:none}
     .field-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
     .field-hdr label{margin-bottom:0!important;font-size:13px;font-weight:500;color:var(--text-2);letter-spacing:0.03em;text-transform:uppercase}
+    .profile-container{padding-top:40px;padding-bottom:80px}
+    .profile-header{margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+    .profile-subtitle{margin-top:6px}
+    .section-title{margin-bottom:24px}
+    .subsection-title{margin-bottom:16px;font-size:0.95rem;color:var(--text-2)}
+    .span-2{grid-column:span 2}
+    .mt-24{margin-top:24px}
+    .mt-20{margin-top:20px}
+    .mt-28{margin-top:28px}
+    .actions-right{text-align:right}
+    .actions-between{display:flex;gap:12px;justify-content:space-between}
+    .stack-16{display:flex;flex-direction:column;gap:16px}
+    .stack-18{display:flex;flex-direction:column;gap:18px}
+    .stack-24{display:flex;flex-direction:column;gap:24px}
+    .chip-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+    .selectable-chip{cursor:pointer}
+    .chip-checkbox{margin-right:6px}
+    .helper-note{margin-top:4px}
+    .label-hint{color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0}
+    .toggle-title{font-size:14px;font-weight:500}
+    .mb-24{margin-bottom:24px}
+    .mb-20{margin-bottom:20px}
+    .platform-label{font-weight:600;margin-bottom:12px}
+    .hr-divider{border-color:var(--border)}
     @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
@@ -30,9 +54,9 @@
   <div class="bg-grid"></div><div id="toast-container"></div>
   <nav class="navbar"><div class="container"><a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a><div class="nav-links" id="nav-actions"></div></div></nav>
   <div class="page-wrapper">
-    <div class="container" style="padding-top:40px;padding-bottom:80px">
-      <div style="margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
-        <div><h2>Profile Setup</h2><p class="text-muted" style="margin-top:6px">Fill in your details so the extension can apply accurately on your behalf</p></div>
+    <div class="container profile-container">
+      <div class="profile-header">
+        <div><h2>Profile Setup</h2><p class="text-muted profile-subtitle">Fill in your details so the extension can apply accurately on your behalf</p></div>
         <a href="resume.html" class="btn btn-ghost">← Resume Upload</a>
       </div>
       <div class="profile-layout">
@@ -47,7 +71,7 @@
           <!-- Personal -->
           <div class="section-panel active" id="section-personal">
             <div class="card">
-              <h4 style="margin-bottom:24px">Personal Details</h4>
+              <h4 class="section-title">Personal Details</h4>
               <div class="grid-2">
                 <div class="form-group"><label>First Name</label><input type="text" id="first_name" placeholder="Rahul" /></div>
                 <div class="form-group"><label>Last Name</label><input type="text" id="last_name" placeholder="Sharma" /></div>
@@ -56,27 +80,27 @@
                 <div class="form-group"><label>Current City</label><input type="text" id="current_city" placeholder="Hyderabad" /></div>
                 <div class="form-group"><label>State</label><input type="text" id="state" placeholder="Telangana" /></div>
                 <div class="form-group"><label>Pincode</label><input type="text" id="zipcode" placeholder="500001" /></div>
-                <div class="form-group"><label>Country</label><input type="text" id="country" value="India" /></div>
-                <div class="form-group" style="grid-column:span 2"><label>Street Address</label><input type="text" id="street" placeholder="123, Main Street" /></div>
+                <div class="form-group"><label>Country</label><input type="text" id="country" value="India" placeholder="India" title="Country" /></div>
+                <div class="form-group span-2"><label>Street Address</label><input type="text" id="street" placeholder="123, Main Street" /></div>
               </div>
-              <div style="margin-top:24px">
-                <h4 style="margin-bottom:16px;font-size:0.95rem;color:var(--text-2)">Equal Opportunity (Optional)</h4>
+              <div class="mt-24">
+                <h4 class="subsection-title">Equal Opportunity (Optional)</h4>
                 <div class="grid-2">
-                  <div class="form-group"><label>Gender</label><select id="gender"><option value="">Prefer not to say</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Decline">Decline</option></select></div>
-                  <div class="form-group"><label>Disability Status</label><select id="disability_status"><option value="Decline">Decline</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                  <div class="form-group"><label>Ethnicity</label><select id="ethnicity"><option value="Decline">Decline to answer</option><option value="Asian">Asian</option><option value="Black or African American">Black or African American</option><option value="Hispanic/Latino">Hispanic / Latino</option><option value="White">White</option><option value="Other">Other</option></select></div>
-                  <div class="form-group"><label>Veteran Status</label><select id="veteran_status"><option value="Decline">Decline to answer</option><option value="No">No, not a veteran</option><option value="Yes">Yes, I am a veteran</option></select></div>
+                  <div class="form-group"><label>Gender</label><select id="gender" title="Gender"><option value="">Prefer not to say</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Decline">Decline</option></select></div>
+                  <div class="form-group"><label>Disability Status</label><select id="disability_status" title="Disability Status"><option value="Decline">Decline</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+                  <div class="form-group"><label>Ethnicity</label><select id="ethnicity" title="Ethnicity"><option value="Decline">Decline to answer</option><option value="Asian">Asian</option><option value="Black or African American">Black or African American</option><option value="Hispanic/Latino">Hispanic / Latino</option><option value="White">White</option><option value="Other">Other</option></select></div>
+                  <div class="form-group"><label>Veteran Status</label><select id="veteran_status" title="Veteran Status"><option value="Decline">Decline to answer</option><option value="No">No, not a veteran</option><option value="Yes">Yes, I am a veteran</option></select></div>
                 </div>
               </div>
-              <div style="margin-top:20px;text-align:right"><button class="btn btn-primary" data-save-and-next="personal:professional">Next: Professional →</button></div>
+              <div class="mt-20 actions-right"><button class="btn btn-primary" data-save-and-next="personal:professional">Next: Professional →</button></div>
             </div>
           </div>
 
           <!-- Professional -->
           <div class="section-panel" id="section-professional">
             <div class="card">
-              <h4 style="margin-bottom:24px">Professional Details</h4>
-              <div style="display:flex;flex-direction:column;gap:16px">
+              <h4 class="section-title">Professional Details</h4>
+              <div class="stack-16">
                 <div class="form-group"><label>LinkedIn Profile URL</label><input type="url" id="linkedin_profile" placeholder="https://linkedin.com/in/yourname" /></div>
                 <div class="form-group"><label>Portfolio Website</label><input type="url" id="website" placeholder="https://yourportfolio.com" /></div>
                 <div class="form-group"><label>Years of Experience</label>
@@ -101,7 +125,7 @@
                 <!-- LinkedIn Headline + AI -->
                 <div class="form-group">
                   <div class="field-hdr">
-                    <label>LinkedIn Headline <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(120 chars)</span></label>
+                    <label>LinkedIn Headline <span class="label-hint">(120 chars)</span></label>
                     <button type="button" class="ai-btn" id="ai-headline-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
                   </div>
                   <input type="text" id="linkedin_headline" placeholder="MBA Finance | Financial Analyst | Excel | SQL" maxlength="120" />
@@ -134,7 +158,7 @@
                   <textarea id="skills_summary" rows="3" placeholder="Python, SQL, Excel, Power BI, Data Analysis…"></textarea>
                 </div>
               </div>
-              <div style="margin-top:20px;display:flex;gap:12px;justify-content:space-between">
+              <div class="mt-20 actions-between">
                 <button class="btn btn-ghost" data-switch-to="personal">← Back</button>
                 <button class="btn btn-primary" data-save-and-next="professional:preferences">Next: Job Preferences →</button>
               </div>
@@ -144,8 +168,8 @@
           <!-- Job Preferences -->
           <div class="section-panel" id="section-preferences">
             <div class="card">
-              <h4 style="margin-bottom:24px">Job Preferences</h4>
-              <div style="display:flex;flex-direction:column;gap:18px">
+              <h4 class="section-title">Job Preferences</h4>
+              <div class="stack-18">
 
                 <!-- Search Terms + AI -->
                 <div class="form-group">
@@ -155,28 +179,28 @@
                   </div>
                   <div class="tag-input-wrap" id="search-terms-tags"></div>
                   <input type="hidden" id="search_terms" />
-                  <span class="text-sm text-muted" style="margin-top:4px">Type a job title and press Enter, or let AI suggest from your profile</span>
+                  <span class="text-sm text-muted helper-note">Type a job title and press Enter, or let AI suggest from your profile</span>
                 </div>
 
                 <div class="form-group"><label>Preferred Location</label><input type="text" id="search_location" placeholder="India" value="India" /></div>
 
-                <div class="form-group"><label>Experience Level</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Internship" style="margin-right:6px">Internship</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Entry level" checked style="margin-right:6px">Entry level</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Associate" style="margin-right:6px">Associate</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Mid-Senior level" style="margin-right:6px">Mid-Senior</label>
+                <div class="form-group"><label>Experience Level</label><div class="chip-group">
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Internship" class="chip-checkbox">Internship</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Entry level" checked class="chip-checkbox">Entry level</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Associate" class="chip-checkbox">Associate</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Mid-Senior level" class="chip-checkbox">Mid-Senior</label>
                 </div></div>
 
-                <div class="form-group"><label>Job Type</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Full-time" checked style="margin-right:6px">Full-time</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Internship" style="margin-right:6px">Internship</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Part-time" style="margin-right:6px">Part-time</label>
+                <div class="form-group"><label>Job Type</label><div class="chip-group">
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="job_type" value="Full-time" checked class="chip-checkbox">Full-time</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="job_type" value="Internship" class="chip-checkbox">Internship</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="job_type" value="Part-time" class="chip-checkbox">Part-time</label>
                 </div></div>
 
-                <div class="form-group"><label>Work Mode</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="On-site" checked style="margin-right:6px">On-site</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Hybrid" checked style="margin-right:6px">Hybrid</label>
-                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Remote" checked style="margin-right:6px">Remote</label>
+                <div class="form-group"><label>Work Mode</label><div class="chip-group">
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="on_site" value="On-site" checked class="chip-checkbox">On-site</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="on_site" value="Hybrid" checked class="chip-checkbox">Hybrid</label>
+                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="on_site" value="Remote" checked class="chip-checkbox">Remote</label>
                 </div></div>
 
                 <div class="grid-2">
@@ -186,29 +210,29 @@
 
                 <div class="form-group"><label>Applications per Search Term</label><input type="number" id="switch_number" value="15" min="1" max="100" placeholder="15" /></div>
 
-                <div class="toggle-row"><div><div style="font-size:14px;font-weight:500">Easy Apply Only</div><div class="text-sm text-muted">Only apply to one-click Easy Apply jobs</div></div><label class="toggle"><input type="checkbox" id="easy_apply_only" checked /><span class="toggle-slider"></span></label></div>
+                <div class="toggle-row"><div><div class="toggle-title">Easy Apply Only</div><div class="text-sm text-muted">Only apply to one-click Easy Apply jobs</div></div><label class="toggle"><input type="checkbox" id="easy_apply_only" checked /><span class="toggle-slider"></span></label></div>
 
                 <div class="grid-2">
                   <!-- Bad Words + AI -->
                   <div class="form-group">
                     <div class="field-hdr">
-                      <label>Keywords to Skip <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(Bad Words)</span></label>
+                      <label>Keywords to Skip <span class="label-hint">(Bad Words)</span></label>
                       <button type="button" class="ai-btn" id="ai-bad-words-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Suggest</span></button>
                     </div>
                     <div class="tag-input-wrap" id="bad-words-tags"></div>
                     <input type="hidden" id="bad_words" />
-                    <span class="text-sm text-muted" style="margin-top:4px">Jobs with these words are skipped</span>
+                    <span class="text-sm text-muted helper-note">Jobs with these words are skipped</span>
                   </div>
 
                   <div class="form-group">
-                    <label>Preferred Keywords <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(Good Words)</span></label>
+                    <label>Preferred Keywords <span class="label-hint">(Good Words)</span></label>
                     <div class="tag-input-wrap" id="good-words-tags"></div>
                     <input type="hidden" id="good_words" />
-                    <span class="text-sm text-muted" style="margin-top:4px">Bot prefers companies matching these</span>
+                    <span class="text-sm text-muted helper-note">Bot prefers companies matching these</span>
                   </div>
                 </div>
               </div>
-              <div style="margin-top:20px;display:flex;gap:12px;justify-content:space-between">
+              <div class="mt-20 actions-between">
                 <button class="btn btn-ghost" data-switch-to="professional">← Back</button>
                 <button class="btn btn-primary" data-save-and-next="preferences:platforms">Next: Platform Logins →</button>
               </div>
@@ -218,18 +242,18 @@
           <!-- Platform Logins -->
           <div class="section-panel" id="section-platforms">
             <div class="card">
-              <div class="alert alert-info" style="margin-bottom:24px"><span>🔒</span><span>Credentials are stored encrypted and used by the Chrome extension for automation.</span></div>
-              <h4 style="margin-bottom:20px">Platform Login Credentials</h4>
-              <div style="display:flex;flex-direction:column;gap:24px">
-                <div><div style="font-weight:600;margin-bottom:12px">💼 LinkedIn</div><div class="grid-2"><div class="form-group"><label>LinkedIn Email</label><input type="email" id="linkedin_email" placeholder="your@email.com" /></div><div class="form-group"><label>LinkedIn Password <span class="text-muted text-sm">(leave blank to keep saved)</span></label><input type="password" id="linkedin_password" placeholder="Enter new password to update" autocomplete="new-password" /></div></div></div>
-                <hr style="border-color:var(--border)">
-                <div><div style="font-weight:600;margin-bottom:12px">🔍 Indeed</div><div class="grid-2"><div class="form-group"><label>Indeed Email</label><input type="email" id="indeed_email" placeholder="your@email.com" /></div><div class="form-group"><label>Indeed Password</label><input type="password" id="indeed_password" placeholder="••••••••" /></div></div></div>
-                <hr style="border-color:var(--border)">
-                <div><div style="font-weight:600;margin-bottom:12px">🎓 Internshala</div><div class="grid-2"><div class="form-group"><label>Internshala Email</label><input type="email" id="internshala_email" placeholder="your@email.com" /></div><div class="form-group"><label>Internshala Password</label><input type="password" id="internshala_password" placeholder="••••••••" /></div></div></div>
-                <hr style="border-color:var(--border)">
-                <div><div style="font-weight:600;margin-bottom:12px">📋 Naukri</div><div class="grid-2"><div class="form-group"><label>Naukri Email</label><input type="email" id="naukri_email" placeholder="your@email.com" /></div><div class="form-group"><label>Naukri Password</label><input type="password" id="naukri_password" placeholder="••••••••" /></div></div></div>
+              <div class="alert alert-info mb-24"><span>🔒</span><span>Credentials are stored encrypted and used by the Chrome extension for automation.</span></div>
+              <h4 class="mb-20">Platform Login Credentials</h4>
+              <div class="stack-24">
+                <div><div class="platform-label">💼 LinkedIn</div><div class="grid-2"><div class="form-group"><label>LinkedIn Email</label><input type="email" id="linkedin_email" placeholder="your@email.com" /></div><div class="form-group"><label>LinkedIn Password <span class="text-muted text-sm">(leave blank to keep saved)</span></label><input type="password" id="linkedin_password" placeholder="Enter new password to update" autocomplete="new-password" /></div></div></div>
+                <hr class="hr-divider">
+                <div><div class="platform-label">🔍 Indeed</div><div class="grid-2"><div class="form-group"><label>Indeed Email</label><input type="email" id="indeed_email" placeholder="your@email.com" /></div><div class="form-group"><label>Indeed Password</label><input type="password" id="indeed_password" placeholder="••••••••" /></div></div></div>
+                <hr class="hr-divider">
+                <div><div class="platform-label">🎓 Internshala</div><div class="grid-2"><div class="form-group"><label>Internshala Email</label><input type="email" id="internshala_email" placeholder="your@email.com" /></div><div class="form-group"><label>Internshala Password</label><input type="password" id="internshala_password" placeholder="••••••••" /></div></div></div>
+                <hr class="hr-divider">
+                <div><div class="platform-label">📋 Naukri</div><div class="grid-2"><div class="form-group"><label>Naukri Email</label><input type="email" id="naukri_email" placeholder="your@email.com" /></div><div class="form-group"><label>Naukri Password</label><input type="password" id="naukri_password" placeholder="••••••••" /></div></div></div>
               </div>
-              <div style="margin-top:28px;display:flex;gap:12px;justify-content:space-between">
+              <div class="mt-28 actions-between">
                 <button class="btn btn-ghost" data-switch-to="preferences">← Back</button>
                 <button class="btn btn-accent btn-lg" id="finish-btn"><span class="spinner"></span><span class="btn-text">Save & Go to Dashboard →</span></button>
               </div>
