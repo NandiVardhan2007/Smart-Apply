@@ -4,16 +4,40 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
+import asyncio
 import time
+import httpx
 
 from backend.database import init_db, close_db
 from backend.routers import auth, resume, profile, jobs, ai, admin
+from backend.config import APP_URL
+
+# ── Self-ping: keeps Render free tier awake ───────────────────────
+# Pings /health every 10 minutes so the server never idles out.
+# APP_URL comes from render.yaml env var (e.g. https://smart-apply-7zty.onrender.com)
+
+PING_INTERVAL = 10 * 60  # 10 minutes
+
+async def _self_ping_loop():
+    url = APP_URL.rstrip("/") + "/health"
+    await asyncio.sleep(90)  # let server fully start before first ping
+    print(f"[self-ping] Started — pinging {url} every {PING_INTERVAL // 60} min")
+    async with httpx.AsyncClient(timeout=15) as client:
+        while True:
+            try:
+                r = await client.get(url)
+                print(f"[self-ping] {r.status_code} OK")
+            except Exception as e:
+                print(f"[self-ping] failed: {e}")
+            await asyncio.sleep(PING_INTERVAL)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    ping_task = asyncio.create_task(_self_ping_loop())
     yield
+    ping_task.cancel()
     await close_db()
 
 
