@@ -21,10 +21,6 @@
   </div>
   <div class="login-body">
     <div class="form-group">
-      <label class="field-label">Server URL</label>
-      <input type="url" id="server-url" placeholder="https://your-app.onrender.com" class="field-input" autocomplete="off">
-    </div>
-    <div class="form-group">
       <label class="field-label">Email</label>
       <input type="email" id="login-email" placeholder="your@email.com" class="field-input" autocomplete="email">
     </div>
@@ -37,7 +33,7 @@
       <span class="btn-text">Sign In</span>
       <span class="spinner hidden" id="login-spinner"></span>
     </button>
-    <div class="login-footer">Your credentials are only sent to your own server</div>
+    <div class="login-footer">Your data is secured with JWT encryption</div>
   </div>
 </div>
 
@@ -110,11 +106,11 @@
     <div class="setting-group">
       <div class="setting-row">
         <span class="setting-label">Dry run (no submit)</span>
-        <label class="toggle"><input type="checkbox" id="opt-dry-run" checked title="Dry run (no submit)"><span class="track"></span></label>
+        <label class="toggle"><input type="checkbox" id="opt-dry-run" checked title="Dry run (no submit)" aria-label="Dry run (no submit)"><span class="track"></span></label>
       </div>
       <div class="setting-row">
         <span class="setting-label">Human-like typing & delays</span>
-        <label class="toggle"><input type="checkbox" id="opt-human-mode" checked title="Human-like typing and delays"><span class="track"></span></label>
+        <label class="toggle"><input type="checkbox" id="opt-human-mode" checked title="Human-like typing and delays" aria-label="Human-like typing and delays"><span class="track"></span></label>
       </div>
       <div class="setting-row">
         <span class="setting-label">Max applications</span>
@@ -143,7 +139,7 @@
         <div class="ai-card-title">Cover Letter per Job</div>
         <div class="ai-card-desc">Writes a unique cover letter for each job using the actual job description</div>
       </div>
-      <label class="toggle"><input type="checkbox" id="opt-cover-letter" checked title="Cover letter per job"><span class="track"></span></label>
+      <label class="toggle"><input type="checkbox" id="opt-cover-letter" checked title="Cover letter per job" aria-label="Cover letter per job"><span class="track"></span></label>
     </div>
 
     <div class="ai-card">
@@ -152,7 +148,7 @@
         <div class="ai-card-title">Answer Unknown Questions</div>
         <div class="ai-card-desc">Uses your profile + job description to answer any form question the bot doesn't recognize</div>
       </div>
-      <label class="toggle"><input type="checkbox" id="opt-ai-answers" checked title="Answer unknown questions"><span class="track"></span></label>
+      <label class="toggle"><input type="checkbox" id="opt-ai-answers" checked title="Answer unknown questions" aria-label="Answer unknown questions"><span class="track"></span></label>
     </div>
 
     <div class="ai-card">
@@ -161,7 +157,7 @@
         <div class="ai-card-title">Smart Option Selection</div>
         <div class="ai-card-desc">AI picks the right answer from dropdowns and radio buttons — not just the first option</div>
       </div>
-      <label class="toggle"><input type="checkbox" id="opt-ai-select" checked title="Smart option selection"><span class="track"></span></label>
+      <label class="toggle"><input type="checkbox" id="opt-ai-select" checked title="Smart option selection" aria-label="Smart option selection"><span class="track"></span></label>
     </div>
 
     <div class="ai-card">
@@ -170,7 +166,7 @@
         <div class="ai-card-title">Smart Resume Routing</div>
         <div class="ai-card-desc">Auto-picks the best uploaded resume based on job role (dev vs CRM vs analyst etc.)</div>
       </div>
-      <label class="toggle"><input type="checkbox" id="opt-smart-resume" checked title="Smart resume routing"><span class="track"></span></label>
+      <label class="toggle"><input type="checkbox" id="opt-smart-resume" checked title="Smart resume routing" aria-label="Smart resume routing"><span class="track"></span></label>
     </div>
 
     <div class="section-title section-title-top">Session Stats</div>

@@ -2,7 +2,7 @@
 //  SmartApply Extension – Popup v4
 // ════════════════════════════════════════════════════════════════
 
-const DEFAULT_SERVER = 'http://localhost:8000';
+const SERVER_URL = 'https://smart-apply-7zty.onrender.com';
 const $ = id => document.getElementById(id);
 const show = id => $(id)?.classList.remove('hidden');
 const hide = id => $(id)?.classList.add('hidden');
@@ -88,9 +88,8 @@ function initTabs() {
 
 // ── Login ─────────────────────────────────────────────────────────
 async function doLogin() {
-  const serverUrl = $('server-url').value.trim() || DEFAULT_SERVER;
-  const email     = $('login-email').value.trim();
-  const password  = $('login-password').value;
+  const email    = $('login-email').value.trim();
+  const password = $('login-password').value;
   if (!email || !password) { showLoginError('Enter email and password.'); return; }
 
   $('btn-login').disabled = true;
@@ -99,10 +98,10 @@ async function doLogin() {
   hide('login-error');
 
   try {
-    const { ok, data } = await apiCall(serverUrl, '/api/auth/login', 'POST', { email, password });
+    const { ok, data } = await apiCall(SERVER_URL, '/api/auth/login', 'POST', { email, password });
     if (!ok) { showLoginError(data.detail || 'Login failed.'); return; }
-    await storageSet({ serverUrl, token: data.access_token, userEmail: data.user?.email || email, loggedIn: true });
-    await loadDashboard(serverUrl, data.access_token, data.user?.email || email);
+    await storageSet({ serverUrl: SERVER_URL, token: data.access_token, userEmail: data.user?.email || email, loggedIn: true });
+    await loadDashboard(SERVER_URL, data.access_token, data.user?.email || email);
   } catch (err) {
     showLoginError(`Cannot reach server: ${err.message}`);
   } finally {
@@ -372,8 +371,7 @@ async function init() {
     }
   } else {
     showScreen('login');
-    const sv = await storageGet(['serverUrl']);
-    if (sv.serverUrl) $('server-url').value = sv.serverUrl;
+    // Server URL is hardcoded — nothing to pre-fill
   }
 }
 
