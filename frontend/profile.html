@@ -305,30 +305,58 @@
       if (loading) b.classList.add('ai-loading'); else b.classList.remove('ai-loading');
     }
 
-    // Builds a rich context string from whatever the user has filled so far
+    // Builds a detailed context string including education, projects, skills, certifications
+    // pulled from every filled field on the page so the AI has maximum signal.
     function profileCtx() {
       var parts = [];
+
+      // Personal
       var fn = document.getElementById('first_name').value.trim();
       var ln = document.getElementById('last_name').value.trim();
-      if (fn || ln) parts.push('Name: ' + [fn, ln].filter(Boolean).join(' '));
-      var yoe = document.getElementById('years_of_experience').value;
-      if (yoe) parts.push('Years of experience: ' + yoe);
-      var re = document.getElementById('recent_employer').value.trim();
-      if (re) parts.push('Recent employer: ' + re);
-      var hl = document.getElementById('linkedin_headline').value.trim();
-      if (hl) parts.push('Headline: ' + hl);
-      var sk = document.getElementById('skills_summary').value.trim();
-      if (sk) parts.push('Skills: ' + sk);
-      var sm = document.getElementById('linkedin_summary').value.trim();
-      if (sm) parts.push('Summary: ' + sm.slice(0, 200));
+      if (fn || ln) parts.push('Candidate name: ' + [fn, ln].filter(Boolean).join(' '));
+
       var city = document.getElementById('current_city').value.trim();
+      var state = document.getElementById('state').value.trim();
       var country = document.getElementById('country').value.trim();
-      if (city || country) parts.push('Location: ' + [city, country].filter(Boolean).join(', '));
+      var loc = [city, state, country].filter(Boolean).join(', ');
+      if (loc) parts.push('Location: ' + loc);
+
+      // Experience level
+      var yoe = document.getElementById('years_of_experience').value;
+      var yoeMap = {'0':'Fresher / final-year student (0 years experience)','1':'1 year experience','2':'2 years experience','3':'3 years experience','4':'4 years experience','5':'5 years experience','6':'6+ years experience'};
+      parts.push('Experience level: ' + (yoeMap[yoe] || yoe + ' years'));
+
+      var re = document.getElementById('recent_employer').value.trim();
+      if (re && re.toLowerCase() !== 'fresher') parts.push('Recent employer / college: ' + re);
+
+      // Already filled AI fields (so re-generating improves on them)
+      var sk = document.getElementById('skills_summary').value.trim();
+      if (sk) parts.push('Known skills: ' + sk);
+
+      var hl = document.getElementById('linkedin_headline').value.trim();
+      if (hl) parts.push('Current headline: ' + hl);
+
+      var sm = document.getElementById('linkedin_summary').value.trim();
+      if (sm) parts.push('Current summary: ' + sm.slice(0, 300));
+
+      // Search terms already set
       try {
         var terms = JSON.parse(document.getElementById('search_terms').value || '[]');
-        if (terms.length) parts.push('Target roles: ' + terms.slice(0,4).join(', '));
+        if (terms.length) parts.push('Target job titles: ' + terms.slice(0, 5).join(', '));
       } catch(e) {}
-      return parts.join('\n') || 'Job seeker looking for opportunities in India';
+
+      // LinkedIn / website
+      var li = document.getElementById('linkedin_profile').value.trim();
+      if (li) parts.push('LinkedIn: ' + li);
+      var wb = document.getElementById('website').value.trim();
+      if (wb) parts.push('Portfolio/website: ' + wb);
+
+      // If nothing useful filled, return a helpful fallback that still steers the AI
+      if (parts.length <= 2) {
+        return 'Candidate: Entry-level / fresher software developer in India. Skills: Java, Python, C, C++, HTML, CSS, JavaScript, SQL. Education: B.Tech in Information Technology (2nd year). Projects: Java GUI Calculator, ATM Simulation, Python Games (Pygame), Personal Portfolio Website with REST API backend.';
+      }
+
+      return parts.join('\n');
     }
 
     // Parse a JSON array from AI response, fallback to comma-split
@@ -343,13 +371,21 @@
     document.getElementById('ai-headline-btn').addEventListener('click', async function() {
       aiBtn('ai-headline-btn', true);
       try {
+        var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'Write a LinkedIn headline (max 120 characters). Use this format: Role | Skill | Skill | Skill. Be specific and keyword-rich for ATS. Return ONLY the headline text, nothing else.',
-          user_info: profileCtx()
+          question: 'Write a LinkedIn headline for this candidate. Rules:\n' +
+            '- Max 120 characters\n' +
+            '- Format: Specific Role | Technology | Technology | Technology\n' +
+            '- Role must reflect their actual level (e.g. "Java Developer" not "Senior Engineer")\n' +
+            '- Use their real tech stack (Java, Python, SQL, etc.) not generic words\n' +
+            '- Do NOT use buzzwords like "Passionate", "Aspiring", "Seeking"\n' +
+            '- Good example: "Java Developer | Python | SQL | OOP | B.Tech IT"\n' +
+            '- Return ONLY the headline text, nothing else.',
+          user_info: ctx
         });
-        var val = (r.answer||'').trim().replace(/^["'`]|["'`]$/g,'').slice(0,120);
+        var val = (r.answer||'').trim().replace(/^["'`\-\*]+|["'`\-\*]+$/g,'').slice(0,120);
         if (val) { document.getElementById('linkedin_headline').value = val; showToast('Headline generated!', 'success'); }
-        else showToast('Try again — fill in more profile details first', 'info');
+        else showToast('Try again', 'info');
       } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
       finally { aiBtn('ai-headline-btn', false); }
     });
@@ -358,13 +394,22 @@
     document.getElementById('ai-summary-btn').addEventListener('click', async function() {
       aiBtn('ai-summary-btn', true);
       try {
+        var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'Write a professional LinkedIn "About" summary (2-3 sentences, max 400 characters). Highlight background, key skills, and career goal. Write in first person. Return ONLY the summary text.',
-          user_info: profileCtx()
+          question: 'Write a LinkedIn "About" summary for this candidate. Rules:\n' +
+            '- 3-4 sentences, max 500 characters\n' +
+            '- First person, professional but natural tone\n' +
+            '- Sentence 1: Who they are (student/fresher, field, college year)\n' +
+            '- Sentence 2: What they have built/done (mention specific projects or skills)\n' +
+            '- Sentence 3: What kind of roles they are targeting\n' +
+            '- Do NOT start with "I am a passionate" or generic openers\n' +
+            '- Be specific — mention actual technologies from their profile\n' +
+            '- Return ONLY the summary text, nothing else.',
+          user_info: ctx
         });
-        var val = (r.answer||'').trim().replace(/^["'`]|["'`]$/g,'');
+        var val = (r.answer||'').trim().replace(/^["'`]+|["'`]+$/g,'');
         if (val) { document.getElementById('linkedin_summary').value = val; showToast('Summary generated!', 'success'); }
-        else showToast('Try again — fill in more profile details first', 'info');
+        else showToast('Try again', 'info');
       } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
       finally { aiBtn('ai-summary-btn', false); }
     });
@@ -373,12 +418,20 @@
     document.getElementById('ai-cover-btn').addEventListener('click', async function() {
       aiBtn('ai-cover-btn', true);
       var terms = []; try { terms = JSON.parse(document.getElementById('search_terms').value||'[]'); } catch(e) {}
-      var jobTitle = terms[0] || 'the open position';
+      var jobTitle = terms[0] || 'Software Developer Intern';
+      var ctx = profileCtx();
+      // Enrich context with explicit instruction for cover letter quality
+      var enriched = ctx + '\n\nIMPORTANT: This is a fresher/student applying in India. The cover letter must:\n' +
+        '- Mention specific projects they built (not generic "I have experience")\n' +
+        '- Mention real technologies they know (Java, Python, SQL, etc.)\n' +
+        '- Be concise: 3 short paragraphs, under 200 words\n' +
+        '- Not use filler phrases like "I am thrilled" or "esteemed organization"\n' +
+        '- End with a clear call to action';
       try {
-        var r = await api.post('/ai/cover-letter', { user_info: profileCtx(), job_title: jobTitle, company: 'your organisation' });
+        var r = await api.post('/ai/cover-letter', { user_info: enriched, job_title: jobTitle, company: 'your organisation' });
         var val = (r.cover_letter||'').trim();
         if (val) { document.getElementById('cover_letter').value = val; showToast('Cover letter generated!', 'success'); }
-        else showToast('Try again — fill in more profile details first', 'info');
+        else showToast('Try again', 'info');
       } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
       finally { aiBtn('ai-cover-btn', false); }
     });
@@ -387,13 +440,21 @@
     document.getElementById('ai-skills-btn').addEventListener('click', async function() {
       aiBtn('ai-skills-btn', true);
       try {
+        var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'List this candidate\'s top technical and soft skills as a single comma-separated line (e.g. "Python, SQL, Excel, Power BI, Communication"). Max 20 skills. Return ONLY the comma-separated list.',
-          user_info: profileCtx()
+          question: 'List this candidate\'s skills as a comma-separated line. Rules:\n' +
+            '- Include all programming languages they know\n' +
+            '- Include frameworks, tools, databases they have used\n' +
+            '- Include relevant soft skills (Problem Solving, etc.)\n' +
+            '- Order: most important/relevant first\n' +
+            '- Max 20 skills total\n' +
+            '- Use exact technology names (e.g. "Java" not "Java programming")\n' +
+            '- Return ONLY the comma-separated list, nothing else.',
+          user_info: ctx
         });
-        var val = (r.answer||'').trim().replace(/^["'`]|["'`]$/g,'').replace(/\n/g,', ');
+        var val = (r.answer||'').trim().replace(/^["'`]+|["'`]+$/g,'').replace(/\n/g,', ');
         if (val) { document.getElementById('skills_summary').value = val; showToast('Skills generated!', 'success'); }
-        else showToast('Try again — fill in more profile details first', 'info');
+        else showToast('Try again', 'info');
       } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
       finally { aiBtn('ai-skills-btn', false); }
     });
@@ -402,9 +463,18 @@
     document.getElementById('ai-search-terms-btn').addEventListener('click', async function() {
       aiBtn('ai-search-terms-btn', true);
       try {
+        var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'Suggest 6-8 specific LinkedIn job search terms (job titles) suited for this candidate. Return ONLY a JSON array of strings, e.g. ["Business Analyst","Data Analyst","Financial Analyst"]. No explanation.',
-          user_info: profileCtx()
+          question: 'Suggest LinkedIn job search terms for this candidate. Rules:\n' +
+            '- They are a fresher/student in India looking for internships or entry-level jobs\n' +
+            '- Suggest 7-8 realistic job titles that match their actual skills\n' +
+            '- Include both "Intern" and non-intern variants (e.g. "Java Developer Intern", "Java Developer")\n' +
+            '- Focus on their real tech stack: Java, Python, SQL, web development\n' +
+            '- Include roles for Indian job market (e.g. "Software Trainee", "Graduate Trainee")\n' +
+            '- Do NOT suggest senior/lead/manager roles\n' +
+            '- Return ONLY a JSON array of strings. Example: ["Java Developer Intern","Python Developer","Full Stack Developer Intern"]\n' +
+            '- No explanation, just the JSON array.',
+          user_info: ctx
         });
         var terms = parseArrayAnswer(r.answer);
         if (terms.length) {
@@ -421,9 +491,18 @@
     document.getElementById('ai-bad-words-btn').addEventListener('click', async function() {
       aiBtn('ai-bad-words-btn', true);
       try {
+        var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'Suggest 5-8 keywords this candidate should skip in job search (roles or requirements they are NOT suited for or want to avoid). Examples: "Senior 10+ years", "US Citizen", "Security Clearance", "15+ years". Return ONLY a JSON array of strings. No explanation.',
-          user_info: profileCtx()
+          question: 'Suggest job search keywords this candidate should SKIP (bad words filter). Rules:\n' +
+            '- They are a fresher/student — skip any job requiring years of experience they do not have\n' +
+            '- Skip roles that require seniority: "Senior", "Lead", "Manager", "Director", "Head of"\n' +
+            '- Skip experience requirements they cannot meet: "5+ years", "7+ years", "10+ years"\n' +
+            '- Skip irrelevant specializations far from their skills\n' +
+            '- Skip US/non-India requirements if they are based in India: "US Citizen", "Need H1B"\n' +
+            '- Keep the list to 8-10 specific, commonly appearing phrases\n' +
+            '- Return ONLY a JSON array of strings. Example: ["Senior Developer","5+ years","Team Lead","Manager"]\n' +
+            '- No explanation, just the JSON array.',
+          user_info: ctx
         });
         var words = parseArrayAnswer(r.answer);
         if (words.length) {
