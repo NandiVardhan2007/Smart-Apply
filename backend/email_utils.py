@@ -1,127 +1,111 @@
 """
-email_utils.py — Mailjet HTTP API
-====================================
-Mailjet uses HTTPS (port 443) — works on Render free tier.
-No domain verification needed — just verify your Gmail address.
-Free tier: 200 emails/day, 6,000/month.
+email_utils.py — Resend HTTP API
+==================================
+Resend is the easiest email API — no domain needed to start.
+Free tier: 3,000 emails/month, 100/day.
 
-One-time setup (3 minutes):
-  1. Sign up at https://app.mailjet.com/signup (free)
-  2. Go to: https://app.mailjet.com/account/sender
-     → Click "Add a Sender Domain or Address"
-     → Choose "Single email address"
-     → Enter: kovvurinandivardhanreddy7@gmail.com
-     → Mailjet sends a verification link to that Gmail → click it
-  3. Go to: https://app.mailjet.com/account/apikeys
-     → Copy your API Key and Secret Key
-  4. Set in Render Dashboard → Environment Variables:
-       MAILJET_API_KEY    = your-api-key
-       MAILJET_SECRET_KEY = your-secret-key
-       MAILJET_FROM       = kovvurinandivardhanreddy7@gmail.com
-       MAILJET_FROM_NAME  = SmartApply
-  5. Redeploy → emails work to ANY address
+One-time setup (2 minutes):
+  1. Sign up at https://resend.com  (free, no credit card)
+  2. Go to https://resend.com/api-keys  → Create API Key → copy it
+  3. In Render Dashboard → Environment Variables → add:
+       RESEND_API_KEY = re_xxxxxxxxxxxx
+  4. Redeploy — done!
 
-Why Mailjet:
-  ✅ HTTP API (port 443) — Render never blocks this
-  ✅ No domain required — just verify a single Gmail address
-  ✅ Free 200 emails/day, 6,000/month
-  ✅ Sends to any email in the world after sender verification
-  ✅ Better deliverability than raw Gmail SMTP
+The FROM address is automatically set to onboarding@resend.dev on the
+free plan (no domain needed). You can send to ANY email address.
+
+Optional: to send FROM your own domain later, verify it at resend.com/domains.
 """
 
 import logging
 import httpx
-import base64
 
-from backend.config import (
-    APP_URL,
-    MAILJET_API_KEY,
-    MAILJET_SECRET_KEY,
-    MAILJET_FROM,
-    MAILJET_FROM_NAME,
-)
+from backend.config import APP_URL
+import os
 
 logger = logging.getLogger(__name__)
 
-MAILJET_SEND_URL = "https://api.mailjet.com/v3.1/send"
+RESEND_API_URL = "https://api.resend.com/emails"
+
+
+def _get_key() -> str:
+    key = os.getenv("RESEND_API_KEY", "")
+    if not key:
+        raise RuntimeError(
+            "RESEND_API_KEY is not set.\n"
+            "Fix:\n"
+            "  1. Sign up free at https://resend.com\n"
+            "  2. Go to https://resend.com/api-keys → Create API Key\n"
+            "  3. Add RESEND_API_KEY=re_xxxx in Render Dashboard → Environment\n"
+            "  4. Redeploy"
+        )
+    return key
+
+
+def _get_from() -> str:
+    """
+    Use custom FROM if RESEND_FROM is set (requires verified domain).
+    Otherwise fall back to Resend's free shared sender — works immediately.
+    """
+    return os.getenv("RESEND_FROM", "SmartApply <onboarding@resend.dev>")
 
 
 async def _send(to: str, subject: str, html: str) -> None:
-    """Send email via Mailjet HTTP API."""
+    """Send email via Resend HTTP API."""
+    api_key  = _get_key()
+    from_addr = _get_from()
 
-    # ── Config guard ─────────────────────────────────────────────────────
-    if not MAILJET_API_KEY or not MAILJET_SECRET_KEY:
-        msg = (
-            "MAILJET_API_KEY or MAILJET_SECRET_KEY not set. "
-            "Sign up at mailjet.com, verify your Gmail as sender, "
-            "then add both keys to Render environment variables."
-        )
-        logger.error(f"[Email] {msg}")
-        raise RuntimeError(msg)
-
-    # ── Build payload ─────────────────────────────────────────────────────
     payload = {
-        "Messages": [
-            {
-                "From": {
-                    "Email": MAILJET_FROM,
-                    "Name":  MAILJET_FROM_NAME,
-                },
-                "To": [{"Email": to}],
-                "Subject": subject,
-                "HTMLPart": html,
-            }
-        ]
+        "from":    from_addr,
+        "to":      [to],
+        "subject": subject,
+        "html":    html,
     }
 
-    # Mailjet uses HTTP Basic Auth (API key : Secret key)
-    credentials = base64.b64encode(
-        f"{MAILJET_API_KEY}:{MAILJET_SECRET_KEY}".encode()
-    ).decode()
-
     try:
-        async with httpx.AsyncClient(timeout=12) as client:
+        async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                MAILJET_SEND_URL,
+                RESEND_API_URL,
                 headers={
-                    "Authorization": f"Basic {credentials}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type":  "application/json",
                 },
                 json=payload,
             )
 
-        body = resp.text[:500]
+        logger.info(f"[Resend] HTTP {resp.status_code} | {resp.text[:300]}")
 
         if resp.status_code in (200, 201):
-            try:
-                data   = resp.json()
-                msg_id = data["Messages"][0].get("To", [{}])[0].get("MessageID", "?")
-            except Exception:
-                msg_id = "?"
-            logger.info(f"[Mailjet] ✅ Sent '{subject}' → {to} (id={msg_id})")
+            logger.info(f"[Resend] ✅ Sent '{subject}' → {to}")
             return
 
-        # ── Descriptive errors ────────────────────────────────────────────
+        body = resp.text[:400]
+
         if resp.status_code == 401:
             raise RuntimeError(
-                "Mailjet API key or secret is wrong. "
-                "Check MAILJET_API_KEY and MAILJET_SECRET_KEY in Render."
+                f"Resend 401 — API key is wrong or missing.\n"
+                f"Check RESEND_API_KEY in Render Dashboard.\n"
+                f"Response: {body}"
             )
         if resp.status_code == 403:
             raise RuntimeError(
-                f"Mailjet rejected the sender '{MAILJET_FROM}'. "
-                "You must verify this email address first: "
-                "Go to app.mailjet.com/account/sender → add single email address → verify."
+                f"Resend 403 — sender domain not verified or account restricted.\n"
+                f"Response: {body}"
+            )
+        if resp.status_code == 422:
+            raise RuntimeError(
+                f"Resend 422 — invalid request (bad email address or payload).\n"
+                f"Response: {body}"
             )
         if resp.status_code == 429:
-            raise RuntimeError("Mailjet rate limit hit. Free plan: 200 emails/day, 6000/month.")
+            raise RuntimeError("Resend 429 — rate limit hit (100/day on free plan).")
 
-        raise RuntimeError(f"Mailjet HTTP {resp.status_code}: {body}")
+        raise RuntimeError(f"Resend HTTP {resp.status_code}: {body}")
 
     except httpx.TimeoutException:
-        raise RuntimeError("Mailjet API timed out. Try again in a moment.")
+        raise RuntimeError("Resend API timed out after 15s.")
     except httpx.ConnectError as exc:
-        raise RuntimeError(f"Cannot reach Mailjet API: {exc}")
+        raise RuntimeError(f"Cannot reach Resend API: {exc}")
     except RuntimeError:
         raise
     except Exception as exc:
@@ -161,7 +145,7 @@ def _html(body: str) -> str:
 </html>"""
 
 
-# ── Templates ──────────────────────────────────────────────────────────────────
+# ── Email templates ────────────────────────────────────────────────────────────
 
 async def send_verification_email(to: str, pin: str) -> None:
     body = f"""

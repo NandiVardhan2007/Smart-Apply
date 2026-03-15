@@ -16,9 +16,6 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Google OAuth token handler ────────────────────────────────────────────────
-// Runs immediately (before DOMContentLoaded) on EVERY page.
-// The backend redirects to dashboard.html?oauth_token=<jwt> after Google login.
-// We grab the token, save it, clean the URL, then let the page continue normally.
 (function handleOAuthToken() {
   const params = new URLSearchParams(window.location.search);
   const token  = params.get('oauth_token');
@@ -26,29 +23,51 @@ document.addEventListener('keydown', e => {
 
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    // Save token + minimal user object so auth.isAuth becomes true
     localStorage.setItem('sa_token', token);
     localStorage.setItem('sa_user', JSON.stringify({
       email: payload.email || '',
       id:    payload.sub   || '',
     }));
   } catch (_) {
-    // If decode fails just store the token raw — auth will still work
     localStorage.setItem('sa_token', token);
     localStorage.setItem('sa_user', JSON.stringify({}));
   }
 
-  // Remove ?oauth_token from the URL bar without reloading
   const clean = window.location.pathname + window.location.hash;
   window.history.replaceState({}, '', clean);
 
-  // If we landed on login or signup, redirect to dashboard
   const page = window.location.pathname.split('/').pop();
   if (!page || page === 'login.html' || page === 'signup.html') {
     window.location.href = 'dashboard.html';
   }
-  // Otherwise we're already on the right page — just let it load normally
 })();
+
+// ── Helper: normalise FastAPI error detail to a plain string ─────────────────
+// FastAPI validation errors return detail as an array of objects like:
+// [{ loc: ["body","email"], msg: "value is not a valid email address", ... }]
+// This converts any shape into a readable string.
+function normaliseDetail(detail) {
+  if (!detail) return 'Something went wrong. Please try again.';
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map(e => {
+        if (typeof e === 'string') return e;
+        if (e && typeof e === 'object') {
+          // Pydantic v2 uses e.msg; Pydantic v1 uses e.msg too
+          const field = Array.isArray(e.loc) ? e.loc[e.loc.length - 1] : '';
+          const msg   = e.msg || e.message || JSON.stringify(e);
+          return field ? `${field}: ${msg}` : msg;
+        }
+        return String(e);
+      })
+      .join(' · ');
+  }
+  if (typeof detail === 'object') {
+    return detail.msg || detail.message || JSON.stringify(detail);
+  }
+  return String(detail);
+}
 
 // ── API client ────────────────────────────────────────────────────────────────
 const api = {
@@ -65,7 +84,14 @@ const api = {
     }
     const res = await fetch(API_BASE + path, config);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw { status: res.status, detail: data.detail || 'Request failed', data };
+    if (!res.ok) {
+      // Always normalise detail so callers get a plain string
+      throw {
+        status: res.status,
+        detail: normaliseDetail(data.detail),
+        data,
+      };
+    }
     return data;
   },
   get:    (path, opts) => api.request('GET', path, null, opts),
