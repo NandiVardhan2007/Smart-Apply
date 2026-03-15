@@ -27,6 +27,9 @@ body{width:360px;min-height:480px;background:var(--bg);color:var(--text);font-fa
 .field-input{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r8);color:var(--text);padding:9px 11px;font-size:13px;font-family:var(--font);outline:none;transition:border-color .15s,box-shadow .15s}
 .field-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(6,182,212,.1)}
 .field-input::placeholder{color:var(--text3)}
+.pw-inline-wrap{position:relative}
+.field-input-with-icon{padding-right:36px}
+.pw-inline-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748b;font-size:14px;padding:0;display:flex;align-items:center}
 .error-msg{background:var(--red-dim);border:1px solid rgba(239,68,68,.3);color:#FCA5A5;padding:9px 11px;border-radius:var(--r8);font-size:12px}
 .login-footer{font-size:10px;color:var(--text3);text-align:center;padding-top:2px}
 

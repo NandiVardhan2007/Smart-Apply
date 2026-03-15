@@ -3,6 +3,77 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login — SmartApply</title><link rel="stylesheet" href="css/main.css" />
+  <style>
+    /* ── Google button ──────────────────────────────────────────────────────── */
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 20px;
+      background: #fff;
+      color: #3c4043;
+      border: 1.5px solid #dadce0;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+    .btn-google:hover {
+      background: #f8f9fa;
+      border-color: #bdc1c6;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.18);
+      color: #3c4043;
+    }
+    .btn-google svg { flex-shrink: 0; }
+
+    /* ── Divider ────────────────────────────────────────────────────────────── */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 4px 0;
+      color: var(--text-3);
+      font-size: 13px;
+    }
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── OAuth error banner ─────────────────────────────────────────────────── */
+    .oauth-error {
+      background: rgba(255,107,107,0.08);
+      border: 1px solid rgba(255,107,107,0.3);
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .is-hidden { display: none; }
+    .mb-16 { margin-bottom: 16px; }
+    .auth-fields-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .forgot-link {
+      float: right;
+      font-size: 13px;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+  </style>
 </head>
 <body>
   <div class="bg-grid"></div><div class="bg-glow bg-glow-2"></div><div id="toast-container"></div>
@@ -10,10 +81,31 @@
     <div class="auth-card fade-in">
       <div class="logo"><div class="logo-dot"></div>Smart<span>Apply</span></div>
       <h2>Welcome back</h2><p class="subtitle">Sign in to your account</p>
-      <div id="login-error" class="alert alert-error hidden" style="margin-bottom:16px"></div>
-      <div id="login-success" class="alert alert-success hidden" style="margin-bottom:16px"></div>
+
+      <!-- OAuth error banner (shown if Google redirected back with ?error=...) -->
+      <div id="oauth-error" class="oauth-error is-hidden"></div>
+
+      <div id="login-error" class="alert alert-error hidden mb-16"></div>
+      <div id="login-success" class="alert alert-success hidden mb-16"></div>
+
+      <!-- ── Google Sign-In ───────────────────────────────────────────────── -->
+      <a href="/api/auth/google" class="btn-google" id="btn-google">
+        <!-- Official Google "G" logo SVG -->
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Continue with Google
+      </a>
+
+      <div class="or-divider">or</div>
+
+      <!-- ── Email / Password ─────────────────────────────────────────────── -->
       <form id="login-form" novalidate>
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="auth-fields-stack">
           <div class="form-group">
             <label for="email"><i class="fa-solid fa-envelope"></i> Email</label>
             <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
@@ -22,7 +114,7 @@
           <div class="form-group">
             <label for="password">
               <i class="fa-solid fa-lock"></i> Password
-              <a href="forgot-password.html" style="float:right;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400">Forgot password?</a>
+              <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
             </label>
             <div class="pw-wrap">
               <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
@@ -42,34 +134,79 @@
   </div>
   <script src="js/app.js"></script>
   <script>
+    // ── Handle OAuth token from Google callback ──────────────────────────────
+    // The backend redirects here (or to dashboard) with ?oauth_token=...
+    // We grab it, save to localStorage, then clean the URL.
+    (function handleOAuthToken() {
+      const params = new URLSearchParams(window.location.search);
+      const token  = params.get('oauth_token');
+      const error  = params.get('error');
+
+      if (token) {
+        // Decode user info from JWT payload (base64 middle segment)
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          auth.save(token, { email: payload.email, id: payload.sub });
+        } catch (_) {
+          auth.save(token, {});
+        }
+        // Remove token from URL bar
+        window.history.replaceState({}, '', window.location.pathname);
+        // Redirect handled by the backend — but if we land on login.html it means
+        // the user had no profile yet (backend sent profile.html, but just in case)
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      // Show OAuth error messages in a friendly way
+      if (error) {
+        const messages = {
+          google_cancelled:     'Google sign-in was cancelled. Please try again.',
+          state_mismatch:       'Security check failed. Please try again.',
+          google_token_failed:  'Could not connect to Google. Please try again.',
+          google_profile_failed:'Could not retrieve your Google profile. Please try again.',
+          google_no_email:      'Your Google account has no public email. Use email/password instead.',
+        };
+        const banner = document.getElementById('oauth-error');
+        banner.textContent = messages[error] || 'Sign-in failed. Please try again.';
+        banner.style.display = 'block';
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    })();
+
+    // ── Standard auth guard ──────────────────────────────────────────────────
     if (auth.isAuth) window.location.href = 'dashboard.html';
+
     const msg = getParam('msg');
-    if (msg === 'verified') { document.getElementById('login-success').textContent = 'Email verified! You can now log in.'; document.getElementById('login-success').classList.remove('hidden'); }
-    if (msg === 'reset') { document.getElementById('login-success').textContent = 'Password reset successfully. Please sign in.'; document.getElementById('login-success').classList.remove('hidden'); }
+    if (msg === 'verified') {
+      document.getElementById('login-success').textContent = 'Email verified! You can now log in.';
+      document.getElementById('login-success').classList.remove('hidden');
+    }
+    if (msg === 'reset') {
+      document.getElementById('login-success').textContent = 'Password reset successfully. Please sign in.';
+      document.getElementById('login-success').classList.remove('hidden');
+    }
 
     document.getElementById('toggle-pw').addEventListener('click', () => {
       const input = document.getElementById('password');
-      const icon = document.getElementById('pw-icon');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.className = 'fa-regular fa-eye-slash';
-      } else {
-        input.type = 'password';
-        icon.className = 'fa-regular fa-eye';
-      }
+      const icon  = document.getElementById('pw-icon');
+      if (input.type === 'password') { input.type = 'text';     icon.className = 'fa-regular fa-eye-slash'; }
+      else                           { input.type = 'password'; icon.className = 'fa-regular fa-eye';       }
     });
 
     document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault(); clearErrors();
-      const btn = document.getElementById('login-btn');
-      const email = document.getElementById('email').value.trim();
+      const btn      = document.getElementById('login-btn');
+      const email    = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const errEl = document.getElementById('login-error');
+      const errEl    = document.getElementById('login-error');
       errEl.classList.add('hidden');
+
       let hasError = false;
-      if (!email) { markFieldError('email', 'Email is required'); hasError = true; }
+      if (!email)    { markFieldError('email',    'Email is required');    hasError = true; }
       if (!password) { markFieldError('password', 'Password is required'); hasError = true; }
       if (hasError) return;
+
       setLoading(btn, true);
       try {
         const data = await api.post('/auth/login', { email, password });
@@ -79,7 +216,9 @@
       } catch (err) {
         errEl.textContent = err.detail || 'Email or password is wrong. Try again.';
         errEl.classList.remove('hidden');
-        if (err.status === 403) errEl.innerHTML = `${err.detail} <a href="signup.html" style="color:var(--primary)">Resend verification</a>`;
+        if (err.status === 403) {
+          errEl.innerHTML = `${err.detail} <a href="signup.html" style="color:var(--primary)">Resend verification</a>`;
+        }
       } finally { setLoading(btn, false); }
     });
   </script>

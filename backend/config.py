@@ -38,14 +38,6 @@ SMTP_USER       = _admin_cfg.get("smtp_user") or os.getenv("SMTP_USER", "")
 SMTP_PASS       = _admin_cfg.get("smtp_pass") or os.getenv("SMTP_PASS", "")
 SMTP_FROM       = os.getenv("SMTP_FROM", f"SmartApply <{SMTP_USER}>")
 
-# ── Gmail SMTP (sends to ANY email, no domain needed) ────────────────────────
-# Setup (2 min):
-#   1. Go to https://myaccount.google.com/apppasswords
-#   2. Select App: Mail, Device: Other → name it "SmartApply" → Generate
-#   3. Copy the 16-char password (no spaces)
-#   4. Set in Render Dashboard:
-#        GMAIL_USER = your-gmail@gmail.com
-#        GMAIL_PASS = abcdefghijklmnop   (the App Password, no spaces)
 MAILJET_API_KEY    = os.getenv("MAILJET_API_KEY", "")
 MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY", "")
 MAILJET_FROM       = os.getenv("MAILJET_FROM", "")
@@ -55,7 +47,6 @@ APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
 # ── Encryption key for platform passwords ─────────────────────────────────────
-# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 FERNET_KEY      = os.getenv("FERNET_KEY", "")
 
 # ── NVIDIA NIM API ─────────────────────────────────────────────────────────────
@@ -66,6 +57,22 @@ if _keys_env:
 
 NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 NVIDIA_MODEL   = _admin_cfg.get("nvidia_model") or os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
+
+# ── Google OAuth ───────────────────────────────────────────────────────────────
+# Setup (5 minutes):
+#   1. Go to https://console.cloud.google.com/
+#   2. Create a project → Enable "Google+ API" or "Google Identity"
+#   3. Credentials → Create OAuth 2.0 Client ID → Web application
+#   4. Add Authorized redirect URI:
+#        https://smart-apply-7zty.onrender.com/api/auth/google/callback
+#        (also add http://localhost:8000/api/auth/google/callback for local dev)
+#   5. Copy Client ID and Client Secret → paste below in Render env vars
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI  = os.getenv(
+    "GOOGLE_REDIRECT_URI",
+    f"{APP_URL}/api/auth/google/callback",
+)
 
 # ── Security ──────────────────────────────────────────────────────────────────
 DISPOSABLE_DOMAINS = {

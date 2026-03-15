@@ -12,19 +12,7 @@ services:
       - key: JWT_SECRET
         sync: false
 
-      # ── EMAIL — Mailjet HTTP API (works on Render free tier) ──────────────────
-      # Uses HTTPS port 443 — Render never blocks this. Free: 200/day, 6000/month.
-      #
-      # Setup (3 minutes):
-      #   1. Sign up FREE at https://app.mailjet.com/signup
-      #   2. Verify your Gmail as sender:
-      #      https://app.mailjet.com/account/sender
-      #      → "Add a Sender Domain or Address" → "Single email address"
-      #      → Enter your Gmail → click verification link sent to your Gmail
-      #   3. Get API keys:
-      #      https://app.mailjet.com/account/apikeys
-      #      → Copy "API Key" and "Secret Key"
-      #   4. Fill in the 4 variables below and redeploy
+      # ── EMAIL — Mailjet HTTP API ──────────────────────────────────────────────
       - key: MAILJET_API_KEY
         sync: false
 
@@ -32,7 +20,7 @@ services:
         sync: false
 
       - key: MAILJET_FROM
-        sync: false        # your verified Gmail, e.g. kovvurinandivardhanreddy7@gmail.com
+        sync: false
 
       - key: MAILJET_FROM_NAME
         value: "SmartApply"
@@ -43,6 +31,26 @@ services:
 
       - key: NVIDIA_MODEL
         value: "meta/llama-3.3-70b-instruct"
+
+      # ── Google OAuth 2.0 ──────────────────────────────────────────────────────
+      # Setup (5 minutes):
+      #   1. Go to https://console.cloud.google.com/
+      #   2. New project → APIs & Services → OAuth consent screen
+      #      → External → fill App name "SmartApply", your email
+      #   3. Credentials → + Create Credentials → OAuth client ID
+      #      → Application type: Web application
+      #      → Authorized redirect URIs → Add:
+      #           https://smart-apply-7zty.onrender.com/api/auth/google/callback
+      #   4. Copy the Client ID and Client Secret → paste below
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      # Only needed if your APP_URL differs from the Render URL
+      # - key: GOOGLE_REDIRECT_URI
+      #   value: "https://smart-apply-7zty.onrender.com/api/auth/google/callback"
 
       # ── App ───────────────────────────────────────────────────────────────────
       - key: APP_URL
