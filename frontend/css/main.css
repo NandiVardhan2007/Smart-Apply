@@ -59,7 +59,7 @@ a{color:var(--primary);text-decoration:none;transition:var(--transition)}a:hover
 .toast{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;font-size:14px;max-width:360px;box-shadow:var(--shadow-lg);animation:toast-in 0.35s cubic-bezier(.2,.8,.3,1.2) forwards;pointer-events:all;display:flex;align-items:center;gap:10px}
 .toast.success{border-left:3px solid var(--accent)}.toast.error{border-left:3px solid var(--danger)}.toast.info{border-left:3px solid var(--primary)}
 .toast.out{animation:toast-out 0.3s ease forwards}
-.navbar{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(7,11,20,0.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:1000;display:flex;align-items:center}
+.navbar{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(7,11,20,0.8);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:1000;display:flex;align-items:center}
 .navbar .container{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1120px}
 .nav-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px}
 .nav-logo span{color:var(--primary)}

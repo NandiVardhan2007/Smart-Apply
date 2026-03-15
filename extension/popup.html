@@ -8,100 +8,210 @@
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="screen-login" class="screen">
-  <div class="header">
-    <div class="logo-mark">⚡</div>
+  <div class="login-header">
+    <div class="login-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#06B6D4" stroke="#06B6D4" stroke-width="1" stroke-linejoin="round"/></svg>
+    </div>
     <div>
       <div class="brand">SmartApply</div>
       <div class="tagline">AI Job Application Bot</div>
     </div>
   </div>
-  <div class="section">
-    <label class="field-label">SmartApply Server URL</label>
-    <input type="url" id="server-url" placeholder="https://your-app.onrender.com" class="field-input" autocomplete="off">
-    <div class="hint">Your SmartApply backend URL</div>
+  <div class="login-body">
+    <div class="form-group">
+      <label class="field-label">Server URL</label>
+      <input type="url" id="server-url" placeholder="https://your-app.onrender.com" class="field-input" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="field-label">Email</label>
+      <input type="email" id="login-email" placeholder="your@email.com" class="field-input" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="field-label">Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" class="field-input" autocomplete="current-password">
+    </div>
+    <div id="login-error" class="error-msg hidden"></div>
+    <button id="btn-login" class="btn btn-primary btn-full">
+      <span class="btn-text">Sign In</span>
+      <span class="spinner hidden" id="login-spinner"></span>
+    </button>
+    <div class="login-footer">Your credentials are only sent to your own server</div>
   </div>
-  <div class="section">
-    <label class="field-label">Email</label>
-    <input type="email" id="login-email" placeholder="your@email.com" class="field-input" autocomplete="email">
-  </div>
-  <div class="section">
-    <label class="field-label">Password</label>
-    <input type="password" id="login-password" placeholder="••••••••" class="field-input" autocomplete="current-password">
-  </div>
-  <div id="login-error" class="error-msg hidden"></div>
-  <button id="btn-login" class="btn btn-primary btn-full">
-    <span class="btn-text">Sign In</span>
-    <span class="spinner hidden" id="login-spinner"></span>
-  </button>
-  <div class="footer-note">Your credentials are only sent to your own SmartApply server.</div>
 </div>
 
+<!-- MAIN SCREEN -->
 <div id="screen-main" class="screen hidden">
-  <div class="header">
-    <div class="logo-mark">⚡</div>
-    <div class="flex-grow">
-      <div class="brand">SmartApply</div>
-      <div id="user-email-display" class="tagline"></div>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#06B6D4"/></svg>
+      </div>
+      <span class="topbar-brand">SmartApply</span>
     </div>
-    <button id="btn-logout" class="btn-icon" title="Logout">⏏</button>
+    <div class="topbar-right">
+      <span id="user-email-display" class="topbar-email"></span>
+      <button id="btn-logout" class="icon-btn" title="Sign out">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
   </div>
 
-  <div id="profile-card" class="profile-card hidden">
+  <div id="profile-strip" class="profile-strip hidden">
     <div class="profile-avatar" id="profile-avatar">?</div>
-    <div>
-      <div class="profile-name" id="profile-name">Loading...</div>
+    <div class="profile-info">
+      <div class="profile-name" id="profile-name">Loading…</div>
       <div class="profile-meta" id="profile-meta"></div>
     </div>
-    <div class="profile-status" id="profile-status-badge">
-      <span class="dot dot-green"></span> Ready
+    <div id="profile-badge" class="badge badge-green">
+      <span class="badge-dot"></span><span id="badge-text">Ready</span>
     </div>
   </div>
 
-  <div id="status-banner" class="status-banner status-idle">
-    <span id="status-icon">●</span>
+  <div id="status-bar" class="status-bar status-idle">
+    <span id="status-dot" class="sdot sdot-idle"></span>
     <span id="status-text">Idle — Open LinkedIn Jobs to start</span>
   </div>
 
-  <div class="stats-row">
-    <div class="stat-box"><div class="stat-num" id="stat-applied">0</div><div class="stat-lbl">Applied</div></div>
-    <div class="stat-box"><div class="stat-num" id="stat-skipped">0</div><div class="stat-lbl">Skipped</div></div>
-    <div class="stat-box"><div class="stat-num" id="stat-errors">0</div><div class="stat-lbl">Errors</div></div>
-    <div class="stat-box"><div class="stat-num" id="stat-letters">0</div><div class="stat-lbl">AI Letters</div></div>
+  <div class="tab-bar">
+    <button class="tab active" data-tab="bot">⚡ Bot</button>
+    <button class="tab" data-tab="ai">✦ AI</button>
+    <button class="tab" data-tab="resumes">📄 Resumes</button>
+    <button class="tab" data-tab="log">📋 Log</button>
   </div>
 
-  <div class="controls-row">
-    <button id="btn-start" class="btn btn-primary flex-grow">▶ Start Bot</button>
-    <button id="btn-stop" class="btn btn-danger flex-grow hidden">⏹ Stop</button>
-    <button id="btn-dryrun" class="btn btn-secondary btn-toggle" title="Dry Run: stop before submit">🔒</button>
+  <!-- BOT TAB -->
+  <div class="tab-panel active" id="tab-bot">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num teal" id="stat-applied">0</div><div class="stat-lbl">Applied</div></div>
+      <div class="stat-card"><div class="stat-num amber" id="stat-skipped">0</div><div class="stat-lbl">Skipped</div></div>
+      <div class="stat-card"><div class="stat-num red" id="stat-errors">0</div><div class="stat-lbl">Errors</div></div>
+      <div class="stat-card"><div class="stat-num purple" id="stat-letters">0</div><div class="stat-lbl">AI Ltrs</div></div>
+    </div>
+
+    <div class="controls-row">
+      <button id="btn-start" class="btn btn-primary flex1">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+        Start Bot
+      </button>
+      <button id="btn-stop" class="btn btn-danger flex1 hidden">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+        Stop
+      </button>
+      <button id="btn-dryrun-toggle" class="btn btn-ghost padded" title="Toggle Dry Run mode">
+        <svg id="dryrun-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </button>
+    </div>
+
+    <div id="dryrun-label" class="mode-pill mode-dry">🔒 Dry Run — will not submit</div>
+
+    <div class="setting-group">
+      <div class="setting-row">
+        <span class="setting-label">Dry run (no submit)</span>
+        <label class="toggle"><input type="checkbox" id="opt-dry-run" checked title="Dry run (no submit)"><span class="track"></span></label>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Human-like typing & delays</span>
+        <label class="toggle"><input type="checkbox" id="opt-human-mode" checked title="Human-like typing and delays"><span class="track"></span></label>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Max applications</span>
+        <div class="num-wrap">
+          <button class="num-btn" id="dec-max">−</button>
+          <span id="max-apps-display" class="num-display">20</span>
+          <button class="num-btn" id="inc-max">+</button>
+          <input type="hidden" id="opt-max-apps" value="20">
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <button id="btn-refresh-profile" class="text-btn">↻ Refresh profile</button>
+      <span id="last-refresh" class="muted-text"></span>
+    </div>
   </div>
 
-  <div class="settings-panel">
-    <div class="settings-row">
-      <label class="toggle-label"><input type="checkbox" id="opt-dry-run" checked><span class="toggle-switch"></span>Dry Run (stop before submit)</label>
+  <!-- AI TAB -->
+  <div class="tab-panel hidden" id="tab-ai">
+    <div class="section-title">AI Features</div>
+
+    <div class="ai-card">
+      <div class="ai-icon">✦</div>
+      <div class="ai-card-body">
+        <div class="ai-card-title">Cover Letter per Job</div>
+        <div class="ai-card-desc">Writes a unique cover letter for each job using the actual job description</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-cover-letter" checked title="Cover letter per job"><span class="track"></span></label>
     </div>
-    <div class="settings-row">
-      <label class="toggle-label"><input type="checkbox" id="opt-cover-letter" checked><span class="toggle-switch"></span>AI Cover Letter per job</label>
+
+    <div class="ai-card">
+      <div class="ai-icon">🤖</div>
+      <div class="ai-card-body">
+        <div class="ai-card-title">Answer Unknown Questions</div>
+        <div class="ai-card-desc">Uses your profile + job description to answer any form question the bot doesn't recognize</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-ai-answers" checked title="Answer unknown questions"><span class="track"></span></label>
     </div>
-    <div class="settings-row">
-      <label class="toggle-label"><input type="checkbox" id="opt-human-mode" checked><span class="toggle-switch"></span>Human-like behavior</label>
+
+    <div class="ai-card">
+      <div class="ai-icon">🎯</div>
+      <div class="ai-card-body">
+        <div class="ai-card-title">Smart Option Selection</div>
+        <div class="ai-card-desc">AI picks the right answer from dropdowns and radio buttons — not just the first option</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-ai-select" checked title="Smart option selection"><span class="track"></span></label>
     </div>
-    <div class="settings-row inline-row">
-      <span>Max applications</span>
-      <input type="number" id="opt-max-apps" value="20" min="1" max="200" class="field-input small-input">
+
+    <div class="ai-card">
+      <div class="ai-icon">📄</div>
+      <div class="ai-card-body">
+        <div class="ai-card-title">Smart Resume Routing</div>
+        <div class="ai-card-desc">Auto-picks the best uploaded resume based on job role (dev vs CRM vs analyst etc.)</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-smart-resume" checked title="Smart resume routing"><span class="track"></span></label>
+    </div>
+
+    <div class="section-title section-title-top">Session Stats</div>
+    <div class="ai-stat-row">
+      <div class="ai-stat"><div class="ai-stat-num" id="ai-stat-letters">0</div><div class="ai-stat-lbl">Cover Letters</div></div>
+      <div class="ai-stat"><div class="ai-stat-num" id="ai-stat-answers">0</div><div class="ai-stat-lbl">AI Answers</div></div>
+      <div class="ai-stat"><div class="ai-stat-num" id="ai-stat-picks">0</div><div class="ai-stat-lbl">Option Picks</div></div>
     </div>
   </div>
 
-  <div class="log-header">
-    <span>Activity Log</span>
-    <button id="btn-clear-log" class="btn-link">Clear</button>
-  </div>
-  <div id="activity-log" class="activity-log"></div>
+  <!-- RESUMES TAB -->
+  <div class="tab-panel hidden" id="tab-resumes">
+    <div class="section-title-row">
+      <span class="section-title section-title-inline">Uploaded Resumes</span>
+      <button id="btn-reload-resumes" class="text-btn-sm">↻ Reload</button>
+    </div>
+    <div id="resume-list" class="resume-list">
+      <div class="empty-state">Loading…</div>
+    </div>
 
-  <div class="bottom-bar">
-    <button id="btn-refresh-profile" class="btn-link">↻ Refresh Profile</button>
-    <span id="last-refresh" class="muted-text"></span>
+    <div class="section-title section-title-top">Role Routing</div>
+    <div class="routing-table">
+      <div class="route-row"><span class="route-kw">java · python · developer · sde</span><span class="route-arrow">→</span><span class="route-lbl">Dev resume</span></div>
+      <div class="route-row"><span class="route-kw">crm · salesforce · hubspot · leadsquared</span><span class="route-arrow">→</span><span class="route-lbl">CRM resume</span></div>
+      <div class="route-row"><span class="route-kw">analyst · power bi · mis · tableau</span><span class="route-arrow">→</span><span class="route-lbl">Analytics resume</span></div>
+      <div class="route-row"><span class="route-kw">marketing · seo · sem · digital</span><span class="route-arrow">→</span><span class="route-lbl">Marketing resume</span></div>
+      <div class="route-row"><span class="route-kw">finance · audit · accounting · ca</span><span class="route-arrow">→</span><span class="route-lbl">Finance resume</span></div>
+      <div class="route-row"><span class="route-kw">inside sales · bdr · sales executive</span><span class="route-arrow">→</span><span class="route-lbl">Sales resume</span></div>
+    </div>
+    <div class="routing-tip">💡 Include role keywords in your resume labels (e.g. "Sriram_CRM_LeadSquared")</div>
   </div>
+
+  <!-- LOG TAB -->
+  <div class="tab-panel hidden" id="tab-log">
+    <div class="log-header-row">
+      <span class="section-title section-title-inline">Activity Log</span>
+      <button id="btn-clear-log" class="text-btn-sm">Clear</button>
+    </div>
+    <div id="activity-log" class="activity-log"></div>
+  </div>
+
 </div>
 
 <script src="popup.js"></script>

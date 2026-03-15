@@ -280,20 +280,155 @@ async function apiPost(path, body) {
   return data;
 }
 
+async function apiGet(path) {
+  const url = CONFIG.serverUrl.replace(/\/$/, '') + path;
+  const r = await fetch(url, { method:'GET', headers:{'Content-Type':'application/json','Authorization':`Bearer ${CONFIG.token}`} });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || `HTTP ${r.status}`);
+  return data;
+}
+
+// ── Cover letter: per-job AI generation with JD context ──────────
 async function generateCoverLetter(jobId, jobTitle, company, jd) {
   if (COVER_LETTER_CACHE[jobId]) return COVER_LETTER_CACHE[jobId];
   if (!CONFIG.coverLetter) return CONFIG.profile?.cover_letter || '';
   try {
-    const res = await apiPost('/api/ai/cover-letter', { job_title: jobTitle, company, job_description: (jd || '').slice(0, 1500) });
+    const p = CONFIG.profile || {};
+    // Build rich user_info context so AI tailors the letter properly
+    const userInfo = [
+      p.first_name && p.last_name ? `Name: ${p.first_name} ${p.last_name}` : '',
+      p.years_of_experience ? `Experience: ${p.years_of_experience} years` : '',
+      p.skills_summary ? `Skills: ${p.skills_summary.slice(0, 300)}` : '',
+      p.linkedin_summary ? `Background: ${p.linkedin_summary.slice(0, 300)}` : '',
+      p.current_city ? `Location: ${p.current_city}, ${p.country || 'India'}` : '',
+    ].filter(Boolean).join('\n');
+
+    const res = await apiPost('/api/ai/cover-letter', {
+      job_title: jobTitle,
+      company,
+      job_description: (jd || '').slice(0, 2000),
+      user_info: userInfo,
+    });
     const letter = res.cover_letter || '';
-    if (letter) { COVER_LETTER_CACHE[jobId] = letter; STATS.letters++; updateStats(); panelLog(`✦ AI letter: ${jobTitle.slice(0, 28)}`, 'ai'); }
-    return letter;
-  } catch (e) { panelLog(`Cover letter error: ${e.message}`, 'warn'); return CONFIG.profile?.cover_letter || ''; }
+    if (letter) {
+      COVER_LETTER_CACHE[jobId] = letter;
+      STATS.letters++; updateStats();
+      panelLog(`✦ AI cover letter for ${jobTitle.slice(0, 28)}`, 'ai');
+    }
+    return letter || p.cover_letter || '';
+  } catch (e) {
+    panelLog(`Cover letter error: ${e.message}`, 'warn');
+    return CONFIG.profile?.cover_letter || '';
+  }
 }
 
-async function aiAnswerQuestion(question, jobTitle, company) {
-  try { const r = await apiPost('/api/ai/answer-question', { question, job_title: jobTitle || '', company: company || '' }); return r.answer || ''; }
-  catch { return ''; }
+// ── AI: answer a free-text question ─────────────────────────────
+async function aiAnswerQuestion(question, jobTitle, company, jd) {
+  try {
+    const p = CONFIG.profile || {};
+    const userInfo = [
+      p.first_name && p.last_name ? `Name: ${p.first_name} ${p.last_name}` : '',
+      p.years_of_experience ? `Experience: ${p.years_of_experience} years` : '',
+      p.skills_summary ? `Skills: ${p.skills_summary.slice(0, 400)}` : '',
+      p.linkedin_summary ? `About: ${p.linkedin_summary.slice(0, 300)}` : '',
+      p.current_city ? `Location: ${p.current_city}, ${p.country || 'India'}` : '',
+      jd ? `Job description excerpt: ${jd.slice(0, 600)}` : '',
+    ].filter(Boolean).join('\n');
+
+    const r = await apiPost('/api/ai/answer-question', {
+      question,
+      job_title: jobTitle || '',
+      company:   company  || '',
+      user_info: userInfo,
+    });
+    return r.answer || '';
+  } catch { return ''; }
+}
+
+// ── AI: pick the best option from a list (select/radio) ──────────
+async function aiPickOption(question, options, jobTitle, company, jd) {
+  if (!options || options.length === 0) return '';
+  if (options.length === 1) return options[0];
+  try {
+    const p = CONFIG.profile || {};
+    const userInfo = [
+      p.first_name && p.last_name ? `Name: ${p.first_name} ${p.last_name}` : '',
+      p.years_of_experience ? `Experience: ${p.years_of_experience} years` : '',
+      p.skills_summary ? `Skills: ${p.skills_summary.slice(0, 300)}` : '',
+      p.current_city ? `Location: ${p.current_city}, ${p.country || 'India'}` : '',
+      jd ? `Job description: ${jd.slice(0, 500)}` : '',
+    ].filter(Boolean).join('\n');
+
+    const prompt = `You are filling a job application form on behalf of the candidate.
+
+Question: "${question}"
+Available options (you MUST pick exactly one from this list):
+${options.map((o, i) => `${i + 1}. ${o}`).join('\n')}
+
+Candidate profile:
+${userInfo}
+
+Rules:
+- Return ONLY the exact text of the best option, nothing else
+- Do not explain, do not add quotes
+- Pick the most truthful and appropriate answer for this candidate
+- For yes/no questions about eligibility, prefer "Yes" if it makes sense for an Indian candidate`;
+
+    const r = await apiPost('/api/ai/answer-question', {
+      question: prompt,
+      job_title: jobTitle || '',
+      company: company || '',
+    });
+    const answer = (r.answer || '').trim().replace(/^["'`]|["'`]$/g, '');
+    // Validate the answer is actually one of the options
+    const match = options.find(o =>
+      o.toLowerCase() === answer.toLowerCase() ||
+      o.toLowerCase().includes(answer.toLowerCase()) ||
+      answer.toLowerCase().includes(o.toLowerCase())
+    );
+    return match || '';
+  } catch { return ''; }
+}
+
+// ── Resume routing: pick best resume for current job role ─────────
+async function pickBestResume(jobTitle, company) {
+  const resumes = CONFIG.resumeList || [];
+  if (!resumes.length) return null;
+  if (resumes.length === 1) return resumes[0];
+
+  const title = (jobTitle || '').toLowerCase();
+
+  // Role-type keyword matching
+  const roleMap = [
+    { keywords: ['crm', 'salesforce', 'hubspot', 'leadsquared', 'marketing ops', 'marketing operation'],  type: 'crm' },
+    { keywords: ['data analyst', 'business analyst', 'analytics', 'power bi', 'tableau', 'mis'],          type: 'analyst' },
+    { keywords: ['inside sales', 'sales executive', 'bdr', 'business development', 'sales rep'],          type: 'sales' },
+    { keywords: ['java', 'python', 'software developer', 'software engineer', 'backend', 'frontend', 'full stack', 'sde'], type: 'dev' },
+    { keywords: ['finance', 'financial analyst', 'accounting', 'audit', 'ca', 'chartered'],               type: 'finance' },
+    { keywords: ['hr', 'human resource', 'talent', 'recruiter', 'recruitment'],                           type: 'hr' },
+    { keywords: ['marketing', 'digital marketing', 'seo', 'sem', 'content', 'social media'],              type: 'marketing' },
+    { keywords: ['intern', 'trainee', 'graduate trainee', 'fresher'],                                     type: 'intern' },
+  ];
+
+  let detectedType = null;
+  for (const { keywords, type } of roleMap) {
+    if (keywords.some(k => title.includes(k))) { detectedType = type; break; }
+  }
+
+  if (detectedType) {
+    // Find resume whose label mentions this role type
+    const match = resumes.find(r => {
+      const lbl = (r.label || '').toLowerCase();
+      return roleMap.find(rm => rm.type === detectedType)?.keywords.some(k => lbl.includes(k));
+    });
+    if (match) {
+      panelLog(`📄 Resume: "${match.label}" for "${jobTitle.slice(0, 25)}"`, 'ai');
+      return match;
+    }
+  }
+
+  // Fallback: most recently uploaded
+  return resumes[resumes.length - 1];
 }
 
 async function logApp(jobTitle, company, jobLink, result, reason) {
@@ -301,56 +436,87 @@ async function logApp(jobTitle, company, jobLink, result, reason) {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  ANSWER ENGINE
+//  ANSWER ENGINE  (handles text, textarea, select, radio)
 // ════════════════════════════════════════════════════════════════
 
-async function getAnswer(rawLabel, type, opts, jobTitle, company) {
+async function getAnswer(rawLabel, type, opts, jobTitle, company, jd) {
   const lbl = (rawLabel || '').toLowerCase();
   const p   = CONFIG.profile  || {};
   const jp  = CONFIG.jobPrefs || {};
 
-  if (lbl.includes('first name'))                          return p.first_name  || '';
-  if (lbl.includes('last name'))                           return p.last_name   || '';
-  if (lbl.includes('full name'))                           return [p.first_name, p.last_name].filter(Boolean).join(' ');
-  if (lbl.includes('email'))                               return p.email || '';
-  if (lbl.includes('phone') && lbl.includes('number'))     return p.phone_number || '';
-  if (lbl.includes('city') || lbl.includes('location'))    return p.current_city || '';
-  if (lbl.includes('state'))                               return p.state || '';
-  if (lbl.includes('country') && !lbl.includes('code'))    return p.country || 'India';
-  if (lbl.includes('zip') || lbl.includes('postal'))       return p.zipcode || '';
+  // ── Static profile fields ─────────────────────────────────────
+  if (lbl.includes('first name'))                                return p.first_name  || '';
+  if (lbl.includes('last name'))                                 return p.last_name   || '';
+  if (lbl.includes('full name'))                                 return [p.first_name, p.last_name].filter(Boolean).join(' ');
+  if (lbl.includes('email'))                                     return p.email || '';
+  if (lbl.includes('phone') && lbl.includes('number'))          return p.phone_number || '';
+  if (lbl.match(/^city$|current city|location city/))           return p.current_city || '';
+  if (lbl.match(/^state$|current state/))                       return p.state || '';
+  if (lbl.includes('country') && !lbl.includes('code'))         return p.country || 'India';
+  if (lbl.includes('zip') || lbl.includes('postal'))            return p.zipcode || '';
   if (lbl.includes('street') || (lbl.includes('address') && !lbl.includes('email'))) return p.street || '';
-  if (lbl.includes('linkedin'))                            return p.linkedin_profile || '';
-  if (lbl.includes('website') || lbl.includes('portfolio')) return p.website || '';
+  if (lbl.includes('linkedin'))                                  return p.linkedin_profile || '';
+  if (lbl.includes('website') || lbl.includes('portfolio'))     return p.website || '';
   if (lbl.includes('cover letter') || lbl.includes('why do you want')) return COVER_LETTER_CACHE[CONFIG._currentJobId] || p.cover_letter || '';
   if (lbl.includes('summary') || lbl.includes('about yourself')) return p.linkedin_summary || p.cover_letter || '';
-  if (lbl.match(/years.{0,10}experience|total experience/)) return String(p.years_of_experience || '0');
+  if (lbl.match(/years.{0,10}experience|total experience/))     return String(p.years_of_experience || '0');
   if (lbl.includes('expected') && (lbl.includes('salary') || lbl.includes('ctc'))) return String(p.desired_salary || '0');
   if (lbl.includes('current') && (lbl.includes('ctc') || lbl.includes('salary'))) return String(p.current_ctc || '0');
-  if (lbl.includes('notice period') || lbl.includes('joining period')) return String(p.notice_period || '0');
+  if (lbl.includes('notice period') || lbl.includes('joining'))  return String(p.notice_period || '0');
   if (lbl.includes('confidence') || lbl.includes('rate yourself')) return String(p.confidence_level || '7');
 
+  // ── Boolean/eligibility — prefer selecting from options ──────
   const bools = [
     { re: /authorized|legally authorized|eligible to work/, val: true },
-    { re: /visa sponsorship|require sponsorship/, val: false },
-    { re: /willing to relocate|open to relocation/, val: true },
-    { re: /full.?time/, val: jp.job_type?.includes('Full-time') ?? true },
-    { re: /remote work|comfortable remote/, val: jp.on_site?.includes('Remote') ?? true },
+    { re: /visa sponsorship|require sponsorship/,           val: false },
+    { re: /willing to relocate|open to relocation/,         val: true },
+    { re: /full.?time/,                                     val: jp.job_type?.includes('Full-time') ?? true },
+    { re: /remote work|comfortable remote/,                 val: jp.on_site?.includes('Remote') ?? true },
+    { re: /immediate.?join|available immediately/,          val: true },
+    { re: /disability|differently abled/,                   val: false },
+    { re: /veteran|military/,                               val: false },
   ];
   for (const { re, val } of bools) {
     if (lbl.match(re)) {
-      if (opts?.length) return opts.find(o => o.toLowerCase().startsWith(val ? 'yes' : 'no')) || (val ? 'Yes' : 'No');
+      if (opts?.length) {
+        return opts.find(o => o.toLowerCase().startsWith(val ? 'yes' : 'no'))
+            || opts.find(o => o.toLowerCase().includes(val ? 'yes' : 'no'))
+            || (val ? 'Yes' : 'No');
+      }
       return val ? 'Yes' : 'No';
     }
   }
 
-  if (type === 'select' && opts?.length && !lbl.includes('country code')) {
-    const first = opts.find(o => o && o !== 'Select an option');
-    if (first) { panelLog(`  ⚠ Auto-select: "${rawLabel?.slice(0, 22)}"`, 'warn'); return first; }
+  // ── Select / radio: use AI to pick from actual options ────────
+  if ((type === 'select' || type === 'radio') && opts?.length && !lbl.includes('country code')) {
+    // Skip placeholder-only selects
+    const realOpts = opts.filter(o => o && o !== 'Select an option' && o !== 'Please select');
+    if (!realOpts.length) return '';
+
+    // For small yes/no dropdowns — answer directly without AI call
+    if (realOpts.length === 2 && realOpts.every(o => /^(yes|no)$/i.test(o.trim()))) {
+      const val = bools.some(b => lbl.match(b.re) && b.val);
+      return realOpts.find(o => /yes/i.test(o)) || realOpts[0];
+    }
+
+    panelLog(`  🤖 AI picking option: "${rawLabel?.slice(0, 30)}" (${realOpts.length} choices)`, 'ai');
+    const aiPick = await aiPickOption(rawLabel, realOpts, jobTitle, company, jd);
+    if (aiPick) {
+      panelLog(`  ✓ AI picked: "${aiPick.slice(0, 25)}"`, 'ai');
+      return aiPick;
+    }
+    // Fallback: first real option
+    panelLog(`  ⚠ AI fallback → "${realOpts[0].slice(0, 22)}"`, 'warn');
+    return realOpts[0];
   }
 
+  // ── Free-text: AI answers anything unknown ────────────────────
   if (rawLabel && rawLabel.length > 4 && type !== 'resume') {
-    const ai = await aiAnswerQuestion(rawLabel, jobTitle, company);
-    if (ai) { panelLog(`  🤖 AI: "${rawLabel.slice(0, 22)}" → "${ai}"`, 'ai'); return ai; }
+    const ai = await aiAnswerQuestion(rawLabel, jobTitle, company, jd);
+    if (ai) {
+      panelLog(`  🤖 AI answer: "${rawLabel.slice(0, 22)}" → "${ai.slice(0, 35)}"`, 'ai');
+      return ai;
+    }
   }
   return '';
 }
@@ -360,56 +526,138 @@ async function getAnswer(rawLabel, type, opts, jobTitle, company) {
 // ════════════════════════════════════════════════════════════════
 
 async function fillStep(modal, jobTitle, company) {
-  for (const el of modal.querySelectorAll('input.artdeco-text-input--input, input[type="text"]')) {
+  // Get current JD for richer AI context
+  const jd = CONFIG._currentJD || getJD() || '';
+
+  // ── Text inputs ───────────────────────────────────────────────
+  for (const el of modal.querySelectorAll('input.artdeco-text-input--input, input[type="text"], input[type="number"]')) {
     if (el.readOnly || el.disabled || el.type === 'hidden') continue;
     const lbl = getLabel(el); if (!lbl) continue;
-    const ans = await getAnswer(lbl, 'text', [], jobTitle, company);
-    if (ans && el.value !== ans) { await humanDelay(80, 250); setNative(el, ans); }
+    if (el.value && el.value.trim().length > 0) continue; // don't overwrite filled fields
+    const ans = await getAnswer(lbl, 'text', [], jobTitle, company, jd);
+    if (ans && el.value !== ans) { await humanDelay(80, 250); await humanType(el, ans); }
     await sleep(50);
   }
+
+  // ── Textareas ─────────────────────────────────────────────────
   for (const el of modal.querySelectorAll('textarea')) {
     if (el.readOnly || el.disabled) continue;
     const lbl = getLabel(el); if (!lbl) continue;
-    const ans = await getAnswer(lbl, 'textarea', [], jobTitle, company);
-    if (ans && el.value !== ans) { await humanDelay(130, 450); setNative(el, ans); }
+    if (el.value && el.value.trim().length > 2) continue; // don't overwrite
+    const ans = await getAnswer(lbl, 'textarea', [], jobTitle, company, jd);
+    if (ans && el.value !== ans) { await humanDelay(130, 450); await humanType(el, ans); }
     await sleep(70);
   }
+
+  // ── Native selects ────────────────────────────────────────────
   for (const sel of modal.querySelectorAll('select')) {
     if (sel.disabled) continue;
     const lbl  = getLabel(sel);
-    const opts = Array.from(sel.options).map(o => o.text.trim()).filter(t => t && t !== 'Select an option');
+    const opts = Array.from(sel.options).map(o => o.text.trim()).filter(t => t && t !== 'Select an option' && t !== 'Please select');
+
+    // Phone country code — set to India
     if (lbl.toLowerCase().includes('country code') || lbl.toLowerCase().includes('phone country')) {
-      const opt = Array.from(sel.options).find(o => o.text.includes(CONFIG.profile?.country || 'India'));
+      const opt = Array.from(sel.options).find(o => o.text.includes('+91') || o.text.toLowerCase().includes('india'));
       if (opt && sel.value !== opt.value) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
       continue;
     }
-    const ans = await getAnswer(lbl, 'select', opts, jobTitle, company);
+
+    // Skip if already selected meaningfully
+    const curText = Array.from(sel.options).find(o => o.value === sel.value)?.text?.trim() || '';
+    if (curText && curText !== 'Select an option' && curText !== 'Please select') continue;
+
+    const ans = await getAnswer(lbl, 'select', opts, jobTitle, company, jd);
     if (ans) {
-      const match = Array.from(sel.options).find(o => o.text.trim().toLowerCase() === ans.toLowerCase() || o.text.trim().toLowerCase().includes(ans.toLowerCase()));
-      if (match && sel.value !== match.value) { await humanDelay(70, 180); sel.value = match.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+      const match = Array.from(sel.options).find(o =>
+        o.text.trim().toLowerCase() === ans.toLowerCase() ||
+        o.text.trim().toLowerCase().includes(ans.toLowerCase())
+      );
+      if (match && sel.value !== match.value) {
+        await humanDelay(70, 180);
+        sel.value = match.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        sel.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
-    await sleep(55);
+    await sleep(60);
   }
-  const rgs = {};
-  modal.querySelectorAll('input[type="radio"]').forEach(r => { const n = r.name || 'rg'; if (!rgs[n]) rgs[n] = []; rgs[n].push(r); });
-  for (const radios of Object.values(rgs)) {
-    if (radios.some(r => r.checked)) continue;
-    const lbl  = getLabel(radios[0]);
-    const opts = radios.map(r => { try { return document.querySelector(`label[for="${CSS.escape(r.id)}"]`)?.textContent?.trim() || r.value || ''; } catch { return r.value || ''; } });
-    const ans = await getAnswer(lbl, 'radio', opts, jobTitle, company);
+
+  // ── Typeahead/custom dropdowns (LinkedIn's artdeco dropdowns) ─
+  for (const dd of modal.querySelectorAll('.artdeco-dropdown, [data-test-text-select-input]')) {
+    const btn = dd.querySelector('button, [role="combobox"]');
+    if (!btn) continue;
+    const lbl = getLabel(btn) || btn.textContent?.trim();
+    const listId = btn.getAttribute('aria-controls') || btn.getAttribute('aria-owns');
+    if (!listId) continue;
+    const list = document.getElementById(listId);
+    if (!list) continue;
+    const opts = Array.from(list.querySelectorAll('[role="option"], li')).map(o => o.textContent?.trim()).filter(Boolean);
+    if (!opts.length) continue;
+    const ans = await getAnswer(lbl, 'select', opts, jobTitle, company, jd);
     if (ans) {
-      const idx = opts.findIndex(o => o.toLowerCase() === ans.toLowerCase() || o.toLowerCase().startsWith(ans.toLowerCase()));
-      if (idx >= 0) { await humanDelay(70, 180); radios[idx].click(); }
-    } else if (radios.length) { await sleep(70); radios[0].click(); }
-    await sleep(55);
+      await humanClick(btn);
+      await sleep(300);
+      const optEl = Array.from(list.querySelectorAll('[role="option"], li')).find(o =>
+        o.textContent?.trim().toLowerCase() === ans.toLowerCase() ||
+        o.textContent?.trim().toLowerCase().includes(ans.toLowerCase())
+      );
+      if (optEl) { await humanDelay(80, 200); await humanClick(optEl); }
+    }
+    await sleep(60);
   }
+
+  // ── Radio groups ──────────────────────────────────────────────
+  const rgs = {};
+  modal.querySelectorAll('input[type="radio"]').forEach(r => { const n = r.name || r.id || 'rg'; if (!rgs[n]) rgs[n] = []; rgs[n].push(r); });
+  for (const radios of Object.values(rgs)) {
+    if (radios.some(r => r.checked)) continue; // skip if already answered
+    const lbl  = getLabel(radios[0]);
+    const opts = radios.map(r => {
+      try { return document.querySelector(`label[for="${CSS.escape(r.id)}"]`)?.textContent?.trim() || r.value || ''; } catch { return r.value || ''; }
+    }).filter(Boolean);
+    const ans = await getAnswer(lbl, 'radio', opts, jobTitle, company, jd);
+    if (ans) {
+      const idx = opts.findIndex(o =>
+        o.toLowerCase() === ans.toLowerCase() ||
+        o.toLowerCase().includes(ans.toLowerCase()) ||
+        ans.toLowerCase().includes(o.toLowerCase())
+      );
+      if (idx >= 0) { await humanDelay(70, 180); radios[idx].click(); }
+      else { await sleep(70); radios[0].click(); } // fallback
+    } else if (radios.length) { await sleep(70); radios[0].click(); }
+    await sleep(60);
+  }
+
+  // ── Checkboxes (agreement/consent only) ──────────────────────
   for (const cb of modal.querySelectorAll('input[type="checkbox"]:not(:checked)')) {
     const lbl = getLabel(cb).toLowerCase();
-    if (lbl.includes('agree') || lbl.includes('certify') || lbl.includes('consent') || lbl.includes('confirm')) { await humanDelay(55, 140); cb.click(); }
+    if (lbl.includes('agree') || lbl.includes('certify') || lbl.includes('consent') || lbl.includes('confirm') || lbl.includes('accept')) {
+      await humanDelay(55, 140); cb.click();
+    }
     await sleep(35);
   }
-  const rCards = modal.querySelectorAll('.jobs-document-upload-redesign-card__container, [data-test-resume-card]');
-  if (rCards.length > 0 && !rCards[0].getAttribute('aria-checked')) { await humanDelay(130, 350); await humanClick(rCards[0]); }
+
+  // ── Resume card: pick best resume for role ────────────────────
+  const rCards = Array.from(modal.querySelectorAll(
+    '.jobs-document-upload-redesign-card__container, [data-test-resume-card], .jobs-resume-picker__resume'
+  ));
+  if (rCards.length > 0) {
+    const best = await pickBestResume(jobTitle, company);
+    if (best && rCards.length > 1) {
+      // Try to find the card matching the best resume label
+      const targetCard = rCards.find(c =>
+        (c.textContent || '').toLowerCase().includes((best.label || '').toLowerCase().slice(0, 15))
+      );
+      const cardToClick = targetCard || rCards[0];
+      if (!cardToClick.getAttribute('aria-checked') || cardToClick.getAttribute('aria-checked') === 'false') {
+        await humanDelay(130, 350);
+        await humanClick(cardToClick);
+      }
+    } else if (rCards.length === 1 && !rCards[0].getAttribute('aria-checked')) {
+      await humanDelay(130, 350);
+      await humanClick(rCards[0]);
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -431,6 +679,7 @@ async function applyToJob(card) {
 
   let company = '', jd = '', link = '';
   for (let i = 0; i < 10; i++) { company = getCompany(); jd = getJD(); link = window.location.href; if (company) break; await sleep(400); }
+  CONFIG._currentJD = jd; // cache for fillStep AI context
   panelLog(`  🏢 ${company || '(company unknown)'}`, 'info');
 
   const jobId = card.getAttribute('data-occludable-job-id') || (title + company);
@@ -492,6 +741,12 @@ async function startBot(config) {
   CONFIG = config; BOT_RUNNING = true; _easyApplyFilterActive = false;
   STATS = { applied: 0, skipped: 0, errors: 0, letters: 0 }; COVER_LETTER_CACHE = {};
   setStatus('running'); updateStats();
+  // Pre-load resume list for smart routing
+  try {
+    const rData = await apiGet('/api/resume/list');
+    CONFIG.resumeList = (rData.resumes || []).filter(r => r.file_id);
+    if (CONFIG.resumeList.length > 1) panelLog(`📄 ${CONFIG.resumeList.length} resumes loaded for smart routing`, 'ai');
+  } catch(e) { CONFIG.resumeList = []; }
   chrome.runtime.sendMessage({ type: 'BOT_STATUS', running: true }).catch(() => {});
   panelLog('🤖 Bot started', 'ok');
   panelLog(`${config.dryRun ? '🔒 Dry Run' : '🚀 LIVE'} | Human: ${config.humanMode ? 'ON' : 'OFF'} | Max: ${config.maxApps}`, 'info');

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-//  SmartApply Extension – Popup v3
+//  SmartApply Extension – Popup v4
 // ════════════════════════════════════════════════════════════════
 
 const DEFAULT_SERVER = 'http://localhost:8000';
@@ -8,47 +8,62 @@ const show = id => $(id)?.classList.remove('hidden');
 const hide = id => $(id)?.classList.add('hidden');
 
 function timeStr() {
-  return new Date().toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+// ── Log ───────────────────────────────────────────────────────────
 let logEntries = [];
-function addLog(msg, type='info') {
+function addLog(msg, type = 'info') {
   logEntries.unshift({ time: timeStr(), msg, type });
-  if (logEntries.length > 100) logEntries.pop();
+  if (logEntries.length > 150) logEntries.pop();
   renderLog();
 }
 function renderLog() {
   const el = $('activity-log');
   if (!el) return;
   el.innerHTML = logEntries.map(e =>
-    `<div class="log-entry"><span class="log-time">${e.time}</span><span class="log-${e.type}">${escHtml(e.msg)}</span></div>`
+    `<div class="log-entry"><span class="log-time">${e.time}</span><span class="log-${e.type}">${esc(e.msg)}</span></div>`
   ).join('');
 }
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-let stats = { applied:0, skipped:0, errors:0, letters:0 };
+// ── Stats ─────────────────────────────────────────────────────────
+let stats = { applied: 0, skipped: 0, errors: 0, letters: 0 };
+let aiStats = { letters: 0, answers: 0, picks: 0 };
+
 function updateStats(s) {
   stats = { ...stats, ...s };
   $('stat-applied').textContent = stats.applied;
   $('stat-skipped').textContent = stats.skipped;
   $('stat-errors').textContent  = stats.errors;
   $('stat-letters').textContent = stats.letters;
+  // Sync AI tab stats
+  $('ai-stat-letters').textContent = stats.letters;
 }
 
-function setStatus(text, type='idle') {
-  const banner = $('status-banner');
-  if (!banner) return;
-  banner.className = `status-banner status-${type}`;
-  $('status-text').textContent = text;
-  $('status-icon').textContent = { idle:'●', running:'◉', success:'✓', error:'✗' }[type] || '●';
+function updateAIStats(s) {
+  aiStats = { ...aiStats, ...s };
+  $('ai-stat-answers').textContent = aiStats.answers || 0;
+  $('ai-stat-picks').textContent   = aiStats.picks   || 0;
+  $('ai-stat-letters').textContent = aiStats.letters || 0;
 }
 
+// ── Status ────────────────────────────────────────────────────────
+function setStatus(text, type = 'idle') {
+  const bar  = $('status-bar');
+  const dot  = $('status-dot');
+  const txt  = $('status-text');
+  if (!bar) return;
+  bar.className = `status-bar status-${type}`;
+  if (dot) { dot.className = `sdot sdot-${type === 'running' ? 'running' : type === 'success' ? 'ok' : type === 'error' ? 'err' : 'idle'}`; }
+  if (txt) txt.textContent = text;
+}
+
+// ── Storage ───────────────────────────────────────────────────────
 const storageGet = keys => new Promise(r => chrome.storage.local.get(keys, r));
 const storageSet = obj  => new Promise(r => chrome.storage.local.set(obj, r));
 
-async function apiCall(serverUrl, path, method='GET', body=null, token=null) {
+async function apiCall(serverUrl, path, method = 'GET', body = null, token = null) {
   const url = serverUrl.replace(/\/$/, '') + path;
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -59,50 +74,63 @@ async function apiCall(serverUrl, path, method='GET', body=null, token=null) {
   return { ok: resp.ok, status: resp.status, data };
 }
 
-// ── Login ──────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      btn.classList.add('active');
+      $(`tab-${btn.dataset.tab}`)?.classList.remove('hidden');
+    });
+  });
+}
+
+// ── Login ─────────────────────────────────────────────────────────
 async function doLogin() {
   const serverUrl = $('server-url').value.trim() || DEFAULT_SERVER;
   const email     = $('login-email').value.trim();
   const password  = $('login-password').value;
-  if (!email || !password) { showError('Enter email and password.'); return; }
+  if (!email || !password) { showLoginError('Enter email and password.'); return; }
 
   $('btn-login').disabled = true;
-  $('login-spinner').classList.remove('hidden');
+  show('login-spinner');
   $('btn-login').querySelector('.btn-text').textContent = 'Signing in…';
   hide('login-error');
 
   try {
     const { ok, data } = await apiCall(serverUrl, '/api/auth/login', 'POST', { email, password });
-    if (!ok) { showError(data.detail || 'Login failed.'); return; }
+    if (!ok) { showLoginError(data.detail || 'Login failed.'); return; }
     await storageSet({ serverUrl, token: data.access_token, userEmail: data.user?.email || email, loggedIn: true });
     await loadDashboard(serverUrl, data.access_token, data.user?.email || email);
   } catch (err) {
-    showError(`Cannot reach server: ${err.message}`);
+    showLoginError(`Cannot reach server: ${err.message}`);
   } finally {
     $('btn-login').disabled = false;
-    $('login-spinner').classList.add('hidden');
+    hide('login-spinner');
     $('btn-login').querySelector('.btn-text').textContent = 'Sign In';
   }
 }
 
-function showError(msg) {
+function showLoginError(msg) {
   const el = $('login-error');
   el.textContent = msg;
   el.classList.remove('hidden');
 }
 
-// ── Dashboard ──────────────────────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────────
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`screen-${name}`)?.classList.remove('hidden');
+  $(`screen-${name}`)?.classList.remove('hidden');
 }
 
 async function loadDashboard(serverUrl, token, email) {
   showScreen('main');
   $('user-email-display').textContent = email;
-  addLog('Logged in. Loading profile…', 'info');
+  addLog('Logged in — loading profile…', 'info');
   await loadProfile(serverUrl, token);
   await loadSettings();
+  await loadResumes(serverUrl, token);
   $('last-refresh').textContent = `Refreshed ${timeStr()}`;
 }
 
@@ -111,34 +139,38 @@ async function loadProfile(serverUrl, token) {
     const { ok, data } = await apiCall(serverUrl, '/api/profile/me', 'GET', null, token);
     if (!ok) { addLog(`Profile error: ${data.detail}`, 'err'); return; }
 
-    const profile  = data.profile  || {};
-    const prefs    = data.job_preferences || {};
-
+    const profile = data.profile || {};
+    const prefs   = data.job_preferences || {};
     const name    = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Unknown';
+
     $('profile-avatar').textContent = name[0]?.toUpperCase() || '?';
     $('profile-name').textContent   = name;
-    $('profile-meta').textContent   =
-      `${profile.current_city || ''}${profile.current_city && profile.country ? ', ' : ''}${profile.country || ''}` +
-      (profile.years_of_experience ? ` · ${profile.years_of_experience}yr exp` : '');
+
+    const loc = [profile.current_city, profile.country].filter(Boolean).join(', ');
+    const yoe = profile.years_of_experience ? `${profile.years_of_experience}yr` : '';
+    $('profile-meta').textContent = [loc, yoe].filter(Boolean).join(' · ');
 
     const terms = prefs.search_terms || [];
-    if (terms.length) $('profile-meta').textContent += ` | 🔍 ${terms.slice(0, 2).join(', ')}${terms.length > 2 ? '…' : ''}`;
-
-    show('profile-card');
+    if (terms.length) {
+      $('profile-meta').textContent += ` · 🔍 ${terms.slice(0, 2).join(', ')}${terms.length > 2 ? '…' : ''}`;
+    }
+    show('profile-strip');
 
     const missing = [];
     if (!profile.first_name)   missing.push('First name');
     if (!profile.last_name)    missing.push('Last name');
     if (!profile.phone_number) missing.push('Phone');
-    if (!terms.length)         missing.push('Search terms (Job Preferences)');
+    if (!terms.length)         missing.push('Search terms');
 
+    const badge = $('profile-badge');
     if (missing.length) {
-      $('profile-status-badge').innerHTML = '<span class="dot dot-yellow"></span> Incomplete';
+      badge.className = 'badge badge-yellow';
+      $('badge-text').textContent = 'Incomplete';
       addLog(`⚠ Missing: ${missing.join(', ')}`, 'warn');
     } else {
-      $('profile-status-badge').innerHTML = '<span class="dot dot-green"></span> Ready';
+      badge.className = 'badge badge-green';
+      $('badge-text').textContent = 'Ready';
       addLog(`✓ Profile: ${name}`, 'ok');
-      if (terms.length) addLog(`🔍 Will search: ${terms.slice(0, 3).join(', ')}`, 'info');
     }
 
     await storageSet({ profileData: data });
@@ -147,80 +179,136 @@ async function loadProfile(serverUrl, token) {
   }
 }
 
+// ── Resumes ───────────────────────────────────────────────────────
+async function loadResumes(serverUrl, token) {
+  const el = $('resume-list');
+  if (!el) return;
+  try {
+    const { ok, data } = await apiCall(serverUrl, '/api/resume/list', 'GET', null, token);
+    if (!ok || !data.resumes?.length) {
+      el.innerHTML = '<div class="empty-state">No resumes uploaded yet.<br>Go to SmartApply → Resume to upload.</div>';
+      return;
+    }
+    const resumes = data.resumes;
+    el.innerHTML = resumes.map((r, i) => `
+      <div class="resume-item">
+        <div class="resume-icon">📄</div>
+        <div class="resume-label" title="${r.label || r.filename || 'Resume'}">${r.label || r.filename || 'Resume ' + (i + 1)}</div>
+        <span class="resume-tag">${r.label?.toLowerCase().includes('crm') || r.label?.toLowerCase().includes('hubspot') ? 'CRM'
+          : r.label?.toLowerCase().includes('java') || r.label?.toLowerCase().includes('dev') ? 'Dev'
+          : r.label?.toLowerCase().includes('market') ? 'Marketing'
+          : r.label?.toLowerCase().includes('finance') || r.label?.toLowerCase().includes('mba') ? 'Finance'
+          : r.label?.toLowerCase().includes('analyst') || r.label?.toLowerCase().includes('power bi') ? 'Analytics'
+          : 'General'}</span>
+        <div class="resume-date">${r.uploaded_at ? new Date(r.uploaded_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}</div>
+      </div>
+    `).join('');
+    await storageSet({ resumeData: resumes });
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
+  }
+}
+
+// ── Settings ──────────────────────────────────────────────────────
 async function loadSettings() {
-  const s = await storageGet(['dryRun','coverLetter','humanMode','maxApps']);
-  $('opt-dry-run').checked      = s.dryRun      !== false;
-  $('opt-cover-letter').checked = s.coverLetter  !== false;
-  $('opt-human-mode').checked   = s.humanMode    !== false;
-  $('opt-max-apps').value       = s.maxApps      || 20;
+  const s = await storageGet(['dryRun','coverLetter','humanMode','maxApps','aiAnswers','aiSelect','smartResume']);
+  $('opt-dry-run').checked      = s.dryRun       !== false;
+  $('opt-cover-letter').checked = s.coverLetter   !== false;
+  $('opt-human-mode').checked   = s.humanMode     !== false;
+  $('opt-ai-answers').checked   = s.aiAnswers     !== false;
+  $('opt-ai-select').checked    = s.aiSelect      !== false;
+  $('opt-smart-resume').checked = s.smartResume   !== false;
+  const maxApps = s.maxApps || 20;
+  $('opt-max-apps').value          = maxApps;
+  $('max-apps-display').textContent = maxApps;
+  updateDryRunUI($('opt-dry-run').checked);
 }
 
 async function saveSettings() {
+  const maxApps = parseInt($('opt-max-apps').value) || 20;
   await storageSet({
-    dryRun:      $('opt-dry-run').checked,
-    coverLetter: $('opt-cover-letter').checked,
-    humanMode:   $('opt-human-mode').checked,
-    maxApps:     parseInt($('opt-max-apps').value) || 20,
+    dryRun:       $('opt-dry-run').checked,
+    coverLetter:  $('opt-cover-letter').checked,
+    humanMode:    $('opt-human-mode').checked,
+    aiAnswers:    $('opt-ai-answers').checked,
+    aiSelect:     $('opt-ai-select').checked,
+    smartResume:  $('opt-smart-resume').checked,
+    maxApps,
   });
+}
+
+function updateDryRunUI(isDry) {
+  const pill = $('dryrun-label');
+  if (isDry) {
+    pill.className = 'mode-pill mode-dry';
+    pill.textContent = '🔒 Dry Run — will not submit';
+  } else {
+    pill.className = 'mode-pill mode-live';
+    pill.textContent = '🚀 LIVE — will submit applications';
+  }
+  const icon = $('dryrun-icon');
+  if (icon) icon.style.opacity = isDry ? '1' : '0.5';
 }
 
 // ── Start bot ─────────────────────────────────────────────────────
 async function startBot() {
-  const stored = await storageGet(['serverUrl','token','profileData','dryRun','coverLetter','humanMode','maxApps']);
+  const stored = await storageGet(['serverUrl','token','profileData','dryRun','coverLetter','humanMode','maxApps','aiAnswers','aiSelect','smartResume','resumeData']);
   if (!stored.token)       { addLog('Not logged in', 'err'); return; }
   if (!stored.profileData) { addLog('Profile not loaded — click Refresh Profile', 'err'); return; }
 
-  const profile  = stored.profileData.profile || {};
-  const prefs    = stored.profileData.job_preferences || {};
-  const accounts = stored.profileData.platform_accounts || {};
+  const profile = stored.profileData.profile || {};
+  const prefs   = stored.profileData.job_preferences || {};
 
   if (!profile.first_name) { addLog('First name missing in profile', 'err'); return; }
 
   const terms = (prefs.search_terms || []).filter(Boolean);
   if (!terms.length) {
-    addLog('❌ No job search terms! Go to SmartApply → Profile → Job Preferences and add search terms', 'err');
+    addLog('❌ No search terms! Add them in Profile → Job Preferences', 'err');
     return;
   }
 
   await saveSettings();
 
   const config = {
-    serverUrl:   stored.serverUrl,
-    token:       stored.token,
+    serverUrl:    stored.serverUrl,
+    token:        stored.token,
     profile,
-    jobPrefs:    prefs,
-    accounts,
-    dryRun:      stored.dryRun !== false,
-    coverLetter: stored.coverLetter !== false,
-    humanMode:   stored.humanMode !== false,
-    maxApps:     parseInt(stored.maxApps) || 20,
-    userEmail:   stored.userEmail,
+    jobPrefs:     prefs,
+    accounts:     stored.profileData.platform_accounts || {},
+    dryRun:       stored.dryRun     !== false,
+    coverLetter:  stored.coverLetter !== false,
+    humanMode:    stored.humanMode   !== false,
+    aiAnswers:    stored.aiAnswers   !== false,
+    aiSelect:     stored.aiSelect    !== false,
+    smartResume:  stored.smartResume !== false,
+    maxApps:      parseInt(stored.maxApps) || 20,
+    userEmail:    stored.userEmail,
+    resumeList:   stored.resumeData || [],
     _resumeTermIndex: 0,
   };
 
   await storageSet({ botConfig: config, botRunning: true, botStats: { applied:0, skipped:0, errors:0, letters:0 } });
-
   setStatus('Starting…', 'running');
   show('btn-stop'); hide('btn-start');
 
-  const firstTerm = terms[0];
-  addLog(`Bot starting — searching: "${firstTerm}"`, 'ok');
-  addLog(`${config.dryRun ? '🔒 Dry Run' : '🚀 LIVE'} mode`, 'info');
+  addLog(`Bot starting — ${config.dryRun ? '🔒 Dry Run' : '🚀 LIVE'} | Max: ${config.maxApps}`, 'ok');
+  addLog(`🔍 Searching: ${terms.slice(0,3).join(', ')}`, 'info');
+  if (config.coverLetter) addLog('✦ AI cover letters: ON', 'ai');
+  if (config.aiAnswers)   addLog('🤖 AI answers: ON', 'ai');
+  if (config.aiSelect)    addLog('🎯 AI option picks: ON', 'ai');
+  if (config.smartResume && config.resumeList.length > 1) addLog(`📄 Smart resume routing: ON (${config.resumeList.length} resumes)`, 'ai');
 
   const searchUrl = buildSearchUrl(prefs, 0);
-  addLog(`Opening: ${searchUrl.slice(0, 65)}...`, 'info');
-
   try {
     const liTabs = await chrome.tabs.query({ url: '*://www.linkedin.com/jobs/*' });
     if (liTabs.length > 0) {
       await chrome.tabs.update(liTabs[0].id, { url: searchUrl, active: true });
-      addLog(`Navigating existing tab to search results…`, 'ok');
     } else {
       chrome.tabs.create({ url: searchUrl });
-      addLog('Opened LinkedIn Jobs search tab. Bot will start automatically.', 'ok');
     }
+    addLog('Opening LinkedIn search…', 'info');
   } catch (err) {
-    addLog(`Tab error: ${err.message} — storage polling will start it`, 'warn');
+    addLog(`Tab error: ${err.message}`, 'warn');
   }
 }
 
@@ -228,52 +316,59 @@ function buildSearchUrl(jobPrefs, index) {
   const terms    = (jobPrefs?.search_terms || []).filter(Boolean);
   const keyword  = terms[index] || 'Software Engineer';
   const location = jobPrefs?.search_location || 'India';
-
   const params = new URLSearchParams({ keywords: keyword, location, f_LF: 'f_AL', sortBy: 'DD' });
-
   const expMap = { 'Internship':'1','Entry level':'2','Associate':'3','Mid-Senior level':'4','Director':'5','Executive':'6' };
   const expLevels = (jobPrefs?.experience_level || []).map(e => expMap[e]).filter(Boolean);
   if (expLevels.length) params.set('f_E', expLevels.join(','));
-
   const workMap = { 'On-site':'1','Remote':'2','Hybrid':'3' };
   const workTypes = (jobPrefs?.on_site || []).map(w => workMap[w]).filter(Boolean);
   if (workTypes.length) params.set('f_WT', workTypes.join(','));
-
   const dateMap = { 'Past 24 hours':'r86400','Past week':'r604800','Past month':'r2592000' };
   const dateFilter = dateMap[jobPrefs?.date_posted];
   if (dateFilter) params.set('f_TPR', dateFilter);
-
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
 async function stopBot() {
-  const stored = await storageGet(['serverUrl','token']);
   await storageSet({ botRunning: false });
   try {
     const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/jobs/*' });
     for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { type:'BOT_STOP' }).catch(()=>{});
   } catch {}
-  setStatus('Stopped', 'idle'); hide('btn-stop'); show('btn-start');
+  setStatus('Stopped', 'idle');
+  hide('btn-stop'); show('btn-start');
   addLog('Bot stopped', 'warn');
 }
 
 // ── Message listener ──────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'BOT_LOG')    addLog(msg.text, msg.level || 'info');
-  if (msg.type === 'BOT_STATS')  updateStats(msg.stats);
+  if (msg.type === 'BOT_LOG') {
+    addLog(msg.text, msg.level || 'info');
+    // Auto-switch to log tab when running
+    // (intentionally left to user)
+  }
+  if (msg.type === 'BOT_STATS') updateStats(msg.stats);
+  if (msg.type === 'BOT_AI_STATS') updateAIStats(msg.aiStats);
   if (msg.type === 'BOT_STATUS') {
-    if (msg.running) { setStatus('Bot running…', 'running'); }
-    else { setStatus('Done ✓', 'success'); hide('btn-stop'); show('btn-start'); }
+    if (msg.running) {
+      setStatus('Bot running…', 'running');
+    } else {
+      setStatus('Done ✓', 'success');
+      hide('btn-stop'); show('btn-start');
+    }
   }
 });
 
 // ── Init ──────────────────────────────────────────────────────────
 async function init() {
+  initTabs();
+
   const stored = await storageGet(['loggedIn','serverUrl','token','userEmail','botRunning']);
   if (stored.loggedIn && stored.token) {
     await loadDashboard(stored.serverUrl, stored.token, stored.userEmail);
     if (stored.botRunning) {
-      setStatus('Bot running…', 'running'); show('btn-stop'); hide('btn-start');
+      setStatus('Bot running…', 'running');
+      show('btn-stop'); hide('btn-start');
     }
   } else {
     showScreen('login');
@@ -284,19 +379,70 @@ async function init() {
 
 document.addEventListener('DOMContentLoaded', () => {
   init();
+
+  // Login
   $('btn-login').addEventListener('click', doLogin);
-  $('login-password').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  // Logout
   $('btn-logout').addEventListener('click', async () => {
-    await storageSet({ loggedIn:false, token:null, profileData:null, botRunning:false });
-    logEntries=[]; showScreen('login');
+    await storageSet({ loggedIn: false, token: null, profileData: null, botRunning: false });
+    logEntries = [];
+    showScreen('login');
   });
+
+  // Bot controls
   $('btn-start').addEventListener('click', startBot);
   $('btn-stop').addEventListener('click', stopBot);
-  $('btn-clear-log').addEventListener('click', () => { logEntries=[]; renderLog(); });
+
+  // Dry run toggle button (lock icon)
+  $('btn-dryrun-toggle').addEventListener('click', () => {
+    const cb = $('opt-dry-run');
+    cb.checked = !cb.checked;
+    updateDryRunUI(cb.checked);
+    saveSettings();
+  });
+
+  // Settings changes
+  ['opt-dry-run','opt-cover-letter','opt-human-mode','opt-ai-answers','opt-ai-select','opt-smart-resume'].forEach(id => {
+    $(id)?.addEventListener('change', () => {
+      if (id === 'opt-dry-run') updateDryRunUI($('opt-dry-run').checked);
+      saveSettings();
+    });
+  });
+
+  // Max apps stepper
+  $('inc-max').addEventListener('click', () => {
+    let v = parseInt($('opt-max-apps').value) || 20;
+    v = Math.min(200, v + 5);
+    $('opt-max-apps').value = v;
+    $('max-apps-display').textContent = v;
+    saveSettings();
+  });
+  $('dec-max').addEventListener('click', () => {
+    let v = parseInt($('opt-max-apps').value) || 20;
+    v = Math.max(1, v - 5);
+    $('opt-max-apps').value = v;
+    $('max-apps-display').textContent = v;
+    saveSettings();
+  });
+
+  // Refresh
   $('btn-refresh-profile').addEventListener('click', async () => {
     const s = await storageGet(['serverUrl','token']);
-    if (s.token) { addLog('Refreshing…','info'); await loadProfile(s.serverUrl, s.token); $('last-refresh').textContent=`Refreshed ${timeStr()}`; }
+    if (s.token) {
+      addLog('Refreshing profile…','info');
+      await loadProfile(s.serverUrl, s.token);
+      $('last-refresh').textContent = `Refreshed ${timeStr()}`;
+    }
   });
-  ['opt-dry-run','opt-cover-letter','opt-human-mode'].forEach(id => $(id)?.addEventListener('change',saveSettings));
-  $('opt-max-apps')?.addEventListener('change',saveSettings);
+
+  // Resumes reload
+  $('btn-reload-resumes').addEventListener('click', async () => {
+    const s = await storageGet(['serverUrl','token']);
+    if (s.token) await loadResumes(s.serverUrl, s.token);
+  });
+
+  // Clear log
+  $('btn-clear-log').addEventListener('click', () => { logEntries = []; renderLog(); });
 });
