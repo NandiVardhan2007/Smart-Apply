@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from backend.database import get_db
-from backend.auth import get_current_user
+from backend.auth import require_admin
 from backend.config import NVIDIA_API_KEYS, NVIDIA_MODEL, SMTP_USER
 from backend.email_utils import send_verification_email
 
@@ -28,7 +28,7 @@ def _save_cfg(data: dict):
 
 
 @router.get("/stats")
-async def get_stats(current_user: dict = Depends(get_current_user)):
+async def get_stats(current_user: dict = Depends(require_admin)):
     db = get_db()
     cfg = _load_cfg()
 
@@ -57,7 +57,7 @@ class TestEmailRequest(BaseModel):
 
 
 @router.put("/smtp")
-async def update_smtp(body: SMTPConfig, current_user: dict = Depends(get_current_user)):
+async def update_smtp(body: SMTPConfig, current_user: dict = Depends(require_admin)):
     cfg = _load_cfg()
     cfg.update({
         "smtp_host": body.smtp_host,
@@ -78,7 +78,7 @@ async def update_smtp(body: SMTPConfig, current_user: dict = Depends(get_current
 
 
 @router.post("/smtp/test")
-async def test_smtp(body: TestEmailRequest, current_user: dict = Depends(get_current_user)):
+async def test_smtp(body: TestEmailRequest, current_user: dict = Depends(require_admin)):
     try:
         await send_verification_email(body.to, "123456")
         return {"message": f"Test email sent to {body.to}"}
@@ -92,7 +92,7 @@ class KeysUpdate(BaseModel):
 
 
 @router.get("/keys")
-async def get_keys(current_user: dict = Depends(get_current_user)):
+async def get_keys(current_user: dict = Depends(require_admin)):
     cfg = _load_cfg()
     all_keys = cfg.get("nvidia_keys") or NVIDIA_API_KEYS
     return {
@@ -102,7 +102,7 @@ async def get_keys(current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/keys")
-async def update_keys(body: KeysUpdate, current_user: dict = Depends(get_current_user)):
+async def update_keys(body: KeysUpdate, current_user: dict = Depends(require_admin)):
     for k in body.keys:
         if not k.startswith("nvapi-"):
             raise HTTPException(400, detail=f"Invalid key format: {k[:20]}… (must start with nvapi-)")
@@ -126,13 +126,13 @@ async def update_keys(body: KeysUpdate, current_user: dict = Depends(get_current
 async def list_users(
     skip: int = 0,
     limit: int = 100,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
 ):
     db = get_db()
     users = []
     async for doc in db.users.find({}, {
         "email": 1, "is_verified": 1, "profile": 1,
-        "resumes": 1, "created_at": 1
+        "resumes": 1, "created_at": 1, "role": 1
     }).sort("created_at", -1).skip(skip).limit(limit):
 
         app_count = await db.applications.count_documents({"user_id": str(doc["_id"])})
@@ -140,6 +140,7 @@ async def list_users(
         users.append({
             "id": str(doc["_id"]),
             "email": doc.get("email"),
+            "role": doc.get("role", "user"),
             "is_verified": doc.get("is_verified", False),
             "has_profile": bool(doc.get("profile", {}).get("first_name")),
             "resume_count": len(doc.get("resumes", [])),
@@ -151,7 +152,7 @@ async def list_users(
 
 
 @router.post("/users/{user_id}/verify")
-async def force_verify_user(user_id: str, current_user: dict = Depends(get_current_user)):
+async def force_verify_user(user_id: str, current_user: dict = Depends(require_admin)):
     db = get_db()
     from bson import ObjectId
     result = await db.users.update_one(
@@ -163,8 +164,23 @@ async def force_verify_user(user_id: str, current_user: dict = Depends(get_curre
     return {"message": "User verified successfully"}
 
 
+@router.put("/users/{user_id}/role")
+async def set_user_role(user_id: str, role: str, current_user: dict = Depends(require_admin)):
+    if role not in ("user", "admin"):
+        raise HTTPException(400, detail="Role must be 'user' or 'admin'")
+    db = get_db()
+    from bson import ObjectId
+    result = await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"role": role}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(404, detail="User not found")
+    return {"message": f"Role set to {role}"}
+
+
 @router.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_user(user_id: str, current_user: dict = Depends(require_admin)):
     db = get_db()
     from bson import ObjectId
     result = await db.users.delete_one({"_id": ObjectId(user_id)})

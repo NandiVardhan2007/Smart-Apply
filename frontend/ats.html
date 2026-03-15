@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ATS Resume Analyzer — SmartApply</title>
-  <link rel="stylesheet" href="css/main.css" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATS Resume Analyzer — SmartApply</title><link rel="stylesheet" href="css/main.css" />
   <style>
     .ats-layout{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
     @media(max-width:860px){.ats-layout{grid-template-columns:1fr}}
@@ -13,9 +11,9 @@
     .score-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
     .score-number{font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;line-height:1}
     .score-sub{font-size:11px;color:var(--text-2);font-weight:500;letter-spacing:.05em;text-transform:uppercase;margin-top:4px}
-    .section-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .section-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
     .section-bar-label{width:160px;font-size:13px;color:var(--text-2);flex-shrink:0}
-    .section-bar-track{flex:1;height:7px;background:var(--bg-3);border-radius:99px;overflow:hidden}
+    .section-bar-track{flex:1;min-width:80px;height:7px;background:var(--bg-3);border-radius:99px;overflow:hidden}
     .section-bar-fill{height:100%;border-radius:99px;transition:width 1s cubic-bezier(.4,0,.2,1)}
     .section-bar-val{font-size:13px;font-weight:600;width:36px;text-align:right;flex-shrink:0}
     .keyword-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -27,14 +25,14 @@
     .tip-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase;flex-shrink:0;margin-top:2px}
     .badge-high{background:rgba(255,107,107,0.18);color:var(--danger)}.badge-medium{background:rgba(255,209,102,0.18);color:var(--accent-2)}.badge-low{background:rgba(79,124,255,0.18);color:var(--primary)}
     .strength-item{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;background:rgba(126,232,162,0.07);border:1px solid rgba(126,232,162,0.15);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13.5px}
-    .upload-tab-btns{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
-    .tab-btn{padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-2);font-size:14px;cursor:pointer;transition:var(--transition);margin-bottom:-1px}
+    .upload-tab-btns{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
+    .tab-btn{padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-2);font-size:14px;cursor:pointer;transition:var(--transition);margin-bottom:-1px;font-family:'DM Sans',sans-serif}
     .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
     .tab-pane{display:none}.tab-pane.active{display:block}
     .drop-zone{border:2px dashed var(--border-glow);border-radius:var(--radius);padding:36px 20px;text-align:center;cursor:pointer;transition:var(--transition)}
     .drop-zone:hover,.drop-zone.drag-over{border-color:var(--primary);background:rgba(79,124,255,0.06)}
     .resume-option{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;transition:var(--transition);margin-bottom:8px}
-    .resume-option:hover{border-color:var(--primary);background:rgba(79,124,255,0.06)}.resume-option.selected{border-color:var(--primary);background:rgba(79,124,255,0.1)}
+    .resume-option:hover{border-color:var(--primary)}.resume-option.selected{border-color:var(--primary);background:rgba(79,124,255,0.1)}
     #results-panel{display:none}#results-panel.visible{display:block}
     .analyzing-anim{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 0;color:var(--text-2)}
     .pulse-ring{width:60px;height:60px;border-radius:50%;border:3px solid var(--primary);animation:pulseRing 1.2s ease-in-out infinite}
@@ -45,21 +43,25 @@
   <nav class="navbar">
     <div class="container">
       <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
-      <div class="nav-links" id="nav-actions"></div>
+      <div class="nav-links">
+        <a href="dashboard.html" class="btn btn-ghost btn-sm hide-mobile"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <a href="resume.html" class="btn btn-ghost btn-sm hide-mobile"><i class="fa-solid fa-file-lines"></i> Resumes</a>
+        <button onclick="auth.logout()" class="btn btn-ghost btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
     </div>
   </nav>
   <div class="page-wrapper">
     <div class="container" style="padding-top:40px;padding-bottom:72px;max-width:1080px">
       <div style="margin-bottom:32px">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7b61ff);display:flex;align-items:center;justify-content:center;font-size:1.4rem">🎯</div>
-          <div><h2 style="margin:0">ATS Resume Analyzer</h2><div class="text-muted text-sm">Check how well your resume passes Applicant Tracking Systems</div></div>
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7b61ff);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0"><i class="fa-solid fa-bullseye" style="color:#fff"></i></div>
+          <div><h2 style="margin:0"><i class="fa-solid fa-chart-simple"></i> ATS Resume Analyzer</h2><div class="text-muted text-sm">Check how well your resume passes Applicant Tracking Systems</div></div>
         </div>
       </div>
       <div class="ats-layout">
         <div>
           <div class="card" style="margin-bottom:20px">
-            <h4 style="margin-bottom:16px">📄 Your Resume</h4>
+            <h4 style="margin-bottom:16px"><i class="fa-solid fa-file-pdf"></i> Your Resume</h4>
             <div class="upload-tab-btns">
               <button class="tab-btn active" onclick="switchTab('upload',this)">Upload PDF</button>
               <button class="tab-btn" onclick="switchTab('saved',this)">Saved Resumes</button>
@@ -67,7 +69,7 @@
             </div>
             <div class="tab-pane active" id="tab-upload">
               <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
-                <div style="font-size:2rem;margin-bottom:8px">📂</div>
+                <div style="font-size:2rem;margin-bottom:8px"><i class="fa-solid fa-file-arrow-up" style="color:var(--primary)"></i></div>
                 <div style="font-weight:600;margin-bottom:4px" id="drop-label">Drop your resume PDF here</div>
                 <div class="text-muted text-sm">or click to browse · Max 5MB</div>
                 <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handlePdfSelect(this)">
@@ -76,7 +78,11 @@
             <div class="tab-pane" id="tab-saved"><div id="saved-list"><div class="text-muted text-sm" style="padding:12px 0">Loading your saved resumes…</div></div></div>
             <div class="tab-pane" id="tab-paste"><textarea id="resume-text-input" placeholder="Paste your resume text here…" style="width:100%;height:220px;resize:vertical;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;color:var(--text);font-size:13.5px;font-family:inherit;line-height:1.6"></textarea></div>
           </div>
-          <button class="btn btn-primary w-full" id="analyze-btn" onclick="runAnalysis()" style="padding:14px;font-size:15px;font-weight:700">🎯 Analyze My Resume</button>
+          <div class="form-group" style="margin-bottom:16px">
+            <label><i class="fa-solid fa-file-lines"></i> Job Description (optional)</label>
+            <textarea id="jd-input" placeholder="Paste the job description for a more targeted analysis…" style="height:100px;resize:vertical"></textarea>
+          </div>
+          <button class="btn btn-primary w-full" id="analyze-btn" onclick="runAnalysis()" style="padding:14px;font-size:15px;font-weight:700"><i class="fa-solid fa-magnifying-glass-chart"></i> Analyze My Resume</button>
           <div id="error-msg" class="text-danger text-sm" style="margin-top:10px;display:none"></div>
         </div>
         <div id="results-panel">
@@ -94,14 +100,14 @@
             </div>
             <p id="score-summary" class="text-muted text-sm" style="text-align:center;padding:0 12px;line-height:1.7"></p>
           </div>
-          <div class="card" id="sections-card" style="margin-bottom:20px;display:none"><h4 style="margin-bottom:18px">📊 Section Breakdown</h4><div id="section-bars"></div></div>
+          <div class="card" id="sections-card" style="margin-bottom:20px;display:none"><h4 style="margin-bottom:18px"><i class="fa-solid fa-chart-bar"></i> Section Breakdown</h4><div id="section-bars"></div></div>
           <div class="card" id="keywords-card" style="margin-bottom:20px;display:none">
-            <h4 style="margin-bottom:6px">🔑 Keyword Analysis</h4>
-            <div style="margin-bottom:16px"><div class="text-sm" style="color:var(--accent);font-weight:600;margin-bottom:6px">✅ Matched <span id="match-count"></span></div><div class="keyword-chips" id="matched-chips"></div></div>
-            <div><div class="text-sm" style="color:var(--danger);font-weight:600;margin-bottom:6px">❌ Missing <span id="miss-count"></span></div><div class="keyword-chips" id="missing-chips"></div></div>
+            <h4 style="margin-bottom:6px"><i class="fa-solid fa-key"></i> Keyword Analysis</h4>
+            <div style="margin-bottom:16px"><div class="text-sm" style="color:var(--accent);font-weight:600;margin-bottom:6px"><i class="fa-solid fa-check"></i> Matched <span id="match-count"></span></div><div class="keyword-chips" id="matched-chips"></div></div>
+            <div><div class="text-sm" style="color:var(--danger);font-weight:600;margin-bottom:6px"><i class="fa-solid fa-xmark"></i> Missing <span id="miss-count"></span></div><div class="keyword-chips" id="missing-chips"></div></div>
           </div>
-          <div class="card" id="strengths-card" style="margin-bottom:20px;display:none"><h4 style="margin-bottom:14px">💪 Resume Strengths</h4><div id="strengths-list"></div></div>
-          <div class="card" id="improvements-card" style="display:none"><h4 style="margin-bottom:14px">🛠️ Improvement Tips</h4><div id="improvements-list"></div></div>
+          <div class="card" id="strengths-card" style="margin-bottom:20px;display:none"><h4 style="margin-bottom:14px"><i class="fa-solid fa-trophy"></i> Resume Strengths</h4><div id="strengths-list"></div></div>
+          <div class="card" id="improvements-card" style="display:none"><h4 style="margin-bottom:14px"><i class="fa-solid fa-screwdriver-wrench"></i> Improvement Tips</h4><div id="improvements-list"></div></div>
         </div>
       </div>
     </div>
@@ -110,37 +116,99 @@
   <script>
     if (!auth.requireAuth()) throw new Error('Not authenticated');
     let selectedFileId=null, selectedPdfBytes=null, activeTab='upload';
-    (function renderNav(){const el=document.getElementById('nav-actions');if(!el)return;el.innerHTML=`<a href="dashboard.html" class="btn btn-ghost btn-sm hide-mobile">Dashboard</a><a href="resume.html" class="btn btn-ghost btn-sm hide-mobile">Resumes</a><button onclick="auth.logout()" class="btn btn-ghost btn-sm">Logout</button>`;})();
-    function switchTab(name,btn){activeTab=name;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('tab-'+name).classList.add('active');if(name==='saved')loadSavedResumes();}
+
+    function switchTab(name, btn) {
+      activeTab=name;
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+name).classList.add('active');
+      if(name==='saved') loadSavedResumes();
+    }
+
     const dropZone=document.getElementById('drop-zone');
     dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
     dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
     dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const file=e.dataTransfer.files[0];if(file)processPdfFile(file);});
     function handlePdfSelect(input){if(input.files[0])processPdfFile(input.files[0]);}
-    function processPdfFile(file){if(file.type!=='application/pdf'){showError('Please upload a PDF file.');return;}if(file.size>5*1024*1024){showError('File too large. Max 5MB.');return;}selectedPdfBytes=file;selectedFileId=null;document.getElementById('drop-label').textContent='✅ '+file.name;dropZone.style.borderColor='var(--accent)';}
-    async function loadSavedResumes(){const el=document.getElementById('saved-list');el.innerHTML='<div class="text-muted text-sm" style="padding:12px 0">Loading…</div>';try{const data=await api.get('/resume/list');const resumes=data.resumes||[];if(!resumes.length){el.innerHTML='<div class="text-muted text-sm" style="padding:12px 0">No saved resumes. <a href="resume.html">Upload one →</a></div>';return;}el.innerHTML=resumes.map(r=>`<div class="resume-option" id="opt-${r.file_id}" onclick="selectSavedResume('${r.file_id}',this)"><span style="font-size:1.3rem">📄</span><div><div style="font-weight:600;font-size:14px">${r.label||r.filename}</div><div class="text-muted text-sm">${r.filename} · ${new Date(r.uploaded_at).toLocaleDateString()}</div></div></div>`).join('');}catch(e){el.innerHTML='<div class="text-danger text-sm">Failed to load resumes.</div>';}}
+    function processPdfFile(file){
+      if(file.type!=='application/pdf'){showError('Please upload a PDF file.');return;}
+      if(file.size>5*1024*1024){showError('File too large. Max 5MB.');return;}
+      selectedPdfBytes=file;selectedFileId=null;
+      document.getElementById('drop-label').textContent='✓ '+file.name;
+      dropZone.style.borderColor='var(--accent)';
+    }
+
+    async function loadSavedResumes(){
+      const el=document.getElementById('saved-list');el.innerHTML='<div class="text-muted text-sm" style="padding:12px 0">Loading…</div>';
+      try{
+        const data=await api.get('/resume/list');const resumes=data.resumes||[];
+        if(!resumes.length){el.innerHTML='<div class="text-muted text-sm" style="padding:12px 0">No saved resumes. <a href="resume.html">Upload one →</a></div>';return;}
+        el.innerHTML=resumes.map(r=>`<div class="resume-option" id="opt-${r.file_id}" onclick="selectSavedResume('${r.file_id}',this)"><i class="fa-solid fa-file-pdf" style="color:var(--danger);font-size:1.3rem"></i><div><div style="font-weight:600;font-size:14px">${r.label||r.filename}</div><div class="text-muted text-sm">${r.filename} · ${new Date(r.uploaded_at||'').toLocaleDateString()}</div></div></div>`).join('');
+      }catch(e){el.innerHTML='<div class="text-danger text-sm">Failed to load resumes.</div>';}
+    }
     function selectSavedResume(fileId,el){document.querySelectorAll('.resume-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');selectedFileId=fileId;selectedPdfBytes=null;}
+
     async function runAnalysis(){
       let resumeText='',fileId=null;
+      const jd=document.getElementById('jd-input').value.trim();
       if(activeTab==='paste'){resumeText=document.getElementById('resume-text-input').value.trim();if(!resumeText){showError('Please paste your resume text.');return;}}
-      else if(activeTab==='upload'){if(!selectedPdfBytes){showError('Please upload a resume PDF.');return;}try{const form=new FormData();form.append('file',selectedPdfBytes);form.append('label','ATS Temp');const token=localStorage.getItem('sa_token');const res=await fetch('/api/resume/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:form});if(!res.ok)throw new Error('Upload failed');const data=await res.json();fileId=data.file_id;}catch(e){showError('Failed to upload PDF: '+e.message);return;}}
-      else if(activeTab==='saved'){if(!selectedFileId){showError('Please select a saved resume.');return;}fileId=selectedFileId;}
+      else if(activeTab==='upload'){
+        if(!selectedPdfBytes){showError('Please upload a resume PDF.');return;}
+        try{
+          const form=new FormData();form.append('file',selectedPdfBytes);form.append('label','ATS Temp');
+          const data=await api.upload('/resume/upload',form);fileId=data.file_id;
+        }catch(e){showError('Failed to upload PDF: '+e.message);return;}
+      }else if(activeTab==='saved'){if(!selectedFileId){showError('Please select a saved resume.');return;}fileId=selectedFileId;}
       showError('');setAnalyzing(true);document.getElementById('results-panel').classList.add('visible');
-      try{const payload={};if(resumeText)payload.resume_text=resumeText;if(fileId)payload.file_id=fileId;const result=await api.post('/ai/ats-analyze',payload);renderResults(result);}
-      catch(e){setAnalyzing(false);showError('Analysis failed: '+(e.detail||e.message||'Unknown error'));}
+      try{
+        const payload={};
+        if(resumeText) payload.resume_text=resumeText;
+        if(fileId) payload.file_id=fileId;
+        if(jd) payload.job_description=jd;
+        const result=await api.post('/ai/ats-analyze',payload);
+        renderResults(result);
+      }catch(e){setAnalyzing(false);showError('Analysis failed: '+(e.detail||e.message||'Unknown error'));}
     }
-    function setAnalyzing(on){document.getElementById('analyzing-state').style.display=on?'block':'none';['score-card','sections-card','keywords-card','strengths-card','improvements-card'].forEach(id=>document.getElementById(id).style.display=on?'none':'');const btn=document.getElementById('analyze-btn');btn.disabled=on;btn.textContent=on?'⏳ Analyzing…':'🎯 Analyze My Resume';}
+
+    function setAnalyzing(on){
+      document.getElementById('analyzing-state').style.display=on?'block':'none';
+      ['score-card','sections-card','keywords-card','strengths-card','improvements-card'].forEach(id=>document.getElementById(id).style.display=on?'none':'');
+      const btn=document.getElementById('analyze-btn');btn.disabled=on;btn.innerHTML=on?'<i class="fa-solid fa-spinner fa-spin"></i> Analyzing…':'<i class="fa-solid fa-magnifying-glass-chart"></i> Analyze My Resume';
+    }
+
     function renderResults(r){
       setAnalyzing(false);
-      const score=Math.max(0,Math.min(100,r.ats_score||0));const circ=2*Math.PI*62;const offset=circ-(circ*score/100);const arc=document.getElementById('score-arc');const color=score>=75?'var(--accent)':score>=50?'var(--accent-2)':'var(--danger)';arc.style.stroke=color;setTimeout(()=>{arc.style.strokeDashoffset=offset;},50);
+      const score=Math.max(0,Math.min(100,r.ats_score||0));
+      const circ=2*Math.PI*62;const offset=circ-(circ*score/100);
+      const arc=document.getElementById('score-arc');
+      const color=score>=75?'var(--accent)':score>=50?'var(--accent-2)':'var(--danger)';
+      arc.style.stroke=color;setTimeout(()=>{arc.style.strokeDashoffset=offset;},50);
       let cur=0;const step=()=>{cur=Math.min(cur+Math.ceil(score/40),score);document.getElementById('score-num').textContent=cur;if(cur<score)requestAnimationFrame(step);};requestAnimationFrame(step);
-      const verdict=score>=80?'🟢 Excellent Match':score>=60?'🟡 Good Match':score>=40?'🟠 Needs Improvement':'🔴 Poor Match';document.getElementById('score-verdict').textContent=verdict;document.getElementById('score-verdict').style.color=color;document.getElementById('score-summary').textContent=r.summary||'';document.getElementById('score-card').style.display='block';
-      const sections=r.section_scores||{};const labels={skills_match:'Skills Match',experience_relevance:'Experience Relevance',education_match:'Education Match',keyword_density:'Keyword Density'};
-      document.getElementById('section-bars').innerHTML=Object.entries(labels).map(([k,label])=>{const val=sections[k]||0;const c=val>=75?'var(--accent)':val>=50?'var(--accent-2)':'var(--danger)';return`<div class="section-bar-row"><div class="section-bar-label">${label}</div><div class="section-bar-track"><div class="section-bar-fill" style="width:${val}%;background:${c}"></div></div><div class="section-bar-val" style="color:${c}">${val}</div></div>`;}).join('');document.getElementById('sections-card').style.display='block';
-      const matched=r.matched_keywords||[];const missing=r.missing_keywords||[];document.getElementById('match-count').textContent=`(${matched.length})`;document.getElementById('miss-count').textContent=`(${missing.length})`;document.getElementById('matched-chips').innerHTML=matched.length?matched.map(k=>`<span class="chip chip-match">${k}</span>`).join(''):'<span class="text-muted text-sm">None found</span>';document.getElementById('missing-chips').innerHTML=missing.length?missing.map(k=>`<span class="chip chip-miss">${k}</span>`).join(''):'<span class="text-muted text-sm" style="color:var(--accent)">All keywords matched! 🎉</span>';document.getElementById('keywords-card').style.display='block';
-      const strengths=r.strengths||[];document.getElementById('strengths-list').innerHTML=strengths.length?strengths.map(s=>`<div class="strength-item"><span>✅</span><span>${s}</span></div>`).join(''):'<div class="text-muted text-sm">No specific strengths identified.</div>';document.getElementById('strengths-card').style.display='block';
-      const tips=r.improvements||[];document.getElementById('improvements-list').innerHTML=tips.length?tips.map(t=>`<div class="tip-row tip-${t.priority}"><span class="tip-badge badge-${t.priority}">${t.priority}</span><span style="font-size:13.5px">${t.tip}</span></div>`).join(''):'<div class="text-muted text-sm">No improvements needed!</div>';document.getElementById('improvements-card').style.display='block';
+      const verdict=score>=80?'Excellent — ATS Ready':score>=60?'Good Match':score>=40?'Fair — Needs Work':'Poor — Likely Filtered';
+      document.getElementById('score-verdict').textContent=verdict;document.getElementById('score-verdict').style.color=color;
+      document.getElementById('score-summary').textContent=r.summary||'';document.getElementById('score-card').style.display='block';
+      const sections=r.section_scores||{};
+      const labels={skills_match:'Skills Match',experience_relevance:'Experience Relevance',education_match:'Education Match',keyword_density:'Keyword Density'};
+      document.getElementById('section-bars').innerHTML=Object.entries(labels).map(([k,label])=>{const val=sections[k]||0;const c=val>=75?'var(--accent)':val>=50?'var(--accent-2)':'var(--danger)';return`<div class="section-bar-row"><div class="section-bar-label">${label}</div><div class="section-bar-track"><div class="section-bar-fill" style="width:${val}%;background:${c}"></div></div><div class="section-bar-val" style="color:${c}">${val}</div></div>`;}).join('');
+      document.getElementById('sections-card').style.display='block';
+      const matched=r.matched_keywords||[];const missing=r.missing_keywords||[];
+      document.getElementById('match-count').textContent=`(${matched.length})`;document.getElementById('miss-count').textContent=`(${missing.length})`;
+      document.getElementById('matched-chips').innerHTML=matched.length?matched.map(k=>`<span class="chip chip-match">${k}</span>`).join(''):'<span class="text-muted text-sm">None found</span>';
+      document.getElementById('missing-chips').innerHTML=missing.length?missing.map(k=>{
+        const isRequired=k.includes('(Required)');
+        const label=k.replace(' (Required)','');
+        return `<span class="chip chip-miss" style="${isRequired?'border-color:#ff6b6b;background:rgba(255,107,107,0.18);font-weight:700':''}">${label}${isRequired?' <span style="font-size:10px;background:#ff6b6b;color:#fff;padding:1px 5px;border-radius:4px;margin-left:3px">Required</span>':''}</span>`;
+      }).join(''):'<span class="text-muted text-sm" style="color:var(--accent)">All keywords matched!</span>';
+      document.getElementById('keywords-card').style.display='block';
+      const strengths=r.strengths||[];
+      document.getElementById('strengths-list').innerHTML=strengths.length?strengths.map(s=>`<div class="strength-item"><i class="fa-solid fa-circle-check" style="color:var(--accent);flex-shrink:0;margin-top:2px"></i><span>${s}</span></div>`).join(''):'<div class="text-muted text-sm">No specific strengths identified.</div>';
+      document.getElementById('strengths-card').style.display='block';
+      const tips=r.improvements||[];
+      document.getElementById('improvements-list').innerHTML=tips.length?tips.map(t=>`<div class="tip-row tip-${t.priority}"><span class="tip-badge badge-${t.priority}">${t.priority}</span><span style="font-size:13.5px">${t.tip}</span></div>`).join(''):'<div class="text-muted text-sm">No improvements needed!</div>';
+      document.getElementById('improvements-card').style.display='block';
     }
+
     function showError(msg){const el=document.getElementById('error-msg');el.textContent=msg;el.style.display=msg?'block':'none';}
   </script>
 </body>

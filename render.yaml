@@ -6,31 +6,23 @@ services:
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: MONGO_URI
-        sync: false        # Set in Render Dashboard
+        sync: false        # Required — Set in Render Dashboard
       - key: JWT_SECRET
-        sync: false        # Set in Render Dashboard
-
-      # ── NVIDIA NIM AI ─────────────────────────────────────────────────────
+        sync: false        # Required — Set in Render Dashboard
+      - key: FERNET_KEY
+        sync: false        # Optional — for encrypting platform passwords
       - key: NVIDIA_API_KEYS
         sync: false        # Set in Render Dashboard — nvapi-xxxx
       - key: NVIDIA_MODEL
         value: "meta/llama-3.3-70b-instruct"
-
-      # ── Email — Brevo (300 emails/day free) ───────────────────────────────
-      - key: BREVO_API_KEY
-        sync: false        # Set in Render Dashboard — never put keys in code!
-      - key: BREVO_FROM
-        value: "kovvurinandivardhanreddy7@gmail.com"
-      - key: BREVO_FROM_NAME
-        value: "SmartApply"
-
-      # ── App URL ───────────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
+        sync: false        # Set in Render Dashboard — get key from https://resend.com
+      - key: RESEND_FROM
+        value: "SmartApply <onboarding@resend.dev>"  # Change to your verified domain after setup
       - key: APP_URL
         value: "https://smart-apply-7zty.onrender.com"
       - key: FRONTEND_URL
         value: "https://smart-apply-7zty.onrender.com"
-
-      # ── Other settings ────────────────────────────────────────────────────
       - key: DB_NAME
         value: smartapply
       - key: JWT_ALGORITHM

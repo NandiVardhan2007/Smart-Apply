@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,23 +13,22 @@ from backend.database import init_db, close_db
 from backend.routers import auth, resume, profile, jobs, ai, admin
 from backend.config import APP_URL
 
-# ── Self-ping: keeps Render free tier awake ───────────────────────
-# Pings /health every 10 minutes so the server never idles out.
-# APP_URL comes from render.yaml env var (e.g. https://smart-apply-7zty.onrender.com)
+logger = logging.getLogger(__name__)
 
-PING_INTERVAL = 10 * 60  # 10 minutes
+PING_INTERVAL = 10 * 60
+
 
 async def _self_ping_loop():
     url = APP_URL.rstrip("/") + "/health"
-    await asyncio.sleep(90)  # let server fully start before first ping
-    print(f"[self-ping] Started — pinging {url} every {PING_INTERVAL // 60} min")
+    await asyncio.sleep(90)
+    logger.info(f"[self-ping] Started — pinging {url} every {PING_INTERVAL // 60} min")
     async with httpx.AsyncClient(timeout=15) as client:
         while True:
             try:
                 r = await client.get(url)
-                print(f"[self-ping] {r.status_code} OK")
+                logger.info(f"[self-ping] {r.status_code} OK")
             except Exception as e:
-                print(f"[self-ping] failed: {e}")
+                logger.warning(f"[self-ping] failed: {e}")
             await asyncio.sleep(PING_INTERVAL)
 
 
@@ -43,14 +43,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SmartApply API",
-    description="AI-powered job application automation platform",
     version="2.0.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
 
-# ── Middleware ────────────────────────────────────────────────────────────────
+# ── Global error handler ──────────────────────────────────────────────────────
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse({"detail": "Internal server error"}, status_code=500)
+
+# ── Middleware ─────────────────────────────────────────────────────────────────
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,11 +82,10 @@ async def log_requests(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
     duration = round((time.time() - start) * 1000, 2)
-    print(f"[{request.method}] {request.url.path} → {response.status_code} ({duration}ms)")
+    logger.info(f"[{request.method}] {request.url.path} → {response.status_code} ({duration}ms)")
     return response
 
-
-# ── API Routers ───────────────────────────────────────────────────────────────
+# ── Routers ────────────────────────────────────────────────────────────────────
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(resume.router, prefix="/api")
@@ -90,14 +95,11 @@ app.include_router(ai.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
 
-# ── Health check ──────────────────────────────────────────────────────────────
-
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "SmartApply API"}
 
-
-# ── Serve frontend static files ───────────────────────────────────────────────
+# ── Frontend ───────────────────────────────────────────────────────────────────
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
@@ -108,13 +110,10 @@ if FRONTEND_DIR.exists():
     async def serve_frontend(page: str):
         if page.startswith("api/"):
             return JSONResponse({"detail": "Not found"}, status_code=404)
-
         target = FRONTEND_DIR / page
         if target.exists() and target.is_file():
             return FileResponse(str(target))
-
         index = FRONTEND_DIR / "index.html"
         if index.exists():
             return FileResponse(str(index))
-
         return JSONResponse({"detail": "Not found"}, status_code=404)

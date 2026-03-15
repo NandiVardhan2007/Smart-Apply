@@ -1,6 +1,4 @@
-// ════════════════════════════════════════════════════════════════
-//  SmartApply Extension – Popup v4
-// ════════════════════════════════════════════════════════════════
+// SmartApply Extension – Popup v5
 
 const SERVER_URL = 'https://smart-apply-7zty.onrender.com';
 const $ = id => document.getElementById(id);
@@ -11,9 +9,11 @@ function timeStr() {
   return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-// ── Log ───────────────────────────────────────────────────────────
+// ── Log (deduplicated) ────────────────────────────────────────────────────────
 let logEntries = [];
 function addLog(msg, type = 'info') {
+  // Prevent duplicate consecutive entries
+  if (logEntries.length && logEntries[0].msg === msg) return;
   logEntries.unshift({ time: timeStr(), msg, type });
   if (logEntries.length > 150) logEntries.pop();
   renderLog();
@@ -27,9 +27,7 @@ function renderLog() {
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── Stats ─────────────────────────────────────────────────────────
 let stats = { applied: 0, skipped: 0, errors: 0, letters: 0 };
-let aiStats = { letters: 0, answers: 0, picks: 0 };
 
 function updateStats(s) {
   stats = { ...stats, ...s };
@@ -37,29 +35,17 @@ function updateStats(s) {
   $('stat-skipped').textContent = stats.skipped;
   $('stat-errors').textContent  = stats.errors;
   $('stat-letters').textContent = stats.letters;
-  // Sync AI tab stats
   $('ai-stat-letters').textContent = stats.letters;
 }
 
-function updateAIStats(s) {
-  aiStats = { ...aiStats, ...s };
-  $('ai-stat-answers').textContent = aiStats.answers || 0;
-  $('ai-stat-picks').textContent   = aiStats.picks   || 0;
-  $('ai-stat-letters').textContent = aiStats.letters || 0;
-}
-
-// ── Status ────────────────────────────────────────────────────────
 function setStatus(text, type = 'idle') {
-  const bar  = $('status-bar');
-  const dot  = $('status-dot');
-  const txt  = $('status-text');
+  const bar = $('status-bar'); const dot = $('status-dot'); const txt = $('status-text');
   if (!bar) return;
   bar.className = `status-bar status-${type}`;
   if (dot) { dot.className = `sdot sdot-${type === 'running' ? 'running' : type === 'success' ? 'ok' : type === 'error' ? 'err' : 'idle'}`; }
   if (txt) txt.textContent = text;
 }
 
-// ── Storage ───────────────────────────────────────────────────────
 const storageGet = keys => new Promise(r => chrome.storage.local.get(keys, r));
 const storageSet = obj  => new Promise(r => chrome.storage.local.set(obj, r));
 
@@ -74,7 +60,7 @@ async function apiCall(serverUrl, path, method = 'GET', body = null, token = nul
   return { ok: resp.ok, status: resp.status, data };
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 function initTabs() {
   document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -86,7 +72,7 @@ function initTabs() {
   });
 }
 
-// ── Login ─────────────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────────────────
 async function doLogin() {
   const email    = $('login-email').value.trim();
   const password = $('login-password').value;
@@ -99,7 +85,7 @@ async function doLogin() {
 
   try {
     const { ok, data } = await apiCall(SERVER_URL, '/api/auth/login', 'POST', { email, password });
-    if (!ok) { showLoginError(data.detail || 'Login failed.'); return; }
+    if (!ok) { showLoginError(data.detail || 'Email or password is wrong. Try again.'); return; }
     await storageSet({ serverUrl: SERVER_URL, token: data.access_token, userEmail: data.user?.email || email, loggedIn: true });
     await loadDashboard(SERVER_URL, data.access_token, data.user?.email || email);
   } catch (err) {
@@ -117,7 +103,6 @@ function showLoginError(msg) {
   el.classList.remove('hidden');
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   $(`screen-${name}`)?.classList.remove('hidden');
@@ -147,12 +132,10 @@ async function loadProfile(serverUrl, token) {
 
     const loc = [profile.current_city, profile.country].filter(Boolean).join(', ');
     const yoe = profile.years_of_experience ? `${profile.years_of_experience}yr` : '';
-    $('profile-meta').textContent = [loc, yoe].filter(Boolean).join(' · ');
-
+    let metaText = [loc, yoe].filter(Boolean).join(' · ');
     const terms = prefs.search_terms || [];
-    if (terms.length) {
-      $('profile-meta').textContent += ` · 🔍 ${terms.slice(0, 2).join(', ')}${terms.length > 2 ? '…' : ''}`;
-    }
+    if (terms.length) metaText += ` · ${terms.slice(0,2).join(', ')}${terms.length>2?'…':''}`;
+    $('profile-meta').textContent = metaText;
     show('profile-strip');
 
     const missing = [];
@@ -171,14 +154,10 @@ async function loadProfile(serverUrl, token) {
       $('badge-text').textContent = 'Ready';
       addLog(`✓ Profile: ${name}`, 'ok');
     }
-
     await storageSet({ profileData: data });
-  } catch (err) {
-    addLog(`Profile error: ${err.message}`, 'err');
-  }
+  } catch (err) { addLog(`Profile error: ${err.message}`, 'err'); }
 }
 
-// ── Resumes ───────────────────────────────────────────────────────
 async function loadResumes(serverUrl, token) {
   const el = $('resume-list');
   if (!el) return;
@@ -188,45 +167,40 @@ async function loadResumes(serverUrl, token) {
       el.innerHTML = '<div class="empty-state">No resumes uploaded yet.<br>Go to SmartApply → Resume to upload.</div>';
       return;
     }
-    const resumes = data.resumes;
-    el.innerHTML = resumes.map((r, i) => `
-      <div class="resume-item">
+    el.innerHTML = data.resumes.map((r, i) => {
+      const label = r.label?.toLowerCase() || '';
+      const tag = label.includes('crm')||label.includes('hubspot') ? 'CRM'
+        : label.includes('java')||label.includes('dev') ? 'Dev'
+        : label.includes('market') ? 'Marketing'
+        : label.includes('finance')||label.includes('mba') ? 'Finance'
+        : label.includes('analyst')||label.includes('power bi') ? 'Analytics'
+        : 'General';
+      return `<div class="resume-item">
         <div class="resume-icon">📄</div>
-        <div class="resume-label" title="${r.label || r.filename || 'Resume'}">${r.label || r.filename || 'Resume ' + (i + 1)}</div>
-        <span class="resume-tag">${r.label?.toLowerCase().includes('crm') || r.label?.toLowerCase().includes('hubspot') ? 'CRM'
-          : r.label?.toLowerCase().includes('java') || r.label?.toLowerCase().includes('dev') ? 'Dev'
-          : r.label?.toLowerCase().includes('market') ? 'Marketing'
-          : r.label?.toLowerCase().includes('finance') || r.label?.toLowerCase().includes('mba') ? 'Finance'
-          : r.label?.toLowerCase().includes('analyst') || r.label?.toLowerCase().includes('power bi') ? 'Analytics'
-          : 'General'}</span>
+        <div class="resume-label" title="${r.label||r.filename||'Resume'}">${r.label||r.filename||'Resume '+(i+1)}</div>
+        <span class="resume-tag">${tag}</span>
         <div class="resume-date">${r.uploaded_at ? new Date(r.uploaded_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}</div>
-      </div>
-    `).join('');
-    await storageSet({ resumeData: resumes });
-  } catch (err) {
-    el.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
-  }
+      </div>`;
+    }).join('');
+    await storageSet({ resumeData: data.resumes });
+  } catch (err) { el.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`; }
 }
 
-// ── Settings ──────────────────────────────────────────────────────
 async function loadSettings() {
-  const s = await storageGet(['dryRun','coverLetter','humanMode','maxApps','aiAnswers','aiSelect','smartResume']);
-  $('opt-dry-run').checked      = s.dryRun       !== false;
-  $('opt-cover-letter').checked = s.coverLetter   !== false;
-  $('opt-human-mode').checked   = s.humanMode     !== false;
-  $('opt-ai-answers').checked   = s.aiAnswers     !== false;
-  $('opt-ai-select').checked    = s.aiSelect      !== false;
-  $('opt-smart-resume').checked = s.smartResume   !== false;
+  const s = await storageGet(['coverLetter','humanMode','maxApps','aiAnswers','aiSelect','smartResume']);
+  $('opt-cover-letter').checked = s.coverLetter  !== false;
+  $('opt-human-mode').checked   = s.humanMode    !== false;
+  $('opt-ai-answers').checked   = s.aiAnswers    !== false;
+  $('opt-ai-select').checked    = s.aiSelect     !== false;
+  $('opt-smart-resume').checked = s.smartResume  !== false;
   const maxApps = s.maxApps || 20;
-  $('opt-max-apps').value          = maxApps;
+  $('opt-max-apps').value = maxApps;
   $('max-apps-display').textContent = maxApps;
-  updateDryRunUI($('opt-dry-run').checked);
 }
 
 async function saveSettings() {
   const maxApps = parseInt($('opt-max-apps').value) || 20;
   await storageSet({
-    dryRun:       $('opt-dry-run').checked,
     coverLetter:  $('opt-cover-letter').checked,
     humanMode:    $('opt-human-mode').checked,
     aiAnswers:    $('opt-ai-answers').checked,
@@ -236,22 +210,9 @@ async function saveSettings() {
   });
 }
 
-function updateDryRunUI(isDry) {
-  const pill = $('dryrun-label');
-  if (isDry) {
-    pill.className = 'mode-pill mode-dry';
-    pill.textContent = '🔒 Dry Run — will not submit';
-  } else {
-    pill.className = 'mode-pill mode-live';
-    pill.textContent = '🚀 LIVE — will submit applications';
-  }
-  const icon = $('dryrun-icon');
-  if (icon) icon.style.opacity = isDry ? '1' : '0.5';
-}
-
-// ── Start bot ─────────────────────────────────────────────────────
+// ── Start bot ─────────────────────────────────────────────────────────────────
 async function startBot() {
-  const stored = await storageGet(['serverUrl','token','profileData','dryRun','coverLetter','humanMode','maxApps','aiAnswers','aiSelect','smartResume','resumeData']);
+  const stored = await storageGet(['serverUrl','token','profileData','coverLetter','humanMode','maxApps','aiAnswers','aiSelect','smartResume','resumeData']);
   if (!stored.token)       { addLog('Not logged in', 'err'); return; }
   if (!stored.profileData) { addLog('Profile not loaded — click Refresh Profile', 'err'); return; }
 
@@ -261,10 +222,7 @@ async function startBot() {
   if (!profile.first_name) { addLog('First name missing in profile', 'err'); return; }
 
   const terms = (prefs.search_terms || []).filter(Boolean);
-  if (!terms.length) {
-    addLog('❌ No search terms! Add them in Profile → Job Preferences', 'err');
-    return;
-  }
+  if (!terms.length) { addLog('❌ No search terms! Add in Profile → Job Preferences', 'err'); return; }
 
   await saveSettings();
 
@@ -274,7 +232,6 @@ async function startBot() {
     profile,
     jobPrefs:     prefs,
     accounts:     stored.profileData.platform_accounts || {},
-    dryRun:       stored.dryRun     !== false,
     coverLetter:  stored.coverLetter !== false,
     humanMode:    stored.humanMode   !== false,
     aiAnswers:    stored.aiAnswers   !== false,
@@ -290,12 +247,11 @@ async function startBot() {
   setStatus('Starting…', 'running');
   show('btn-stop'); hide('btn-start');
 
-  addLog(`Bot starting — ${config.dryRun ? '🔒 Dry Run' : '🚀 LIVE'} | Max: ${config.maxApps}`, 'ok');
+  addLog(`🚀 LIVE | Max: ${config.maxApps}`, 'ok');
   addLog(`🔍 Searching: ${terms.slice(0,3).join(', ')}`, 'info');
   if (config.coverLetter) addLog('✦ AI cover letters: ON', 'ai');
   if (config.aiAnswers)   addLog('🤖 AI answers: ON', 'ai');
   if (config.aiSelect)    addLog('🎯 AI option picks: ON', 'ai');
-  if (config.smartResume && config.resumeList.length > 1) addLog(`📄 Smart resume routing: ON (${config.resumeList.length} resumes)`, 'ai');
 
   const searchUrl = buildSearchUrl(prefs, 0);
   try {
@@ -306,23 +262,21 @@ async function startBot() {
       chrome.tabs.create({ url: searchUrl });
     }
     addLog('Opening LinkedIn search…', 'info');
-  } catch (err) {
-    addLog(`Tab error: ${err.message}`, 'warn');
-  }
+  } catch (err) { addLog(`Tab error: ${err.message}`, 'warn'); }
 }
 
 function buildSearchUrl(jobPrefs, index) {
   const terms    = (jobPrefs?.search_terms || []).filter(Boolean);
   const keyword  = terms[index] || 'Software Engineer';
   const location = jobPrefs?.search_location || 'India';
-  const params = new URLSearchParams({ keywords: keyword, location, f_LF: 'f_AL', sortBy: 'DD' });
-  const expMap = { 'Internship':'1','Entry level':'2','Associate':'3','Mid-Senior level':'4','Director':'5','Executive':'6' };
-  const expLevels = (jobPrefs?.experience_level || []).map(e => expMap[e]).filter(Boolean);
+  const params   = new URLSearchParams({ keywords: keyword, location, f_LF: 'f_AL', sortBy: 'DD' });
+  const expMap   = { 'Internship':'1','Entry level':'2','Associate':'3','Mid-Senior level':'4','Director':'5','Executive':'6' };
+  const expLevels= (jobPrefs?.experience_level||[]).map(e=>expMap[e]).filter(Boolean);
   if (expLevels.length) params.set('f_E', expLevels.join(','));
-  const workMap = { 'On-site':'1','Remote':'2','Hybrid':'3' };
-  const workTypes = (jobPrefs?.on_site || []).map(w => workMap[w]).filter(Boolean);
+  const workMap  = { 'On-site':'1','Remote':'2','Hybrid':'3' };
+  const workTypes= (jobPrefs?.on_site||[]).map(w=>workMap[w]).filter(Boolean);
   if (workTypes.length) params.set('f_WT', workTypes.join(','));
-  const dateMap = { 'Past 24 hours':'r86400','Past week':'r604800','Past month':'r2592000' };
+  const dateMap  = { 'Past 24 hours':'r86400','Past week':'r604800','Past month':'r2592000' };
   const dateFilter = dateMap[jobPrefs?.date_posted];
   if (dateFilter) params.set('f_TPR', dateFilter);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
@@ -339,77 +293,55 @@ async function stopBot() {
   addLog('Bot stopped', 'warn');
 }
 
-// ── Message listener ──────────────────────────────────────────────
+// ── Message listener ──────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'BOT_LOG') {
-    addLog(msg.text, msg.level || 'info');
-    // Auto-switch to log tab when running
-    // (intentionally left to user)
-  }
-  if (msg.type === 'BOT_STATS') updateStats(msg.stats);
-  if (msg.type === 'BOT_AI_STATS') updateAIStats(msg.aiStats);
+  if (msg.type === 'BOT_LOG')    addLog(msg.text, msg.level || 'info');
+  if (msg.type === 'BOT_STATS')  updateStats(msg.stats);
   if (msg.type === 'BOT_STATUS') {
-    if (msg.running) {
-      setStatus('Bot running…', 'running');
-    } else {
-      setStatus('Done ✓', 'success');
-      hide('btn-stop'); show('btn-start');
-    }
+    if (msg.running) { setStatus('Bot running…', 'running'); }
+    else { setStatus('Done ✓', 'success'); hide('btn-stop'); show('btn-start'); }
   }
 });
 
-// ── Init ──────────────────────────────────────────────────────────
+// ── Toggle password visibility ────────────────────────────────────────────────
+function togglePw(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   initTabs();
-
   const stored = await storageGet(['loggedIn','serverUrl','token','userEmail','botRunning']);
   if (stored.loggedIn && stored.token) {
     await loadDashboard(stored.serverUrl, stored.token, stored.userEmail);
-    if (stored.botRunning) {
-      setStatus('Bot running…', 'running');
-      show('btn-stop'); hide('btn-start');
-    }
+    if (stored.botRunning) { setStatus('Bot running…', 'running'); show('btn-stop'); hide('btn-start'); }
   } else {
     showScreen('login');
-    // Server URL is hardcoded — nothing to pre-fill
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   init();
 
-  // Login
   $('btn-login').addEventListener('click', doLogin);
   $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('toggle-login-pw')?.addEventListener('click', () => togglePw('login-password'));
 
-  // Logout
   $('btn-logout').addEventListener('click', async () => {
     await storageSet({ loggedIn: false, token: null, profileData: null, botRunning: false });
     logEntries = [];
     showScreen('login');
   });
 
-  // Bot controls
   $('btn-start').addEventListener('click', startBot);
   $('btn-stop').addEventListener('click', stopBot);
 
-  // Dry run toggle button (lock icon)
-  $('btn-dryrun-toggle').addEventListener('click', () => {
-    const cb = $('opt-dry-run');
-    cb.checked = !cb.checked;
-    updateDryRunUI(cb.checked);
-    saveSettings();
+  ['opt-cover-letter','opt-human-mode','opt-ai-answers','opt-ai-select','opt-smart-resume'].forEach(id => {
+    $(id)?.addEventListener('change', saveSettings);
   });
 
-  // Settings changes
-  ['opt-dry-run','opt-cover-letter','opt-human-mode','opt-ai-answers','opt-ai-select','opt-smart-resume'].forEach(id => {
-    $(id)?.addEventListener('change', () => {
-      if (id === 'opt-dry-run') updateDryRunUI($('opt-dry-run').checked);
-      saveSettings();
-    });
-  });
-
-  // Max apps stepper
   $('inc-max').addEventListener('click', () => {
     let v = parseInt($('opt-max-apps').value) || 20;
     v = Math.min(200, v + 5);
@@ -425,22 +357,15 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettings();
   });
 
-  // Refresh
   $('btn-refresh-profile').addEventListener('click', async () => {
     const s = await storageGet(['serverUrl','token']);
-    if (s.token) {
-      addLog('Refreshing profile…','info');
-      await loadProfile(s.serverUrl, s.token);
-      $('last-refresh').textContent = `Refreshed ${timeStr()}`;
-    }
+    if (s.token) { addLog('Refreshing profile…','info'); await loadProfile(s.serverUrl, s.token); $('last-refresh').textContent = `Refreshed ${timeStr()}`; }
   });
 
-  // Resumes reload
   $('btn-reload-resumes').addEventListener('click', async () => {
     const s = await storageGet(['serverUrl','token']);
     if (s.token) await loadResumes(s.serverUrl, s.token);
   });
 
-  // Clear log
   $('btn-clear-log').addEventListener('click', () => { logEntries = []; renderLog(); });
 });

@@ -6,7 +6,7 @@
   <style>
     .profile-layout{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start}
     .profile-nav{position:sticky;top:88px}
-    .profile-nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;color:var(--text-2);cursor:pointer;transition:var(--transition);margin-bottom:2px}
+    .profile-nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;color:var(--text-2);cursor:pointer;transition:var(--transition);margin-bottom:2px;background:none;border:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
     .profile-nav-item:hover{background:var(--surface);color:var(--text)}
     .profile-nav-item.active{background:rgba(79,124,255,0.1);color:var(--primary);font-weight:500}
     .profile-nav-item .check{margin-left:auto;color:var(--accent);font-size:14px;display:none}
@@ -14,8 +14,6 @@
     .section-panel{display:none}.section-panel.active{display:block;animation:fadeIn 0.3s ease}
     .tag-input-wrap{min-height:46px;background:var(--bg-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;cursor:text}
     .tag-input-wrap:focus-within{border-color:var(--primary)}
-    @media(max-width:700px){.profile-layout{grid-template-columns:1fr}.profile-nav{display:none}}
-    .profile-nav-item>span{pointer-events:none}
     .ai-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--radius-sm);background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);color:var(--primary);font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;flex-shrink:0}
     .ai-btn:hover{background:rgba(99,102,241,0.22);border-color:rgba(99,102,241,0.5)}
     .ai-btn:disabled{opacity:0.5;cursor:not-allowed}
@@ -23,55 +21,39 @@
     .ai-btn.ai-loading .ai-spin{display:inline-block}.ai-btn.ai-loading .ai-lbl{display:none}
     .field-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
     .field-hdr label{margin-bottom:0!important;font-size:13px;font-weight:500;color:var(--text-2);letter-spacing:0.03em;text-transform:uppercase}
-    .profile-container{padding-top:40px;padding-bottom:80px}
-    .profile-header{margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
-    .profile-subtitle{margin-top:6px}
-    .section-title{margin-bottom:24px}
-    .subsection-title{margin-bottom:16px;font-size:0.95rem;color:var(--text-2)}
-    .span-2{grid-column:span 2}
-    .mt-24{margin-top:24px}
-    .mt-20{margin-top:20px}
-    .mt-28{margin-top:28px}
-    .actions-right{text-align:right}
-    .actions-between{display:flex;gap:12px;justify-content:space-between}
-    .stack-16{display:flex;flex-direction:column;gap:16px}
-    .stack-18{display:flex;flex-direction:column;gap:18px}
-    .stack-24{display:flex;flex-direction:column;gap:24px}
-    .chip-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
-    .selectable-chip{cursor:pointer}
-    .chip-checkbox{margin-right:6px}
-    .helper-note{margin-top:4px}
-    .label-hint{color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0}
-    .toggle-title{font-size:14px;font-weight:500}
-    .mb-24{margin-bottom:24px}
-    .mb-20{margin-bottom:20px}
-    .platform-label{font-weight:600;margin-bottom:12px}
-    .hr-divider{border-color:var(--border)}
+    @media(max-width:700px){.profile-layout{grid-template-columns:1fr}.profile-nav{display:none}}
     @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
   <div class="bg-grid"></div><div id="toast-container"></div>
-  <nav class="navbar"><div class="container"><a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a><div class="nav-links" id="nav-actions"></div></div></nav>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
+      <div class="nav-links" id="nav-actions">
+        <a href="dashboard.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <button onclick="auth.logout()" class="btn btn-ghost btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+  </nav>
   <div class="page-wrapper">
-    <div class="container profile-container">
-      <div class="profile-header">
-        <div><h2>Profile Setup</h2><p class="text-muted profile-subtitle">Fill in your details so the extension can apply accurately on your behalf</p></div>
-        <a href="resume.html" class="btn btn-ghost">← Resume Upload</a>
+    <div class="container" style="padding-top:40px;padding-bottom:80px">
+      <div style="margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div><h2><i class="fa-solid fa-user-pen"></i> Profile Setup</h2><p class="text-muted" style="margin-top:6px">Fill in your details so the extension can apply accurately on your behalf</p></div>
+        <a href="resume.html" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Resume Upload</a>
       </div>
       <div class="profile-layout">
         <nav class="profile-nav">
-          <div class="profile-nav-item active" data-section="personal"><span>👤</span> Personal <span class="check">✓</span></div>
-          <div class="profile-nav-item" data-section="professional"><span>💼</span> Professional <span class="check">✓</span></div>
-          <div class="profile-nav-item" data-section="preferences"><span>🎯</span> Job Preferences <span class="check">✓</span></div>
-          <div class="profile-nav-item" data-section="platforms"><span>🔐</span> Platform Logins <span class="check">✓</span></div>
+          <div class="profile-nav-item active" data-section="personal"><span><i class="fa-solid fa-user"></i></span> Personal <span class="check"><i class="fa-solid fa-circle-check"></i></span></div>
+          <div class="profile-nav-item" data-section="professional"><span><i class="fa-solid fa-briefcase"></i></span> Professional <span class="check"><i class="fa-solid fa-circle-check"></i></span></div>
+          <div class="profile-nav-item" data-section="preferences"><span><i class="fa-solid fa-bullseye"></i></span> Job Preferences <span class="check"><i class="fa-solid fa-circle-check"></i></span></div>
+          <div class="profile-nav-item" data-section="platforms"><span><i class="fa-solid fa-lock"></i></span> Platform Logins <span class="check"><i class="fa-solid fa-circle-check"></i></span></div>
         </nav>
         <div>
-
           <!-- Personal -->
           <div class="section-panel active" id="section-personal">
             <div class="card">
-              <h4 class="section-title">Personal Details</h4>
+              <h4 style="margin-bottom:24px"><i class="fa-solid fa-id-card"></i> Personal Details</h4>
               <div class="grid-2">
                 <div class="form-group"><label>First Name</label><input type="text" id="first_name" placeholder="Rahul" /></div>
                 <div class="form-group"><label>Last Name</label><input type="text" id="last_name" placeholder="Sharma" /></div>
@@ -80,87 +62,71 @@
                 <div class="form-group"><label>Current City</label><input type="text" id="current_city" placeholder="Hyderabad" /></div>
                 <div class="form-group"><label>State</label><input type="text" id="state" placeholder="Telangana" /></div>
                 <div class="form-group"><label>Pincode</label><input type="text" id="zipcode" placeholder="500001" /></div>
-                <div class="form-group"><label>Country</label><input type="text" id="country" value="India" placeholder="India" title="Country" /></div>
-                <div class="form-group span-2"><label>Street Address</label><input type="text" id="street" placeholder="123, Main Street" /></div>
+                <div class="form-group"><label>Country</label><input type="text" id="country" value="India" placeholder="India" /></div>
+                <div class="form-group" style="grid-column:span 2"><label>Street Address</label><input type="text" id="street" placeholder="123, Main Street" /></div>
               </div>
-              <div class="mt-24">
-                <h4 class="subsection-title">Equal Opportunity (Optional)</h4>
+              <div style="margin-top:24px">
+                <h4 style="margin-bottom:16px;font-size:0.95rem;color:var(--text-2)"><i class="fa-solid fa-scale-balanced"></i> Equal Opportunity (Optional)</h4>
                 <div class="grid-2">
-                  <div class="form-group"><label>Gender</label><select id="gender" title="Gender"><option value="">Prefer not to say</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Decline">Decline</option></select></div>
-                  <div class="form-group"><label>Disability Status</label><select id="disability_status" title="Disability Status"><option value="Decline">Decline</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-                  <div class="form-group"><label>Ethnicity</label><select id="ethnicity" title="Ethnicity"><option value="Decline">Decline to answer</option><option value="Asian">Asian</option><option value="Black or African American">Black or African American</option><option value="Hispanic/Latino">Hispanic / Latino</option><option value="White">White</option><option value="Other">Other</option></select></div>
-                  <div class="form-group"><label>Veteran Status</label><select id="veteran_status" title="Veteran Status"><option value="Decline">Decline to answer</option><option value="No">No, not a veteran</option><option value="Yes">Yes, I am a veteran</option></select></div>
+                  <div class="form-group"><label>Gender</label><select id="gender"><option value="">Prefer not to say</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Decline">Decline</option></select></div>
+                  <div class="form-group"><label>Disability Status</label><select id="disability_status"><option value="Decline">Decline</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+                  <div class="form-group"><label>Ethnicity</label><select id="ethnicity"><option value="Decline">Decline to answer</option><option value="Asian">Asian</option><option value="Black or African American">Black or African American</option><option value="Hispanic/Latino">Hispanic / Latino</option><option value="White">White</option><option value="Other">Other</option></select></div>
+                  <div class="form-group"><label>Veteran Status</label><select id="veteran_status"><option value="Decline">Decline to answer</option><option value="No">No, not a veteran</option><option value="Yes">Yes, I am a veteran</option></select></div>
                 </div>
               </div>
-              <div class="mt-20 actions-right"><button class="btn btn-primary" data-save-and-next="personal:professional">Next: Professional →</button></div>
+              <div style="margin-top:20px;text-align:right"><button class="btn btn-primary" data-save-and-next="personal:professional"><i class="fa-solid fa-arrow-right"></i> Next: Professional</button></div>
             </div>
           </div>
 
           <!-- Professional -->
           <div class="section-panel" id="section-professional">
             <div class="card">
-              <h4 class="section-title">Professional Details</h4>
-              <div class="stack-16">
+              <h4 style="margin-bottom:24px"><i class="fa-solid fa-briefcase"></i> Professional Details</h4>
+              <div style="display:flex;flex-direction:column;gap:16px">
                 <div class="form-group"><label>LinkedIn Profile URL</label><input type="url" id="linkedin_profile" placeholder="https://linkedin.com/in/yourname" /></div>
                 <div class="form-group"><label>Portfolio Website</label><input type="url" id="website" placeholder="https://yourportfolio.com" /></div>
                 <div class="form-group"><label>Years of Experience</label>
                   <select id="years_of_experience"><option value="0">0 — Fresher / Intern</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6+ years</option></select>
                 </div>
                 <div class="grid-2">
-                  <div class="form-group"><label>Desired Salary (₹ per annum)</label><input type="number" id="desired_salary" placeholder="800000" /></div>
-                  <div class="form-group"><label>Current CTC (₹ per annum)</label><input type="number" id="current_ctc" placeholder="0" /></div>
-                </div>
-                <div class="grid-2">
+                  <div class="form-group"><label>Desired Salary (₹ p.a.)</label><input type="number" id="desired_salary" placeholder="800000" /></div>
+                  <div class="form-group"><label>Current CTC (₹ p.a.)</label><input type="number" id="current_ctc" placeholder="0" /></div>
                   <div class="form-group"><label>Notice Period (days)</label><input type="number" id="notice_period" placeholder="0" /></div>
                   <div class="form-group"><label>Recent / Current Employer</label><input type="text" id="recent_employer" placeholder="Company name (or Fresher)" /></div>
-                </div>
-                <div class="grid-2">
                   <div class="form-group"><label>Confidence Level (1–10)</label><input type="number" id="confidence_level" placeholder="7" min="1" max="10" value="7" /></div>
                   <div class="form-group"><label>Gemini API Key (optional)</label><input type="text" id="gemini_api_key" placeholder="AIzaSy..." autocomplete="off" /></div>
                   <div class="form-group"><label>Gemini Model</label>
-                    <select id="gemini_model"><option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — Fastest ⚡</option><option value="gemini-2.0-flash" selected>gemini-2.0-flash — Balanced ✅</option><option value="gemini-2.5-flash">gemini-2.5-flash — Smarter 🧠</option><option value="gemini-2.5-pro">gemini-2.5-pro — Best 🏆</option></select>
+                    <select id="gemini_model"><option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — Fastest</option><option value="gemini-2.0-flash" selected>gemini-2.0-flash — Balanced</option><option value="gemini-2.5-flash">gemini-2.5-flash — Smarter</option><option value="gemini-2.5-pro">gemini-2.5-pro — Best</option></select>
                   </div>
                 </div>
-
-                <!-- LinkedIn Headline + AI -->
                 <div class="form-group">
-                  <div class="field-hdr">
-                    <label>LinkedIn Headline <span class="label-hint">(120 chars)</span></label>
-                    <button type="button" class="ai-btn" id="ai-headline-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  <div class="field-hdr"><label>LinkedIn Headline <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(120 chars)</span></label>
+                    <button type="button" class="ai-btn" id="ai-headline-btn"><span class="ai-spin"></span><span class="ai-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</span></button>
                   </div>
                   <input type="text" id="linkedin_headline" placeholder="MBA Finance | Financial Analyst | Excel | SQL" maxlength="120" />
                 </div>
-
-                <!-- LinkedIn Summary + AI -->
                 <div class="form-group">
-                  <div class="field-hdr">
-                    <label>LinkedIn Summary / About</label>
-                    <button type="button" class="ai-btn" id="ai-summary-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  <div class="field-hdr"><label>LinkedIn Summary / About</label>
+                    <button type="button" class="ai-btn" id="ai-summary-btn"><span class="ai-spin"></span><span class="ai-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</span></button>
                   </div>
                   <textarea id="linkedin_summary" rows="4" placeholder="Write a short professional bio…"></textarea>
                 </div>
-
-                <!-- Cover Letter + AI -->
                 <div class="form-group">
-                  <div class="field-hdr">
-                    <label>Cover Letter Template</label>
-                    <button type="button" class="ai-btn" id="ai-cover-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  <div class="field-hdr"><label>Cover Letter Template</label>
+                    <button type="button" class="ai-btn" id="ai-cover-btn"><span class="ai-spin"></span><span class="ai-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</span></button>
                   </div>
                   <textarea id="cover_letter" rows="6" placeholder="Dear Hiring Manager,&#10;&#10;I am…"></textarea>
                 </div>
-
-                <!-- Skills Summary + AI -->
                 <div class="form-group">
-                  <div class="field-hdr">
-                    <label>Skills Summary</label>
-                    <button type="button" class="ai-btn" id="ai-skills-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  <div class="field-hdr"><label>Skills Summary</label>
+                    <button type="button" class="ai-btn" id="ai-skills-btn"><span class="ai-spin"></span><span class="ai-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</span></button>
                   </div>
                   <textarea id="skills_summary" rows="3" placeholder="Python, SQL, Excel, Power BI, Data Analysis…"></textarea>
                 </div>
               </div>
-              <div class="mt-20 actions-between">
-                <button class="btn btn-ghost" data-switch-to="personal">← Back</button>
-                <button class="btn btn-primary" data-save-and-next="professional:preferences">Next: Job Preferences →</button>
+              <div style="margin-top:20px;display:flex;gap:12px;justify-content:space-between">
+                <button class="btn btn-ghost" data-switch-to="personal"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button class="btn btn-primary" data-save-and-next="professional:preferences"><i class="fa-solid fa-arrow-right"></i> Next: Job Preferences</button>
               </div>
             </div>
           </div>
@@ -168,73 +134,59 @@
           <!-- Job Preferences -->
           <div class="section-panel" id="section-preferences">
             <div class="card">
-              <h4 class="section-title">Job Preferences</h4>
-              <div class="stack-18">
-
-                <!-- Search Terms + AI -->
+              <h4 style="margin-bottom:24px"><i class="fa-solid fa-sliders"></i> Job Preferences</h4>
+              <div style="display:flex;flex-direction:column;gap:18px">
                 <div class="form-group">
-                  <div class="field-hdr">
-                    <label>Search Terms (Job Titles)</label>
-                    <button type="button" class="ai-btn" id="ai-search-terms-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Suggest</span></button>
+                  <div class="field-hdr"><label>Search Terms (Job Titles)</label>
+                    <button type="button" class="ai-btn" id="ai-search-terms-btn"><span class="ai-spin"></span><span class="ai-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> Suggest</span></button>
                   </div>
                   <div class="tag-input-wrap" id="search-terms-tags"></div>
                   <input type="hidden" id="search_terms" />
-                  <span class="text-sm text-muted helper-note">Type a job title and press Enter, or let AI suggest from your profile</span>
+                  <span class="text-sm text-muted" style="margin-top:4px;display:block">Type a job title and press Enter, or let AI suggest</span>
                 </div>
-
                 <div class="form-group"><label>Preferred Location</label><input type="text" id="search_location" placeholder="India" value="India" /></div>
-
-                <div class="form-group"><label>Experience Level</label><div class="chip-group">
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Internship" class="chip-checkbox">Internship</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Entry level" checked class="chip-checkbox">Entry level</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Associate" class="chip-checkbox">Associate</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="exp_level" value="Mid-Senior level" class="chip-checkbox">Mid-Senior</label>
+                <div class="form-group"><label>Experience Level</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Internship" style="margin-right:6px">Internship</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Entry level" checked style="margin-right:6px">Entry level</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Associate" style="margin-right:6px">Associate</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Mid-Senior level" style="margin-right:6px">Mid-Senior</label>
                 </div></div>
-
-                <div class="form-group"><label>Job Type</label><div class="chip-group">
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="job_type" value="Full-time" checked class="chip-checkbox">Full-time</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="job_type" value="Internship" class="chip-checkbox">Internship</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="job_type" value="Part-time" class="chip-checkbox">Part-time</label>
+                <div class="form-group"><label>Job Type</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Full-time" checked style="margin-right:6px">Full-time</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Internship" style="margin-right:6px">Internship</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Part-time" style="margin-right:6px">Part-time</label>
                 </div></div>
-
-                <div class="form-group"><label>Work Mode</label><div class="chip-group">
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="on_site" value="On-site" checked class="chip-checkbox">On-site</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="on_site" value="Hybrid" checked class="chip-checkbox">Hybrid</label>
-                  <label class="badge badge-neutral selectable-chip"><input type="checkbox" name="on_site" value="Remote" checked class="chip-checkbox">Remote</label>
+                <div class="form-group"><label>Work Mode</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="On-site" checked style="margin-right:6px">On-site</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Hybrid" checked style="margin-right:6px">Hybrid</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Remote" checked style="margin-right:6px">Remote</label>
                 </div></div>
-
                 <div class="grid-2">
-                  <div class="form-group"><label>Date Posted Filter</label><select id="date_posted"><option value="Past week">Past week</option><option value="Past month" selected>Past month</option><option value="Past 24 hours">Past 24 hours</option><option value="Any time">Any time</option></select></div>
+                  <div class="form-group"><label>Date Posted</label><select id="date_posted"><option value="Past week">Past week</option><option value="Past month" selected>Past month</option><option value="Past 24 hours">Past 24 hours</option><option value="Any time">Any time</option></select></div>
                   <div class="form-group"><label>Sort By</label><select id="sort_by"><option value="Most recent" selected>Most recent</option><option value="Most relevant">Most relevant</option></select></div>
+                  <div class="form-group"><label>Applications per Search Term</label><input type="number" id="switch_number" value="15" min="1" max="100" /></div>
                 </div>
-
-                <div class="form-group"><label>Applications per Search Term</label><input type="number" id="switch_number" value="15" min="1" max="100" placeholder="15" /></div>
-
-                <div class="toggle-row"><div><div class="toggle-title">Easy Apply Only</div><div class="text-sm text-muted">Only apply to one-click Easy Apply jobs</div></div><label class="toggle"><input type="checkbox" id="easy_apply_only" checked /><span class="toggle-slider"></span></label></div>
-
+                <div class="toggle-row"><div><div style="font-size:14px;font-weight:500">Easy Apply Only</div><div class="text-sm text-muted">Only apply to one-click Easy Apply jobs</div></div><label class="toggle"><input type="checkbox" id="easy_apply_only" checked /><span class="toggle-slider"></span></label></div>
                 <div class="grid-2">
-                  <!-- Bad Words + AI -->
                   <div class="form-group">
-                    <div class="field-hdr">
-                      <label>Keywords to Skip <span class="label-hint">(Bad Words)</span></label>
-                      <button type="button" class="ai-btn" id="ai-bad-words-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Suggest</span></button>
+                    <div class="field-hdr"><label>Keywords to Skip</label>
+                      <button type="button" class="ai-btn" id="ai-bad-words-btn"><span class="ai-spin"></span><span class="ai-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> Suggest</span></button>
                     </div>
                     <div class="tag-input-wrap" id="bad-words-tags"></div>
                     <input type="hidden" id="bad_words" />
-                    <span class="text-sm text-muted helper-note">Jobs with these words are skipped</span>
+                    <span class="text-sm text-muted" style="margin-top:4px;display:block">Jobs with these words are skipped</span>
                   </div>
-
                   <div class="form-group">
-                    <label>Preferred Keywords <span class="label-hint">(Good Words)</span></label>
+                    <label>Preferred Keywords</label>
                     <div class="tag-input-wrap" id="good-words-tags"></div>
                     <input type="hidden" id="good_words" />
-                    <span class="text-sm text-muted helper-note">Bot prefers companies matching these</span>
+                    <span class="text-sm text-muted" style="margin-top:4px;display:block">Bot prefers jobs matching these</span>
                   </div>
                 </div>
               </div>
-              <div class="mt-20 actions-between">
-                <button class="btn btn-ghost" data-switch-to="professional">← Back</button>
-                <button class="btn btn-primary" data-save-and-next="preferences:platforms">Next: Platform Logins →</button>
+              <div style="margin-top:20px;display:flex;gap:12px;justify-content:space-between">
+                <button class="btn btn-ghost" data-switch-to="professional"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button class="btn btn-primary" data-save-and-next="preferences:platforms"><i class="fa-solid fa-arrow-right"></i> Next: Platform Logins</button>
               </div>
             </div>
           </div>
@@ -242,24 +194,23 @@
           <!-- Platform Logins -->
           <div class="section-panel" id="section-platforms">
             <div class="card">
-              <div class="alert alert-info mb-24"><span>🔒</span><span>Credentials are stored encrypted and used by the Chrome extension for automation.</span></div>
-              <h4 class="mb-20">Platform Login Credentials</h4>
-              <div class="stack-24">
-                <div><div class="platform-label">💼 LinkedIn</div><div class="grid-2"><div class="form-group"><label>LinkedIn Email</label><input type="email" id="linkedin_email" placeholder="your@email.com" /></div><div class="form-group"><label>LinkedIn Password <span class="text-muted text-sm">(leave blank to keep saved)</span></label><input type="password" id="linkedin_password" placeholder="Enter new password to update" autocomplete="new-password" /></div></div></div>
-                <hr class="hr-divider">
-                <div><div class="platform-label">🔍 Indeed</div><div class="grid-2"><div class="form-group"><label>Indeed Email</label><input type="email" id="indeed_email" placeholder="your@email.com" /></div><div class="form-group"><label>Indeed Password</label><input type="password" id="indeed_password" placeholder="••••••••" /></div></div></div>
-                <hr class="hr-divider">
-                <div><div class="platform-label">🎓 Internshala</div><div class="grid-2"><div class="form-group"><label>Internshala Email</label><input type="email" id="internshala_email" placeholder="your@email.com" /></div><div class="form-group"><label>Internshala Password</label><input type="password" id="internshala_password" placeholder="••••••••" /></div></div></div>
-                <hr class="hr-divider">
-                <div><div class="platform-label">📋 Naukri</div><div class="grid-2"><div class="form-group"><label>Naukri Email</label><input type="email" id="naukri_email" placeholder="your@email.com" /></div><div class="form-group"><label>Naukri Password</label><input type="password" id="naukri_password" placeholder="••••••••" /></div></div></div>
+              <div class="alert alert-info" style="margin-bottom:24px"><i class="fa-solid fa-lock"></i><span>Credentials are stored securely and used by the Chrome extension for automation.</span></div>
+              <h4 style="margin-bottom:20px"><i class="fa-solid fa-key"></i> Platform Login Credentials</h4>
+              <div style="display:flex;flex-direction:column;gap:24px">
+                <div><div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fa-brands fa-linkedin" style="color:#0a66c2"></i> LinkedIn</div><div class="grid-2"><div class="form-group"><label>Email</label><input type="email" id="linkedin_email" placeholder="your@email.com" /></div><div class="form-group"><label>Password <span class="text-muted text-sm">(leave blank to keep saved)</span></label><div class="pw-wrap"><input type="password" id="linkedin_password" placeholder="Enter new password to update" autocomplete="new-password" /><button type="button" class="pw-toggle" onclick="togglePw('linkedin_password')"><i class="fa-regular fa-eye"></i></button></div></div></div></div>
+                <hr style="border-color:var(--border)">
+                <div><div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-magnifying-glass"></i> Indeed</div><div class="grid-2"><div class="form-group"><label>Email</label><input type="email" id="indeed_email" placeholder="your@email.com" /></div><div class="form-group"><label>Password</label><div class="pw-wrap"><input type="password" id="indeed_password" placeholder="••••••••" /><button type="button" class="pw-toggle" onclick="togglePw('indeed_password')"><i class="fa-regular fa-eye"></i></button></div></div></div></div>
+                <hr style="border-color:var(--border)">
+                <div><div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-graduation-cap"></i> Internshala</div><div class="grid-2"><div class="form-group"><label>Email</label><input type="email" id="internshala_email" placeholder="your@email.com" /></div><div class="form-group"><label>Password</label><div class="pw-wrap"><input type="password" id="internshala_password" placeholder="••••••••" /><button type="button" class="pw-toggle" onclick="togglePw('internshala_password')"><i class="fa-regular fa-eye"></i></button></div></div></div></div>
+                <hr style="border-color:var(--border)">
+                <div><div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-briefcase"></i> Naukri</div><div class="grid-2"><div class="form-group"><label>Email</label><input type="email" id="naukri_email" placeholder="your@email.com" /></div><div class="form-group"><label>Password</label><div class="pw-wrap"><input type="password" id="naukri_password" placeholder="••••••••" /><button type="button" class="pw-toggle" onclick="togglePw('naukri_password')"><i class="fa-regular fa-eye"></i></button></div></div></div></div>
               </div>
-              <div class="mt-28 actions-between">
-                <button class="btn btn-ghost" data-switch-to="preferences">← Back</button>
-                <button class="btn btn-accent btn-lg" id="finish-btn"><span class="spinner"></span><span class="btn-text">Save & Go to Dashboard →</span></button>
+              <div style="margin-top:28px;display:flex;gap:12px;justify-content:space-between">
+                <button class="btn btn-ghost" data-switch-to="preferences"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button class="btn btn-accent btn-lg" id="finish-btn"><span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-check"></i> Save &amp; Go to Dashboard</span></button>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -267,374 +218,193 @@
   <script src="js/app.js"></script>
   <script>
     if (!auth.requireAuth()) throw new Error('not authenticated');
-
     var _parsedResume = null;
     try { _parsedResume = JSON.parse(sessionStorage.getItem('parsed_profile') || 'null'); } catch(e) {}
-
-    // Full resume text context — populated when a resume is parsed/uploaded.
-    // Contains education, experience, skills, projects, certifications extracted from PDF.
-    // This is the richest signal available — used in every AI prompt for accuracy.
     var _resumeRawCtx = (_parsedResume && _parsedResume.user_information_all) || '';
-
-    // tag input helpers — kept so we can re-init when AI appends tags
     var _stHelper, _bwHelper;
 
-    // ── Navigation ──────────────────────────────────────────────────────
-    function fillIf(id, val) {
-      if (val === undefined || val === null || val === '') return;
-      var el = document.getElementById(id); if (el) el.value = val;
-    }
+    function togglePw(id) { const el = document.getElementById(id); if (!el) return; el.type = el.type === 'password' ? 'text' : 'password'; }
+
+    function fillIf(id, val) { if (val === undefined || val === null || val === '') return; var el = document.getElementById(id); if (el) el.value = val; }
     function switchSection(id) {
-      document.querySelectorAll('.profile-nav-item').forEach(function(n){ n.classList.remove('active'); });
-      document.querySelectorAll('.section-panel').forEach(function(p){ p.classList.remove('active'); });
-      var nav = document.querySelector('[data-section="'+id+'"]');
-      if (nav) nav.classList.add('active');
-      var panel = document.getElementById('section-'+id);
-      if (panel) panel.classList.add('active');
+      document.querySelectorAll('.profile-nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+      var nav = document.querySelector('[data-section="'+id+'"]'); if (nav) nav.classList.add('active');
+      var panel = document.getElementById('section-'+id); if (panel) panel.classList.add('active');
       window.scrollTo({top:0,behavior:'smooth'});
     }
     function markDone(id) { var n = document.querySelector('[data-section="'+id+'"]'); if (n) n.classList.add('done'); }
-    document.querySelectorAll('.profile-nav-item').forEach(function(n){ n.addEventListener('click', function(){ switchSection(n.getAttribute('data-section')); }); });
-    document.querySelectorAll('[data-save-and-next]').forEach(function(b){ b.addEventListener('click', function(){ var p=b.getAttribute('data-save-and-next').split(':'); markDone(p[0]); switchSection(p[1]); }); });
-    document.querySelectorAll('[data-switch-to]').forEach(function(b){ b.addEventListener('click', function(){ switchSection(b.getAttribute('data-switch-to')); }); });
+    document.querySelectorAll('.profile-nav-item').forEach(n => n.addEventListener('click', () => switchSection(n.getAttribute('data-section'))));
+    document.querySelectorAll('[data-save-and-next]').forEach(b => b.addEventListener('click', () => { var p=b.getAttribute('data-save-and-next').split(':'); markDone(p[0]); switchSection(p[1]); }));
+    document.querySelectorAll('[data-switch-to]').forEach(b => b.addEventListener('click', () => switchSection(b.getAttribute('data-switch-to'))));
 
-    // ── Tag inputs ──────────────────────────────────────────────────────
-    _stHelper  = initTagInput('search-terms-tags', 'search_terms', []);
-    _bwHelper  = initTagInput('bad-words-tags',    'bad_words',    ['US Citizen', '10+ years']);
+    _stHelper = initTagInput('search-terms-tags', 'search_terms', []);
+    _bwHelper = initTagInput('bad-words-tags', 'bad_words', ['US Citizen', '10+ years']);
     initTagInput('good-words-tags', 'good_words', []);
 
-    // ── AI helpers ──────────────────────────────────────────────────────
-    function aiBtn(id, loading) {
-      var b = document.getElementById(id);
-      b.disabled = loading;
-      if (loading) b.classList.add('ai-loading'); else b.classList.remove('ai-loading');
-    }
+    function aiBtn(id, loading) { var b = document.getElementById(id); b.disabled = loading; if (loading) b.classList.add('ai-loading'); else b.classList.remove('ai-loading'); }
 
-    // Builds a detailed context string from every filled field on the page.
-    // Works for any profile type: student, fresher, experienced, IT, MBA, marketing, etc.
     function profileCtx() {
       var parts = [];
-
-      var fn = document.getElementById('first_name').value.trim();
-      var ln = document.getElementById('last_name').value.trim();
+      var fn = document.getElementById('first_name').value.trim(); var ln = document.getElementById('last_name').value.trim();
       if (fn || ln) parts.push('Candidate name: ' + [fn, ln].filter(Boolean).join(' '));
-
-      var city = document.getElementById('current_city').value.trim();
-      var state = document.getElementById('state').value.trim();
-      var country = document.getElementById('country').value.trim();
-      var loc = [city, state, country].filter(Boolean).join(', ');
-      if (loc) parts.push('Location: ' + loc);
-
+      var city = document.getElementById('current_city').value.trim(); var state = document.getElementById('state').value.trim(); var country = document.getElementById('country').value.trim();
+      var loc = [city, state, country].filter(Boolean).join(', '); if (loc) parts.push('Location: ' + loc);
       var yoe = document.getElementById('years_of_experience').value;
-      var yoeMap = {
-        '0': '0 years (fresher / student)',
-        '1': '1 year',
-        '2': '2 years',
-        '3': '3 years',
-        '4': '4 years',
-        '5': '5 years',
-        '6': '6+ years'
-      };
+      var yoeMap = {'0':'0 years (fresher / student)','1':'1 year','2':'2 years','3':'3 years','4':'4 years','5':'5 years','6':'6+ years'};
       parts.push('Years of experience: ' + (yoeMap[yoe] || yoe + ' years'));
-
-      var re = document.getElementById('recent_employer').value.trim();
-      if (re) parts.push('Recent employer / institution: ' + re);
-
-      var sk = document.getElementById('skills_summary').value.trim();
-      if (sk) parts.push('Skills: ' + sk);
-
-      var hl = document.getElementById('linkedin_headline').value.trim();
-      if (hl) parts.push('Current headline: ' + hl);
-
-      var sm = document.getElementById('linkedin_summary').value.trim();
-      if (sm) parts.push('Current summary: ' + sm.slice(0, 400));
-
-      var cl = document.getElementById('cover_letter').value.trim();
-      if (cl) parts.push('Cover letter excerpt: ' + cl.slice(0, 200));
-
-      try {
-        var terms = JSON.parse(document.getElementById('search_terms').value || '[]');
-        if (terms.length) parts.push('Target job titles: ' + terms.slice(0, 5).join(', '));
-      } catch(e) {}
-
-      var li = document.getElementById('linkedin_profile').value.trim();
-      if (li) parts.push('LinkedIn: ' + li);
-      var wb = document.getElementById('website').value.trim();
-      if (wb) parts.push('Portfolio/website: ' + wb);
-
-      var salary = document.getElementById('desired_salary').value.trim();
-      if (salary && salary !== '0') parts.push('Desired salary (INR): ' + salary);
-
-      // Append full resume text context if available (contains projects, certs, education, all skills)
-      var extra = '';
-      if (typeof _resumeRawCtx !== 'undefined' && _resumeRawCtx) {
-        extra = '\n\nFull resume details:\n' + _resumeRawCtx;
-      }
-
-      // Generic fallback — no hardcoded field/domain assumptions
-      if (parts.length <= 2 && !extra) {
-        return 'Job seeker in India. Please fill in at least your skills, years of experience, and recent employer to get accurate AI suggestions.';
-      }
-
+      var re = document.getElementById('recent_employer').value.trim(); if (re) parts.push('Recent employer: ' + re);
+      var sk = document.getElementById('skills_summary').value.trim(); if (sk) parts.push('Skills: ' + sk);
+      var hl = document.getElementById('linkedin_headline').value.trim(); if (hl) parts.push('Current headline: ' + hl);
+      var sm = document.getElementById('linkedin_summary').value.trim(); if (sm) parts.push('Current summary: ' + sm.slice(0, 400));
+      try { var terms = JSON.parse(document.getElementById('search_terms').value || '[]'); if (terms.length) parts.push('Target jobs: ' + terms.slice(0,5).join(', ')); } catch(e) {}
+      var extra = (typeof _resumeRawCtx !== 'undefined' && _resumeRawCtx) ? '\n\nFull resume:\n' + _resumeRawCtx : '';
+      if (parts.length <= 2 && !extra) return 'Job seeker in India. Please fill in your skills and experience first.';
       return parts.join('\n') + extra;
     }
 
-    // Parse a JSON array from AI response, fallback to comma-split
     function parseArrayAnswer(raw) {
       raw = (raw || '').trim();
       var m = raw.match(/\[[\s\S]*?\]/);
-      if (m) { try { var a = JSON.parse(m[0]); if (Array.isArray(a)) return a.map(function(s){ return String(s).trim(); }).filter(Boolean); } catch(e) {} }
-      return raw.replace(/[\[\]"']/g,'').split(/[,\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+      if (m) { try { var a = JSON.parse(m[0]); if (Array.isArray(a)) return a.map(s => String(s).trim()).filter(Boolean); } catch(e) {} }
+      return raw.replace(/[\[\]"']/g,'').split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
     }
 
-    // ── AI: LinkedIn Headline ───────────────────────────────────────────
-    document.getElementById('ai-headline-btn').addEventListener('click', async function() {
-      aiBtn('ai-headline-btn', true);
+    async function runAI(btnId, prompt, callback) {
+      aiBtn(btnId, true);
       try {
-        var ctx = profileCtx();
-        var r = await api.post('/ai/answer-question', {
-          question: 'Write a LinkedIn headline for this candidate. Rules:\n' +
-            '- Max 120 characters\n' +
-            '- Format: Specific Role | Technology | Technology | Technology\n' +
-            '- Role must reflect their actual level (e.g. "Java Developer" not "Senior Engineer")\n' +
-            '- Use their real tech stack (Java, Python, SQL, etc.) not generic words\n' +
-            '- Do NOT use buzzwords like "Passionate", "Aspiring", "Seeking"\n' +
-            '- Good example: "Java Developer | Python | SQL | OOP | B.Tech IT"\n' +
-            '- Return ONLY the headline text, nothing else.',
-          user_info: ctx
-        });
-        var val = (r.answer||'').trim().replace(/^["'`\-\*]+|["'`\-\*]+$/g,'').slice(0,120);
-        if (val) { document.getElementById('linkedin_headline').value = val; showToast('Headline generated!', 'success'); }
-        else showToast('Try again', 'info');
+        var r = await api.post('/ai/answer-question', { question: prompt, user_info: profileCtx() });
+        callback(r.answer || '');
       } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
-      finally { aiBtn('ai-headline-btn', false); }
+      finally { aiBtn(btnId, false); }
+    }
+
+    document.getElementById('ai-headline-btn').addEventListener('click', async () => {
+      await runAI('ai-headline-btn',
+        'Write a LinkedIn headline for this candidate. Max 120 chars. Format: Role | Tech | Tech. No buzzwords. Return ONLY the headline.',
+        val => { val = val.trim().replace(/^["\'`\-\*]+|["\'`\-\*]+$/g,'').slice(0,120); if(val){document.getElementById('linkedin_headline').value=val;showToast('Headline generated!','success');} });
     });
 
-    // ── AI: LinkedIn Summary ────────────────────────────────────────────
-    document.getElementById('ai-summary-btn').addEventListener('click', async function() {
-      aiBtn('ai-summary-btn', true);
-      try {
-        var ctx = profileCtx();
-        var r = await api.post('/ai/answer-question', {
-          question: 'Write a LinkedIn "About" summary for this candidate. Rules:\n' +
-            '- 3-4 sentences, max 500 characters\n' +
-            '- First person, professional but natural tone\n' +
-            '- Sentence 1: Who they are (student/fresher, field, college year)\n' +
-            '- Sentence 2: What they have built/done (mention specific projects or skills)\n' +
-            '- Sentence 3: What kind of roles they are targeting\n' +
-            '- Do NOT start with "I am a passionate" or generic openers\n' +
-            '- Be specific — mention actual technologies from their profile\n' +
-            '- Return ONLY the summary text, nothing else.',
-          user_info: ctx
-        });
-        var val = (r.answer||'').trim().replace(/^["'`]+|["'`]+$/g,'');
-        if (val) { document.getElementById('linkedin_summary').value = val; showToast('Summary generated!', 'success'); }
-        else showToast('Try again', 'info');
-      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
-      finally { aiBtn('ai-summary-btn', false); }
+    document.getElementById('ai-summary-btn').addEventListener('click', async () => {
+      await runAI('ai-summary-btn',
+        'Write a LinkedIn About summary. 3-4 sentences, max 500 chars, first person. Mention actual tech/skills. Return ONLY the summary.',
+        val => { val = val.trim().replace(/^["\'`]+|["\'`]+$/g,''); if(val){document.getElementById('linkedin_summary').value=val;showToast('Summary generated!','success');} });
     });
 
-    // ── AI: Cover Letter ────────────────────────────────────────────────
-    document.getElementById('ai-cover-btn').addEventListener('click', async function() {
-      aiBtn('ai-cover-btn', true);
+    document.getElementById('ai-cover-btn').addEventListener('click', async () => {
       var terms = []; try { terms = JSON.parse(document.getElementById('search_terms').value||'[]'); } catch(e) {}
-      var jobTitle = terms[0] || 'Software Developer Intern';
-      var ctx = profileCtx();
-      // Enrich context with explicit instruction for cover letter quality
-      var enriched = ctx + '\n\nIMPORTANT instructions for this cover letter:\n' +
-        '- Adapt to their actual background: if IT student mention projects/code; if experienced professional mention real work outcomes\n' +
-        '- Mention specific things from their profile (projects, tools, quantified results, internships) — no generic filler\n' +
-        '- Be concise: 3 short paragraphs, under 200 words\n' +
-        '- Do NOT use filler phrases like "I am thrilled", "esteemed organization", "passionate learner"\n' +
-        '- End with a clear call to action (e.g. "I am available immediately and look forward to discussing...")';
+      var jobTitle = terms[0] || 'Software Developer';
+      aiBtn('ai-cover-btn', true);
       try {
-        var r = await api.post('/ai/cover-letter', { user_info: enriched, job_title: jobTitle, company: 'your organisation' });
+        var r = await api.post('/ai/cover-letter', { user_info: profileCtx(), job_title: jobTitle, company: 'your organisation' });
         var val = (r.cover_letter||'').trim();
-        if (val) { document.getElementById('cover_letter').value = val; showToast('Cover letter generated!', 'success'); }
-        else showToast('Try again', 'info');
+        if (val) { document.getElementById('cover_letter').value = val; showToast('Cover letter generated!','success'); }
       } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
       finally { aiBtn('ai-cover-btn', false); }
     });
 
-    // ── AI: Skills Summary ──────────────────────────────────────────────
-    document.getElementById('ai-skills-btn').addEventListener('click', async function() {
-      aiBtn('ai-skills-btn', true);
-      try {
-        var ctx = profileCtx();
-        var r = await api.post('/ai/answer-question', {
-          question: 'List this candidate\'s skills as a comma-separated line. Rules:\n' +
-            '- Include all programming languages they know\n' +
-            '- Include frameworks, tools, databases they have used\n' +
-            '- Include relevant soft skills (Problem Solving, etc.)\n' +
-            '- Order: most important/relevant first\n' +
-            '- Max 20 skills total\n' +
-            '- Use exact technology names (e.g. "Java" not "Java programming")\n' +
-            '- Return ONLY the comma-separated list, nothing else.',
-          user_info: ctx
-        });
-        var val = (r.answer||'').trim().replace(/^["'`]+|["'`]+$/g,'').replace(/\n/g,', ');
-        if (val) { document.getElementById('skills_summary').value = val; showToast('Skills generated!', 'success'); }
-        else showToast('Try again', 'info');
-      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
-      finally { aiBtn('ai-skills-btn', false); }
+    document.getElementById('ai-skills-btn').addEventListener('click', async () => {
+      await runAI('ai-skills-btn',
+        'List skills as comma-separated. Include all programming languages, frameworks, tools, databases. Max 20 skills. Return ONLY the list.',
+        val => { val = val.trim().replace(/^["\'`]+|["\'`]+$/g,'').replace(/\n/g,', '); if(val){document.getElementById('skills_summary').value=val;showToast('Skills generated!','success');} });
     });
 
-    // ── AI: Search Terms ────────────────────────────────────────────────
-    document.getElementById('ai-search-terms-btn').addEventListener('click', async function() {
-      aiBtn('ai-search-terms-btn', true);
-      try {
-        var ctx = profileCtx();
-        var r = await api.post('/ai/answer-question', {
-          question: 'Suggest LinkedIn job search terms (job titles) for this candidate. Rules:\n' +
-            '- Read their profile carefully: education, skills, experience level, domain (IT/MBA/Marketing/Finance/etc.)\n' +
-            '- Suggest 7-8 realistic job titles that match their ACTUAL background — not generic ones\n' +
-            '- If 0 years experience (fresher/student): include both Intern and entry-level variants\n' +
-            '- If they have real work experience: suggest full-time roles at their level, no intern variants\n' +
-            '- Match their domain: IT candidate → dev/tech roles; MBA/CRM candidate → CRM/marketing/sales roles\n' +
-            '- Include Indian job market titles (e.g. "Graduate Trainee", "Executive", "Analyst")\n' +
-            '- Do NOT suggest roles from an unrelated domain (e.g. do not suggest coding roles to a CRM/MBA candidate)\n' +
-            '- Return ONLY a JSON array of strings. Example: ["CRM Executive","Marketing Analyst","Inside Sales Executive"]\n' +
-            '- No explanation, just the JSON array.',
-          user_info: ctx
+    document.getElementById('ai-search-terms-btn').addEventListener('click', async () => {
+      await runAI('ai-search-terms-btn',
+        'Suggest 7-8 LinkedIn job search terms for this candidate based on their background. Return ONLY a JSON array. Example: ["Software Developer","Python Developer"]',
+        val => {
+          var terms = parseArrayAnswer(val);
+          if (terms.length) {
+            var existing = []; try { existing = JSON.parse(document.getElementById('search_terms').value||'[]'); } catch(e) {}
+            var toAdd = terms.filter(t => !existing.includes(t));
+            _stHelper = initTagInput('search-terms-tags', 'search_terms', existing.concat(toAdd));
+            showToast(toAdd.length + ' job titles added!', 'success');
+          } else showToast('Could not parse suggestions','error');
         });
-        var terms = parseArrayAnswer(r.answer);
-        if (terms.length) {
-          var existing = []; try { existing = JSON.parse(document.getElementById('search_terms').value||'[]'); } catch(e) {}
-          var toAdd = terms.filter(function(t){ return !existing.includes(t); });
-          _stHelper = initTagInput('search-terms-tags', 'search_terms', existing.concat(toAdd));
-          showToast(toAdd.length + ' job titles added!', 'success');
-        } else { showToast('Could not parse suggestions — try again', 'error'); }
-      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
-      finally { aiBtn('ai-search-terms-btn', false); }
     });
 
-    // ── AI: Bad Words ───────────────────────────────────────────────────
-    document.getElementById('ai-bad-words-btn').addEventListener('click', async function() {
-      aiBtn('ai-bad-words-btn', true);
-      try {
-        var ctx = profileCtx();
-        var r = await api.post('/ai/answer-question', {
-          question: 'Suggest keywords this candidate should SKIP in their job search (bad words filter). Rules:\n' +
-            '- Read their profile carefully to understand their level, domain, and what they are NOT suited for\n' +
-            '- Skip seniority they do not have: if fresher → skip "Senior/Lead/Manager"; if 1-2 yrs → skip "10+ years/Director"\n' +
-            '- Skip experience requirements beyond their level: e.g. "8+ years", "10+ years", "15 years"\n' +
-            '- Skip roles from a completely different domain (e.g. for an IT dev candidate: "Sales Executive", "HR Manager")\n' +
-            '- Skip location/visa requirements irrelevant to them (e.g. "US Citizen", "Need H1B", "On-site UK")\n' +
-            '- Skip highly specialized fields they have no background in\n' +
-            '- Keep the list to 8-10 specific, commonly appearing phrases that would actually appear in job titles/requirements\n' +
-            '- Return ONLY a JSON array of strings. Example: ["Senior","10+ years","Director","US Citizen","PhD required"]\n' +
-            '- No explanation, just the JSON array.',
-          user_info: ctx
+    document.getElementById('ai-bad-words-btn').addEventListener('click', async () => {
+      await runAI('ai-bad-words-btn',
+        'Suggest 8-10 keywords this candidate should SKIP (bad words). Think: seniority beyond their level, irrelevant domains, visa requirements. Return ONLY a JSON array. Example: ["Senior","10+ years","US Citizen"]',
+        val => {
+          var words = parseArrayAnswer(val);
+          if (words.length) {
+            var existing = []; try { existing = JSON.parse(document.getElementById('bad_words').value||'[]'); } catch(e) {}
+            var toAdd = words.filter(w => !existing.includes(w));
+            _bwHelper = initTagInput('bad-words-tags', 'bad_words', existing.concat(toAdd));
+            showToast(toAdd.length + ' skip keywords added!', 'success');
+          } else showToast('Could not parse suggestions','error');
         });
-        var words = parseArrayAnswer(r.answer);
-        if (words.length) {
-          var existing = []; try { existing = JSON.parse(document.getElementById('bad_words').value||'[]'); } catch(e) {}
-          var toAdd = words.filter(function(w){ return !existing.includes(w); });
-          _bwHelper = initTagInput('bad-words-tags', 'bad_words', existing.concat(toAdd));
-          showToast(toAdd.length + ' skip keywords added!', 'success');
-        } else { showToast('Could not parse suggestions — try again', 'error'); }
-      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
-      finally { aiBtn('ai-bad-words-btn', false); }
     });
 
-    // ── Load existing profile then overlay parsed resume ────────────────
     function applyParsedResume() {
       if (!_parsedResume) return;
-      ['first_name','last_name','middle_name','phone_number','current_city','state',
-       'years_of_experience','linkedin_profile','website','linkedin_headline',
-       'linkedin_summary','cover_letter','skills_summary'].forEach(function(k){ fillIf(k, _parsedResume[k]); });
-      if (_parsedResume.search_terms && _parsedResume.search_terms.length)
-        _stHelper = initTagInput('search-terms-tags', 'search_terms', _parsedResume.search_terms);
-      // Update the raw context so AI buttons use the newly parsed resume data
-      if (_parsedResume && _parsedResume.user_information_all) {
-        _resumeRawCtx = _parsedResume.user_information_all;
-      }
+      ['first_name','last_name','middle_name','phone_number','current_city','state','years_of_experience','linkedin_profile','website','linkedin_headline','linkedin_summary','cover_letter','skills_summary'].forEach(k => fillIf(k, _parsedResume[k]));
+      if (_parsedResume.search_terms && _parsedResume.search_terms.length) _stHelper = initTagInput('search-terms-tags', 'search_terms', _parsedResume.search_terms);
+      if (_parsedResume.user_information_all) _resumeRawCtx = _parsedResume.user_information_all;
       showToast('Profile pre-filled from your resume!', 'success');
       sessionStorage.removeItem('parsed_profile'); _parsedResume = null;
     }
 
-    api.get('/profile/me').then(function(data) {
+    api.get('/profile/me').then(data => {
       var p=data.profile||{}, jp=data.job_preferences||{}, pa=data.platform_accounts||{};
-      Object.keys(p).forEach(function(k){ fillIf(k, p[k]); });
-      fillIf('search_location', jp.search_location); fillIf('date_posted', jp.date_posted);
-      fillIf('sort_by', jp.sort_by);
+      Object.keys(p).forEach(k => fillIf(k, p[k]));
+      fillIf('search_location', jp.search_location); fillIf('date_posted', jp.date_posted); fillIf('sort_by', jp.sort_by);
       if (jp.switch_number !== undefined) fillIf('switch_number', jp.switch_number);
       if (jp.easy_apply_only !== undefined) document.getElementById('easy_apply_only').checked = jp.easy_apply_only;
-      if (jp.search_terms && jp.search_terms.length) _stHelper = initTagInput('search-terms-tags','search_terms', jp.search_terms);
-      if (jp.bad_words    && jp.bad_words.length)    _bwHelper = initTagInput('bad-words-tags',   'bad_words',    jp.bad_words);
-      if (jp.good_words   && jp.good_words.length)   initTagInput('good-words-tags','good_words', jp.good_words);
-      ['exp_level','job_type','on_site'].forEach(function(name){
+      if (jp.search_terms?.length) _stHelper = initTagInput('search-terms-tags','search_terms', jp.search_terms);
+      if (jp.bad_words?.length) _bwHelper = initTagInput('bad-words-tags','bad_words', jp.bad_words);
+      if (jp.good_words?.length) initTagInput('good-words-tags','good_words', jp.good_words);
+      ['exp_level','job_type','on_site'].forEach(name => {
         var field={exp_level:'experience_level',job_type:'job_type',on_site:'on_site'}[name];
         var vals=jp[field]||[];
-        if (vals.length) document.querySelectorAll('[name="'+name+'"]').forEach(function(cb){ cb.checked=vals.indexOf(cb.value)!==-1; });
+        if (vals.length) document.querySelectorAll('[name="'+name+'"]').forEach(cb => { cb.checked=vals.includes(cb.value); });
       });
-      Object.keys(pa).forEach(function(k){ if(k.indexOf('password')===-1) fillIf(k,pa[k]); });
+      Object.keys(pa).forEach(k => { if(k.indexOf('password')===-1) fillIf(k,pa[k]); });
       applyParsedResume();
-    }).catch(function(){ applyParsedResume(); });
+    }).catch(() => applyParsedResume());
 
-    // ── Save all ────────────────────────────────────────────────────────
     document.getElementById('finish-btn').addEventListener('click', saveAll);
 
     async function saveAll() {
       var btn = document.getElementById('finish-btn'); setLoading(btn, true);
+      var getChecked = name => Array.from(document.querySelectorAll('[name="'+name+'"]:checked')).map(c => c.value);
       var profileData = {
-        first_name:document.getElementById('first_name').value.trim(),
-        last_name:document.getElementById('last_name').value.trim(),
-        middle_name:document.getElementById('middle_name').value.trim(),
-        phone_number:document.getElementById('phone_number').value.trim(),
-        current_city:document.getElementById('current_city').value.trim(),
-        state:document.getElementById('state').value.trim(),
-        zipcode:document.getElementById('zipcode').value.trim(),
-        country:document.getElementById('country').value.trim(),
-        street:document.getElementById('street').value.trim(),
-        gender:document.getElementById('gender').value,
-        disability_status:document.getElementById('disability_status').value,
-        ethnicity:document.getElementById('ethnicity').value,
-        veteran_status:document.getElementById('veteran_status').value,
-        linkedin_profile:document.getElementById('linkedin_profile').value.trim(),
-        website:document.getElementById('website').value.trim(),
-        years_of_experience:document.getElementById('years_of_experience').value,
-        desired_salary:parseInt(document.getElementById('desired_salary').value)||null,
-        current_ctc:parseInt(document.getElementById('current_ctc').value)||0,
-        notice_period:parseInt(document.getElementById('notice_period').value)||0,
-        recent_employer:document.getElementById('recent_employer').value.trim(),
-        confidence_level:document.getElementById('confidence_level').value.trim()||'7',
-        gemini_api_key:document.getElementById('gemini_api_key').value.trim(),
-        gemini_model:document.getElementById('gemini_model').value,
-        linkedin_headline:document.getElementById('linkedin_headline').value.trim(),
-        linkedin_summary:document.getElementById('linkedin_summary').value.trim(),
-        cover_letter:document.getElementById('cover_letter').value.trim(),
+        first_name:document.getElementById('first_name').value.trim(),last_name:document.getElementById('last_name').value.trim(),
+        middle_name:document.getElementById('middle_name').value.trim(),phone_number:document.getElementById('phone_number').value.trim(),
+        current_city:document.getElementById('current_city').value.trim(),state:document.getElementById('state').value.trim(),
+        zipcode:document.getElementById('zipcode').value.trim(),country:document.getElementById('country').value.trim(),
+        street:document.getElementById('street').value.trim(),gender:document.getElementById('gender').value,
+        disability_status:document.getElementById('disability_status').value,ethnicity:document.getElementById('ethnicity').value,
+        veteran_status:document.getElementById('veteran_status').value,linkedin_profile:document.getElementById('linkedin_profile').value.trim(),
+        website:document.getElementById('website').value.trim(),years_of_experience:document.getElementById('years_of_experience').value,
+        desired_salary:parseInt(document.getElementById('desired_salary').value)||null,current_ctc:parseInt(document.getElementById('current_ctc').value)||0,
+        notice_period:parseInt(document.getElementById('notice_period').value)||0,recent_employer:document.getElementById('recent_employer').value.trim(),
+        confidence_level:document.getElementById('confidence_level').value.trim()||'7',gemini_api_key:document.getElementById('gemini_api_key').value.trim(),
+        gemini_model:document.getElementById('gemini_model').value,linkedin_headline:document.getElementById('linkedin_headline').value.trim(),
+        linkedin_summary:document.getElementById('linkedin_summary').value.trim(),cover_letter:document.getElementById('cover_letter').value.trim(),
         skills_summary:document.getElementById('skills_summary').value.trim(),
       };
-      var getChecked=function(name){ return Array.from(document.querySelectorAll('[name="'+name+'"]:checked')).map(function(c){return c.value;}); };
       var jobPrefs = {
-        search_terms:JSON.parse(document.getElementById('search_terms').value||'[]'),
-        search_location:document.getElementById('search_location').value.trim(),
-        experience_level:getChecked('exp_level'),
-        job_type:getChecked('job_type'),
-        on_site:getChecked('on_site'),
-        date_posted:document.getElementById('date_posted').value,
-        sort_by:document.getElementById('sort_by').value,
-        switch_number:parseInt(document.getElementById('switch_number').value)||15,
-        easy_apply_only:document.getElementById('easy_apply_only').checked,
-        bad_words:JSON.parse(document.getElementById('bad_words').value||'[]'),
-        good_words:JSON.parse(document.getElementById('good_words').value||'[]'),
+        search_terms:JSON.parse(document.getElementById('search_terms').value||'[]'),search_location:document.getElementById('search_location').value.trim(),
+        experience_level:getChecked('exp_level'),job_type:getChecked('job_type'),on_site:getChecked('on_site'),
+        date_posted:document.getElementById('date_posted').value,sort_by:document.getElementById('sort_by').value,
+        switch_number:parseInt(document.getElementById('switch_number').value)||15,easy_apply_only:document.getElementById('easy_apply_only').checked,
+        bad_words:JSON.parse(document.getElementById('bad_words').value||'[]'),good_words:JSON.parse(document.getElementById('good_words').value||'[]'),
       };
-      var _pw=function(id){ var v=document.getElementById(id).value; return v&&v.length>=1?v:undefined; };
-      var platforms={
-        linkedin_email:document.getElementById('linkedin_email').value.trim(),
-        indeed_email:document.getElementById('indeed_email').value.trim(),
-        internshala_email:document.getElementById('internshala_email').value.trim(),
-        naukri_email:document.getElementById('naukri_email').value.trim(),
+      var _pw = id => { var v=document.getElementById(id).value; return v&&v.length>=1?v:undefined; };
+      var platforms = {
+        linkedin_email:document.getElementById('linkedin_email').value.trim(),indeed_email:document.getElementById('indeed_email').value.trim(),
+        internshala_email:document.getElementById('internshala_email').value.trim(),naukri_email:document.getElementById('naukri_email').value.trim(),
       };
-      var _pw_map={linkedin_password:_pw('linkedin_password'),indeed_password:_pw('indeed_password'),internshala_password:_pw('internshala_password'),naukri_password:_pw('naukri_password')};
-      Object.keys(_pw_map).forEach(function(k){ if(_pw_map[k]!==undefined) platforms[k]=_pw_map[k]; });
+      var pwMap = {linkedin_password:_pw('linkedin_password'),indeed_password:_pw('indeed_password'),internshala_password:_pw('internshala_password'),naukri_password:_pw('naukri_password')};
+      Object.keys(pwMap).forEach(k => { if(pwMap[k]!==undefined) platforms[k]=pwMap[k]; });
       try {
         await api.put('/profile/update', profileData);
         await api.put('/profile/job-preferences', jobPrefs);
         await api.put('/profile/platform-accounts', platforms);
         showToast('Profile saved!', 'success');
-        setTimeout(function(){ window.location.href='dashboard.html'; }, 900);
+        setTimeout(() => window.location.href='dashboard.html', 900);
       } catch(err) { showToast((err&&err.detail)||'Could not save profile','error'); setLoading(btn,false); }
     }
   </script>

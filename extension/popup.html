@@ -26,7 +26,10 @@
     </div>
     <div class="form-group">
       <label class="field-label">Password</label>
-      <input type="password" id="login-password" placeholder="••••••••" class="field-input" autocomplete="current-password">
+      <div style="position:relative">
+        <input type="password" id="login-password" placeholder="••••••••" class="field-input" autocomplete="current-password" style="padding-right:36px">
+        <button id="toggle-login-pw" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748b;font-size:14px;padding:0;display:flex;align-items:center">👁</button>
+      </div>
     </div>
     <div id="login-error" class="error-msg hidden"></div>
     <button id="btn-login" class="btn btn-primary btn-full">
@@ -96,20 +99,11 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
         Stop
       </button>
-      <button id="btn-dryrun-toggle" class="btn btn-ghost padded" title="Toggle Dry Run mode">
-        <svg id="dryrun-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      </button>
     </div>
-
-    <div id="dryrun-label" class="mode-pill mode-dry">🔒 Dry Run — will not submit</div>
 
     <div class="setting-group">
       <div class="setting-row">
-        <span class="setting-label">Dry run (no submit)</span>
-        <label class="toggle"><input type="checkbox" id="opt-dry-run" checked title="Dry run (no submit)" aria-label="Dry run (no submit)"><span class="track"></span></label>
-      </div>
-      <div class="setting-row">
-        <span class="setting-label">Human-like typing & delays</span>
+        <span class="setting-label">Human-like typing &amp; delays</span>
         <label class="toggle"><input type="checkbox" id="opt-human-mode" checked title="Human-like typing and delays" aria-label="Human-like typing and delays"><span class="track"></span></label>
       </div>
       <div class="setting-row">
@@ -146,7 +140,7 @@
       <div class="ai-icon">🤖</div>
       <div class="ai-card-body">
         <div class="ai-card-title">Answer Unknown Questions</div>
-        <div class="ai-card-desc">Uses your profile + job description to answer any form question the bot doesn't recognize</div>
+        <div class="ai-card-desc">Uses your profile to answer any form question the bot doesn't recognize</div>
       </div>
       <label class="toggle"><input type="checkbox" id="opt-ai-answers" checked title="Answer unknown questions" aria-label="Answer unknown questions"><span class="track"></span></label>
     </div>
@@ -155,7 +149,7 @@
       <div class="ai-icon">🎯</div>
       <div class="ai-card-body">
         <div class="ai-card-title">Smart Option Selection</div>
-        <div class="ai-card-desc">AI picks the right answer from dropdowns and radio buttons — not just the first option</div>
+        <div class="ai-card-desc">AI picks the right answer from dropdowns and radio buttons</div>
       </div>
       <label class="toggle"><input type="checkbox" id="opt-ai-select" checked title="Smart option selection" aria-label="Smart option selection"><span class="track"></span></label>
     </div>
@@ -164,7 +158,7 @@
       <div class="ai-icon">📄</div>
       <div class="ai-card-body">
         <div class="ai-card-title">Smart Resume Routing</div>
-        <div class="ai-card-desc">Auto-picks the best uploaded resume based on job role (dev vs CRM vs analyst etc.)</div>
+        <div class="ai-card-desc">Auto-picks the best resume based on job role keywords</div>
       </div>
       <label class="toggle"><input type="checkbox" id="opt-smart-resume" checked title="Smart resume routing" aria-label="Smart resume routing"><span class="track"></span></label>
     </div>
@@ -186,17 +180,15 @@
     <div id="resume-list" class="resume-list">
       <div class="empty-state">Loading…</div>
     </div>
-
     <div class="section-title section-title-top">Role Routing</div>
     <div class="routing-table">
       <div class="route-row"><span class="route-kw">java · python · developer · sde</span><span class="route-arrow">→</span><span class="route-lbl">Dev resume</span></div>
-      <div class="route-row"><span class="route-kw">crm · salesforce · hubspot · leadsquared</span><span class="route-arrow">→</span><span class="route-lbl">CRM resume</span></div>
-      <div class="route-row"><span class="route-kw">analyst · power bi · mis · tableau</span><span class="route-arrow">→</span><span class="route-lbl">Analytics resume</span></div>
-      <div class="route-row"><span class="route-kw">marketing · seo · sem · digital</span><span class="route-arrow">→</span><span class="route-lbl">Marketing resume</span></div>
-      <div class="route-row"><span class="route-kw">finance · audit · accounting · ca</span><span class="route-arrow">→</span><span class="route-lbl">Finance resume</span></div>
-      <div class="route-row"><span class="route-kw">inside sales · bdr · sales executive</span><span class="route-arrow">→</span><span class="route-lbl">Sales resume</span></div>
+      <div class="route-row"><span class="route-kw">crm · salesforce · hubspot</span><span class="route-arrow">→</span><span class="route-lbl">CRM resume</span></div>
+      <div class="route-row"><span class="route-kw">analyst · power bi · mis</span><span class="route-arrow">→</span><span class="route-lbl">Analytics resume</span></div>
+      <div class="route-row"><span class="route-kw">marketing · seo · sem</span><span class="route-arrow">→</span><span class="route-lbl">Marketing resume</span></div>
+      <div class="route-row"><span class="route-kw">finance · audit · ca</span><span class="route-arrow">→</span><span class="route-lbl">Finance resume</span></div>
     </div>
-    <div class="routing-tip">💡 Include role keywords in your resume labels (e.g. "Sriram_CRM_LeadSquared")</div>
+    <div class="routing-tip">💡 Include role keywords in your resume label (e.g. "Dev_Java_Resume")</div>
   </div>
 
   <!-- LOG TAB -->

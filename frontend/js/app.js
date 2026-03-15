@@ -2,6 +2,20 @@
 
 const API_BASE = '/api';
 
+// ── Security: disable right-click and devtools shortcuts ─────────────────────
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  if (
+    e.key === 'F12' ||
+    (e.ctrlKey && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) ||
+    (e.ctrlKey && e.key.toLowerCase() === 'u')
+  ) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+// ── API client ────────────────────────────────────────────────────────────────
 const api = {
   async request(method, path, body = null, opts = {}) {
     const headers = { 'Content-Type': 'application/json', ...opts.headers };
@@ -19,15 +33,17 @@ const api = {
     if (!res.ok) throw { status: res.status, detail: data.detail || 'Request failed', data };
     return data;
   },
-  get:    (path, opts)  => api.request('GET', path, null, opts),
-  post:   (path, body)  => api.request('POST', path, body),
-  put:    (path, body)  => api.request('PUT', path, body),
-  delete: (path)        => api.request('DELETE', path),
-  upload: (path, form)  => api.request('POST', path, form),
+  get:    (path, opts) => api.request('GET', path, null, opts),
+  post:   (path, body) => api.request('POST', path, body),
+  put:    (path, body) => api.request('PUT', path, body),
+  delete: (path)       => api.request('DELETE', path),
+  upload: (path, form) => api.request('POST', path, form),
 };
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
 const auth = {
   save(token, user) {
+    // Store token for extension copy-token feature; API calls use cookie
     localStorage.setItem('sa_token', token);
     localStorage.setItem('sa_user', JSON.stringify(user));
   },
@@ -53,6 +69,7 @@ const auth = {
   }
 };
 
+// ── Toast notifications ───────────────────────────────────────────────────────
 function showToast(message, type = 'info', duration = 4000) {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -60,10 +77,10 @@ function showToast(message, type = 'info', duration = 4000) {
     container.id = 'toast-container';
     document.body.appendChild(container);
   }
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const icons = { success: '<i class="fa-solid fa-circle-check"></i>', error: '<i class="fa-solid fa-circle-xmark"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<span style="font-size:16px">${icons[type]||'•'}</span><span>${message}</span>`;
+  toast.innerHTML = `<span>${icons[type] || ''}</span><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => {
     toast.classList.add('out');
@@ -135,8 +152,8 @@ function hydrateNavbar() {
   if (!nav) return;
   if (user) {
     nav.innerHTML = `
-      <a href="dashboard.html" class="btn btn-ghost btn-sm">Dashboard</a>
-      <button onclick="auth.logout()" class="btn btn-ghost btn-sm">Logout</button>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+      <button onclick="auth.logout()" class="btn btn-ghost btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
     `;
   } else {
     nav.innerHTML = `
@@ -146,24 +163,35 @@ function hydrateNavbar() {
   }
 }
 
+// ── Time helpers ──────────────────────────────────────────────────────────────
 function timeAgo(isoString) {
-  const diff = Date.now() - new Date(isoString).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1)  return 'just now';
+  if (!isoString) return '—';
+  // Ensure Z suffix for UTC parsing
+  const str = isoString.endsWith('Z') || isoString.includes('+') ? isoString : isoString + 'Z';
+  const diff = Date.now() - new Date(str).getTime();
+  if (isNaN(diff)) return '—';
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60)  return 'just now';
+  const mins = Math.floor(secs / 60);
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24)  return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return formatDate(isoString);
 }
 
 function formatDate(isoString) {
   if (!isoString) return '—';
-  return new Date(isoString).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const str = isoString.endsWith('Z') || isoString.includes('+') ? isoString : isoString + 'Z';
+  try {
+    return new Date(str).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch { return '—'; }
 }
 
 function escHtml(str) {
   const d = document.createElement('div');
-  d.textContent = str;
+  d.textContent = str || '';
   return d.innerHTML;
 }
 
@@ -177,7 +205,7 @@ function initTagInput(containerId, hiddenId, initial = []) {
       const el = document.createElement('span');
       el.className = 'badge badge-primary';
       el.style.cursor = 'default';
-      el.innerHTML = `${escHtml(tag)} <button type="button" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:4px;font-size:13px">×</button>`;
+      el.innerHTML = `${escHtml(tag)} <button type="button" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:4px;font-size:13px" aria-label="Remove">×</button>`;
       el.querySelector('button').addEventListener('click', () => {
         tags.splice(i, 1);
         hidden.value = JSON.stringify(tags);

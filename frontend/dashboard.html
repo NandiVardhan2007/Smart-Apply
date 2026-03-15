@@ -6,214 +6,220 @@
   <title>Dashboard — SmartApply</title>
   <link rel="stylesheet" href="css/main.css" />
   <style>
-    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-    .filter-btn {
-      padding: 7px 14px;
-      border-radius: 9999px;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      font-size: 13px;
-      color: var(--text-2);
-      cursor: pointer;
-      transition: var(--transition);
+    .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+    .filter-btn{padding:6px 14px;border-radius:9999px;background:var(--bg-2);border:1px solid var(--border);font-size:13px;color:var(--text-2);cursor:pointer;transition:var(--transition);font-family:'DM Sans',sans-serif}
+    .filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .result-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:9999px;font-size:12px;font-weight:500}
+    .result-Applied{background:rgba(126,232,162,0.1);color:var(--accent)}
+    .result-Failed{background:rgba(255,107,107,0.1);color:var(--danger)}
+    .result-Skipped{background:rgba(148,163,200,0.1);color:var(--text-2)}
+    .setup-step{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
+    .setup-step:last-child{border-bottom:none}
+    .step-num{width:28px;height:28px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:13px;flex-shrink:0}
+    /* Memory section */
+    .memory-card{background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:var(--radius-lg);padding:24px}
+    .ai-prompt-box{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:'SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.8;color:var(--text-2);white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin:16px 0}
+    .ai-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:9999px;border:1px solid;font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition)}
+    .ai-chip:hover{transform:translateY(-1px)}
+    .ai-chip-chatgpt{background:rgba(16,163,127,0.1);border-color:rgba(16,163,127,0.3);color:#10a37f}
+    .ai-chip-claude{background:rgba(208,117,89,0.1);border-color:rgba(208,117,89,0.3);color:#d07559}
+    .ai-chip-gemini{background:rgba(79,124,255,0.1);border-color:rgba(79,124,255,0.3);color:var(--primary)}
+    .ai-chip-copy{background:rgba(148,163,200,0.1);border-color:rgba(148,163,200,0.25);color:var(--text-2)}
+    /* Resume routing */
+    .resume-job-card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+    .resume-job-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+    .resume-role-tags{display:flex;flex-wrap:wrap;gap:6px}
+    /* Mobile sidebar overlay */
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:898}
+    .sidebar-overlay.open{display:block}
+    .mobile-sidebar-btn{display:none;background:none;border:none;color:var(--text);cursor:pointer;padding:8px;font-size:18px}
+    @media(max-width:900px){
+      .mobile-sidebar-btn{display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Syne',sans-serif;font-weight:600}
+      .overview-panels{grid-template-columns:1fr!important}
     }
-    .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .empty-state { text-align: center; padding: 56px 20px; }
-    .empty-state .icon { font-size: 52px; margin-bottom: 16px; }
-    .empty-state h4 { margin-bottom: 8px; }
-    .result-pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 3px 10px; border-radius: 9999px;
-      font-size: 12px; font-weight: 500;
-    }
-    .result-Applied  { background: rgba(126,232,162,0.1); color: var(--accent); }
-    .result-Failed   { background: rgba(255,107,107,0.1); color: var(--danger); }
-    .result-Skipped  { background: rgba(148,163,200,0.1); color: var(--text-2); }
-    .result-Dry\ Run { background: rgba(79,124,255,0.1);  color: var(--primary); }
-    .setup-step { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .setup-step:last-child { border-bottom: none; }
-    .step-num {
-      width: 28px; height: 28px; background: var(--primary); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 600; font-size: 13px; flex-shrink: 0;
+    @media(max-width:600px){
+      .stats-overview{grid-template-columns:1fr 1fr!important}
     }
   </style>
 </head>
 <body>
   <div class="bg-grid"></div>
   <div id="toast-container"></div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <nav class="navbar">
     <div class="container">
-      <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-sidebar-btn" id="mobile-sidebar-btn"><i class="fa-solid fa-bars"></i> Menu</button>
+        <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
+      </div>
       <div class="nav-links">
-        <a href="resume.html" class="btn btn-ghost btn-sm hide-mobile">Resumes</a>
-        <a href="ats.html" class="btn btn-ghost btn-sm hide-mobile">ATS Analyzer</a>
-        <a href="profile.html" class="btn btn-ghost btn-sm hide-mobile">Profile</a>
-        <button onclick="auth.logout()" class="btn btn-ghost btn-sm">Logout</button>
+        <a href="resume.html" class="btn btn-ghost btn-sm hide-mobile"><i class="fa-solid fa-file-arrow-up"></i> Resumes</a>
+        <a href="ats.html" class="btn btn-ghost btn-sm hide-mobile"><i class="fa-solid fa-chart-simple"></i> ATS</a>
+        <a href="profile.html" class="btn btn-ghost btn-sm hide-mobile"><i class="fa-solid fa-user"></i> Profile</a>
+        <button onclick="auth.logout()" class="btn btn-ghost btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
   </nav>
 
   <div class="page-wrapper">
     <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
         <div style="padding:0 12px;margin-bottom:20px">
           <div style="font-weight:600;font-size:15px" id="sidebar-name">Loading…</div>
           <div class="text-muted text-sm" id="sidebar-email"></div>
         </div>
         <div class="sidebar-section-label">Navigation</div>
-        <button class="sidebar-link active" onclick="showTab('overview', this)"><span class="icon">📊</span> Overview</button>
-        <button class="sidebar-link" onclick="showTab('history', this)"><span class="icon">📋</span> Applications</button>
-        <button class="sidebar-link" onclick="showTab('extension', this)"><span class="icon">🧩</span> Extension</button>
-        <button class="sidebar-link" onclick="showTab('resumes', this)"><span class="icon">📄</span> Resumes</button>
+        <button class="sidebar-link active" onclick="showTab('overview',this)"><span class="icon"><i class="fa-solid fa-gauge"></i></span> Overview</button>
+        <button class="sidebar-link" onclick="showTab('history',this)"><span class="icon"><i class="fa-solid fa-list-check"></i></span> Applications</button>
+        <button class="sidebar-link" onclick="showTab('extension',this)"><span class="icon"><i class="fa-brands fa-chrome"></i></span> Extension</button>
+        <button class="sidebar-link" onclick="showTab('resumes',this)"><span class="icon"><i class="fa-solid fa-file-lines"></i></span> Resumes</button>
+        <button class="sidebar-link" onclick="showTab('memory',this)"><span class="icon"><i class="fa-solid fa-brain"></i></span> AI Memory</button>
         <div class="sidebar-section-label">Account</div>
-        <a href="ats.html" class="sidebar-link"><span class="icon">🎯</span> ATS Analyzer</a>
-        <a href="profile.html" class="sidebar-link"><span class="icon">👤</span> Edit Profile</a>
-        <button class="sidebar-link" onclick="auth.logout()"><span class="icon">🚪</span> Logout</button>
+        <a href="ats.html" class="sidebar-link"><span class="icon"><i class="fa-solid fa-bullseye"></i></span> ATS Analyzer</a>
+        <a href="profile.html" class="sidebar-link"><span class="icon"><i class="fa-solid fa-user-pen"></i></span> Edit Profile</a>
+        <button class="sidebar-link" onclick="auth.logout()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</button>
       </aside>
 
-      <!-- Main -->
       <main class="main-content">
-        <!-- Welcome bar -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px">
           <div>
             <h3 id="welcome-msg">Welcome back!</h3>
             <p class="text-muted text-sm" id="welcome-sub">Here's your job application overview</p>
           </div>
-          <div style="display:flex;gap:10px">
-            <a href="resume.html" class="btn btn-ghost btn-sm">+ Upload Resume</a>
-            <a href="/api/jobs/extension/download" class="btn btn-primary btn-sm">🧩 Download Extension</a>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="resume.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-plus"></i> Upload Resume</a>
+            <a href="/api/jobs/extension/download" class="btn btn-primary btn-sm"><i class="fa-brands fa-chrome"></i> Download Extension</a>
           </div>
         </div>
 
-        <!-- ── Overview Tab ── -->
+        <!-- ── Overview ── -->
         <div id="tab-overview" class="tab-pane">
-          <div class="grid-3 stagger" id="stats-grid">
+          <div class="grid-3 stagger stats-overview" id="stats-grid">
             <div class="stat-card skeleton" style="height:96px"></div>
             <div class="stat-card skeleton" style="height:96px"></div>
             <div class="stat-card skeleton" style="height:96px"></div>
           </div>
-
           <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:24px" id="overview-panels">
             <div class="card">
-              <h4 style="margin-bottom:16px">Recent Applications</h4>
+              <h4 style="margin-bottom:16px"><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h4>
               <div id="recent-apps">
                 <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
                 <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
                 <div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div>
               </div>
-              <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary" style="display:block;margin-top:12px">View all →</a>
+              <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary" style="display:block;margin-top:12px">View all <i class="fa-solid fa-arrow-right"></i></a>
             </div>
             <div class="card">
-              <h4 style="margin-bottom:16px">By Platform</h4>
+              <h4 style="margin-bottom:16px"><i class="fa-solid fa-chart-pie"></i> By Platform</h4>
               <div id="platform-stats"><div class="skeleton" style="height:120px;border-radius:var(--radius-sm)"></div></div>
             </div>
           </div>
         </div>
 
-        <!-- ── History Tab ── -->
+        <!-- ── History ── -->
         <div id="tab-history" class="tab-pane hidden">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-            <h4>Application History</h4>
+            <h4><i class="fa-solid fa-list-check"></i> Application History</h4>
             <div class="filter-bar" style="margin-bottom:0">
-              <button class="filter-btn active" onclick="filterHistory(null, this)">All</button>
-              <button class="filter-btn" onclick="filterHistory('Applied', this)">✓ Applied</button>
-              <button class="filter-btn" onclick="filterHistory('Failed', this)">✕ Failed</button>
-              <button class="filter-btn" onclick="filterHistory('Skipped', this)">— Skipped</button>
+              <button class="filter-btn active" onclick="filterHistory(null,this)">All</button>
+              <button class="filter-btn" onclick="filterHistory('Applied',this)"><i class="fa-solid fa-check"></i> Applied</button>
+              <button class="filter-btn" onclick="filterHistory('Failed',this)"><i class="fa-solid fa-xmark"></i> Failed</button>
+              <button class="filter-btn" onclick="filterHistory('Skipped',this)"><i class="fa-solid fa-minus"></i> Skipped</button>
             </div>
           </div>
           <div class="table-wrapper">
             <table>
-              <thead>
-                <tr>
-                  <th>Job Title</th>
-                  <th>Company</th>
-                  <th>Platform</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody id="history-tbody">
-                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-2)">Loading…</td></tr>
-              </tbody>
+              <thead><tr><th>Job Title</th><th>Company</th><th>Platform</th><th>Status</th><th>Applied</th><th>Link</th></tr></thead>
+              <tbody id="history-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-2)">Loading…</td></tr></tbody>
             </table>
           </div>
-          <div id="history-pagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px"></div>
+          <div id="history-pagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap"></div>
         </div>
 
-        <!-- ── Extension Tab ── -->
+        <!-- ── Extension ── -->
         <div id="tab-extension" class="tab-pane hidden">
           <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(79,124,255,0.08),rgba(126,232,162,0.04));border-color:rgba(79,124,255,0.2)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
-              <div>
-                <h4 style="margin-bottom:6px">SmartApply Chrome Extension</h4>
-                <p class="text-muted text-sm">Apply to jobs directly from your browser. No server bot needed.</p>
-              </div>
-              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <a href="/api/jobs/extension/download" class="btn btn-primary">🧩 Download Extension</a>
-                <button onclick="copyAuthToken()" class="btn btn-ghost btn-sm" id="copy-token-btn">📋 Copy Auth Token</button>
+              <div><h4 style="margin-bottom:6px"><i class="fa-brands fa-chrome"></i> SmartApply Chrome Extension</h4><p class="text-muted text-sm">Apply to jobs directly from your browser.</p></div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <a href="/api/jobs/extension/download" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download Extension</a>
+                <button onclick="copyAuthToken()" class="btn btn-ghost btn-sm" id="copy-token-btn"><i class="fa-solid fa-copy"></i> Copy Auth Token</button>
               </div>
             </div>
           </div>
-
           <div class="card" style="margin-bottom:20px">
-            <h4 style="margin-bottom:20px">Setup Instructions</h4>
-            <div class="setup-step">
-              <div class="step-num">1</div>
+            <h4 style="margin-bottom:20px"><i class="fa-solid fa-circle-info"></i> Setup Instructions</h4>
+            <div class="setup-step"><div class="step-num">1</div><div><div style="font-weight:500;margin-bottom:3px">Download &amp; unzip the extension</div><div class="text-muted text-sm">Click "Download Extension" above and unzip to a permanent folder.</div></div></div>
+            <div class="setup-step"><div class="step-num">2</div><div><div style="font-weight:500;margin-bottom:3px">Load in Chrome</div><div class="text-muted text-sm">Go to <code style="background:var(--bg-3);padding:1px 6px;border-radius:4px;font-size:12px">chrome://extensions</code> → Enable Developer Mode → Load Unpacked → select the folder.</div></div></div>
+            <div class="setup-step"><div class="step-num">3</div><div><div style="font-weight:500;margin-bottom:3px">Sign in</div><div class="text-muted text-sm">Use your SmartApply email &amp; password to sign in directly in the extension popup.</div></div></div>
+            <div class="setup-step"><div class="step-num">4</div><div><div style="font-weight:500;margin-bottom:3px">Start applying on LinkedIn</div><div class="text-muted text-sm">Visit LinkedIn Jobs, open the extension popup, and click Start Bot.</div></div></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+              <h4><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h4>
+              <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary">View all <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div id="ext-recent-apps"><div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div><div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div></div>
+          </div>
+        </div>
+
+        <!-- ── Resumes ── -->
+        <div id="tab-resumes" class="tab-pane hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+            <h4><i class="fa-solid fa-file-lines"></i> Your Resumes</h4>
+            <a href="resume.html" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Upload New</a>
+          </div>
+          <div id="dash-resumes"><div class="skeleton" style="height:70px;border-radius:var(--radius);margin-bottom:10px"></div><div class="skeleton" style="height:70px;border-radius:var(--radius)"></div></div>
+
+          <div style="margin-top:28px">
+            <h4 style="margin-bottom:16px"><i class="fa-solid fa-route"></i> Resume Routing by Job Role</h4>
+            <p class="text-muted text-sm" style="margin-bottom:16px">The bot automatically picks the best resume based on job title keywords. Include role keywords in your resume label.</p>
+            <div id="resume-routing-table"></div>
+          </div>
+        </div>
+
+        <!-- ── AI Memory ── -->
+        <div id="tab-memory" class="tab-pane hidden">
+          <div class="memory-card" style="margin-bottom:20px">
+            <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0"><i class="fa-solid fa-brain" style="color:#fff"></i></div>
               <div>
-                <div style="font-weight:500;margin-bottom:3px">Download & unzip the extension</div>
-                <div class="text-muted text-sm">Click "Download Extension" above and unzip the file to a permanent folder on your computer.</div>
+                <h3 style="margin-bottom:4px">AI Context Prompt</h3>
+                <p class="text-muted text-sm">Paste this prompt into any AI (ChatGPT, Claude, Gemini, etc.) to give it full context about you — so it can help you write cover letters, answer interview questions, negotiate salary, and more.</p>
               </div>
             </div>
-            <div class="setup-step">
-              <div class="step-num">2</div>
-              <div>
-                <div style="font-weight:500;margin-bottom:3px">Load in Chrome</div>
-                <div class="text-muted text-sm">Go to <code style="background:var(--bg-3);padding:1px 6px;border-radius:4px;font-size:12px">chrome://extensions</code> → Enable Developer Mode → Load Unpacked → select the unzipped folder.</div>
-              </div>
-            </div>
-            <div class="setup-step">
-              <div class="step-num">3</div>
-              <div>
-                <div style="font-weight:500;margin-bottom:3px">Sign in with your token</div>
-                <div class="text-muted text-sm">Click "Copy Auth Token" above. In the extension popup, paste it as your token along with this server's URL.</div>
-              </div>
-            </div>
-            <div class="setup-step">
-              <div class="step-num">4</div>
-              <div>
-                <div style="font-weight:500;margin-bottom:3px">Start applying on LinkedIn</div>
-                <div class="text-muted text-sm">Visit LinkedIn Jobs, open the extension popup, and click Start Bot. Applications will log here automatically.</div>
-              </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+              <button class="ai-chip ai-chip-chatgpt" onclick="openAI('chatgpt')"><i class="fa-solid fa-comment-dots"></i> Open ChatGPT</button>
+              <button class="ai-chip ai-chip-claude" onclick="openAI('claude')"><i class="fa-solid fa-wand-magic-sparkles"></i> Open Claude</button>
+              <button class="ai-chip ai-chip-gemini" onclick="openAI('gemini')"><i class="fa-solid fa-gem"></i> Open Gemini</button>
+              <button class="ai-chip ai-chip-copy" id="copy-prompt-btn" onclick="copyPrompt()"><i class="fa-solid fa-copy"></i> Copy Prompt</button>
             </div>
           </div>
 
           <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h4>Recent Applications (from extension)</h4>
-              <a href="#" onclick="showTab('history', document.querySelector('[onclick*=history]'));return false" class="text-sm text-primary">View all →</a>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+              <h4><i class="fa-solid fa-scroll"></i> Your Context Prompt</h4>
+              <button class="btn btn-ghost btn-sm" onclick="refreshMemoryPrompt()"><i class="fa-solid fa-rotate"></i> Refresh</button>
             </div>
-            <div id="ext-recent-apps">
-              <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
-              <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
-              <div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div>
+            <p class="text-muted text-sm" style="margin-bottom:12px">This prompt contains all the information the AI needs about you. Copy it and paste it at the start of any AI conversation.</p>
+            <div class="ai-prompt-box" id="memory-prompt-box">Loading your profile…</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+              <button class="btn btn-primary" onclick="copyPrompt()"><i class="fa-solid fa-copy"></i> Copy to Clipboard</button>
+              <a href="profile.html" class="btn btn-ghost"><i class="fa-solid fa-user-pen"></i> Update Profile</a>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:20px">
+            <h4 style="margin-bottom:12px"><i class="fa-solid fa-lightbulb"></i> How to use this</h4>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div><div class="text-sm"><strong>Copy the prompt</strong> above and paste it at the start of a new conversation in ChatGPT, Claude, or Gemini.</div></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div><div class="text-sm"><strong>Ask the AI anything</strong> — "Write me a cover letter for a Data Analyst role", "How should I answer salary expectations?", "Review my LinkedIn headline"</div></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div><div class="text-sm"><strong>Keep it updated</strong> — Whenever you update your profile or upload a new resume, refresh the prompt here.</div></div>
             </div>
           </div>
         </div>
 
-        <!-- ── Resumes Tab ── -->
-        <div id="tab-resumes" class="tab-pane hidden">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-            <h4>Your Resumes</h4>
-            <a href="resume.html" class="btn btn-primary btn-sm">+ Upload New</a>
-          </div>
-          <div id="dash-resumes">
-            <div class="skeleton" style="height:70px;border-radius:var(--radius);margin-bottom:10px"></div>
-            <div class="skeleton" style="height:70px;border-radius:var(--radius)"></div>
-          </div>
-        </div>
       </main>
     </div>
   </div>
@@ -222,9 +228,18 @@
   <script>
     if (!auth.requireAuth()) throw new Error();
 
-    let historyFilter = null;
-    let historyPage = 0;
+    let historyFilter = null, historyPage = 0;
     const PAGE_SIZE = 20;
+
+    // ── Mobile sidebar ────────────────────────────────────────────────────
+    document.getElementById('mobile-sidebar-btn').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-overlay').classList.toggle('open');
+    });
+    document.getElementById('sidebar-overlay').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('open');
+    });
 
     // ── Tab switching ─────────────────────────────────────────────────────
     function showTab(name, navItem) {
@@ -235,136 +250,103 @@
       if (name === 'history')   loadHistory();
       if (name === 'extension') loadExtRecent();
       if (name === 'resumes')   loadDashResumes();
+      if (name === 'memory')    refreshMemoryPrompt();
+      // close mobile sidebar
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('open');
     }
 
-    // ── Load stats ────────────────────────────────────────────────────────
+    // ── Stats ─────────────────────────────────────────────────────────────
     async function loadStats() {
       try {
         const data = await api.get('/jobs/stats');
         document.getElementById('stats-grid').innerHTML = `
-          <div class="stat-card fade-in">
-            <div class="stat-label">Total Applied</div>
-            <div class="stat-value">${data.total}</div>
-            <div class="stat-sub">across all platforms</div>
-          </div>
-          <div class="stat-card fade-in">
-            <div class="stat-label">Successful</div>
-            <div class="stat-value" style="color:var(--accent)">${data.applied}</div>
-            <div class="stat-sub">${data.total ? Math.round(data.applied/data.total*100) : 0}% success rate</div>
-          </div>
-          <div class="stat-card fade-in">
-            <div class="stat-label">Failed / Skipped</div>
-            <div class="stat-value" style="color:var(--text-2)">${data.failed + data.skipped}</div>
-            <div class="stat-sub">${data.failed} failed · ${data.skipped} skipped</div>
-          </div>
+          <div class="stat-card fade-in"><div class="stat-label">Total Applied</div><div class="stat-value">${data.total}</div><div class="stat-sub">across all platforms</div></div>
+          <div class="stat-card fade-in"><div class="stat-label">Successful</div><div class="stat-value" style="color:var(--accent)">${data.applied}</div><div class="stat-sub">${data.total?Math.round(data.applied/data.total*100):0}% success rate</div></div>
+          <div class="stat-card fade-in"><div class="stat-label">Failed / Skipped</div><div class="stat-value" style="color:var(--text-2)">${data.failed+data.skipped}</div><div class="stat-sub">${data.failed} failed · ${data.skipped} skipped</div></div>
         `;
-
         const platforms = data.by_platform || {};
-        const platformHtml = Object.entries(platforms).length
-          ? Object.entries(platforms).map(([p, c]) => `
+        document.getElementById('platform-stats').innerHTML = Object.entries(platforms).length
+          ? Object.entries(platforms).map(([p,c]) => `
               <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-                <span style="text-transform:capitalize;font-size:14px">${p}</span>
+                <span style="text-transform:capitalize;font-size:14px"><i class="fa-solid fa-layer-group" style="color:var(--primary);margin-right:6px"></i>${p}</span>
                 <div style="display:flex;align-items:center;gap:10px">
                   <div style="width:100px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden">
-                    <div style="width:${data.total ? Math.round(c/data.total*100) : 0}%;height:100%;background:var(--primary);border-radius:3px"></div>
+                    <div style="width:${data.total?Math.round(c/data.total*100):0}%;height:100%;background:var(--primary);border-radius:3px"></div>
                   </div>
                   <span style="font-weight:600;font-size:14px;min-width:28px;text-align:right">${c}</span>
                 </div>
               </div>
             `).join('')
-          : '<p class="text-muted text-sm">No applications yet. Download the extension to start applying!</p>';
-        document.getElementById('platform-stats').innerHTML = platformHtml;
-      } catch (err) {
-        console.error(err);
-      }
+          : '<p class="text-muted text-sm">No applications yet.</p>';
+      } catch(e) {}
     }
 
-    // ── Recent apps ───────────────────────────────────────────────────────
+    // ── Recent ────────────────────────────────────────────────────────────
     async function loadRecent() {
       try {
         const data = await api.get('/jobs/history?limit=5');
         const apps = data.applications || [];
-        if (!apps.length) {
-          document.getElementById('recent-apps').innerHTML = `
-            <div class="empty-state" style="padding:24px 0">
-              <div style="font-size:32px">📭</div>
-              <p class="text-muted text-sm" style="margin-top:8px">No applications yet. Download the extension and start applying!</p>
-            </div>
-          `;
-          return;
-        }
-        document.getElementById('recent-apps').innerHTML = apps.map(a => `
+        const el = document.getElementById('recent-apps');
+        if (!apps.length) { el.innerHTML = '<p class="text-muted text-sm" style="padding:12px 0">No applications yet.</p>'; return; }
+        el.innerHTML = apps.map(a => `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-            <div>
-              <div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div>
-              <div class="text-muted text-sm">${escHtml(a.company)} · ${timeAgo(a.applied_at)}</div>
-            </div>
+            <div><div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div><div class="text-muted text-sm">${escHtml(a.company)} · ${timeAgo(a.applied_at)}</div></div>
             <span class="result-pill result-${a.result}">${a.result}</span>
-          </div>
-        `).join('');
-      } catch {}
+          </div>`).join('');
+      } catch(e) {}
     }
 
-    // ── Extension tab recent apps ─────────────────────────────────────────
+    // ── Ext recent ────────────────────────────────────────────────────────
     async function loadExtRecent() {
       try {
         const data = await api.get('/jobs/history?limit=8');
         const apps = data.applications || [];
         const el = document.getElementById('ext-recent-apps');
-        if (!apps.length) {
-          el.innerHTML = '<p class="text-muted text-sm" style="padding:8px 0">No applications logged yet. Start the extension on LinkedIn to see results here.</p>';
-          return;
-        }
+        if (!apps.length) { el.innerHTML = '<p class="text-muted text-sm">No applications logged yet.</p>'; return; }
         el.innerHTML = apps.map(a => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-            <div>
-              <div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div>
-              <div class="text-muted text-sm">${escHtml(a.company)} · ${escHtml(a.platform)} · ${timeAgo(a.applied_at)}</div>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px">
+            <div><div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div><div class="text-muted text-sm">${escHtml(a.company)} · ${escHtml(a.platform)} · ${timeAgo(a.applied_at)}</div></div>
             <span class="result-pill result-${a.result}">${a.result}</span>
-          </div>
-        `).join('');
-      } catch {}
+          </div>`).join('');
+      } catch(e) {}
     }
 
     // ── History ───────────────────────────────────────────────────────────
-    async function loadHistory(page = 0) {
+    async function loadHistory(page=0) {
       historyPage = page;
-      const params = new URLSearchParams({ skip: page * PAGE_SIZE, limit: PAGE_SIZE });
+      const params = new URLSearchParams({skip: page*PAGE_SIZE, limit: PAGE_SIZE});
       if (historyFilter) params.append('result', historyFilter);
       const tbody = document.getElementById('history-tbody');
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr>';
-
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr>';
       try {
         const data = await api.get('/jobs/history?' + params);
         const apps = data.applications || [];
-        if (!apps.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-2)">No applications found</td></tr>';
-          return;
-        }
-        tbody.innerHTML = apps.map(a => `
-          <tr>
+        if (!apps.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-2)">No applications found</td></tr>'; return; }
+        tbody.innerHTML = apps.map(a => {
+          const linkCell = a.job_link
+            ? `<td><a href="${escHtml(a.job_link)}" target="_blank" rel="noopener" style="color:var(--primary);font-size:13px"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>`
+            : `<td class="text-muted text-sm">—</td>`;
+          return `<tr>
             <td>${escHtml(a.job_title)}</td>
             <td>${escHtml(a.company)}</td>
             <td><span class="badge badge-neutral" style="text-transform:capitalize">${escHtml(a.platform)}</span></td>
             <td><span class="result-pill result-${a.result}">${a.result}</span></td>
-            <td class="text-muted">${formatDate(a.applied_at)}</td>
-          </tr>
-        `).join('');
-
+            <td class="text-muted" style="font-size:13px;white-space:nowrap">${timeAgo(a.applied_at)}<br><span style="font-size:11px">${formatDate(a.applied_at)}</span></td>
+            ${linkCell}
+          </tr>`;
+        }).join('');
         const totalPages = Math.ceil(data.total / PAGE_SIZE);
-        const pagination = document.getElementById('history-pagination');
-        pagination.innerHTML = '';
+        const pag = document.getElementById('history-pagination');
+        pag.innerHTML = '';
         for (let i = 0; i < totalPages; i++) {
           const btn = document.createElement('button');
-          btn.className = 'filter-btn' + (i === page ? ' active' : '');
-          btn.textContent = i + 1;
+          btn.className = 'filter-btn' + (i===page?' active':'');
+          btn.textContent = i+1;
           btn.onclick = () => loadHistory(i);
-          pagination.appendChild(btn);
+          pag.appendChild(btn);
         }
-      } catch {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>';
-      }
+      } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>'; }
     }
 
     function filterHistory(result, btn) {
@@ -380,46 +362,171 @@
         const data = await api.get('/resume/list');
         const el = document.getElementById('dash-resumes');
         if (!data.resumes.length) {
-          el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><h4>No resumes uploaded</h4><a href="resume.html" class="btn btn-primary" style="margin-top:16px">Upload Resume</a></div>`;
+          el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-2)"><i class="fa-solid fa-file-circle-plus" style="font-size:48px;margin-bottom:16px;color:var(--text-3)"></i><h4>No resumes uploaded</h4><a href="resume.html" class="btn btn-primary" style="margin-top:16px">Upload Resume</a></div>`;
+          renderResumRoutingTable([]);
           return;
         }
         el.innerHTML = data.resumes.map(r => `
-          <div class="card card-sm" style="margin-bottom:10px;display:flex;align-items:center;gap:14px">
-            <span style="font-size:28px">📄</span>
-            <div>
-              <div style="font-weight:500">${escHtml(r.label || r.filename)}</div>
-              <div class="text-muted text-sm">${escHtml(r.parsed_name || '')} · ${formatDate(r.uploaded_at)}</div>
+          <div class="card card-sm" style="margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <i class="fa-solid fa-file-pdf" style="font-size:28px;color:var(--danger)"></i>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:500">${escHtml(r.label||r.filename)}</div>
+              <div class="text-muted text-sm">${escHtml(r.parsed_name||'')} · ${formatDate(r.uploaded_at)}</div>
             </div>
-            <a href="resume.html" class="btn btn-ghost btn-sm" style="margin-left:auto">Manage</a>
-          </div>
-        `).join('');
-      } catch {}
+            <a href="resume.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i> Manage</a>
+          </div>`).join('');
+        renderResumRoutingTable(data.resumes);
+      } catch(e) {}
     }
 
-    // ── Profile info ──────────────────────────────────────────────────────
+    function renderResumRoutingTable(resumes) {
+      const el = document.getElementById('resume-routing-table');
+      const roleMap = [
+        {type:'dev',    icon:'fa-code',         color:'#4f7cff', keywords:['java','python','developer','sde','backend','frontend','fullstack'],   label:'Dev Resume'},
+        {type:'crm',    icon:'fa-handshake',     color:'#10b981', keywords:['crm','salesforce','hubspot','leadsquared'],                           label:'CRM Resume'},
+        {type:'analyst',icon:'fa-chart-bar',     color:'#f59e0b', keywords:['analyst','power bi','mis','tableau','data'],                          label:'Analytics Resume'},
+        {type:'sales',  icon:'fa-phone-volume',  color:'#8b5cf6', keywords:['sales','bdr','inside sales'],                                         label:'Sales Resume'},
+        {type:'finance',icon:'fa-indian-rupee-sign',color:'#06b6d4',keywords:['finance','accounting','audit','ca','mba'],                          label:'Finance Resume'},
+        {type:'marketing',icon:'fa-bullhorn',   color:'#ef4444', keywords:['marketing','seo','sem','digital','content'],                           label:'Marketing Resume'},
+        {type:'hr',     icon:'fa-users',         color:'#a78bfa', keywords:['hr','recruitment','talent','human resource'],                         label:'HR Resume'},
+      ];
+
+      el.innerHTML = roleMap.map(role => {
+        const matched = resumes.find(r =>
+          role.keywords.some(k => (r.label||'').toLowerCase().includes(k))
+        );
+        return `<div class="resume-job-card">
+          <div class="resume-job-header">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:8px;background:${role.color}22;border:1px solid ${role.color}44;display:flex;align-items:center;justify-content:center;color:${role.color};flex-shrink:0">
+                <i class="fa-solid ${role.icon}"></i>
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:14px">${role.label}</div>
+                <div class="text-muted text-sm">${matched ? '<i class="fa-solid fa-circle-check" style="color:var(--accent)"></i> Matched: '+escHtml(matched.label) : '<i class="fa-solid fa-circle-xmark" style="color:var(--text-3)"></i> No match — will use latest'}</div>
+              </div>
+            </div>
+          </div>
+          <div class="resume-role-tags">
+            ${role.keywords.map(k=>`<span class="badge badge-neutral" style="font-size:11px">${k}</span>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Profile ───────────────────────────────────────────────────────────
+    let _profileData = null;
     async function loadProfile() {
       try {
         const data = await api.get('/profile/me');
-        const user = auth.user;
+        _profileData = data;
         const fn = data.profile?.first_name || '';
         const ln = data.profile?.last_name || '';
-        const name = fn || ln ? `${fn} ${ln}`.trim() : (user?.email?.split('@')[0] || 'User');
+        const name = fn||ln ? `${fn} ${ln}`.trim() : (auth.user?.email?.split('@')[0]||'User');
         document.getElementById('sidebar-name').textContent = name;
-        document.getElementById('sidebar-email').textContent = user?.email || '';
-        document.getElementById('welcome-msg').textContent = `Welcome back, ${fn || name}!`;
-      } catch {}
+        document.getElementById('sidebar-email').textContent = auth.user?.email||'';
+        document.getElementById('welcome-msg').textContent = `Welcome back, ${fn||name}!`;
+      } catch(e) {}
     }
 
-    // ── Copy auth token (for pasting into extension) ──────────────────────
+    // ── Copy auth token ───────────────────────────────────────────────────
     function copyAuthToken() {
       const token = localStorage.getItem('sa_token');
       const btn = document.getElementById('copy-token-btn');
-      if (!token) { showToast('No token found — please log in first.', 'error'); return; }
+      if (!token) { showToast('No token found — please log in again.', 'error'); return; }
       navigator.clipboard.writeText(token).then(() => {
-        btn.textContent = '✓ Copied!';
-        btn.style.color = '#4ade80';
-        setTimeout(() => { btn.textContent = '📋 Copy Auth Token'; btn.style.color = ''; }, 2500);
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        btn.style.color = 'var(--accent)';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy Auth Token'; btn.style.color=''; }, 2500);
       }).catch(() => { prompt('Copy your token (Ctrl+C):', token); });
+    }
+
+    // ── AI Memory ─────────────────────────────────────────────────────────
+    async function refreshMemoryPrompt() {
+      const box = document.getElementById('memory-prompt-box');
+      box.textContent = 'Loading your profile data…';
+      try {
+        const data = await api.get('/profile/me');
+        _profileData = data;
+        box.textContent = buildMemoryPrompt(data);
+      } catch(e) {
+        box.textContent = 'Could not load profile. Please update your profile first.';
+      }
+    }
+
+    function buildMemoryPrompt(data) {
+      const p = data.profile || {};
+      const jp = data.job_preferences || {};
+      const pa = data.platform_accounts || {};
+
+      const lines = [
+        '## My Profile Context for Job Applications',
+        '',
+        '### Personal Information',
+        `Name: ${[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ') || 'Not set'}`,
+        `Email: ${data.email || ''}`,
+        `Phone: ${p.phone_number || ''}`,
+        `Location: ${[p.current_city, p.state, p.country].filter(Boolean).join(', ') || 'Not set'}`,
+        '',
+        '### Professional Background',
+        `Years of Experience: ${p.years_of_experience || '0'}`,
+        `Recent Employer: ${p.recent_employer || ''}`,
+        `Desired Salary: ${p.desired_salary ? '₹' + p.desired_salary.toLocaleString('en-IN') + ' per annum' : 'Not set'}`,
+        `Current CTC: ${p.current_ctc ? '₹' + p.current_ctc.toLocaleString('en-IN') + ' per annum' : '0'}`,
+        `Notice Period: ${p.notice_period || '0'} days`,
+        `LinkedIn: ${p.linkedin_profile || ''}`,
+        `Portfolio: ${p.website || ''}`,
+        '',
+        '### Skills',
+        p.skills_summary || 'Not filled',
+        '',
+        '### LinkedIn Headline',
+        p.linkedin_headline || 'Not set',
+        '',
+        '### Professional Summary',
+        p.linkedin_summary || 'Not set',
+        '',
+        '### Job Preferences',
+        `Target Roles: ${(jp.search_terms || []).join(', ') || 'Not set'}`,
+        `Location: ${jp.search_location || 'India'}`,
+        `Experience Level: ${(jp.experience_level || []).join(', ')}`,
+        `Job Type: ${(jp.job_type || []).join(', ')}`,
+        `Work Mode: ${(jp.on_site || []).join(', ')}`,
+        `Keywords to Skip: ${(jp.bad_words || []).join(', ') || 'None'}`,
+        '',
+        '### Cover Letter Template',
+        p.cover_letter || 'Not set',
+        '',
+        '---',
+        'Use this context to help me with job applications, cover letters, interview prep, salary negotiation, and any career-related questions. Always refer to the information above when personalizing your responses for me.',
+      ];
+
+      return lines.join('\n');
+    }
+
+    function copyPrompt() {
+      const box = document.getElementById('memory-prompt-box');
+      const text = box.textContent;
+      const btn = document.getElementById('copy-prompt-btn');
+      navigator.clipboard.writeText(text).then(() => {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy Prompt'; }, 2500);
+        showToast('Prompt copied! Paste it in your AI of choice.', 'success');
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        showToast('Prompt copied!', 'success');
+      });
+    }
+
+    function openAI(platform) {
+      copyPrompt();
+      const urls = {
+        chatgpt: 'https://chat.openai.com',
+        claude: 'https://claude.ai',
+        gemini: 'https://gemini.google.com',
+      };
+      setTimeout(() => window.open(urls[platform], '_blank'), 400);
     }
 
     // ── Init ──────────────────────────────────────────────────────────────

@@ -34,6 +34,10 @@ async def upload_resume(
     if len(data) > MAX_RESUME_SIZE:
         raise HTTPException(413, detail="File too large. Maximum 5 MB.")
 
+    # Verify PDF magic bytes
+    if len(data) < 4 or data[:4] != b'%PDF':
+        raise HTTPException(400, detail="File does not appear to be a valid PDF")
+
     parsed_data = {}
     if PDFMINER_AVAILABLE:
         try:
@@ -59,7 +63,7 @@ async def upload_resume(
         "filename": file.filename or "resume.pdf",
         "label": label,
         "parsed": parsed_data,
-        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "uploaded_at": datetime.now(timezone.utc).isoformat() + 'Z',
     }
 
     await db.users.update_one(

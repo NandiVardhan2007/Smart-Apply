@@ -9,7 +9,6 @@ from backend.auth import get_current_user
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
-
 class ProfileUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -41,7 +40,6 @@ class ProfileUpdate(BaseModel):
     education_text: Optional[str] = None
     experience_text: Optional[str] = None
 
-
 class JobPreferences(BaseModel):
     search_terms: Optional[List[str]] = []
     search_location: Optional[str] = "India"
@@ -57,7 +55,6 @@ class JobPreferences(BaseModel):
     require_visa: Optional[str] = "No"
     us_citizenship: Optional[str] = "Other"
 
-
 class PlatformAccounts(BaseModel):
     linkedin_email: Optional[str] = None
     linkedin_password: Optional[str] = None
@@ -68,14 +65,12 @@ class PlatformAccounts(BaseModel):
     naukri_email: Optional[str] = None
     naukri_password: Optional[str] = None
 
-
 @router.get("/me")
 async def get_profile(current_user: dict = Depends(get_current_user)):
     db = get_db()
     user = await db.users.find_one({"_id": ObjectId(current_user["user_id"])})
     if not user:
         raise HTTPException(404, detail="User not found")
-
     return {
         "email": user.get("email"),
         "profile": user.get("profile", {}),
@@ -84,48 +79,34 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         "resume_count": len(user.get("resumes", [])),
     }
 
-
 @router.put("/update")
 async def update_profile(body: ProfileUpdate, current_user: dict = Depends(get_current_user)):
     db = get_db()
     data = {k: v for k, v in body.model_dump().items() if v is not None}
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
-
-    await db.users.update_one(
-        {"_id": ObjectId(current_user["user_id"])},
-        {"$set": {"profile": data}}
-    )
+    await db.users.update_one({"_id": ObjectId(current_user["user_id"])}, {"$set": {"profile": data}})
     return {"message": "Profile updated successfully"}
-
 
 @router.put("/job-preferences")
 async def update_job_preferences(body: JobPreferences, current_user: dict = Depends(get_current_user)):
     db = get_db()
-    await db.users.update_one(
-        {"_id": ObjectId(current_user["user_id"])},
-        {"$set": {"job_preferences": body.model_dump()}}
-    )
+    await db.users.update_one({"_id": ObjectId(current_user["user_id"])}, {"$set": {"job_preferences": body.model_dump()}})
     return {"message": "Job preferences saved"}
-
 
 @router.put("/platform-accounts")
 async def update_platform_accounts(body: PlatformAccounts, current_user: dict = Depends(get_current_user)):
     db = get_db()
     data = {}
     for k, v in body.model_dump().items():
-        if v is None:
-            continue
-        if "password" in k and (not v or len(v.strip()) == 0):
-            continue
+        if v is None: continue
+        if "password" in k and (not v or len(v.strip()) == 0): continue
         data[k] = v
-
     if data:
         await db.users.update_one(
             {"_id": ObjectId(current_user["user_id"])},
             {"$set": {f"platform_accounts.{k}": v for k, v in data.items()}}
         )
     return {"message": "Platform accounts saved"}
-
 
 def _mask_passwords(accounts: dict) -> dict:
     masked = dict(accounts)

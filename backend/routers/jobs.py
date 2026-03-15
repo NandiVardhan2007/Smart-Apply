@@ -10,12 +10,21 @@ from backend.auth import get_current_user
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
+def _fmt_dt(dt) -> str:
+    """Format a datetime as UTC ISO string with Z suffix."""
+    if hasattr(dt, "strftime"):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+    return str(dt)
+
+
 class ApplicationLog(BaseModel):
     platform: str
     job_title: str
     company: str
     job_link: Optional[str] = None
-    result: str  # "Applied", "Failed", "Skipped", "Dry Run"
+    result: str
     reason: Optional[str] = None
 
 
@@ -24,7 +33,6 @@ async def log_application(
     body: ApplicationLog,
     current_user: dict = Depends(get_current_user),
 ):
-    """Log a job application submitted by the Chrome extension."""
     db = get_db()
     doc = {
         "user_id": current_user["user_id"],
@@ -60,11 +68,7 @@ async def get_history(
     docs = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
-        doc["applied_at"] = (
-            doc["applied_at"].isoformat()
-            if hasattr(doc["applied_at"], "isoformat")
-            else str(doc["applied_at"])
-        )
+        doc["applied_at"] = _fmt_dt(doc.get("applied_at"))
         docs.append(doc)
 
     return {"total": total, "applications": docs}
@@ -103,7 +107,6 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
 
 @router.get("/extension/download")
 async def download_extension(current_user: dict = Depends(get_current_user)):
-    """Serve the SmartApply Chrome extension as a downloadable zip."""
     import zipfile
     import io
     from fastapi.responses import StreamingResponse

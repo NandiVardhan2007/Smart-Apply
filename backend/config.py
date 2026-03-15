@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-# ── Try to load from admin_config.json (overrides .env for SMTP/keys) ────────
+# ── Try to load from admin_config.json ────────────────────────────────────────
 _admin_cfg: dict = {}
 _admin_cfg_path = Path(__file__).parent.parent / "admin_config.json"
 if _admin_cfg_path.exists():
@@ -15,10 +15,20 @@ if _admin_cfg_path.exists():
     except Exception:
         pass
 
-MONGO_URI       = os.getenv("MONGO_URI", "mongodb+srv://Nandu:Motu20172007@smartapply.qdyfwh9.mongodb.net/?appName=SmartApply")
-DB_NAME         = os.getenv("DB_NAME", "smartapply")
+# ── Required secrets — raise clearly if missing ────────────────────────────────
+def _require(key: str) -> str:
+    val = os.getenv(key)
+    if not val:
+        raise RuntimeError(
+            f"Environment variable '{key}' is required but not set. "
+            f"Add it to your .env file or Render Dashboard."
+        )
+    return val
 
-JWT_SECRET      = os.getenv("JWT_SECRET", "smartapply_super_secret_jwt_key_2024")
+MONGO_URI       = _require("MONGO_URI")
+JWT_SECRET      = _require("JWT_SECRET")
+
+DB_NAME         = os.getenv("DB_NAME", "smartapply")
 JWT_ALGORITHM   = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
 
@@ -28,35 +38,28 @@ SMTP_USER       = _admin_cfg.get("smtp_user") or os.getenv("SMTP_USER", "")
 SMTP_PASS       = _admin_cfg.get("smtp_pass") or os.getenv("SMTP_PASS", "")
 SMTP_FROM       = os.getenv("SMTP_FROM", f"SmartApply <{SMTP_USER}>")
 
-# ── Brevo (HTTP email API — works on Render, 300 emails/day free) ─────────────
-BREVO_API_KEY   = os.getenv("BREVO_API_KEY", "")
-BREVO_FROM      = os.getenv("BREVO_FROM", "kovvurinandivardhanreddy7@gmail.com")
-BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "SmartApply")
+# ── Resend (fast transactional email — https://resend.com) ────────────────────
+# Set RESEND_API_KEY in Render Dashboard (e.g. re_xxxxxxxxxxxx)
+# Set RESEND_FROM to your verified sender, e.g. "SmartApply <noreply@yourdomain.com>"
+# Until you verify a domain, use the Resend sandbox: "onboarding@resend.dev" (only delivers to your own email)
+RESEND_API_KEY   = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM      = os.getenv("RESEND_FROM", "SmartApply <onboarding@resend.dev>")
 
 APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
-# ── NVIDIA NIM API ────────────────────────────────────────────────────────────
-# Free API keys from https://build.nvidia.com/models (click "Get API Key")
-# Set NVIDIA_API_KEYS in your .env or Render environment variables.
-# Multiple keys can be comma-separated for fallback: key1,key2,key3
+# ── Encryption key for platform passwords ─────────────────────────────────────
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FERNET_KEY      = os.getenv("FERNET_KEY", "")
+
+# ── NVIDIA NIM API ─────────────────────────────────────────────────────────────
 NVIDIA_API_KEYS: list[str] = []
 _keys_env = os.getenv("NVIDIA_API_KEYS", "")
 if _keys_env:
     NVIDIA_API_KEYS = [k.strip() for k in _keys_env.split(",") if k.strip()]
 
-# NVIDIA NIM API endpoint (OpenAI-compatible)
 NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-
-# Default model — all are FREE on NVIDIA NIM
-# Options (change via NVIDIA_MODEL env var):
-#   meta/llama-3.3-70b-instruct           (70B, best overall — default)
-#   meta/llama-3.1-70b-instruct           (70B, Llama 3.1)
-#   google/gemma-3-27b-it                 (27B, fast)
-#   nvidia/llama-3.1-nemotron-70b-instruct (70B, NVIDIA-tuned)
-#   mistralai/mixtral-8x7b-instruct-v0.1  (47B, Mixtral)
-# Bug fix: admin_config key is "nvidia_model", not "openrouter_model"
-NVIDIA_MODEL = _admin_cfg.get("nvidia_model") or os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
+NVIDIA_MODEL   = _admin_cfg.get("nvidia_model") or os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
 
 # ── Security ──────────────────────────────────────────────────────────────────
 DISPOSABLE_DOMAINS = {

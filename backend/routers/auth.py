@@ -1,8 +1,8 @@
+import asyncio
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
-import re
 import logging
 
 from backend.database import get_db
@@ -97,11 +97,7 @@ async def signup(body: SignupRequest):
             {"email": email},
             {"$set": {"verification_pin": pin, "pin_expires": expires, "pin_attempts": 0}}
         )
-        try:
-            await send_verification_email(email, pin)
-        except Exception as exc:
-            logger.error(f"[signup] Email send failed for {email}: {exc}")
-            raise HTTPException(500, detail="Failed to send verification email. Please try again or contact support.")
+        asyncio.create_task(_send_verification(email, pin))
         return {"message": "Verification code resent. Please check your email."}
 
     pin = generate_pin()
@@ -110,6 +106,7 @@ async def signup(body: SignupRequest):
     user_doc = {
         "email": email,
         "password_hash": hash_password(body.password),
+        "role": "user",
         "is_verified": False,
         "verification_pin": pin,
         "pin_expires": expires,
@@ -122,14 +119,22 @@ async def signup(body: SignupRequest):
     }
 
     await db.users.insert_one(user_doc)
+    asyncio.create_task(_send_verification(email, pin))
+    return {"message": "Account created. Check your email for the verification code."}
 
+
+async def _send_verification(email: str, pin: str):
     try:
         await send_verification_email(email, pin)
     except Exception as exc:
         logger.error(f"[signup] Email send failed for {email}: {exc}")
-        raise HTTPException(500, detail="Account created but verification email could not be sent. Please contact support.")
 
-    return {"message": "Account created. Check your email for the verification code."}
+
+async def _send_reset(email: str, token: str):
+    try:
+        await send_reset_email(email, token)
+    except Exception as exc:
+        logger.error(f"[reset] Email send failed for {email}: {exc}")
 
 
 @router.post("/verify")
@@ -186,11 +191,7 @@ async def resend_pin(body: ResendRequest):
         {"email": email},
         {"$set": {"verification_pin": pin, "pin_expires": expires, "pin_attempts": 0}}
     )
-    try:
-        await send_verification_email(email, pin)
-    except Exception as exc:
-        logger.error(f"[resend-pin] Email send failed for {email}: {exc}")
-        raise HTTPException(500, detail="Failed to send verification email. Please try again.")
+    asyncio.create_task(_send_verification(email, pin))
     return {"message": "New verification code sent"}
 
 
@@ -202,12 +203,10 @@ async def login(body: LoginRequest, response: Response):
     _check_rate_limit(f"login:{email}")
 
     user = await db.users.find_one({"email": email})
-    if not user:
-        raise HTTPException(401, detail="Invalid email or password")
+    if not user or not verify_password(body.password, user.get("password_hash", "")):
+        raise HTTPException(401, detail="Email or password is wrong. Try again.")
     if not user.get("is_verified"):
         raise HTTPException(403, detail="Please verify your email before logging in")
-    if not verify_password(body.password, user["password_hash"]):
-        raise HTTPException(401, detail="Invalid email or password")
 
     token = create_access_token(str(user["_id"]), email)
 
@@ -222,6 +221,7 @@ async def login(body: LoginRequest, response: Response):
         "user": {
             "id": str(user["_id"]),
             "email": email,
+            "role": user.get("role", "user"),
             "has_profile": bool(user.get("profile", {}).get("first_name")),
         }
     }
@@ -248,11 +248,7 @@ async def forgot_password(body: ForgotRequest):
             {"email": email},
             {"$set": {"reset_token": token, "reset_expires": expires}}
         )
-        try:
-            await send_reset_email(email, token)
-        except Exception as exc:
-            logger.error(f"[forgot-password] Email send failed for {email}: {exc}")
-            raise HTTPException(500, detail="Failed to send reset email. Please try again.")
+        asyncio.create_task(_send_reset(email, token))
 
     return {"message": "If that email is registered, a reset link has been sent."}
 

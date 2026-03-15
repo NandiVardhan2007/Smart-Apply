@@ -13,14 +13,40 @@
       <div id="signup-error" class="alert alert-error hidden" style="margin-bottom:16px"></div>
       <form id="signup-form" novalidate>
         <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="you@company.com" autocomplete="email" /><span class="field-error"></span></div>
-          <div class="form-group"><label for="password">Password</label><input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" /><div class="pw-strength"><div class="pw-bar" id="bar1"></div><div class="pw-bar" id="bar2"></div><div class="pw-bar" id="bar3"></div><div class="pw-bar" id="bar4"></div></div><span class="field-error"></span></div>
-          <div class="form-group"><label for="confirm_password">Confirm Password</label><input type="password" id="confirm_password" placeholder="Repeat your password" autocomplete="new-password" /><span class="field-error"></span></div>
-          <button type="submit" class="btn btn-primary btn-block btn-lg" id="signup-btn"><span class="spinner"></span><span class="btn-text">Create Account</span></button>
+          <div class="form-group">
+            <label for="email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+            <div class="pw-wrap">
+              <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" />
+              <button type="button" class="pw-toggle" id="toggle-pw1" aria-label="Show/hide password">
+                <i class="fa-regular fa-eye" id="pw-icon1"></i>
+              </button>
+            </div>
+            <div class="pw-strength"><div class="pw-bar" id="bar1"></div><div class="pw-bar" id="bar2"></div><div class="pw-bar" id="bar3"></div><div class="pw-bar" id="bar4"></div></div>
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="confirm_password"><i class="fa-solid fa-lock"></i> Confirm Password</label>
+            <div class="pw-wrap">
+              <input type="password" id="confirm_password" placeholder="Repeat your password" autocomplete="new-password" />
+              <button type="button" class="pw-toggle" id="toggle-pw2" aria-label="Show/hide confirm password">
+                <i class="fa-regular fa-eye" id="pw-icon2"></i>
+              </button>
+            </div>
+            <span class="field-error"></span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="signup-btn">
+            <span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-user-plus"></i> Create Account</span>
+          </button>
         </div>
       </form>
       <div class="auth-footer">Already have an account? <a href="login.html">Sign in</a></div>
     </div>
+
     <div class="auth-card fade-in hidden" id="verify-step">
       <div class="logo"><div class="logo-dot"></div>Smart<span>Apply</span></div>
       <h2>Verify your email</h2><p class="subtitle" id="verify-subtitle">Enter the 6-digit code sent to your email</p>
@@ -33,7 +59,9 @@
         <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
         <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
       </div>
-      <button class="btn btn-primary btn-block btn-lg" id="verify-btn"><span class="spinner"></span><span class="btn-text">Verify Email</span></button>
+      <button class="btn btn-primary btn-block btn-lg" id="verify-btn">
+        <span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-circle-check"></i> Verify Email</span>
+      </button>
       <div class="auth-footer"><span id="resend-timer"></span><a href="#" id="resend-link" class="hidden">Resend code</a></div>
     </div>
   </div>
@@ -41,9 +69,25 @@
   <script>
     if (auth.isAuth) window.location.href = 'dashboard.html';
     let currentEmail = '', resendCountdown;
+
+    function makePwToggle(btnId, inputId, iconId) {
+      document.getElementById(btnId).addEventListener('click', () => {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+          input.type = 'text'; icon.className = 'fa-regular fa-eye-slash';
+        } else {
+          input.type = 'password'; icon.className = 'fa-regular fa-eye';
+        }
+      });
+    }
+    makePwToggle('toggle-pw1','password','pw-icon1');
+    makePwToggle('toggle-pw2','confirm_password','pw-icon2');
+
     const pwInput = document.getElementById('password');
     const bars = [1,2,3,4].map(i => document.getElementById('bar'+i));
     pwInput.addEventListener('input', () => renderStrength(bars, pwInput.value));
+
     document.getElementById('signup-form').addEventListener('submit', async e => {
       e.preventDefault(); clearErrors();
       const btn = document.getElementById('signup-btn');
@@ -69,12 +113,15 @@
       } catch (err) { errEl.textContent = err.detail || 'Something went wrong'; errEl.classList.remove('hidden'); }
       finally { setLoading(btn, false); }
     });
+
     document.querySelectorAll('#pin-inputs input').forEach((input, idx, inputs) => {
       input.addEventListener('input', e => { const val = e.target.value.replace(/\D/g,''); e.target.value = val; if (val) { e.target.classList.add('filled'); if (idx < inputs.length-1) inputs[idx+1].focus(); } else e.target.classList.remove('filled'); });
       input.addEventListener('keydown', e => { if (e.key==='Backspace' && !input.value && idx>0) { inputs[idx-1].focus(); inputs[idx-1].value=''; inputs[idx-1].classList.remove('filled'); } });
       input.addEventListener('paste', e => { e.preventDefault(); const text=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6); text.split('').forEach((ch,i)=>{ if(inputs[i]){inputs[i].value=ch;inputs[i].classList.add('filled');} }); if(text.length<6)inputs[text.length]?.focus(); else inputs[5].focus(); });
     });
-    function getPin(){return [...document.querySelectorAll('#pin-inputs input')].map(i=>i.value).join('');}
+
+    function getPin(){ return [...document.querySelectorAll('#pin-inputs input')].map(i=>i.value).join(''); }
+
     document.getElementById('verify-btn').addEventListener('click', async () => {
       const pin=getPin(); const btn=document.getElementById('verify-btn'); const errEl=document.getElementById('verify-error'); errEl.classList.add('hidden');
       if(pin.length!==6){errEl.textContent='Enter all 6 digits';errEl.classList.remove('hidden');return;}
@@ -83,6 +130,7 @@
       catch(err){errEl.textContent=err.detail||'Invalid code';errEl.classList.remove('hidden');}
       finally{setLoading(btn,false);}
     });
+
     function startResendTimer(seconds){
       const timerEl=document.getElementById('resend-timer'); const linkEl=document.getElementById('resend-link');
       linkEl.classList.add('hidden'); timerEl.textContent=`Resend in ${seconds}s`; clearInterval(resendCountdown);

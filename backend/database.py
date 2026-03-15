@@ -1,7 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
-from pymongo import IndexModel, ASCENDING
 from backend.config import MONGO_URI, DB_NAME
-import asyncio
 
 _client: AsyncIOMotorClient | None = None
 _db: AsyncIOMotorDatabase | None = None
@@ -35,7 +33,6 @@ def get_gridfs() -> AsyncIOMotorGridFSBucket:
 
 
 async def init_db():
-    """Create required indexes on startup. Non-fatal if DB is unreachable."""
     try:
         db = get_db()
         await db.users.create_index("email", unique=True)

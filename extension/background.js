@@ -1,34 +1,17 @@
-// ════════════════════════════════════════════════════════════════
-//  SmartApply Extension – Background Service Worker v2
-// ════════════════════════════════════════════════════════════════
+// SmartApply Extension – Background Service Worker v2
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('[SmartApply] Extension installed/updated');
 });
 
 // Relay BOT_LOG / BOT_STATS / BOT_STATUS from content → popup
+// Use a single listener — no duplication
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
   if (['BOT_LOG', 'BOT_STATS', 'BOT_STATUS'].includes(message.type)) {
+    // Only relay to popup, not back to content scripts
     chrome.runtime.sendMessage(message).catch(() => {});
     sendResponse({ ok: true });
     return false;
-  }
-
-  // API proxy: content script can ask background to make API calls
-  if (message.type === 'API_CALL') {
-    const { url, method, body, token } = message.payload || {};
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const opts = { method: method || 'GET', headers };
-    if (body) opts.body = JSON.stringify(body);
-
-    fetch(url, opts)
-      .then(r => r.json())
-      .then(data => sendResponse({ ok: true, data }))
-      .catch(err => sendResponse({ ok: false, error: err.message }));
-
-    return true;
   }
 
   sendResponse({ ok: true });

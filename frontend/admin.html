@@ -1,328 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — SmartApply</title>
-  <link rel="stylesheet" href="css/main.css" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — SmartApply</title><link rel="stylesheet" href="css/main.css" />
   <style>
-    .admin-grid { display: grid; grid-template-columns: 200px 1fr; gap: 28px; min-height: calc(100vh - 64px); }
-    .admin-sidebar { background: var(--bg-2); border-right: 1px solid var(--border); padding: 28px 14px; }
-    .admin-main { padding: 36px 40px; }
-    .key-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .key-row:last-child { border: none; }
-    .key-mono { font-family: monospace; font-size: 12px; color: var(--text-2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    @media (max-width: 700px) { .admin-grid { grid-template-columns: 1fr; } .admin-sidebar { display: none; } }
+    .admin-grid{display:grid;grid-template-columns:200px 1fr;gap:28px;min-height:calc(100vh - 64px)}
+    .admin-sidebar{background:var(--bg-2);border-right:1px solid var(--border);padding:28px 14px}
+    .admin-main{padding:36px 40px}
+    .key-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+    .key-row:last-child{border:none}
+    .key-mono{font-family:monospace;font-size:12px;color:var(--text-2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    @media(max-width:700px){.admin-grid{grid-template-columns:1fr}.admin-sidebar{display:none}.admin-main{padding:20px 16px}}
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div id="toast-container"></div>
-
+  <div class="bg-grid"></div><div id="toast-container"></div>
   <nav class="navbar">
     <div class="container">
       <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span> <span class="badge badge-warning" style="font-size:11px;margin-left:8px">Admin</span></a>
       <div class="nav-links">
-        <a href="dashboard.html" class="btn btn-ghost btn-sm">User Dashboard</a>
-        <button onclick="auth.logout()" class="btn btn-ghost btn-sm">Logout</button>
+        <a href="dashboard.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <button onclick="auth.logout()" class="btn btn-ghost btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
   </nav>
-
   <div class="page-wrapper">
     <div class="admin-grid">
       <aside class="admin-sidebar">
         <div class="sidebar-section-label">Admin</div>
-        <button class="sidebar-link active" onclick="showSection('overview', this)"><span class="icon">📊</span> Overview</button>
-        <button class="sidebar-link" onclick="showSection('smtp', this)"><span class="icon">📧</span> SMTP Config</button>
-        <button class="sidebar-link" onclick="showSection('keys', this)"><span class="icon">🔑</span> API Keys</button>
-        <button class="sidebar-link" onclick="showSection('users', this)"><span class="icon">👥</span> Users</button>
+        <button class="sidebar-link active" onclick="showSection('overview',this)"><span class="icon"><i class="fa-solid fa-chart-pie"></i></span> Overview</button>
+        <button class="sidebar-link" onclick="showSection('smtp',this)"><span class="icon"><i class="fa-solid fa-envelope"></i></span> SMTP Config</button>
+        <button class="sidebar-link" onclick="showSection('keys',this)"><span class="icon"><i class="fa-solid fa-key"></i></span> API Keys</button>
+        <button class="sidebar-link" onclick="showSection('users',this)"><span class="icon"><i class="fa-solid fa-users"></i></span> Users</button>
       </aside>
-
       <main class="admin-main">
         <!-- Overview -->
         <div id="sec-overview">
-          <h3 style="margin-bottom:24px">Platform Overview</h3>
+          <h3 style="margin-bottom:24px"><i class="fa-solid fa-chart-pie"></i> Platform Overview</h3>
           <div class="grid-3 stagger" id="admin-stats">
             <div class="stat-card skeleton" style="height:80px"></div>
             <div class="stat-card skeleton" style="height:80px"></div>
             <div class="stat-card skeleton" style="height:80px"></div>
           </div>
           <div class="card" style="margin-top:24px">
-            <h4 style="margin-bottom:16px">System Status</h4>
-            <div class="toggle-row">
-              <div>
-                <div style="font-size:14px;font-weight:500">API Health</div>
-                <div class="text-sm text-muted">FastAPI + MongoDB</div>
-              </div>
-              <span class="badge badge-success" id="api-health"><span class="status-dot running"></span> Loading…</span>
-            </div>
-            <div class="toggle-row" style="margin-top:8px">
-              <div>
-                <div style="font-size:14px;font-weight:500">NVIDIA NIM AI</div>
-                <div class="text-sm text-muted" id="key-count">Checking keys…</div>
-              </div>
-              <span class="badge" id="ai-status">—</span>
-            </div>
-            <div class="toggle-row" style="margin-top:8px">
-              <div>
-                <div style="font-size:14px;font-weight:500">SMTP Email</div>
-                <div class="text-sm text-muted" id="smtp-status-text">Checking…</div>
-              </div>
-              <span class="badge" id="smtp-badge">—</span>
-            </div>
+            <h4 style="margin-bottom:16px"><i class="fa-solid fa-server"></i> System Status</h4>
+            <div class="toggle-row"><div><div style="font-size:14px;font-weight:500">API Health</div><div class="text-sm text-muted">FastAPI + MongoDB</div></div><span class="badge badge-success" id="api-health"><span class="status-dot running"></span> Loading…</span></div>
+            <div class="toggle-row" style="margin-top:8px"><div><div style="font-size:14px;font-weight:500">NVIDIA NIM AI</div><div class="text-sm text-muted" id="key-count">Checking keys…</div></div><span class="badge" id="ai-status">—</span></div>
+            <div class="toggle-row" style="margin-top:8px"><div><div style="font-size:14px;font-weight:500">SMTP Email</div><div class="text-sm text-muted" id="smtp-status-text">Checking…</div></div><span class="badge" id="smtp-badge">—</span></div>
           </div>
         </div>
-
         <!-- SMTP -->
         <div id="sec-smtp" class="hidden">
-          <h3 style="margin-bottom:24px">SMTP Configuration</h3>
+          <h3 style="margin-bottom:24px"><i class="fa-solid fa-envelope"></i> SMTP Configuration</h3>
           <div class="card">
-            <div class="alert alert-info" style="margin-bottom:20px">
-              <span>ℹ</span><span>For Gmail: enable 2FA and create an App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com</a></span>
-            </div>
+            <div class="alert alert-info" style="margin-bottom:20px"><i class="fa-solid fa-circle-info"></i><span>For Gmail: enable 2FA and create an App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com</a></span></div>
             <div style="display:flex;flex-direction:column;gap:16px">
               <div class="grid-2">
                 <div class="form-group"><label>SMTP Host</label><input type="text" id="smtp_host" value="smtp.gmail.com" /></div>
                 <div class="form-group"><label>SMTP Port</label><input type="number" id="smtp_port" value="587" /></div>
               </div>
               <div class="form-group"><label>SMTP Username / Email</label><input type="email" id="smtp_user" placeholder="your@gmail.com" /></div>
-              <div class="form-group"><label>SMTP Password / App Password</label><input type="password" id="smtp_pass" placeholder="••••••••••••••••" /></div>
-              <div style="display:flex;gap:10px">
-                <button class="btn btn-primary" id="save-smtp-btn" onclick="saveSMTP()">
-                  <span class="spinner"></span><span class="btn-text">Save SMTP Config</span>
-                </button>
-                <button class="btn btn-ghost" onclick="testSMTP()">Send Test Email</button>
+              <div class="form-group"><label>SMTP Password / App Password</label><div class="pw-wrap"><input type="password" id="smtp_pass" placeholder="••••••••••••••••" /><button type="button" class="pw-toggle" onclick="togglePw('smtp_pass')"><i class="fa-regular fa-eye"></i></button></div></div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-primary" id="save-smtp-btn" onclick="saveSMTP()"><span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-floppy-disk"></i> Save SMTP Config</span></button>
+                <button class="btn btn-ghost" onclick="testSMTP()"><i class="fa-solid fa-paper-plane"></i> Send Test Email</button>
               </div>
             </div>
           </div>
         </div>
-
         <!-- API Keys -->
         <div id="sec-keys" class="hidden">
-          <h3 style="margin-bottom:24px">NVIDIA NIM API Keys</h3>
+          <h3 style="margin-bottom:24px"><i class="fa-solid fa-key"></i> NVIDIA NIM API Keys</h3>
           <div class="card" style="margin-bottom:20px">
-            <div class="alert alert-info" style="margin-bottom:16px">
-              <span>ℹ</span><span>Get free NVIDIA API keys at <a href="https://build.nvidia.com/models" target="_blank">build.nvidia.com/models</a>. Keys rotate automatically on rate limits.</span>
-            </div>
-            <h4 style="margin-bottom:12px">Current Model</h4>
+            <div class="alert alert-info" style="margin-bottom:16px"><i class="fa-solid fa-circle-info"></i><span>Get free NVIDIA API keys at <a href="https://build.nvidia.com/models" target="_blank">build.nvidia.com/models</a>. Keys rotate automatically on rate limits.</span></div>
+            <h4 style="margin-bottom:12px"><i class="fa-solid fa-robot"></i> Current Model</h4>
             <div class="form-group" style="margin-bottom:20px">
               <label>NVIDIA NIM Model</label>
               <select id="or_model">
-                <option value="meta/llama-3.3-70b-instruct">Llama 3.3 70B — best overall ⭐</option>
+                <option value="meta/llama-3.3-70b-instruct">Llama 3.3 70B — best overall</option>
                 <option value="meta/llama-3.1-70b-instruct">Llama 3.1 70B</option>
-                <option value="google/gemma-3-27b-it">Gemma 3 27B — fastest ⚡</option>
+                <option value="google/gemma-3-27b-it">Gemma 3 27B — fastest</option>
                 <option value="nvidia/llama-3.1-nemotron-70b-instruct">Nemotron 70B — NVIDIA tuned</option>
                 <option value="mistralai/mixtral-8x7b-instruct-v0.1">Mixtral 8x7B</option>
               </select>
             </div>
             <h4 style="margin-bottom:12px">Loaded Keys <span id="key-count-badge" class="badge badge-primary" style="font-size:12px">0</span></h4>
-            <div id="keys-list">
-              <div class="skeleton" style="height:40px;border-radius:var(--radius-sm);margin-bottom:6px"></div>
-              <div class="skeleton" style="height:40px;border-radius:var(--radius-sm)"></div>
-            </div>
+            <div id="keys-list"><div class="skeleton" style="height:40px;border-radius:var(--radius-sm);margin-bottom:6px"></div></div>
             <div style="margin-top:16px">
               <div class="form-group">
                 <label>Add New Key</label>
                 <div style="display:flex;gap:8px">
                   <input type="text" id="new-key-input" placeholder="nvapi-…" style="flex:1" />
-                  <button class="btn btn-primary" onclick="addKey()">Add</button>
+                  <button class="btn btn-primary" onclick="addKey()"><i class="fa-solid fa-plus"></i> Add</button>
                 </div>
               </div>
             </div>
-            <button class="btn btn-ghost" style="margin-top:12px" onclick="saveKeys()">
-              <span class="spinner"></span><span class="btn-text">Save Changes</span>
-            </button>
+            <button class="btn btn-ghost" style="margin-top:12px" onclick="saveKeys()"><span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-floppy-disk"></i> Save Changes</span></button>
           </div>
         </div>
-
         <!-- Users -->
         <div id="sec-users" class="hidden">
-          <h3 style="margin-bottom:24px">Registered Users</h3>
+          <h3 style="margin-bottom:24px"><i class="fa-solid fa-users"></i> Registered Users</h3>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Email</th><th>Verified</th><th>Profile</th><th>Resumes</th><th>Applications</th><th>Joined</th></tr></thead>
-              <tbody id="users-tbody">
-                <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr>
-              </tbody>
+              <thead><tr><th>Email</th><th>Role</th><th>Verified</th><th>Profile</th><th>Resumes</th><th>Applications</th><th>Joined</th></tr></thead>
+              <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
       </main>
     </div>
   </div>
-
   <script src="js/app.js"></script>
   <script>
     if (!auth.requireAuth()) throw new Error();
+
+    function togglePw(id) { const el = document.getElementById(id); if (!el) return; el.type = el.type === 'password' ? 'text' : 'password'; }
 
     let keysData = [];
 
     function showSection(name, btn) {
       document.querySelectorAll('[id^="sec-"]').forEach(s => s.classList.add('hidden'));
-      document.getElementById('sec-' + name).classList.remove('hidden');
+      document.getElementById('sec-'+name).classList.remove('hidden');
       document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
       if (name === 'keys') loadKeys();
       if (name === 'users') loadUsers();
     }
 
-    // ── Health checks ─────────────────────────────────────────────────────────
     async function checkHealth() {
-      try {
-        await api.get('/health');
-        document.getElementById('api-health').innerHTML = '<span class="status-dot running"></span> Online';
-        document.getElementById('api-health').className = 'badge badge-success';
-      } catch {
-        document.getElementById('api-health').innerHTML = '✕ Offline';
-        document.getElementById('api-health').className = 'badge badge-danger';
-      }
+      try { await api.get('/health'); document.getElementById('api-health').innerHTML = '<span class="status-dot running"></span> Online'; document.getElementById('api-health').className = 'badge badge-success'; }
+      catch { document.getElementById('api-health').innerHTML = '<i class="fa-solid fa-xmark"></i> Offline'; document.getElementById('api-health').className = 'badge badge-danger'; }
     }
 
     async function loadAdminStats() {
       try {
         const data = await api.get('/admin/stats');
         document.getElementById('admin-stats').innerHTML = `
-          <div class="stat-card fade-in">
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value">${data.total_users || 0}</div>
-          </div>
-          <div class="stat-card fade-in">
-            <div class="stat-label">Total Applications</div>
-            <div class="stat-value" style="color:var(--accent)">${data.total_applications || 0}</div>
-          </div>
-          <div class="stat-card fade-in">
-            <div class="stat-label">Active Sessions</div>
-            <div class="stat-value">${data.active_sessions || 0}</div>
-          </div>
+          <div class="stat-card fade-in"><div class="stat-label"><i class="fa-solid fa-users"></i> Total Users</div><div class="stat-value">${data.total_users||0}</div></div>
+          <div class="stat-card fade-in"><div class="stat-label"><i class="fa-solid fa-paper-plane"></i> Total Applications</div><div class="stat-value" style="color:var(--accent)">${data.total_applications||0}</div></div>
+          <div class="stat-card fade-in"><div class="stat-label"><i class="fa-solid fa-bolt"></i> Active Sessions</div><div class="stat-value">${data.active_sessions||0}</div></div>
         `;
-
-        // Key status — API returns nvidia_keys (not openrouter_keys)
         const keyCount = data.nvidia_keys || 0;
-        document.getElementById('key-count').textContent = `${keyCount} key${keyCount !== 1 ? 's' : ''} loaded`;
+        document.getElementById('key-count').textContent = `${keyCount} key${keyCount!==1?'s':''} loaded`;
         document.getElementById('ai-status').textContent = keyCount ? '✓ Active' : '✕ No keys';
-        document.getElementById('ai-status').className = `badge ${keyCount ? 'badge-success' : 'badge-danger'}`;
-
-        // SMTP status
+        document.getElementById('ai-status').className = `badge ${keyCount?'badge-success':'badge-danger'}`;
         const hasSMTP = data.smtp_configured;
         document.getElementById('smtp-status-text').textContent = hasSMTP ? data.smtp_user || 'Configured' : 'Not configured';
         document.getElementById('smtp-badge').textContent = hasSMTP ? '✓ Configured' : '✕ Not set';
-        document.getElementById('smtp-badge').className = `badge ${hasSMTP ? 'badge-success' : 'badge-warning'}`;
-      } catch {
-        document.getElementById('admin-stats').innerHTML = `
-          <div class="stat-card"><div class="stat-label">Status</div><div class="text-muted text-sm" style="margin-top:8px">Admin API not available</div></div>
-        `;
-      }
+        document.getElementById('smtp-badge').className = `badge ${hasSMTP?'badge-success':'badge-warning'}`;
+      } catch { document.getElementById('admin-stats').innerHTML = `<div class="stat-card"><div class="stat-label">Status</div><div class="text-muted text-sm" style="margin-top:8px">Admin API not available. Make sure your account has admin role.</div></div>`; }
     }
 
-    // ── SMTP ──────────────────────────────────────────────────────────────────
     async function saveSMTP() {
-      const btn = document.getElementById('save-smtp-btn');
-      setLoading(btn, true);
+      const btn = document.getElementById('save-smtp-btn'); setLoading(btn, true);
       try {
-        await api.put('/admin/smtp', {
-          smtp_host: document.getElementById('smtp_host').value,
-          smtp_port: parseInt(document.getElementById('smtp_port').value),
-          smtp_user: document.getElementById('smtp_user').value.trim(),
-          smtp_pass: document.getElementById('smtp_pass').value,
-        });
+        await api.put('/admin/smtp', { smtp_host: document.getElementById('smtp_host').value, smtp_port: parseInt(document.getElementById('smtp_port').value), smtp_user: document.getElementById('smtp_user').value.trim(), smtp_pass: document.getElementById('smtp_pass').value });
         showToast('SMTP config saved!', 'success');
-      } catch (err) {
-        showToast(err.detail || 'Could not save SMTP config', 'error');
-      } finally {
-        setLoading(btn, false);
-      }
+      } catch (err) { showToast(err.detail || 'Could not save SMTP config', 'error'); }
+      finally { setLoading(btn, false); }
     }
 
     async function testSMTP() {
-      const email = prompt('Send test email to:');
-      if (!email) return;
-      try {
-        await api.post('/admin/smtp/test', { to: email });
-        showToast(`Test email sent to ${email}`, 'success');
-      } catch (err) {
-        showToast(err.detail || 'Failed to send test email', 'error');
-      }
+      const email = prompt('Send test email to:'); if (!email) return;
+      try { await api.post('/admin/smtp/test', { to: email }); showToast(`Test email sent to ${email}`, 'success'); }
+      catch (err) { showToast(err.detail || 'Failed to send test email', 'error'); }
     }
 
-    // ── Keys ──────────────────────────────────────────────────────────────────
     async function loadKeys() {
       try {
         const data = await api.get('/admin/keys');
-        keysData = data.keys || [];
-        renderKeys();
+        keysData = data.keys || []; renderKeys();
         document.getElementById('or_model').value = data.model || 'meta/llama-3.3-70b-instruct';
-      } catch {
-        document.getElementById('keys-list').innerHTML = '<p class="text-muted text-sm">Could not load keys</p>';
-      }
+      } catch { document.getElementById('keys-list').innerHTML = '<p class="text-muted text-sm">Could not load keys</p>'; }
     }
 
     function renderKeys() {
       document.getElementById('key-count-badge').textContent = keysData.length;
-      if (!keysData.length) {
-        document.getElementById('keys-list').innerHTML = '<p class="text-muted text-sm">No keys loaded</p>';
-        return;
-      }
+      if (!keysData.length) { document.getElementById('keys-list').innerHTML = '<p class="text-muted text-sm">No keys loaded</p>'; return; }
       document.getElementById('keys-list').innerHTML = keysData.map((k, i) => `
         <div class="key-row">
-          <span class="badge badge-neutral" style="font-size:11px;min-width:24px;text-align:center">${i + 1}</span>
-          <span class="key-mono">${k.slice(0, 14)}…${k.slice(-8)}</span>
-          <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:12px" onclick="removeKey(${i})">✕</button>
-        </div>
-      `).join('');
+          <span class="badge badge-neutral" style="font-size:11px;min-width:24px;text-align:center">${i+1}</span>
+          <span class="key-mono">${k.slice(0,14)}…${k.slice(-8)}</span>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:12px" onclick="removeKey(${i})"><i class="fa-solid fa-xmark"></i></button>
+        </div>`).join('');
     }
 
     function addKey() {
-      const input = document.getElementById('new-key-input');
-      const val = input.value.trim();
+      const input = document.getElementById('new-key-input'); const val = input.value.trim();
       if (!val) return;
       if (!val.startsWith('nvapi-')) { showToast('Invalid NVIDIA key — must start with nvapi-', 'error'); return; }
       if (keysData.includes(val)) { showToast('Key already exists', 'info'); return; }
-      keysData.push(val);
-      input.value = '';
-      renderKeys();
+      keysData.push(val); input.value = ''; renderKeys();
       showToast('Key added (click Save to persist)', 'info');
     }
 
-    function removeKey(idx) {
-      keysData.splice(idx, 1);
-      renderKeys();
-    }
+    function removeKey(idx) { keysData.splice(idx, 1); renderKeys(); }
 
     async function saveKeys() {
-      try {
-        await api.put('/admin/keys', { keys: keysData, model: document.getElementById('or_model').value });
-        showToast('Keys saved!', 'success');
-      } catch (err) {
-        showToast(err.detail || 'Could not save keys', 'error');
-      }
+      try { await api.put('/admin/keys', { keys: keysData, model: document.getElementById('or_model').value }); showToast('Keys saved!', 'success'); }
+      catch (err) { showToast(err.detail || 'Could not save keys', 'error'); }
     }
 
-    // ── Users ─────────────────────────────────────────────────────────────────
     async function loadUsers() {
       try {
         const data = await api.get('/admin/users');
         const tbody = document.getElementById('users-tbody');
-        if (!data.users?.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-2)">No users found</td></tr>';
-          return;
-        }
+        if (!data.users?.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-2)">No users found</td></tr>'; return; }
         tbody.innerHTML = data.users.map(u => `
           <tr>
             <td>${escHtml(u.email)}</td>
-            <td>${u.is_verified ? '<span class="badge badge-success">✓</span>' : '<span class="badge badge-warning">Pending</span>'}</td>
-            <td>${u.has_profile ? '<span class="badge badge-success">Complete</span>' : '<span class="badge badge-neutral">Empty</span>'}</td>
-            <td>${u.resume_count || 0}</td>
-            <td>${u.app_count || 0}</td>
+            <td><span class="badge ${u.role==='admin'?'badge-warning':'badge-neutral'}">${u.role||'user'}</span></td>
+            <td>${u.is_verified?'<span class="badge badge-success"><i class="fa-solid fa-check"></i></span>':'<span class="badge badge-warning">Pending</span>'}</td>
+            <td>${u.has_profile?'<span class="badge badge-success">Complete</span>':'<span class="badge badge-neutral">Empty</span>'}</td>
+            <td>${u.resume_count||0}</td>
+            <td>${u.app_count||0}</td>
             <td class="text-muted">${formatDate(u.created_at)}</td>
-          </tr>
-        `).join('');
-      } catch {
-        document.getElementById('users-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">Could not load users.</td></tr>';
-      }
+          </tr>`).join('');
+      } catch { document.getElementById('users-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:32px">Could not load users. Make sure your account has admin role.</td></tr>'; }
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────────
     checkHealth();
     loadAdminStats();
   </script>

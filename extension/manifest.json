@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SmartApply – AI Job Bot",
-  "version": "2.0.0",
-  "description": "AI-powered LinkedIn Easy Apply automation. Fetches your profile from SmartApply and generates unique cover letters per job.",
+  "version": "2.1.0",
+  "description": "AI-powered LinkedIn Easy Apply automation. Sign in with your SmartApply account to auto-apply to jobs.",
   "permissions": [
     "activeTab",
     "storage",

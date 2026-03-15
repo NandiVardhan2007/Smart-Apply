@@ -1,51 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Upload Resume — SmartApply</title>
-  <link rel="stylesheet" href="css/main.css" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Resume — SmartApply</title><link rel="stylesheet" href="css/main.css" />
   <style>
     .resume-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
     .parsed-field{padding:8px 0;border-bottom:1px solid var(--border)}.parsed-field:last-child{border-bottom:none}
     .parsed-field .key{font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-3);margin-bottom:3px}
     .parsed-field .val{font-size:14px;color:var(--text)}
-    .resume-chip{display:flex;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:10px;transition:var(--transition)}
+    .resume-chip{display:flex;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:10px;transition:var(--transition);flex-wrap:wrap}
     .resume-chip:hover{border-color:var(--border-glow)}.resume-chip .name{font-weight:500;font-size:14px}
     .resume-chip .meta{font-size:12px;color:var(--text-2)}.resume-chip .actions{margin-left:auto;display:flex;gap:8px}
     @media(max-width:800px){.resume-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div id="toast-container"></div>
+  <div class="bg-grid"></div><div id="toast-container"></div>
   <nav class="navbar">
     <div class="container">
       <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
-      <div class="nav-links" id="nav-actions">
-        <a href="ats.html" class="btn btn-ghost btn-sm">ATS Analyzer</a>
+      <div class="nav-links">
+        <a href="dashboard.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <a href="ats.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-chart-simple"></i> ATS Analyzer</a>
       </div>
     </div>
   </nav>
   <div class="page-wrapper">
     <div class="container" style="padding-top:40px;padding-bottom:60px">
       <div style="margin-bottom:32px">
-        <h2>Resume Manager</h2>
+        <h2><i class="fa-solid fa-file-lines"></i> Resume Manager</h2>
         <p class="text-muted" style="margin-top:6px">Upload multiple resumes for different roles. We'll extract your details automatically.</p>
       </div>
       <div class="resume-grid">
         <div>
           <div class="card" style="margin-bottom:24px">
-            <h4 style="margin-bottom:20px">Upload New Resume</h4>
+            <h4 style="margin-bottom:20px"><i class="fa-solid fa-cloud-arrow-up"></i> Upload New Resume</h4>
             <div class="form-group" style="margin-bottom:16px">
               <label for="resume-label">Resume Label</label>
-              <input type="text" id="resume-label" placeholder="e.g. Software Engineer Resume" />
+              <input type="text" id="resume-label" placeholder="e.g. Java_Developer_Resume" />
             </div>
             <div class="upload-zone" id="upload-zone">
               <input type="file" id="resume-file" accept=".pdf" />
-              <div class="upload-icon">📄</div>
+              <div class="upload-icon"><i class="fa-solid fa-file-pdf" style="color:var(--danger)"></i></div>
               <h3>Drop your PDF here</h3>
-              <p>or click to browse · Max 5MB</p>
+              <p class="text-muted">or click to browse · Max 5MB</p>
             </div>
             <div id="upload-progress" class="hidden" style="margin-top:16px">
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
@@ -54,15 +52,15 @@
               </div>
               <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
             </div>
-            <div style="display:flex;gap:10px;margin-top:16px">
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
               <button class="btn btn-primary btn-lg" id="upload-btn" style="flex:1" disabled>
-                <span class="spinner"></span><span class="btn-text">Upload & Parse</span>
+                <span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-upload"></i> Upload &amp; Parse</span>
               </button>
-              <a href="profile.html" class="btn btn-ghost btn-lg">Enter manually</a>
+              <a href="profile.html" class="btn btn-ghost btn-lg"><i class="fa-solid fa-pen-to-square"></i> Enter manually</a>
             </div>
           </div>
           <div class="card">
-            <h4 style="margin-bottom:16px">Your Resumes</h4>
+            <h4 style="margin-bottom:16px"><i class="fa-solid fa-list"></i> Your Resumes</h4>
             <div id="resumes-list">
               <div class="skeleton" style="height:52px;border-radius:var(--radius);margin-bottom:8px"></div>
               <div class="skeleton" style="height:52px;border-radius:var(--radius)"></div>
@@ -72,17 +70,17 @@
         <div>
           <div class="card" id="parsed-preview" style="display:none">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h4>Parsed Details</h4>
-              <span class="badge badge-success">✓ Extracted</span>
+              <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Parsed Details</h4>
+              <span class="badge badge-success"><i class="fa-solid fa-check"></i> Extracted</span>
             </div>
             <div id="parsed-fields"></div>
-            <div style="margin-top:20px;display:flex;gap:10px">
-              <button class="btn btn-primary btn-lg" style="flex:1" onclick="useForProfile()">Use for Profile →</button>
+            <div style="margin-top:20px">
+              <button class="btn btn-primary btn-lg" style="width:100%" onclick="useForProfile()"><i class="fa-solid fa-arrow-right"></i> Use for Profile</button>
             </div>
           </div>
           <div class="card" id="parsed-placeholder">
             <div style="text-align:center;padding:48px 20px">
-              <div style="font-size:48px;margin-bottom:16px">📋</div>
+              <i class="fa-solid fa-file-circle-question" style="font-size:48px;color:var(--text-3);margin-bottom:16px;display:block"></i>
               <h4 style="margin-bottom:8px">Parsed details will appear here</h4>
               <p class="text-muted text-sm">Upload a PDF resume and we'll extract your profile automatically</p>
             </div>
@@ -102,37 +100,28 @@
     zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
     zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); const file = e.dataTransfer.files[0]; if (file?.type === 'application/pdf') { selectedFile = file; updateZoneUI(); } else showToast('Only PDF files are accepted', 'error'); });
     fileInput.addEventListener('change', () => { selectedFile = fileInput.files[0]; updateZoneUI(); });
-    function updateZoneUI() { if (selectedFile) { zone.querySelector('h3').textContent = selectedFile.name; zone.querySelector('p').textContent = (selectedFile.size / 1024).toFixed(0) + ' KB'; uploadBtn.disabled = false; } }
+    function updateZoneUI() { if (selectedFile) { zone.querySelector('h3').textContent = selectedFile.name; zone.querySelector('p').textContent = (selectedFile.size/1024).toFixed(0)+' KB'; uploadBtn.disabled = false; } }
     uploadBtn.addEventListener('click', async () => {
       if (!selectedFile) return;
       const label = document.getElementById('resume-label').value.trim() || 'Default';
       setLoading(uploadBtn, true);
       document.getElementById('upload-progress').classList.remove('hidden');
       let pct = 0;
-      const interval = setInterval(() => { pct = Math.min(pct + 8, 85); document.getElementById('progress-fill').style.width = pct + '%'; document.getElementById('upload-pct').textContent = pct + '%'; }, 180);
-      const form = new FormData();
-      form.append('file', selectedFile);
-      form.append('label', label);
+      const interval = setInterval(() => { pct = Math.min(pct+8,85); document.getElementById('progress-fill').style.width=pct+'%'; document.getElementById('upload-pct').textContent=pct+'%'; }, 180);
+      const form = new FormData(); form.append('file', selectedFile); form.append('label', label);
       try {
         const data = await api.upload('/resume/upload', form);
-        clearInterval(interval);
-        document.getElementById('progress-fill').style.width = '100%';
-        document.getElementById('upload-pct').textContent = '100%';
-        parsedData = data.parsed;
-        showParsed(parsedData);
-        showToast('Resume uploaded and parsed!', 'success');
-        loadResumes();
+        clearInterval(interval); document.getElementById('progress-fill').style.width='100%'; document.getElementById('upload-pct').textContent='100%';
+        parsedData = data.parsed; showParsed(parsedData); showToast('Resume uploaded and parsed!', 'success'); loadResumes();
       } catch (err) { clearInterval(interval); showToast(err.detail || 'Upload failed', 'error'); }
       finally { setLoading(uploadBtn, false); setTimeout(() => document.getElementById('upload-progress').classList.add('hidden'), 1000); }
     });
     function showParsed(data) {
       if (!data || data.error) { showToast('Could not parse resume details', 'error'); return; }
-      document.getElementById('parsed-placeholder').style.display = 'none';
-      document.getElementById('parsed-preview').style.display = 'block';
-      const fields = [['Name',[data.first_name,data.middle_name,data.last_name].filter(Boolean).join(' ')],['Email',data.email],['Phone',data.phone_number],['City',data.current_city],['Experience',data.years_of_experience ? data.years_of_experience + ' years' : ''],['Skills',data.skills_summary?.slice(0,120)],['Headline',data.linkedin_headline],['Search Terms',data.search_terms?.join(', ')]];
-      const container = document.getElementById('parsed-fields');
-      container.innerHTML = '';
-      fields.forEach(([key, val]) => { if (!val) return; container.innerHTML += `<div class="parsed-field"><div class="key">${escHtml(key)}</div><div class="val">${escHtml(val)}</div></div>`; });
+      document.getElementById('parsed-placeholder').style.display='none';
+      document.getElementById('parsed-preview').style.display='block';
+      const fields=[['Name',[data.first_name,data.middle_name,data.last_name].filter(Boolean).join(' ')],['Email',data.email],['Phone',data.phone_number],['City',data.current_city],['Experience',data.years_of_experience?data.years_of_experience+' years':''],['Skills',data.skills_summary?.slice(0,120)],['Headline',data.linkedin_headline],['Search Terms',data.search_terms?.join(', ')]];
+      document.getElementById('parsed-fields').innerHTML = fields.filter(([k,v])=>v).map(([k,v])=>`<div class="parsed-field"><div class="key">${escHtml(k)}</div><div class="val">${escHtml(v)}</div></div>`).join('');
     }
     function useForProfile() { if (parsedData) { sessionStorage.setItem('parsed_profile', JSON.stringify(parsedData)); window.location.href = 'profile.html?from=resume'; } }
     async function loadResumes() {
@@ -140,8 +129,8 @@
         const data = await api.get('/resume/list');
         const list = document.getElementById('resumes-list');
         if (!data.resumes.length) { list.innerHTML = '<p class="text-muted text-sm" style="padding:8px">No resumes uploaded yet</p>'; return; }
-        list.innerHTML = data.resumes.map(r => `<div class="resume-chip"><div style="font-size:24px">📄</div><div><div class="name">${escHtml(r.label||r.filename)}</div><div class="meta">${escHtml(r.parsed_name||'')} · ${formatDate(r.uploaded_at)}</div></div><div class="actions"><button class="btn btn-ghost btn-sm" onclick="deleteResume('${r.file_id}',this)">Delete</button></div></div>`).join('');
-      } catch { document.getElementById('resumes-list').innerHTML = '<p class="text-muted text-sm" style="padding:8px">Could not load resumes</p>'; }
+        list.innerHTML = data.resumes.map(r => `<div class="resume-chip"><i class="fa-solid fa-file-pdf" style="font-size:24px;color:var(--danger)"></i><div><div class="name">${escHtml(r.label||r.filename)}</div><div class="meta">${escHtml(r.parsed_name||'')} · ${formatDate(r.uploaded_at)}</div></div><div class="actions"><button class="btn btn-ghost btn-sm" onclick="deleteResume('${r.file_id}',this)"><i class="fa-solid fa-trash"></i> Delete</button></div></div>`).join('');
+      } catch { document.getElementById('resumes-list').innerHTML = '<p class="text-muted text-sm">Could not load resumes</p>'; }
     }
     async function deleteResume(fileId, btn) {
       if (!confirm('Delete this resume?')) return;

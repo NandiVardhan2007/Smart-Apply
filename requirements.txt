@@ -10,3 +10,4 @@ python-multipart>=0.0.9
 pdfminer.six>=20221105
 dnspython>=2.6.1
 httpx>=0.27.0
+cryptography>=42.0.0
