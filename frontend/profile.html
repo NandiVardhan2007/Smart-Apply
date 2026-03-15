@@ -271,6 +271,11 @@
     var _parsedResume = null;
     try { _parsedResume = JSON.parse(sessionStorage.getItem('parsed_profile') || 'null'); } catch(e) {}
 
+    // Full resume text context — populated when a resume is parsed/uploaded.
+    // Contains education, experience, skills, projects, certifications extracted from PDF.
+    // This is the richest signal available — used in every AI prompt for accuracy.
+    var _resumeRawCtx = (_parsedResume && _parsedResume.user_information_all) || '';
+
     // tag input helpers — kept so we can re-init when AI appends tags
     var _stHelper, _bwHelper;
 
@@ -305,12 +310,11 @@
       if (loading) b.classList.add('ai-loading'); else b.classList.remove('ai-loading');
     }
 
-    // Builds a detailed context string including education, projects, skills, certifications
-    // pulled from every filled field on the page so the AI has maximum signal.
+    // Builds a detailed context string from every filled field on the page.
+    // Works for any profile type: student, fresher, experienced, IT, MBA, marketing, etc.
     function profileCtx() {
       var parts = [];
 
-      // Personal
       var fn = document.getElementById('first_name').value.trim();
       var ln = document.getElementById('last_name').value.trim();
       if (fn || ln) parts.push('Candidate name: ' + [fn, ln].filter(Boolean).join(' '));
@@ -321,42 +325,58 @@
       var loc = [city, state, country].filter(Boolean).join(', ');
       if (loc) parts.push('Location: ' + loc);
 
-      // Experience level
       var yoe = document.getElementById('years_of_experience').value;
-      var yoeMap = {'0':'Fresher / final-year student (0 years experience)','1':'1 year experience','2':'2 years experience','3':'3 years experience','4':'4 years experience','5':'5 years experience','6':'6+ years experience'};
-      parts.push('Experience level: ' + (yoeMap[yoe] || yoe + ' years'));
+      var yoeMap = {
+        '0': '0 years (fresher / student)',
+        '1': '1 year',
+        '2': '2 years',
+        '3': '3 years',
+        '4': '4 years',
+        '5': '5 years',
+        '6': '6+ years'
+      };
+      parts.push('Years of experience: ' + (yoeMap[yoe] || yoe + ' years'));
 
       var re = document.getElementById('recent_employer').value.trim();
-      if (re && re.toLowerCase() !== 'fresher') parts.push('Recent employer / college: ' + re);
+      if (re) parts.push('Recent employer / institution: ' + re);
 
-      // Already filled AI fields (so re-generating improves on them)
       var sk = document.getElementById('skills_summary').value.trim();
-      if (sk) parts.push('Known skills: ' + sk);
+      if (sk) parts.push('Skills: ' + sk);
 
       var hl = document.getElementById('linkedin_headline').value.trim();
       if (hl) parts.push('Current headline: ' + hl);
 
       var sm = document.getElementById('linkedin_summary').value.trim();
-      if (sm) parts.push('Current summary: ' + sm.slice(0, 300));
+      if (sm) parts.push('Current summary: ' + sm.slice(0, 400));
 
-      // Search terms already set
+      var cl = document.getElementById('cover_letter').value.trim();
+      if (cl) parts.push('Cover letter excerpt: ' + cl.slice(0, 200));
+
       try {
         var terms = JSON.parse(document.getElementById('search_terms').value || '[]');
         if (terms.length) parts.push('Target job titles: ' + terms.slice(0, 5).join(', '));
       } catch(e) {}
 
-      // LinkedIn / website
       var li = document.getElementById('linkedin_profile').value.trim();
       if (li) parts.push('LinkedIn: ' + li);
       var wb = document.getElementById('website').value.trim();
       if (wb) parts.push('Portfolio/website: ' + wb);
 
-      // If nothing useful filled, return a helpful fallback that still steers the AI
-      if (parts.length <= 2) {
-        return 'Candidate: Entry-level / fresher software developer in India. Skills: Java, Python, C, C++, HTML, CSS, JavaScript, SQL. Education: B.Tech in Information Technology (2nd year). Projects: Java GUI Calculator, ATM Simulation, Python Games (Pygame), Personal Portfolio Website with REST API backend.';
+      var salary = document.getElementById('desired_salary').value.trim();
+      if (salary && salary !== '0') parts.push('Desired salary (INR): ' + salary);
+
+      // Append full resume text context if available (contains projects, certs, education, all skills)
+      var extra = '';
+      if (typeof _resumeRawCtx !== 'undefined' && _resumeRawCtx) {
+        extra = '\n\nFull resume details:\n' + _resumeRawCtx;
       }
 
-      return parts.join('\n');
+      // Generic fallback — no hardcoded field/domain assumptions
+      if (parts.length <= 2 && !extra) {
+        return 'Job seeker in India. Please fill in at least your skills, years of experience, and recent employer to get accurate AI suggestions.';
+      }
+
+      return parts.join('\n') + extra;
     }
 
     // Parse a JSON array from AI response, fallback to comma-split
@@ -421,12 +441,12 @@
       var jobTitle = terms[0] || 'Software Developer Intern';
       var ctx = profileCtx();
       // Enrich context with explicit instruction for cover letter quality
-      var enriched = ctx + '\n\nIMPORTANT: This is a fresher/student applying in India. The cover letter must:\n' +
-        '- Mention specific projects they built (not generic "I have experience")\n' +
-        '- Mention real technologies they know (Java, Python, SQL, etc.)\n' +
+      var enriched = ctx + '\n\nIMPORTANT instructions for this cover letter:\n' +
+        '- Adapt to their actual background: if IT student mention projects/code; if experienced professional mention real work outcomes\n' +
+        '- Mention specific things from their profile (projects, tools, quantified results, internships) — no generic filler\n' +
         '- Be concise: 3 short paragraphs, under 200 words\n' +
-        '- Not use filler phrases like "I am thrilled" or "esteemed organization"\n' +
-        '- End with a clear call to action';
+        '- Do NOT use filler phrases like "I am thrilled", "esteemed organization", "passionate learner"\n' +
+        '- End with a clear call to action (e.g. "I am available immediately and look forward to discussing...")';
       try {
         var r = await api.post('/ai/cover-letter', { user_info: enriched, job_title: jobTitle, company: 'your organisation' });
         var val = (r.cover_letter||'').trim();
@@ -465,14 +485,15 @@
       try {
         var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'Suggest LinkedIn job search terms for this candidate. Rules:\n' +
-            '- They are a fresher/student in India looking for internships or entry-level jobs\n' +
-            '- Suggest 7-8 realistic job titles that match their actual skills\n' +
-            '- Include both "Intern" and non-intern variants (e.g. "Java Developer Intern", "Java Developer")\n' +
-            '- Focus on their real tech stack: Java, Python, SQL, web development\n' +
-            '- Include roles for Indian job market (e.g. "Software Trainee", "Graduate Trainee")\n' +
-            '- Do NOT suggest senior/lead/manager roles\n' +
-            '- Return ONLY a JSON array of strings. Example: ["Java Developer Intern","Python Developer","Full Stack Developer Intern"]\n' +
+          question: 'Suggest LinkedIn job search terms (job titles) for this candidate. Rules:\n' +
+            '- Read their profile carefully: education, skills, experience level, domain (IT/MBA/Marketing/Finance/etc.)\n' +
+            '- Suggest 7-8 realistic job titles that match their ACTUAL background — not generic ones\n' +
+            '- If 0 years experience (fresher/student): include both Intern and entry-level variants\n' +
+            '- If they have real work experience: suggest full-time roles at their level, no intern variants\n' +
+            '- Match their domain: IT candidate → dev/tech roles; MBA/CRM candidate → CRM/marketing/sales roles\n' +
+            '- Include Indian job market titles (e.g. "Graduate Trainee", "Executive", "Analyst")\n' +
+            '- Do NOT suggest roles from an unrelated domain (e.g. do not suggest coding roles to a CRM/MBA candidate)\n' +
+            '- Return ONLY a JSON array of strings. Example: ["CRM Executive","Marketing Analyst","Inside Sales Executive"]\n' +
             '- No explanation, just the JSON array.',
           user_info: ctx
         });
@@ -493,14 +514,15 @@
       try {
         var ctx = profileCtx();
         var r = await api.post('/ai/answer-question', {
-          question: 'Suggest job search keywords this candidate should SKIP (bad words filter). Rules:\n' +
-            '- They are a fresher/student — skip any job requiring years of experience they do not have\n' +
-            '- Skip roles that require seniority: "Senior", "Lead", "Manager", "Director", "Head of"\n' +
-            '- Skip experience requirements they cannot meet: "5+ years", "7+ years", "10+ years"\n' +
-            '- Skip irrelevant specializations far from their skills\n' +
-            '- Skip US/non-India requirements if they are based in India: "US Citizen", "Need H1B"\n' +
-            '- Keep the list to 8-10 specific, commonly appearing phrases\n' +
-            '- Return ONLY a JSON array of strings. Example: ["Senior Developer","5+ years","Team Lead","Manager"]\n' +
+          question: 'Suggest keywords this candidate should SKIP in their job search (bad words filter). Rules:\n' +
+            '- Read their profile carefully to understand their level, domain, and what they are NOT suited for\n' +
+            '- Skip seniority they do not have: if fresher → skip "Senior/Lead/Manager"; if 1-2 yrs → skip "10+ years/Director"\n' +
+            '- Skip experience requirements beyond their level: e.g. "8+ years", "10+ years", "15 years"\n' +
+            '- Skip roles from a completely different domain (e.g. for an IT dev candidate: "Sales Executive", "HR Manager")\n' +
+            '- Skip location/visa requirements irrelevant to them (e.g. "US Citizen", "Need H1B", "On-site UK")\n' +
+            '- Skip highly specialized fields they have no background in\n' +
+            '- Keep the list to 8-10 specific, commonly appearing phrases that would actually appear in job titles/requirements\n' +
+            '- Return ONLY a JSON array of strings. Example: ["Senior","10+ years","Director","US Citizen","PhD required"]\n' +
             '- No explanation, just the JSON array.',
           user_info: ctx
         });
@@ -523,6 +545,10 @@
        'linkedin_summary','cover_letter','skills_summary'].forEach(function(k){ fillIf(k, _parsedResume[k]); });
       if (_parsedResume.search_terms && _parsedResume.search_terms.length)
         _stHelper = initTagInput('search-terms-tags', 'search_terms', _parsedResume.search_terms);
+      // Update the raw context so AI buttons use the newly parsed resume data
+      if (_parsedResume && _parsedResume.user_information_all) {
+        _resumeRawCtx = _parsedResume.user_information_all;
+      }
       showToast('Profile pre-filled from your resume!', 'success');
       sessionStorage.removeItem('parsed_profile'); _parsedResume = null;
     }
