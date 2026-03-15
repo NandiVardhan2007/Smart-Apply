@@ -1,3 +1,6 @@
+// Cross-browser shim — must be first
+if(typeof browser!=='undefined'&&typeof chrome==='undefined'){globalThis.chrome=browser;}
+
 // ════════════════════════════════════════════════════════════════
 //  SmartApply Extension – Content Script v3
 // ════════════════════════════════════════════════════════════════
@@ -263,9 +266,62 @@ async function closeModal() {
 
 async function handleDone() {
   await sleep(1000);
-  const done = Array.from(document.querySelectorAll('button')).find(b => ['done','not now','dismiss'].some(t => b.textContent.trim().toLowerCase().includes(t)));
+  // Check for daily limit message BEFORE looking for Done button
+  if (checkDailyLimit()) return;
+  const done = Array.from(document.querySelectorAll('button')).find(b =>
+    ['done','not now','dismiss'].some(t => b.textContent.trim().toLowerCase().includes(t))
+  );
   if (done) done.click(); else await closeModal();
   await sleep(500);
+}
+
+// ── Daily submission limit detector ──────────────────────────────
+// Detects LinkedIn's "We limit daily submissions" message and stops
+// the bot cleanly instead of treating it as an error.
+function checkDailyLimit() {
+  const LIMIT_PHRASES = [
+    'we limit daily submissions',
+    'limit daily submissions',
+    'apply tomorrow',
+    'save this job and apply tomorrow',
+    'daily application limit',
+    'too many applications',
+    'submission limit reached',
+    'apply again tomorrow',
+  ];
+
+  const pageText = document.body.innerText.toLowerCase();
+  const hit = LIMIT_PHRASES.some(p => pageText.includes(p));
+
+  if (hit) {
+    panelLog('🚫 LinkedIn daily application limit reached!', 'err');
+    panelLog('💡 Limit resets at midnight. Run the bot again tomorrow.', 'warn');
+    panelLog(`📊 Today's total: ${STATS.applied} applied, ${STATS.skipped} skipped`, 'info');
+    setStatus('Daily limit hit', 'err');
+
+    // Stop the bot cleanly
+    BOT_RUNNING = false;
+    chrome.storage.local.set({ botRunning: false });
+    chrome.runtime.sendMessage({ type: 'BOT_STATUS', running: false }).catch(() => {});
+    chrome.runtime.sendMessage({
+      type: 'BOT_LOG',
+      text: `🚫 Daily limit reached — ${STATS.applied} applied today. Try again tomorrow.`,
+      level: 'err'
+    }).catch(() => {});
+
+    // Close any open modal / dismiss LinkedIn's popup
+    setTimeout(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const dismiss = btns.find(b => {
+        const t = b.textContent.trim().toLowerCase();
+        return t.includes('save') || t.includes('dismiss') || t.includes('not now') || t.includes('close') || t.includes('cancel');
+      });
+      if (dismiss) dismiss.click();
+    }, 800);
+
+    return true;
+  }
+  return false;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -696,9 +752,17 @@ async function applyToJob(card) {
   await humanClick(eBtn);
   await humanDelay(CONFIG.humanMode ? 1200 : 600, CONFIG.humanMode ? 2800 : 1300);
 
+  // Check if LinkedIn showed the daily limit popup instead of the modal
+  await sleep(600);
+  if (checkDailyLimit()) return false;
+
   let modal;
   try { modal = await waitForModal(9000); panelLog('  📋 Modal open', 'info'); }
-  catch { panelLog('  ✗ Modal did not open', 'err'); STATS.errors++; updateStats(); return false; }
+  catch {
+    // One more limit check — sometimes it appears after modal fails to open
+    if (checkDailyLimit()) return false;
+    panelLog('  ✗ Modal did not open', 'err'); STATS.errors++; updateStats(); return false;
+  }
 
   for (let step = 0; step < 15 && BOT_RUNNING; step++) {
     await humanDelay(300, 600);
@@ -717,6 +781,8 @@ async function applyToJob(card) {
       await humanDelay(CONFIG.humanMode ? 500 : 150, CONFIG.humanMode ? 1200 : 450);
       await humanClick(submitBtn);
       await humanDelay(1400, 2400);
+      // Check daily limit right after submit — LinkedIn sometimes shows it here
+      if (checkDailyLimit()) { setCurrentJob(''); return false; }
       await handleDone();
       STATS.applied++; updateStats();
       await logApp(title, company, link, 'Applied');
@@ -782,6 +848,8 @@ async function startBot(config) {
       for (const card of todo) {
         if (!BOT_RUNNING) break;
         if (config.maxApps > 0 && STATS.applied >= config.maxApps) { panelLog(`🎯 Reached max (${config.maxApps})`, 'ok'); BOT_RUNNING = false; break; }
+        // Check for daily limit banner before each application
+        if (checkDailyLimit()) break;
         try { await applyToJob(card); }
         catch (e) { panelLog(`Error: ${e.message}`, 'err'); STATS.errors++; updateStats(); try { await closeModal(); } catch {} await sleep(1500); }
         if (BOT_RUNNING) { const gap = config.humanMode ? 3500 + Math.random() * 4500 : 1800; panelLog(`  ⏱ ${Math.round(gap/1000)}s pause…`, 'info'); await sleep(gap); }
