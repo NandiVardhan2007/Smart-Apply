@@ -33,15 +33,6 @@ def check_env():
     else:
         print("✅ .env loaded")
 
-    keys_path = BASE / "working_keys.json"
-    if keys_path.exists():
-        import json
-        with open(keys_path) as f:
-            keys = json.load(f).get("keys", [])
-        print(f"✅ OpenRouter keys: {len(keys)} loaded")
-    else:
-        print("⚠️  working_keys.json not found — AI features disabled")
-
     admin_path = BASE / "admin_config.json"
     if admin_path.exists():
         print("✅ admin_config.json found")

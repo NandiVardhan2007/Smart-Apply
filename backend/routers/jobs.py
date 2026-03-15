@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from bson import ObjectId
@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 
 from backend.database import get_db
 from backend.auth import get_current_user
-from backend.services.bot_service import start_bot_session, stop_bot_session, get_bot_status
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -16,17 +15,16 @@ class ApplicationLog(BaseModel):
     job_title: str
     company: str
     job_link: Optional[str] = None
-    result: str  # "Applied", "Failed", "Skipped"
+    result: str  # "Applied", "Failed", "Skipped", "Dry Run"
     reason: Optional[str] = None
 
 
-class BotStartRequest(BaseModel):
-    platform: str = "linkedin"
-    resume_file_id: Optional[str] = None
-
-
 @router.post("/log")
-async def log_application(body: ApplicationLog, current_user: dict = Depends(get_current_user)):
+async def log_application(
+    body: ApplicationLog,
+    current_user: dict = Depends(get_current_user),
+):
+    """Log a job application submitted by the Chrome extension."""
     db = get_db()
     doc = {
         "user_id": current_user["user_id"],
@@ -62,7 +60,11 @@ async def get_history(
     docs = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
-        doc["applied_at"] = doc["applied_at"].isoformat() if hasattr(doc["applied_at"], "isoformat") else str(doc["applied_at"])
+        doc["applied_at"] = (
+            doc["applied_at"].isoformat()
+            if hasattr(doc["applied_at"], "isoformat")
+            else str(doc["applied_at"])
+        )
         docs.append(doc)
 
     return {"total": total, "applications": docs}
@@ -75,7 +77,7 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
 
     pipeline = [
         {"$match": {"user_id": uid}},
-        {"$group": {"_id": "$result", "count": {"$sum": 1}}}
+        {"$group": {"_id": "$result", "count": {"$sum": 1}}},
     ]
     result = {}
     async for doc in db.applications.aggregate(pipeline):
@@ -83,7 +85,7 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
 
     platform_pipeline = [
         {"$match": {"user_id": uid}},
-        {"$group": {"_id": "$platform", "count": {"$sum": 1}}}
+        {"$group": {"_id": "$platform", "count": {"$sum": 1}}},
     ]
     platforms = {}
     async for doc in db.applications.aggregate(platform_pipeline):
@@ -99,173 +101,11 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
     }
 
 
-@router.post("/bot/start")
-async def start_bot(
-    body: BotStartRequest,
-    background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user),
-):
-    db = get_db()
-    user = await db.users.find_one({"_id": ObjectId(current_user["user_id"])})
-    if not user:
-        raise HTTPException(404, detail="User not found")
-
-    profile = user.get("profile", {})
-    if not profile.get("first_name"):
-        raise HTTPException(400, detail="Complete your profile before starting automation")
-
-    platform_accounts = user.get("platform_accounts", {})
-    if body.platform == "linkedin":
-        li_email = (platform_accounts.get("linkedin_email") or "").strip()
-        li_pass  = (platform_accounts.get("linkedin_password") or "").strip()
-        if not li_email:
-            raise HTTPException(400, detail="LinkedIn email not set — go to Profile → Platform Logins")
-        if len(li_pass) < 5:
-            raise HTTPException(400, detail="LinkedIn password is missing or too short — go to Profile → Platform Logins and re-enter it")
-
-    job_prefs = user.get("job_preferences", {})
-    search_terms = (job_prefs.get("search_terms") or [])
-    if not search_terms:
-        raise HTTPException(400, detail="No job search terms set — go to Profile → Job Preferences and add at least one job title")
-    resume_list = user.get("resumes", [])
-
-    background_tasks.add_task(
-        start_bot_session,
-        user_id=current_user["user_id"],
-        user_email=current_user["email"],
-        platform=body.platform,
-        profile=profile,
-        platform_accounts=platform_accounts,
-        job_prefs=job_prefs,
-        resume_file_id=body.resume_file_id or (resume_list[0]["file_id"] if resume_list else None),
-    )
-
-    return {"message": f"Bot starting for {body.platform}. Check dashboard for status."}
-
-
-@router.post("/bot/stop")
-async def stop_bot(current_user: dict = Depends(get_current_user)):
-    stopped = await stop_bot_session(current_user["user_id"])
-    return {"message": "Bot stopped" if stopped else "No active bot session"}
-
-
-@router.get("/bot/status")
-async def bot_status(current_user: dict = Depends(get_current_user)):
-    status = await get_bot_status(current_user["user_id"])
-    return status
-
-
-@router.get("/bot/logs")
-async def bot_logs(
-    offset: int = 0,
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Poll bot log file for new lines since `offset` (byte position).
-    Returns { lines: [...], next_offset: int }
-    """
-    import os
-    from pathlib import Path
-
-    user_id = current_user["user_id"]
-    ws = Path(os.path.expanduser("~")) / ".smartapply" / "workspaces" / user_id
-    log_path = ws / "logs" / "log.txt"
-
-    lines = []
-    next_offset = offset
-
-    if log_path.exists():
-        file_size = log_path.stat().st_size
-        if offset > file_size:
-            offset = 0
-        if file_size > offset:
-            with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-                f.seek(offset)
-                chunk = f.read(32768)
-                next_offset = f.tell()
-                lines = [ln for ln in chunk.splitlines() if ln.strip()]
-
-    return {"lines": lines, "next_offset": next_offset}
-
-
-class LinkedInCookiesRequest(BaseModel):
-    cookies: list
-
-
-@router.post("/linkedin-cookies")
-async def save_linkedin_cookies(
-    body: LinkedInCookiesRequest,
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Accept LinkedIn session cookies exported from the user's browser and save
-    them to the user's workspace so the bot can use them to authenticate.
-    """
-    import json, os
-    from pathlib import Path
-
-    if not body.cookies or not isinstance(body.cookies, list):
-        raise HTTPException(status_code=400, detail="cookies must be a non-empty array")
-
-    # Require li_at — the primary LinkedIn auth cookie
-    names = [c.get("name", "") for c in body.cookies]
-    if "li_at" not in names:
-        raise HTTPException(
-            status_code=400,
-            detail="li_at cookie not found. Follow the setup instructions to copy it from DevTools → Application → Cookies."
-        )
-
-    # Validate li_at value is non-empty and looks plausible
-    li_at_cookie = next((c for c in body.cookies if c.get("name") == "li_at"), None)
-    if not li_at_cookie or len(li_at_cookie.get("value", "")) < 50:
-        raise HTTPException(
-            status_code=400,
-            detail="li_at value looks invalid (too short). Make sure you copied the full value from DevTools."
-        )
-
-    user_id = current_user["user_id"]
-    ws = Path(os.path.expanduser("~")) / ".smartapply" / "workspaces" / user_id
-    logs_dir = ws / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    cookie_path = logs_dir / "linkedin_session.json"
-    with open(cookie_path, "w", encoding="utf-8") as f:
-        json.dump(body.cookies, f, indent=2)
-
-    return {
-        "ok": True,
-        "message": f"Saved {len(body.cookies)} cookies. The bot will use these to authenticate.",
-        "cookie_count": len(body.cookies),
-        "has_li_at": True,
-    }
-
-
-@router.get("/linkedin-cookies/status")
-async def linkedin_cookies_status(current_user: dict = Depends(get_current_user)):
-    """Check whether saved LinkedIn session cookies exist for this user."""
-    import json, os
-    from pathlib import Path
-
-    user_id = current_user["user_id"]
-    ws = Path(os.path.expanduser("~")) / ".smartapply" / "workspaces" / user_id
-    cookie_path = ws / "logs" / "linkedin_session.json"
-
-    if not cookie_path.exists():
-        return {"exists": False, "cookie_count": 0, "has_li_at": False}
-
-    try:
-        with open(cookie_path, "r", encoding="utf-8") as f:
-            cookies = json.load(f)
-        has_li_at = any(c.get("name") == "li_at" for c in cookies)
-        return {"exists": True, "cookie_count": len(cookies), "has_li_at": has_li_at}
-    except Exception:
-        return {"exists": False, "cookie_count": 0, "has_li_at": False}
-
-
 @router.get("/extension/download")
 async def download_extension(current_user: dict = Depends(get_current_user)):
     """Serve the SmartApply Chrome extension as a downloadable zip."""
-    import zipfile, io, os
+    import zipfile
+    import io
     from fastapi.responses import StreamingResponse
     from pathlib import Path
 
@@ -274,8 +114,8 @@ async def download_extension(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Extension not found on server.")
 
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for f in ext_dir.rglob('*'):
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for f in ext_dir.rglob("*"):
             if f.is_file():
                 zf.write(f, f.relative_to(ext_dir))
     buf.seek(0)
@@ -283,5 +123,5 @@ async def download_extension(current_user: dict = Depends(get_current_user)):
     return StreamingResponse(
         buf,
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=smartapply-extension.zip"}
+        headers={"Content-Disposition": "attachment; filename=smartapply-extension.zip"},
     )

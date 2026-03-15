@@ -1,76 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Create Account — SmartApply</title>
-  <link rel="stylesheet" href="css/main.css" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — SmartApply</title><link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="bg-glow bg-glow-1"></div>
-  <div id="toast-container"></div>
-
+  <div class="bg-grid"></div><div class="bg-glow bg-glow-1"></div><div id="toast-container"></div>
   <div class="auth-wrapper">
     <div class="auth-card fade-in" id="signup-step">
-      <div class="logo">
-        <div class="logo-dot"></div>
-        Smart<span>Apply</span>
-      </div>
-      <h2>Create your account</h2>
-      <p class="subtitle">Start automating your job applications today</p>
-
+      <div class="logo"><div class="logo-dot"></div>Smart<span>Apply</span></div>
+      <h2>Create your account</h2><p class="subtitle">Start automating your job applications today</p>
       <div id="signup-error" class="alert alert-error hidden" style="margin-bottom:16px"></div>
-
       <form id="signup-form" novalidate>
         <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
-            <span class="field-error"></span>
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" />
-            <div class="pw-strength">
-              <div class="pw-bar" id="bar1"></div>
-              <div class="pw-bar" id="bar2"></div>
-              <div class="pw-bar" id="bar3"></div>
-              <div class="pw-bar" id="bar4"></div>
-            </div>
-            <span class="field-error"></span>
-          </div>
-
-          <div class="form-group">
-            <label for="confirm_password">Confirm Password</label>
-            <input type="password" id="confirm_password" placeholder="Repeat your password" autocomplete="new-password" />
-            <span class="field-error"></span>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-block btn-lg" id="signup-btn">
-            <span class="spinner"></span>
-            <span class="btn-text">Create Account</span>
-          </button>
+          <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="you@company.com" autocomplete="email" /><span class="field-error"></span></div>
+          <div class="form-group"><label for="password">Password</label><input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" /><div class="pw-strength"><div class="pw-bar" id="bar1"></div><div class="pw-bar" id="bar2"></div><div class="pw-bar" id="bar3"></div><div class="pw-bar" id="bar4"></div></div><span class="field-error"></span></div>
+          <div class="form-group"><label for="confirm_password">Confirm Password</label><input type="password" id="confirm_password" placeholder="Repeat your password" autocomplete="new-password" /><span class="field-error"></span></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="signup-btn"><span class="spinner"></span><span class="btn-text">Create Account</span></button>
         </div>
       </form>
-
-      <div class="auth-footer">
-        Already have an account? <a href="login.html">Sign in</a>
-      </div>
+      <div class="auth-footer">Already have an account? <a href="login.html">Sign in</a></div>
     </div>
-
-    <!-- Verify PIN step -->
     <div class="auth-card fade-in hidden" id="verify-step">
-      <div class="logo">
-        <div class="logo-dot"></div>
-        Smart<span>Apply</span>
-      </div>
-      <h2>Verify your email</h2>
-      <p class="subtitle" id="verify-subtitle">Enter the 6-digit code sent to your email</p>
-
+      <div class="logo"><div class="logo-dot"></div>Smart<span>Apply</span></div>
+      <h2>Verify your email</h2><p class="subtitle" id="verify-subtitle">Enter the 6-digit code sent to your email</p>
       <div id="verify-error" class="alert alert-error hidden" style="margin-bottom:16px"></div>
-
       <div class="pin-inputs" id="pin-inputs">
         <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
         <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
@@ -79,48 +33,30 @@
         <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
         <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
       </div>
-
-      <button class="btn btn-primary btn-block btn-lg" id="verify-btn">
-        <span class="spinner"></span>
-        <span class="btn-text">Verify Email</span>
-      </button>
-
-      <div class="auth-footer">
-        <span id="resend-timer"></span>
-        <a href="#" id="resend-link" class="hidden">Resend code</a>
-      </div>
+      <button class="btn btn-primary btn-block btn-lg" id="verify-btn"><span class="spinner"></span><span class="btn-text">Verify Email</span></button>
+      <div class="auth-footer"><span id="resend-timer"></span><a href="#" id="resend-link" class="hidden">Resend code</a></div>
     </div>
   </div>
-
   <script src="js/app.js"></script>
   <script>
     if (auth.isAuth) window.location.href = 'dashboard.html';
-
-    let currentEmail = '';
-    let resendCountdown;
-
-    // ── Password strength ───────────────────────────────────────────────────
+    let currentEmail = '', resendCountdown;
     const pwInput = document.getElementById('password');
     const bars = [1,2,3,4].map(i => document.getElementById('bar'+i));
     pwInput.addEventListener('input', () => renderStrength(bars, pwInput.value));
-
-    // ── Signup form ─────────────────────────────────────────────────────────
     document.getElementById('signup-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      clearErrors();
+      e.preventDefault(); clearErrors();
       const btn = document.getElementById('signup-btn');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const confirm = document.getElementById('confirm_password').value;
       const errEl = document.getElementById('signup-error');
       errEl.classList.add('hidden');
-
       let hasError = false;
       if (!email) { markFieldError('email', 'Email is required'); hasError = true; }
       if (password.length < 8) { markFieldError('password', 'Minimum 8 characters'); hasError = true; }
       if (password !== confirm) { markFieldError('confirm_password', 'Passwords do not match'); hasError = true; }
       if (hasError) return;
-
       setLoading(btn, true);
       try {
         await api.post('/auth/signup', { email, password, confirm_password: confirm });
@@ -129,107 +65,33 @@
         document.getElementById('verify-step').classList.remove('hidden');
         document.getElementById('verify-subtitle').textContent = `Enter the 6-digit code sent to ${email}`;
         startResendTimer(60);
-        focusFirstPin();
-      } catch (err) {
-        errEl.textContent = err.detail || 'Something went wrong';
-        errEl.classList.remove('hidden');
-      } finally {
-        setLoading(btn, false);
-      }
+        document.querySelector('#pin-inputs input').focus();
+      } catch (err) { errEl.textContent = err.detail || 'Something went wrong'; errEl.classList.remove('hidden'); }
+      finally { setLoading(btn, false); }
     });
-
-    // ── PIN input behaviour ─────────────────────────────────────────────────
-    function focusFirstPin() {
-      document.querySelector('#pin-inputs input').focus();
-    }
-
     document.querySelectorAll('#pin-inputs input').forEach((input, idx, inputs) => {
-      input.addEventListener('input', e => {
-        const val = e.target.value.replace(/\D/g, '');
-        e.target.value = val;
-        if (val) {
-          e.target.classList.add('filled');
-          if (idx < inputs.length - 1) inputs[idx + 1].focus();
-        } else {
-          e.target.classList.remove('filled');
-        }
-      });
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Backspace' && !input.value && idx > 0) {
-          inputs[idx - 1].focus();
-          inputs[idx - 1].value = '';
-          inputs[idx - 1].classList.remove('filled');
-        }
-      });
-      input.addEventListener('paste', e => {
-        e.preventDefault();
-        const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
-        text.split('').forEach((ch, i) => {
-          if (inputs[i]) { inputs[i].value = ch; inputs[i].classList.add('filled'); }
-        });
-        if (text.length < 6) inputs[text.length]?.focus();
-        else inputs[5].focus();
-      });
+      input.addEventListener('input', e => { const val = e.target.value.replace(/\D/g,''); e.target.value = val; if (val) { e.target.classList.add('filled'); if (idx < inputs.length-1) inputs[idx+1].focus(); } else e.target.classList.remove('filled'); });
+      input.addEventListener('keydown', e => { if (e.key==='Backspace' && !input.value && idx>0) { inputs[idx-1].focus(); inputs[idx-1].value=''; inputs[idx-1].classList.remove('filled'); } });
+      input.addEventListener('paste', e => { e.preventDefault(); const text=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6); text.split('').forEach((ch,i)=>{ if(inputs[i]){inputs[i].value=ch;inputs[i].classList.add('filled');} }); if(text.length<6)inputs[text.length]?.focus(); else inputs[5].focus(); });
     });
-
-    function getPin() {
-      return [...document.querySelectorAll('#pin-inputs input')].map(i => i.value).join('');
-    }
-
-    // ── Verify button ───────────────────────────────────────────────────────
+    function getPin(){return [...document.querySelectorAll('#pin-inputs input')].map(i=>i.value).join('');}
     document.getElementById('verify-btn').addEventListener('click', async () => {
-      const pin = getPin();
-      const btn = document.getElementById('verify-btn');
-      const errEl = document.getElementById('verify-error');
-      errEl.classList.add('hidden');
-
-      if (pin.length !== 6) { errEl.textContent = 'Enter all 6 digits'; errEl.classList.remove('hidden'); return; }
-
-      setLoading(btn, true);
-      try {
-        await api.post('/auth/verify', { email: currentEmail, pin });
-        showToast('Email verified! Redirecting…', 'success');
-        setTimeout(() => window.location.href = 'login.html', 1200);
-      } catch (err) {
-        errEl.textContent = err.detail || 'Invalid code';
-        errEl.classList.remove('hidden');
-        // Shake
-        document.getElementById('pin-inputs').style.animation = 'none';
-        setTimeout(() => { document.getElementById('pin-inputs').style.animation = ''; }, 10);
-      } finally {
-        setLoading(btn, false);
-      }
+      const pin=getPin(); const btn=document.getElementById('verify-btn'); const errEl=document.getElementById('verify-error'); errEl.classList.add('hidden');
+      if(pin.length!==6){errEl.textContent='Enter all 6 digits';errEl.classList.remove('hidden');return;}
+      setLoading(btn,true);
+      try { await api.post('/auth/verify',{email:currentEmail,pin}); showToast('Email verified! Redirecting…','success'); setTimeout(()=>window.location.href='login.html',1200); }
+      catch(err){errEl.textContent=err.detail||'Invalid code';errEl.classList.remove('hidden');}
+      finally{setLoading(btn,false);}
     });
-
-    // ── Resend countdown ────────────────────────────────────────────────────
-    function startResendTimer(seconds) {
-      const timerEl = document.getElementById('resend-timer');
-      const linkEl = document.getElementById('resend-link');
-      linkEl.classList.add('hidden');
-      timerEl.textContent = `Resend in ${seconds}s`;
-      clearInterval(resendCountdown);
-      let remaining = seconds;
-      resendCountdown = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-          clearInterval(resendCountdown);
-          timerEl.textContent = '';
-          linkEl.classList.remove('hidden');
-        } else {
-          timerEl.textContent = `Resend in ${remaining}s`;
-        }
-      }, 1000);
+    function startResendTimer(seconds){
+      const timerEl=document.getElementById('resend-timer'); const linkEl=document.getElementById('resend-link');
+      linkEl.classList.add('hidden'); timerEl.textContent=`Resend in ${seconds}s`; clearInterval(resendCountdown);
+      let remaining=seconds; resendCountdown=setInterval(()=>{ remaining--; if(remaining<=0){clearInterval(resendCountdown);timerEl.textContent='';linkEl.classList.remove('hidden');}else timerEl.textContent=`Resend in ${remaining}s`; },1000);
     }
-
     document.getElementById('resend-link').addEventListener('click', async e => {
       e.preventDefault();
-      try {
-        await api.post('/auth/resend-pin', { email: currentEmail });
-        showToast('Code resent!', 'info');
-        startResendTimer(60);
-      } catch (err) {
-        showToast(err.detail || 'Failed to resend', 'error');
-      }
+      try{await api.post('/auth/resend-pin',{email:currentEmail});showToast('Code resent!','info');startResendTimer(60);}
+      catch(err){showToast(err.detail||'Failed to resend','error');}
     });
   </script>
 </body>

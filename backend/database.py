@@ -13,7 +13,7 @@ def get_client() -> AsyncIOMotorClient:
     if _client is None:
         _client = AsyncIOMotorClient(
             MONGO_URI,
-            serverSelectionTimeoutMS=5000,   # fail fast if DB unreachable
+            serverSelectionTimeoutMS=5000,
             connectTimeoutMS=5000,
             socketTimeoutMS=10000,
         )
@@ -43,7 +43,6 @@ async def init_db():
         await db.users.create_index("reset_token")
         await db.applications.create_index("user_id")
         await db.applications.create_index("applied_at")
-        await db.bot_sessions.create_index("user_id")
         print("✅ MongoDB indexes created")
     except Exception as e:
         print(f"⚠️  MongoDB init failed (app still starting): {e}")

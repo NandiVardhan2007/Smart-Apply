@@ -1,4 +1,4 @@
 {
   "company_name": "Smart Apply",
-  "openrouter_model": "stepfun/step-3.5-flash:free"
+  "nvidia_model": "meta/llama-3.3-70b-instruct"
 }

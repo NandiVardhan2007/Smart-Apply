@@ -2,13 +2,11 @@
 
 const API_BASE = '/api';
 
-// ── API Client ──────────────────────────────────────────────────────────────
 const api = {
   async request(method, path, body = null, opts = {}) {
     const headers = { 'Content-Type': 'application/json', ...opts.headers };
     const token = localStorage.getItem('sa_token');
     if (token) headers['Authorization'] = `Bearer ${token}`;
-
     const config = { method, headers, credentials: 'include' };
     if (body && !(body instanceof FormData)) {
       config.body = JSON.stringify(body);
@@ -16,13 +14,11 @@ const api = {
       delete headers['Content-Type'];
       config.body = body;
     }
-
     const res = await fetch(API_BASE + path, config);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw { status: res.status, detail: data.detail || 'Request failed', data };
     return data;
   },
-
   get:    (path, opts)  => api.request('GET', path, null, opts),
   post:   (path, body)  => api.request('POST', path, body),
   put:    (path, body)  => api.request('PUT', path, body),
@@ -30,7 +26,6 @@ const api = {
   upload: (path, form)  => api.request('POST', path, form),
 };
 
-// ── Auth Helpers ────────────────────────────────────────────────────────────
 const auth = {
   save(token, user) {
     localStorage.setItem('sa_token', token);
@@ -43,7 +38,6 @@ const auth = {
   get token()  { return localStorage.getItem('sa_token'); },
   get user()   { try { return JSON.parse(localStorage.getItem('sa_user')); } catch { return null; } },
   get isAuth() { return !!this.token; },
-
   requireAuth(redirect = 'login.html') {
     if (!this.isAuth) { window.location.href = redirect; return false; }
     return true;
@@ -52,7 +46,6 @@ const auth = {
     if (this.isAuth) { window.location.href = redirect; return false; }
     return true;
   },
-
   async logout() {
     try { await api.post('/auth/logout'); } catch {}
     this.clear();
@@ -60,7 +53,6 @@ const auth = {
   }
 };
 
-// ── Toast ───────────────────────────────────────────────────────────────────
 function showToast(message, type = 'info', duration = 4000) {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -79,12 +71,12 @@ function showToast(message, type = 'info', duration = 4000) {
   }, duration);
 }
 
-// ── Form helpers ────────────────────────────────────────────────────────────
-function setLoading(btn, loading, text = null) {
+function setLoading(btn, loading) {
   if (loading) {
     btn.classList.add('loading');
     btn.disabled = true;
-    if (text) btn.setAttribute('data-original', btn.querySelector('.btn-text')?.textContent || btn.textContent);
+    const span = btn.querySelector('.btn-text');
+    if (span) btn.setAttribute('data-original', span.textContent);
   } else {
     btn.classList.remove('loading');
     btn.disabled = false;
@@ -96,14 +88,6 @@ function setLoading(btn, loading, text = null) {
   }
 }
 
-function showError(elementId, msg) {
-  const el = document.getElementById(elementId);
-  if (el) { el.textContent = msg; el.classList.remove('hidden'); }
-}
-function hideError(elementId) {
-  const el = document.getElementById(elementId);
-  if (el) el.classList.add('hidden');
-}
 function clearErrors() {
   document.querySelectorAll('.field-error').forEach(e => e.classList.add('hidden'));
   document.querySelectorAll('.form-group').forEach(e => e.classList.remove('has-error'));
@@ -120,14 +104,13 @@ function markFieldError(inputId, msg) {
   }
 }
 
-// Password strength
 function checkPasswordStrength(password) {
   let score = 0;
   if (password.length >= 8) score++;
   if (/[A-Z]/.test(password)) score++;
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
-  return score; // 0-4
+  return score;
 }
 
 function renderStrength(bars, password) {
@@ -142,12 +125,10 @@ function renderStrength(bars, password) {
   });
 }
 
-// ── URL params ──────────────────────────────────────────────────────────────
 function getParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
-// ── Navbar hydration ────────────────────────────────────────────────────────
 function hydrateNavbar() {
   const user = auth.user;
   const nav = document.getElementById('nav-actions');
@@ -165,7 +146,6 @@ function hydrateNavbar() {
   }
 }
 
-// ── Format helpers ──────────────────────────────────────────────────────────
 function timeAgo(isoString) {
   const diff = Date.now() - new Date(isoString).getTime();
   const mins = Math.floor(diff / 60000);
@@ -187,19 +167,17 @@ function escHtml(str) {
   return d.innerHTML;
 }
 
-// ── Tag input helper ────────────────────────────────────────────────────────
 function initTagInput(containerId, hiddenId, initial = []) {
   const container = document.getElementById(containerId);
   const hidden = document.getElementById(hiddenId);
   let tags = [...initial];
-
   function render() {
     container.innerHTML = '';
     tags.forEach((tag, i) => {
       const el = document.createElement('span');
       el.className = 'badge badge-primary';
       el.style.cursor = 'default';
-      el.innerHTML = `${escHtml(tag)} <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:4px;font-size:13px">×</button>`;
+      el.innerHTML = `${escHtml(tag)} <button type="button" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:4px;font-size:13px">×</button>`;
       el.querySelector('button').addEventListener('click', () => {
         tags.splice(i, 1);
         hidden.value = JSON.stringify(tags);
@@ -207,7 +185,6 @@ function initTagInput(containerId, hiddenId, initial = []) {
       });
       container.appendChild(el);
     });
-    // Add input
     const input = document.createElement('input');
     input.placeholder = 'Type & press Enter';
     input.style.cssText = 'background:none;border:none;outline:none;color:var(--text);font-size:14px;min-width:120px;padding:4px;';
@@ -225,7 +202,6 @@ function initTagInput(containerId, hiddenId, initial = []) {
     container.appendChild(input);
     hidden.value = JSON.stringify(tags);
   }
-
   render();
   return { getTags: () => tags };
 }

@@ -14,7 +14,6 @@ from backend.config import PIN_EXPIRY_MINUTES, RESET_TOKEN_EXPIRY_HRS, MAX_LOGIN
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
-# ── Rate limiting: simple in-memory counters ──────────────────────────────────
 _login_attempts: dict[str, list] = {}
 
 
@@ -27,8 +26,6 @@ def _check_rate_limit(key: str, max_attempts: int = MAX_LOGIN_ATTEMPTS, window_s
     attempts.append(now)
     _login_attempts[key] = attempts
 
-
-# ── Models ────────────────────────────────────────────────────────────────────
 
 class SignupRequest(BaseModel):
     email: EmailStr
@@ -81,24 +78,19 @@ class ResendRequest(BaseModel):
     email: EmailStr
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
-
 @router.post("/signup")
 async def signup(body: SignupRequest):
     db = get_db()
     email = body.email.lower()
 
-    # Validate domain
     valid, err = await validate_email_domain(email)
     if not valid:
         raise HTTPException(400, detail=err)
 
-    # Check existing
     existing = await db.users.find_one({"email": email})
     if existing:
         if existing.get("is_verified"):
             raise HTTPException(409, detail="Email already registered")
-        # Resend PIN for unverified
         pin = generate_pin()
         expires = datetime.now(timezone.utc) + timedelta(minutes=PIN_EXPIRY_MINUTES)
         await db.users.update_one(
@@ -135,7 +127,6 @@ async def signup(body: SignupRequest):
         await send_verification_email(email, pin)
     except Exception as exc:
         logger.error(f"[signup] Email send failed for {email}: {exc}")
-        # Account is created but email failed — tell user clearly
         raise HTTPException(500, detail="Account created but verification email could not be sent. Please contact support.")
 
     return {"message": "Account created. Check your email for the verification code."}
@@ -261,7 +252,7 @@ async def forgot_password(body: ForgotRequest):
             await send_reset_email(email, token)
         except Exception as exc:
             logger.error(f"[forgot-password] Email send failed for {email}: {exc}")
-            raise HTTPException(500, detail="Failed to send reset email. Please check email configuration or try again.")
+            raise HTTPException(500, detail="Failed to send reset email. Please try again.")
 
     return {"message": "If that email is registered, a reset link has been sent."}
 

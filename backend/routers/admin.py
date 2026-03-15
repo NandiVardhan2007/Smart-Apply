@@ -1,11 +1,3 @@
-"""
-admin.py  — Admin-only API endpoints.
-
-In production you'd add proper admin role checking.
-For now the endpoints are JWT-protected (any logged-in user).
-Add role: "admin" field to user doc and check it here for production use.
-"""
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -35,8 +27,6 @@ def _save_cfg(data: dict):
     _ADMIN_CFG.write_text(json.dumps(data, indent=2))
 
 
-# ── Stats ─────────────────────────────────────────────────────────────────────
-
 @router.get("/stats")
 async def get_stats(current_user: dict = Depends(get_current_user)):
     db = get_db()
@@ -44,19 +34,16 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
 
     total_users        = await db.users.count_documents({})
     total_applications = await db.applications.count_documents({})
-    active_sessions    = await db.bot_sessions.count_documents({"status": "running"})
 
     return {
         "total_users": total_users,
         "total_applications": total_applications,
-        "active_sessions": active_sessions,
+        "active_sessions": 0,
         "nvidia_keys": len(NVIDIA_API_KEYS),
         "smtp_configured": bool(cfg.get("smtp_user") or SMTP_USER),
         "smtp_user": cfg.get("smtp_user") or SMTP_USER or "",
     }
 
-
-# ── SMTP ──────────────────────────────────────────────────────────────────────
 
 class SMTPConfig(BaseModel):
     smtp_host: str = "smtp.gmail.com"
@@ -80,7 +67,6 @@ async def update_smtp(body: SMTPConfig, current_user: dict = Depends(get_current
     })
     _save_cfg(cfg)
 
-    # Reload config module vars live
     import backend.config as c
     c.SMTP_HOST = body.smtp_host
     c.SMTP_PORT = body.smtp_port
@@ -100,8 +86,6 @@ async def test_smtp(body: TestEmailRequest, current_user: dict = Depends(get_cur
         raise HTTPException(500, detail=f"SMTP error: {e}")
 
 
-# ── NVIDIA API Keys ───────────────────────────────────────────────────────────
-
 class KeysUpdate(BaseModel):
     keys: list[str]
     model: Optional[str] = None
@@ -119,10 +103,9 @@ async def get_keys(current_user: dict = Depends(get_current_user)):
 
 @router.put("/keys")
 async def update_keys(body: KeysUpdate, current_user: dict = Depends(get_current_user)):
-    # Validate format
     for k in body.keys:
         if not k.startswith("nvapi-"):
-            raise HTTPException(400, detail=f"Invalid key format: {k[:20]}…")
+            raise HTTPException(400, detail=f"Invalid key format: {k[:20]}… (must start with nvapi-)")
 
     cfg = _load_cfg()
     cfg["nvidia_keys"] = body.keys
@@ -130,7 +113,6 @@ async def update_keys(body: KeysUpdate, current_user: dict = Depends(get_current
         cfg["nvidia_model"] = body.model
     _save_cfg(cfg)
 
-    # Update live
     import backend.config as c
     c.NVIDIA_API_KEYS.clear()
     c.NVIDIA_API_KEYS.extend(body.keys)
@@ -139,8 +121,6 @@ async def update_keys(body: KeysUpdate, current_user: dict = Depends(get_current
 
     return {"message": f"Saved {len(body.keys)} keys"}
 
-
-# ── Users ─────────────────────────────────────────────────────────────────────
 
 @router.get("/users")
 async def list_users(
@@ -155,7 +135,6 @@ async def list_users(
         "resumes": 1, "created_at": 1
     }).sort("created_at", -1).skip(skip).limit(limit):
 
-        # Count apps
         app_count = await db.applications.count_documents({"user_id": str(doc["_id"])})
 
         users.append({
@@ -173,7 +152,6 @@ async def list_users(
 
 @router.post("/users/{user_id}/verify")
 async def force_verify_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Manually verify a user's email — useful when email delivery fails."""
     db = get_db()
     from bson import ObjectId
     result = await db.users.update_one(
@@ -187,7 +165,6 @@ async def force_verify_user(user_id: str, current_user: dict = Depends(get_curre
 
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a user account."""
     db = get_db()
     from bson import ObjectId
     result = await db.users.delete_one({"_id": ObjectId(user_id)})

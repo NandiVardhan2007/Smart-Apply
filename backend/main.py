@@ -2,7 +2,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
 import time
@@ -21,7 +20,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SmartApply API",
     description="AI-powered job application automation platform",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
@@ -83,7 +82,6 @@ if FRONTEND_DIR.exists():
 
     @app.get("/{page:path}")
     async def serve_frontend(page: str):
-        # API routes are handled above
         if page.startswith("api/"):
             return JSONResponse({"detail": "Not found"}, status_code=404)
 
@@ -91,7 +89,6 @@ if FRONTEND_DIR.exists():
         if target.exists() and target.is_file():
             return FileResponse(str(target))
 
-        # Default to index.html for SPA routing
         index = FRONTEND_DIR / "index.html"
         if index.exists():
             return FileResponse(str(index))

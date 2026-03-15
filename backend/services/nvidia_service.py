@@ -16,8 +16,6 @@ import httpx
 from backend.config import NVIDIA_API_URL, NVIDIA_API_KEYS, NVIDIA_MODEL
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
-
 async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
     """
     Single async NVIDIA NIM chat call.
@@ -32,20 +30,16 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
             "Get a free key at https://build.nvidia.com/models"
         )
 
-    # ── Verified model IDs on NVIDIA NIM (all FREE) ───────────────────────────
-    # Primary model comes from config (NVIDIA_MODEL env var).
-    # Fallbacks are tried in order if the primary fails or returns null content.
     models_to_try = [
-        NVIDIA_MODEL,                              # from config (default: llama-3.3-70b)
-        "meta/llama-3.3-70b-instruct",            # 70B — best overall ⭐
-        "meta/llama-3.1-70b-instruct",            # 70B — Llama 3.1 fallback
-        "google/gemma-3-27b-it",                  # 27B — fast and reliable
-        "mistralai/mistral-7b-instruct-v0.3",     # 7B  — fastest fallback
-        "nvidia/llama-3.1-nemotron-70b-instruct", # 70B — NVIDIA-tuned
-        "mistralai/mixtral-8x7b-instruct-v0.1",  # 47B — Mixtral fallback
+        NVIDIA_MODEL,
+        "meta/llama-3.3-70b-instruct",
+        "meta/llama-3.1-70b-instruct",
+        "google/gemma-3-27b-it",
+        "mistralai/mistral-7b-instruct-v0.3",
+        "nvidia/llama-3.1-nemotron-70b-instruct",
+        "mistralai/mixtral-8x7b-instruct-v0.1",
     ]
 
-    # Deduplicate while preserving order
     seen: set = set()
     models_to_try = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
@@ -53,7 +47,7 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
     for key in keys:
         for model in models_to_try:
             try:
-                async with httpx.AsyncClient(timeout=60) as client:   # 60s — generous for large models
+                async with httpx.AsyncClient(timeout=60) as client:
                     resp = await client.post(
                         NVIDIA_API_URL,
                         headers={
@@ -68,15 +62,13 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
                         },
                     )
 
-                    # 4xx errors on this model/key — record and try next
                     if resp.status_code in (400, 404, 422):
                         errors.append(f"[{model}] HTTP {resp.status_code}: {resp.text[:200]}")
                         continue
 
-                    # 401/403 → bad key, no point trying other models with same key
                     if resp.status_code in (401, 403):
                         errors.append(f"[key={key[:12]}...] Auth error {resp.status_code}")
-                        break  # break model loop, try next key
+                        break
 
                     resp.raise_for_status()
                     data = resp.json()
@@ -87,7 +79,7 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
                     )
                     if content is None:
                         errors.append(f"[{model}] null content in response")
-                        continue  # try next model
+                        continue
                     return content.strip()
 
             except httpx.TimeoutException:
@@ -102,17 +94,11 @@ async def _chat(messages: list[dict], max_tokens: int = 600) -> str:
     )
 
 
-# ── Public API (used by routers/ai.py) ───────────────────────────────────────
-
 async def answer_job_question(
     question: str,
     user_info: str,
     options: Optional[list[str]] = None,
 ) -> str:
-    """
-    Answer a job-application question using the candidate's profile info.
-    Supports text, Yes/No, and multiple-choice questions.
-    """
     options_block = ""
     if options:
         options_block = "\n\nOPTIONS (choose one):\n" + "\n".join(f"- {o}" for o in options)
@@ -147,7 +133,6 @@ async def generate_cover_letter(
     job_title: str,
     company: str,
 ) -> str:
-    """Generate a personalised cover letter for the given job."""
     messages = [
         {
             "role": "system",
@@ -169,10 +154,6 @@ async def generate_cover_letter(
 
 
 async def extract_skills_from_description(job_description: str) -> list[str]:
-    """
-    Extract a deduplicated list of skills from a job description.
-    Returns a list of skill strings.
-    """
     messages = [
         {
             "role": "system",
@@ -189,7 +170,6 @@ async def extract_skills_from_description(job_description: str) -> list[str]:
     ]
     raw = await _chat(messages, max_tokens=400)
 
-    # Strip markdown fences if the model added them
     raw = raw.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
@@ -208,15 +188,10 @@ async def extract_skills_from_description(job_description: str) -> list[str]:
     except Exception:
         pass
 
-    # Fallback: split by comma or newline
     return [s.strip().strip('"') for s in raw.replace("\n", ",").split(",") if s.strip()]
 
 
 async def analyze_ats(resume_text: str, job_description: str = "") -> dict:
-    """
-    Full ATS resume analysis. Job description is optional.
-    If provided, compares resume against JD. Otherwise does general ATS analysis.
-    """
     has_jd = bool(job_description and len(job_description.strip()) > 20)
 
     if has_jd:
@@ -273,7 +248,6 @@ async def analyze_ats(resume_text: str, job_description: str = "") -> dict:
 
     raw = await _chat(messages, max_tokens=1200)
 
-    # Strip markdown fences if present
     raw = raw.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]

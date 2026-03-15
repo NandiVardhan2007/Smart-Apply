@@ -8,9 +8,6 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════
-     LOGIN SCREEN
-════════════════════════════════════════════════════ -->
 <div id="screen-login" class="screen">
   <div class="header">
     <div class="logo-mark">⚡</div>
@@ -19,41 +16,28 @@
       <div class="tagline">AI Job Application Bot</div>
     </div>
   </div>
-
   <div class="section">
     <label class="field-label">SmartApply Server URL</label>
     <input type="url" id="server-url" placeholder="https://your-app.onrender.com" class="field-input" autocomplete="off">
     <div class="hint">Your SmartApply backend URL</div>
   </div>
-
   <div class="section">
     <label class="field-label">Email</label>
     <input type="email" id="login-email" placeholder="your@email.com" class="field-input" autocomplete="email">
   </div>
-
   <div class="section">
     <label class="field-label">Password</label>
     <input type="password" id="login-password" placeholder="••••••••" class="field-input" autocomplete="current-password">
   </div>
-
   <div id="login-error" class="error-msg hidden"></div>
-
   <button id="btn-login" class="btn btn-primary btn-full">
     <span class="btn-text">Sign In</span>
     <span class="spinner hidden" id="login-spinner"></span>
   </button>
-
-  <div class="footer-note">
-    Your credentials are only sent to your own SmartApply server.
-  </div>
+  <div class="footer-note">Your credentials are only sent to your own SmartApply server.</div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MAIN DASHBOARD
-════════════════════════════════════════════════════ -->
 <div id="screen-main" class="screen hidden">
-
-  <!-- Header -->
   <div class="header">
     <div class="logo-mark">⚡</div>
     <div class="flex-grow">
@@ -63,7 +47,6 @@
     <button id="btn-logout" class="btn-icon" title="Logout">⏏</button>
   </div>
 
-  <!-- Profile Card -->
   <div id="profile-card" class="profile-card hidden">
     <div class="profile-avatar" id="profile-avatar">?</div>
     <div>
@@ -75,63 +58,33 @@
     </div>
   </div>
 
-  <!-- Status Banner -->
   <div id="status-banner" class="status-banner status-idle">
     <span id="status-icon">●</span>
     <span id="status-text">Idle — Open LinkedIn Jobs to start</span>
   </div>
 
-  <!-- Stats Row -->
   <div class="stats-row">
-    <div class="stat-box">
-      <div class="stat-num" id="stat-applied">0</div>
-      <div class="stat-lbl">Applied</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-num" id="stat-skipped">0</div>
-      <div class="stat-lbl">Skipped</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-num" id="stat-errors">0</div>
-      <div class="stat-lbl">Errors</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-num" id="stat-letters">0</div>
-      <div class="stat-lbl">AI Letters</div>
-    </div>
+    <div class="stat-box"><div class="stat-num" id="stat-applied">0</div><div class="stat-lbl">Applied</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-skipped">0</div><div class="stat-lbl">Skipped</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-errors">0</div><div class="stat-lbl">Errors</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-letters">0</div><div class="stat-lbl">AI Letters</div></div>
   </div>
 
-  <!-- Controls -->
   <div class="controls-row">
     <button id="btn-start" class="btn btn-primary flex-grow">▶ Start Bot</button>
     <button id="btn-stop" class="btn btn-danger flex-grow hidden">⏹ Stop</button>
-    <button id="btn-dryrun" class="btn btn-secondary btn-toggle" id="dry-run-toggle" title="Dry Run: stop before submit">
-      🔒
-    </button>
+    <button id="btn-dryrun" class="btn btn-secondary btn-toggle" title="Dry Run: stop before submit">🔒</button>
   </div>
 
-  <!-- Settings Panel -->
   <div class="settings-panel">
     <div class="settings-row">
-      <label class="toggle-label">
-        <input type="checkbox" id="opt-dry-run" checked>
-        <span class="toggle-switch"></span>
-        Dry Run (stop before submit)
-      </label>
+      <label class="toggle-label"><input type="checkbox" id="opt-dry-run" checked><span class="toggle-switch"></span>Dry Run (stop before submit)</label>
     </div>
     <div class="settings-row">
-      <label class="toggle-label">
-        <input type="checkbox" id="opt-cover-letter" checked>
-        <span class="toggle-switch"></span>
-        AI Cover Letter per job
-      </label>
+      <label class="toggle-label"><input type="checkbox" id="opt-cover-letter" checked><span class="toggle-switch"></span>AI Cover Letter per job</label>
     </div>
     <div class="settings-row">
-      <label class="toggle-label">
-        <input type="checkbox" id="opt-human-mode" checked>
-        <span class="toggle-switch"></span>
-        Human-like behavior
-      </label>
+      <label class="toggle-label"><input type="checkbox" id="opt-human-mode" checked><span class="toggle-switch"></span>Human-like behavior</label>
     </div>
     <div class="settings-row inline-row">
       <span>Max applications</span>
@@ -139,38 +92,16 @@
     </div>
   </div>
 
-  <!-- Log -->
   <div class="log-header">
     <span>Activity Log</span>
     <button id="btn-clear-log" class="btn-link">Clear</button>
   </div>
   <div id="activity-log" class="activity-log"></div>
 
-  <!-- Profile Refresh -->
   <div class="bottom-bar">
     <button id="btn-refresh-profile" class="btn-link">↻ Refresh Profile</button>
     <span id="last-refresh" class="muted-text"></span>
   </div>
-
-</div>
-
-<!-- ═══════════════════════════════════════════════════
-     PROFILE INCOMPLETE WARNING
-════════════════════════════════════════════════════ -->
-<div id="screen-incomplete" class="screen hidden">
-  <div class="header">
-    <div class="logo-mark">⚠️</div>
-    <div>
-      <div class="brand">Profile Incomplete</div>
-      <div class="tagline">Complete setup to use the bot</div>
-    </div>
-  </div>
-  <div class="info-block">
-    <p>Your SmartApply profile is missing required fields. Please complete it before running the bot.</p>
-    <ul id="missing-fields" class="missing-list"></ul>
-  </div>
-  <button id="btn-open-profile" class="btn btn-primary btn-full">Open SmartApply Profile →</button>
-  <button id="btn-back-incomplete" class="btn btn-secondary btn-full mt8">← Back</button>
 </div>
 
 <script src="popup.js"></script>

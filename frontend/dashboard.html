@@ -6,31 +6,6 @@
   <title>Dashboard — SmartApply</title>
   <link rel="stylesheet" href="css/main.css" />
   <style>
-    .bot-control-card {
-      background: linear-gradient(135deg, rgba(79,124,255,0.08), rgba(126,232,162,0.04));
-      border: 1px solid rgba(79,124,255,0.2);
-      border-radius: var(--radius-lg);
-      padding: 28px 32px;
-      margin-bottom: 28px;
-    }
-    .bot-status-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .platform-select { display: flex; gap: 10px; flex-wrap: wrap; }
-    .platform-btn {
-      padding: 10px 18px;
-      border-radius: var(--radius-sm);
-      background: var(--bg-2);
-      border: 1.5px solid var(--border);
-      color: var(--text-2);
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-    .platform-btn.selected {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: rgba(79,124,255,0.08);
-    }
     .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
     .filter-btn {
       padding: 7px 14px;
@@ -54,6 +29,14 @@
     .result-Applied  { background: rgba(126,232,162,0.1); color: var(--accent); }
     .result-Failed   { background: rgba(255,107,107,0.1); color: var(--danger); }
     .result-Skipped  { background: rgba(148,163,200,0.1); color: var(--text-2); }
+    .result-Dry\ Run { background: rgba(79,124,255,0.1);  color: var(--primary); }
+    .setup-step { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .setup-step:last-child { border-bottom: none; }
+    .step-num {
+      width: 28px; height: 28px; background: var(--primary); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 600; font-size: 13px; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -83,7 +66,7 @@
         <div class="sidebar-section-label">Navigation</div>
         <button class="sidebar-link active" onclick="showTab('overview', this)"><span class="icon">📊</span> Overview</button>
         <button class="sidebar-link" onclick="showTab('history', this)"><span class="icon">📋</span> Applications</button>
-        <button class="sidebar-link" onclick="showTab('bot', this)"><span class="icon">🤖</span> Bot Control</button>
+        <button class="sidebar-link" onclick="showTab('extension', this)"><span class="icon">🧩</span> Extension</button>
         <button class="sidebar-link" onclick="showTab('resumes', this)"><span class="icon">📄</span> Resumes</button>
         <div class="sidebar-section-label">Account</div>
         <a href="ats.html" class="sidebar-link"><span class="icon">🎯</span> ATS Analyzer</a>
@@ -101,9 +84,7 @@
           </div>
           <div style="display:flex;gap:10px">
             <a href="resume.html" class="btn btn-ghost btn-sm">+ Upload Resume</a>
-            <button class="btn btn-primary btn-sm" onclick="showTab('bot', document.querySelector('[onclick*=\'bot\']'))">
-              🤖 Run Bot
-            </button>
+            <a href="/api/jobs/extension/download" class="btn btn-primary btn-sm">🧩 Download Extension</a>
           </div>
         </div>
 
@@ -116,7 +97,6 @@
           </div>
 
           <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:24px" id="overview-panels">
-            <!-- Recent activity -->
             <div class="card">
               <h4 style="margin-bottom:16px">Recent Applications</h4>
               <div id="recent-apps">
@@ -126,7 +106,6 @@
               </div>
               <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary" style="display:block;margin-top:12px">View all →</a>
             </div>
-            <!-- Platform stats -->
             <div class="card">
               <h4 style="margin-bottom:16px">By Platform</h4>
               <div id="platform-stats"><div class="skeleton" style="height:120px;border-radius:var(--radius-sm)"></div></div>
@@ -164,58 +143,62 @@
           <div id="history-pagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px"></div>
         </div>
 
-        <!-- ── Bot Control Tab ── -->
-        <div id="tab-bot" class="tab-pane hidden">
-          <div class="bot-control-card">
+        <!-- ── Extension Tab ── -->
+        <div id="tab-extension" class="tab-pane hidden">
+          <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(79,124,255,0.08),rgba(126,232,162,0.04));border-color:rgba(79,124,255,0.2)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
               <div>
-                <h4 style="margin-bottom:6px">Automation Bot</h4>
-                <div class="bot-status-row">
-                  <span id="bot-status-badge" class="badge badge-neutral">
-                    <span class="status-dot stopped" id="bot-status-dot"></span>
-                    <span id="bot-status-text">Idle</span>
-                  </span>
-                  <span id="bot-session-info" class="text-sm text-muted"></span>
-                </div>
+                <h4 style="margin-bottom:6px">SmartApply Chrome Extension</h4>
+                <p class="text-muted text-sm">Apply to jobs directly from your browser. No server bot needed.</p>
               </div>
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <button class="btn btn-primary" id="start-bot-btn" onclick="startBot()">
-                  <span class="spinner"></span><span class="btn-text">▶ Start Bot</span>
-                </button>
-                <button class="btn btn-danger btn-sm" id="stop-bot-btn" onclick="stopBot()" style="display:none">⏹ Stop</button>
-                <a href="/cookie-setup.html" class="btn btn-sm" id="session-setup-btn"
-                   style="background:#1e293b;border:1px solid #334155;color:#94a3b8;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:0.82rem;"
-                   title="Set up LinkedIn session cookies">
-                  🔑 <span id="session-label">Setup LinkedIn Session</span>
-                </a>
-                <a href="/api/jobs/extension/download" class="btn btn-sm"
-                   style="background:#1e293b;border:1px solid #4f46e5;color:#818cf8;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:0.82rem;"
-                   title="Download Chrome Extension — apply jobs from your own browser without a server bot">
-                  🧩 Download Extension
-                </a>
-                <button onclick="copyAuthToken()" class="btn btn-sm" id="copy-token-btn"
-                   style="background:#1e293b;border:1px solid #334155;color:#94a3b8;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:0.82rem;cursor:pointer;"
-                   title="Copy your auth token to paste into the extension">
-                  📋 Copy Token
-                </button>
+                <a href="/api/jobs/extension/download" class="btn btn-primary">🧩 Download Extension</a>
+                <button onclick="copyAuthToken()" class="btn btn-ghost btn-sm" id="copy-token-btn">📋 Copy Auth Token</button>
               </div>
             </div>
           </div>
 
           <div class="card" style="margin-bottom:20px">
-            <h4 style="margin-bottom:16px">Select Platform</h4>
-            <div class="platform-select" id="platform-select">
-              <button class="platform-btn selected" data-platform="linkedin" onclick="selectPlatform(this)">💼 LinkedIn</button>
-              <button class="platform-btn" data-platform="indeed" onclick="selectPlatform(this)">🔍 Indeed <span class="badge badge-warning" style="margin-left:6px;font-size:10px">Coming soon</span></button>
-              <button class="platform-btn" data-platform="internshala" onclick="selectPlatform(this)">🎓 Internshala <span class="badge badge-warning" style="margin-left:6px;font-size:10px">Coming soon</span></button>
-              <button class="platform-btn" data-platform="naukri" onclick="selectPlatform(this)">📋 Naukri <span class="badge badge-warning" style="margin-left:6px;font-size:10px">Coming soon</span></button>
+            <h4 style="margin-bottom:20px">Setup Instructions</h4>
+            <div class="setup-step">
+              <div class="step-num">1</div>
+              <div>
+                <div style="font-weight:500;margin-bottom:3px">Download & unzip the extension</div>
+                <div class="text-muted text-sm">Click "Download Extension" above and unzip the file to a permanent folder on your computer.</div>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="step-num">2</div>
+              <div>
+                <div style="font-weight:500;margin-bottom:3px">Load in Chrome</div>
+                <div class="text-muted text-sm">Go to <code style="background:var(--bg-3);padding:1px 6px;border-radius:4px;font-size:12px">chrome://extensions</code> → Enable Developer Mode → Load Unpacked → select the unzipped folder.</div>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="step-num">3</div>
+              <div>
+                <div style="font-weight:500;margin-bottom:3px">Sign in with your token</div>
+                <div class="text-muted text-sm">Click "Copy Auth Token" above. In the extension popup, paste it as your token along with this server's URL.</div>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="step-num">4</div>
+              <div>
+                <div style="font-weight:500;margin-bottom:3px">Start applying on LinkedIn</div>
+                <div class="text-muted text-sm">Visit LinkedIn Jobs, open the extension popup, and click Start Bot. Applications will log here automatically.</div>
+              </div>
             </div>
           </div>
 
           <div class="card">
-            <h4 style="margin-bottom:16px">Bot Session Log</h4>
-            <div id="bot-log" style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;font-family:monospace;font-size:13px;min-height:200px;max-height:400px;overflow-y:auto;color:var(--text-2)">
-              <span class="text-muted">No session running. Start the bot to see logs.</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <h4>Recent Applications (from extension)</h4>
+              <a href="#" onclick="showTab('history', document.querySelector('[onclick*=history]'));return false" class="text-sm text-primary">View all →</a>
+            </div>
+            <div id="ext-recent-apps">
+              <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
+              <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
+              <div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div>
             </div>
           </div>
         </div>
@@ -239,13 +222,9 @@
   <script>
     if (!auth.requireAuth()) throw new Error();
 
-    let currentPlatform = 'linkedin';
     let historyFilter = null;
     let historyPage = 0;
     const PAGE_SIZE = 20;
-    let botPollTimer = null;
-    let logPollTimer = null;
-    let logOffset = 0;
 
     // ── Tab switching ─────────────────────────────────────────────────────
     function showTab(name, navItem) {
@@ -253,9 +232,9 @@
       document.getElementById('tab-' + name).classList.remove('hidden');
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
       if (navItem) navItem.classList.add('active');
-      if (name === 'history') loadHistory();
-      if (name === 'bot') loadBotStatus();
-      if (name === 'resumes') loadDashResumes();
+      if (name === 'history')   loadHistory();
+      if (name === 'extension') loadExtRecent();
+      if (name === 'resumes')   loadDashResumes();
     }
 
     // ── Load stats ────────────────────────────────────────────────────────
@@ -280,7 +259,6 @@
           </div>
         `;
 
-        // Platform breakdown
         const platforms = data.by_platform || {};
         const platformHtml = Object.entries(platforms).length
           ? Object.entries(platforms).map(([p, c]) => `
@@ -294,7 +272,7 @@
                 </div>
               </div>
             `).join('')
-          : '<p class="text-muted text-sm">No applications yet</p>';
+          : '<p class="text-muted text-sm">No applications yet. Download the extension to start applying!</p>';
         document.getElementById('platform-stats').innerHTML = platformHtml;
       } catch (err) {
         console.error(err);
@@ -310,7 +288,7 @@
           document.getElementById('recent-apps').innerHTML = `
             <div class="empty-state" style="padding:24px 0">
               <div style="font-size:32px">📭</div>
-              <p class="text-muted text-sm" style="margin-top:8px">No applications yet. Start the bot!</p>
+              <p class="text-muted text-sm" style="margin-top:8px">No applications yet. Download the extension and start applying!</p>
             </div>
           `;
           return;
@@ -320,6 +298,28 @@
             <div>
               <div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div>
               <div class="text-muted text-sm">${escHtml(a.company)} · ${timeAgo(a.applied_at)}</div>
+            </div>
+            <span class="result-pill result-${a.result}">${a.result}</span>
+          </div>
+        `).join('');
+      } catch {}
+    }
+
+    // ── Extension tab recent apps ─────────────────────────────────────────
+    async function loadExtRecent() {
+      try {
+        const data = await api.get('/jobs/history?limit=8');
+        const apps = data.applications || [];
+        const el = document.getElementById('ext-recent-apps');
+        if (!apps.length) {
+          el.innerHTML = '<p class="text-muted text-sm" style="padding:8px 0">No applications logged yet. Start the extension on LinkedIn to see results here.</p>';
+          return;
+        }
+        el.innerHTML = apps.map(a => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div>
+              <div class="text-muted text-sm">${escHtml(a.company)} · ${escHtml(a.platform)} · ${timeAgo(a.applied_at)}</div>
             </div>
             <span class="result-pill result-${a.result}">${a.result}</span>
           </div>
@@ -352,7 +352,6 @@
           </tr>
         `).join('');
 
-        // Pagination
         const totalPages = Math.ceil(data.total / PAGE_SIZE);
         const pagination = document.getElementById('history-pagination');
         pagination.innerHTML = '';
@@ -363,7 +362,9 @@
           btn.onclick = () => loadHistory(i);
           pagination.appendChild(btn);
         }
-      } catch { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>'; }
+      } catch {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>';
+      }
     }
 
     function filterHistory(result, btn) {
@@ -371,139 +372,6 @@
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loadHistory(0);
-    }
-
-    // ── Bot Control ───────────────────────────────────────────────────────
-    function selectPlatform(btn) {
-      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      currentPlatform = btn.dataset.platform;
-    }
-
-    async function startBot() {
-      const btn = document.getElementById('start-bot-btn');
-      setLoading(btn, true);
-      try {
-        await api.post('/jobs/bot/start', { platform: currentPlatform });
-        showToast('Bot starting…', 'success');
-        btn.style.display = 'none';
-        document.getElementById('stop-bot-btn').style.display = '';
-        startBotPoll();
-      } catch (err) {
-        showToast(err.detail || err.message || 'Could not start bot', 'error');
-        setLoading(btn, false);
-      }
-    }
-
-    async function stopBot() {
-      const btn = document.getElementById('stop-bot-btn');
-      btn.disabled = true;
-      btn.textContent = 'Stopping…';
-      try {
-        await api.post('/jobs/bot/stop');
-        showToast('Bot stopped', 'info');
-      } catch (err) {
-        showToast(err.detail || 'Could not stop bot', 'error');
-      } finally {
-        // Always stop polling and reset UI — don't re-query the DB,
-        // which might still show a stale "starting" status.
-        stopBotPoll();
-        await pollBotLogs(); // grab any final log lines
-        btn.disabled = false;
-        btn.textContent = '⏹ Stop';
-        // Force UI to idle without re-checking DB (avoids the restart loop)
-        _applyBotStatus('stopped');
-      }
-    }
-
-    function startBotPoll() {
-      clearInterval(botPollTimer);
-      clearInterval(logPollTimer);
-      logOffset = 0;
-      document.getElementById('bot-log').innerHTML = '<span class="text-muted">Waiting for bot to start...</span>';
-      botPollTimer = setInterval(() => loadBotStatus(true), 3000);
-      logPollTimer = setInterval(() => pollBotLogs(), 2000);
-    }
-
-    function stopBotPoll() {
-      clearInterval(botPollTimer);
-      clearInterval(logPollTimer);
-      botPollTimer = null;
-      logPollTimer = null;
-    }
-
-    // Shared helper that updates all bot UI elements given a status string
-    function _applyBotStatus(status, data) {
-      const dotEl    = document.getElementById('bot-status-dot');
-      const textEl   = document.getElementById('bot-status-text');
-      const badgeEl  = document.getElementById('bot-status-badge');
-      const startBtn = document.getElementById('start-bot-btn');
-      const stopBtn  = document.getElementById('stop-bot-btn');
-      const infoEl   = document.getElementById('bot-session-info');
-
-      const isActive = status === 'running' || status === 'starting';
-      dotEl.className  = 'status-dot ' + (status === 'running' ? 'running' : isActive ? 'starting' : 'stopped');
-      textEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-      badgeEl.className  = `badge ${status === 'running' ? 'badge-success' : isActive ? 'badge-warning' : 'badge-neutral'}`;
-
-      if (isActive) {
-        startBtn.style.display = 'none';
-        stopBtn.style.display  = '';
-        if (data?.session) {
-          infoEl.textContent = `${data.platform || ''} · ${data.session.jobs_applied || 0} applied, ${data.session.jobs_failed || 0} failed`;
-        }
-      } else {
-        startBtn.style.display = '';
-        stopBtn.style.display  = 'none';
-        setLoading(startBtn, false);
-        if (infoEl) infoEl.textContent = '';
-      }
-    }
-
-    async function pollBotLogs() {
-      try {
-        const data = await api.get(`/jobs/bot/logs?offset=${logOffset}`);
-        if (data.lines && data.lines.length > 0) {
-          const logEl = document.getElementById('bot-log');
-          // Remove placeholder text on first real log line
-          if (logEl.querySelector('.text-muted')) logEl.innerHTML = '';
-          data.lines.forEach(line => {
-            const div = document.createElement('div');
-            div.style.cssText = 'margin-bottom:4px;opacity:0.9;word-break:break-word;';
-            // Colour-code key events
-            if (/error|failed|exception/i.test(line)) div.style.color = 'var(--error, #f87171)';
-            else if (/successfully|applied|success/i.test(line)) div.style.color = 'var(--success, #4ade80)';
-            else if (/skipping|skipped/i.test(line)) div.style.color = '#facc15';
-            div.textContent = line;
-            logEl.appendChild(div);
-          });
-          // Auto-scroll to bottom
-          logEl.scrollTop = logEl.scrollHeight;
-          logOffset = data.next_offset;
-        }
-      } catch {}
-    }
-
-    async function loadBotStatus(polling = false) {
-      try {
-        const data = await api.get('/jobs/bot/status');
-        const status = data.status;
-
-        _applyBotStatus(status, data);
-
-        if (status === 'running' || status === 'starting') {
-          if (!polling) startBotPoll();  // only start poll on manual load, not on each poll tick
-        } else {
-          stopBotPoll();
-          if (status === 'completed' && polling) {
-            // Only toast on auto-completion, not on page load
-            await pollBotLogs();
-            showToast('Bot session completed!', 'success');
-            loadStats();
-            loadRecent();
-          }
-        }
-      } catch {}
     }
 
     // ── Dash resumes ──────────────────────────────────────────────────────
@@ -542,51 +410,22 @@
       } catch {}
     }
 
+    // ── Copy auth token (for pasting into extension) ──────────────────────
     function copyAuthToken() {
       const token = localStorage.getItem('sa_token');
       const btn = document.getElementById('copy-token-btn');
-      if (!token) {
-        showToast('No token found — please log in first.', 'error');
-        return;
-      }
+      if (!token) { showToast('No token found — please log in first.', 'error'); return; }
       navigator.clipboard.writeText(token).then(() => {
         btn.textContent = '✓ Copied!';
         btn.style.color = '#4ade80';
-        btn.style.borderColor = '#16a34a';
-        setTimeout(() => {
-          btn.innerHTML = '📋 Copy Token';
-          btn.style.color = '#94a3b8';
-          btn.style.borderColor = '#334155';
-        }, 2500);
-      }).catch(() => {
-        // Fallback for browsers that block clipboard
-        prompt('Copy your token (Ctrl+C):', token);
-      });
+        setTimeout(() => { btn.textContent = '📋 Copy Auth Token'; btn.style.color = ''; }, 2500);
+      }).catch(() => { prompt('Copy your token (Ctrl+C):', token); });
     }
 
     // ── Init ──────────────────────────────────────────────────────────────
     loadProfile();
     loadStats();
     loadRecent();
-    loadBotStatus();
-
-    // Check if LinkedIn session cookies are saved — update button label
-    (async () => {
-      try {
-        const s = await api.get('/jobs/linkedin-cookies/status');
-        const btn = document.getElementById('session-setup-btn');
-        const lbl = document.getElementById('session-label');
-        if (s.has_li_at) {
-          lbl.textContent = 'Session Active ✓';
-          btn.style.borderColor = '#16a34a';
-          btn.style.color = '#4ade80';
-        } else {
-          lbl.textContent = 'Setup LinkedIn Session ⚠';
-          btn.style.borderColor = '#ca8a04';
-          btn.style.color = '#facc15';
-        }
-      } catch (_) {}
-    })();
   </script>
 </body>
 </html>

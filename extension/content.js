@@ -1,7 +1,5 @@
 // ════════════════════════════════════════════════════════════════
 //  SmartApply Extension – Content Script v3
-//  FIX: builds correct search URL from job prefs, applies Easy
-//       Apply filter, treats all visible cards as targetable
 // ════════════════════════════════════════════════════════════════
 
 'use strict';
@@ -12,7 +10,7 @@ let STATS       = { applied: 0, skipped: 0, errors: 0, letters: 0 };
 let COVER_LETTER_CACHE = {};
 let LOG_ENTRIES = [];
 let _lastStorageRunning = false;
-let _easyApplyFilterActive = false;  // track if we enabled the filter
+let _easyApplyFilterActive = false;
 
 // ════════════════════════════════════════════════════════════════
 //  INIT
@@ -32,7 +30,6 @@ let _easyApplyFilterActive = false;  // track if we enabled the filter
     setStatus('idle');
   }
 
-  // Storage poll — primary signal mechanism (works even if message fails)
   setInterval(async () => {
     if (BOT_RUNNING) return;
     const s = await storageGet(['botRunning', 'botConfig']);
@@ -47,7 +44,6 @@ let _easyApplyFilterActive = false;  // track if we enabled the filter
   }, 1500);
 })();
 
-// Direct message listener (faster when popup is open)
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'BOT_START' && !BOT_RUNNING) {
     panelLog('🤖 Start command received', 'ok');
@@ -70,102 +66,39 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 function injectPanel() {
   if (document.getElementById('sa-panel')) return;
-
   const style = document.createElement('style');
   style.textContent = `
-    #sa-panel{position:fixed;bottom:20px;right:20px;z-index:2147483647;
-      width:340px;background:rgba(10,11,20,0.97);
-      border:1px solid rgba(99,102,241,.4);border-radius:14px;
-      box-shadow:0 10px 50px rgba(0,0,0,.8);
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      color:#e2e8f0;font-size:12px;user-select:none;transition:opacity .2s;}
+    #sa-panel{position:fixed;bottom:20px;right:20px;z-index:2147483647;width:340px;background:rgba(10,11,20,0.97);border:1px solid rgba(99,102,241,.4);border-radius:14px;box-shadow:0 10px 50px rgba(0,0,0,.8);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0;font-size:12px;user-select:none;transition:opacity .2s;}
     #sa-panel.sa-mini #sa-body{display:none}
-    #sa-head{display:flex;align-items:center;gap:7px;padding:10px 14px;
-      border-bottom:1px solid rgba(255,255,255,.06);cursor:move;}
-    .sa-logo{font-size:15px;width:28px;height:28px;
-      background:linear-gradient(135deg,#6366f1,#8b5cf6);
-      border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    #sa-head{display:flex;align-items:center;gap:7px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);cursor:move;}
+    .sa-logo{font-size:15px;width:28px;height:28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
     .sa-brand{font-weight:700;font-size:13px;flex:1;letter-spacing:-.2px}
     .sa-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .3s}
-    .sd-idle{background:#475569}
-    .sd-run{background:#6366f1;box-shadow:0 0 8px #6366f1;animation:sa-p 1.2s ease infinite}
-    .sd-ok{background:#10b981;box-shadow:0 0 6px #10b981}
-    .sd-err{background:#ef4444}
+    .sd-idle{background:#475569}.sd-run{background:#6366f1;box-shadow:0 0 8px #6366f1;animation:sa-p 1.2s ease infinite}.sd-ok{background:#10b981;box-shadow:0 0 6px #10b981}.sd-err{background:#ef4444}
     @keyframes sa-p{0%,100%{opacity:1}50%{opacity:.3}}
     .sa-stxt{font-size:11px;color:#94a3b8;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .sa-mbtn{background:none;border:none;color:#64748b;cursor:pointer;font-size:17px;padding:0 2px;line-height:1}
-    .sa-mbtn:hover{color:#e2e8f0}
+    .sa-mbtn{background:none;border:none;color:#64748b;cursor:pointer;font-size:17px;padding:0 2px;line-height:1}.sa-mbtn:hover{color:#e2e8f0}
     #sa-body{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
     #sa-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-    .sa-s{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-      border-radius:7px;padding:6px 4px;text-align:center}
-    .sa-s span{display:block;font-size:17px;font-weight:700;line-height:1}
-    .sa-s small{font-size:9px;color:#64748b;margin-top:2px;display:block}
-    #sa-log{height:160px;overflow-y:auto;background:rgba(0,0,0,.35);
-      border-radius:7px;padding:7px;
-      font-family:'SF Mono',Consolas,monospace;font-size:10.5px;line-height:1.55;
-      display:flex;flex-direction:column;gap:1px}
-    #sa-log::-webkit-scrollbar{width:3px}
-    #sa-log::-webkit-scrollbar-thumb{background:rgba(99,102,241,.35);border-radius:2px}
-    .le{display:flex;gap:5px;align-items:flex-start}
-    .lt{color:#475569;white-space:nowrap;flex-shrink:0;font-size:10px}
+    .sa-s{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:6px 4px;text-align:center}
+    .sa-s span{display:block;font-size:17px;font-weight:700;line-height:1}.sa-s small{font-size:9px;color:#64748b;margin-top:2px;display:block}
+    #sa-log{height:160px;overflow-y:auto;background:rgba(0,0,0,.35);border-radius:7px;padding:7px;font-family:'SF Mono',Consolas,monospace;font-size:10.5px;line-height:1.55;display:flex;flex-direction:column;gap:1px}
+    #sa-log::-webkit-scrollbar{width:3px}#sa-log::-webkit-scrollbar-thumb{background:rgba(99,102,241,.35);border-radius:2px}
+    .le{display:flex;gap:5px;align-items:flex-start}.lt{color:#475569;white-space:nowrap;flex-shrink:0;font-size:10px}
     .li{color:#a5b4fc}.lo{color:#6ee7b7}.lw{color:#fcd34d}.le2{color:#fca5a5}.la{color:#d8b4fe}
-    #sa-cur{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);
-      border-radius:6px;padding:5px 8px;font-size:11px;color:#a5b4fc;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
-    #sa-stop{width:100%;padding:7px;background:#ef4444;color:#fff;border:none;
-      border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:none}
-    #sa-stop:hover{background:#dc2626}
+    #sa-cur{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);border-radius:6px;padding:5px 8px;font-size:11px;color:#a5b4fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
+    #sa-stop{width:100%;padding:7px;background:#ef4444;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:none}#sa-stop:hover{background:#dc2626}
   `;
   document.head.appendChild(style);
-
   const div = document.createElement('div');
   div.id = 'sa-panel';
-  div.innerHTML = `
-    <div id="sa-head">
-      <div class="sa-logo">⚡</div>
-      <span class="sa-brand">SmartApply</span>
-      <div id="sa-sdot" class="sa-dot sd-idle"></div>
-      <span id="sa-stxt" class="sa-stxt">Idle</span>
-      <button class="sa-mbtn" id="sa-mbtn" title="Minimize">−</button>
-    </div>
-    <div id="sa-body">
-      <div id="sa-stats">
-        <div class="sa-s"><span id="sn-a">0</span><small>Applied</small></div>
-        <div class="sa-s"><span id="sn-s">0</span><small>Skipped</small></div>
-        <div class="sa-s"><span id="sn-e">0</span><small>Errors</small></div>
-        <div class="sa-s"><span id="sn-l">0</span><small>AI Ltrs</small></div>
-      </div>
-      <div id="sa-cur"></div>
-      <div id="sa-log"></div>
-      <button id="sa-stop">⏹ Stop Bot</button>
-    </div>`;
+  div.innerHTML = `<div id="sa-head"><div class="sa-logo">⚡</div><span class="sa-brand">SmartApply</span><div id="sa-sdot" class="sa-dot sd-idle"></div><span id="sa-stxt" class="sa-stxt">Idle</span><button class="sa-mbtn" id="sa-mbtn" title="Minimize">−</button></div><div id="sa-body"><div id="sa-stats"><div class="sa-s"><span id="sn-a">0</span><small>Applied</small></div><div class="sa-s"><span id="sn-s">0</span><small>Skipped</small></div><div class="sa-s"><span id="sn-e">0</span><small>Errors</small></div><div class="sa-s"><span id="sn-l">0</span><small>AI Ltrs</small></div></div><div id="sa-cur"></div><div id="sa-log"></div><button id="sa-stop">⏹ Stop Bot</button></div>`;
   document.body.appendChild(div);
-
-  document.getElementById('sa-mbtn').onclick = e => {
-    e.stopPropagation();
-    div.classList.toggle('sa-mini');
-    document.getElementById('sa-mbtn').textContent = div.classList.contains('sa-mini') ? '+' : '−';
-  };
-  document.getElementById('sa-stop').onclick = () => {
-    BOT_RUNNING = false;
-    chrome.storage.local.set({ botRunning: false });
-    panelLog('⏹ Stopped', 'warn');
-    setStatus('idle');
-  };
-
-  // Drag
+  document.getElementById('sa-mbtn').onclick = e => { e.stopPropagation(); div.classList.toggle('sa-mini'); document.getElementById('sa-mbtn').textContent = div.classList.contains('sa-mini') ? '+' : '−'; };
+  document.getElementById('sa-stop').onclick = () => { BOT_RUNNING = false; chrome.storage.local.set({ botRunning: false }); panelLog('⏹ Stopped', 'warn'); setStatus('idle'); };
   let drag=false, ox=0, oy=0;
-  document.getElementById('sa-head').addEventListener('mousedown', e => {
-    drag=true;
-    const r=div.getBoundingClientRect();
-    ox=e.clientX-r.left; oy=e.clientY-r.top; e.preventDefault();
-  });
-  document.addEventListener('mousemove', e => {
-    if(!drag) return;
-    div.style.left=(e.clientX-ox)+'px'; div.style.top=(e.clientY-oy)+'px';
-    div.style.right='auto'; div.style.bottom='auto';
-  });
+  document.getElementById('sa-head').addEventListener('mousedown', e => { drag=true; const r=div.getBoundingClientRect(); ox=e.clientX-r.left; oy=e.clientY-r.top; e.preventDefault(); });
+  document.addEventListener('mousemove', e => { if(!drag) return; div.style.left=(e.clientX-ox)+'px'; div.style.top=(e.clientY-oy)+'px'; div.style.right='auto'; div.style.bottom='auto'; });
   document.addEventListener('mouseup', ()=>{ drag=false; });
 }
 
@@ -179,7 +112,7 @@ function panelLog(text, type='info') {
   chrome.runtime.sendMessage({type:'BOT_LOG',text,level:type}).catch(()=>{});
 }
 
-function setStatus(state,text) {
+function setStatus(state, text) {
   const labels={idle:'Idle',running:'Running…',ok:'Done ✓',err:'Error'};
   const d=document.getElementById('sa-sdot'); const t=document.getElementById('sa-stxt');
   if(d) d.className='sa-dot sd-'+state;
@@ -191,8 +124,7 @@ function setStatus(state,text) {
 function setCurrentJob(text) {
   const el=document.getElementById('sa-cur');
   if(!el) return;
-  if(text){ el.textContent='▶ '+text; el.style.display='block'; }
-  else el.style.display='none';
+  if(text){ el.textContent='▶ '+text; el.style.display='block'; } else el.style.display='none';
 }
 
 function updateStats() {
@@ -219,27 +151,12 @@ function humanDelay(min=400,max=1200){
 
 async function smoothScrollTo(el){
   if(!el) return;
-  if(!CONFIG?.humanMode){ el.scrollIntoView({behavior:'smooth',block:'center'}); await sleep(180); return; }
-  const rect=el.getBoundingClientRect();
-  const delta=rect.top-window.innerHeight/2;
-  if(Math.abs(delta)<80) return;
-  const steps=Math.min(24,Math.max(8,Math.abs(delta)/28));
-  const start=window.scrollY;
-  for(let i=0;i<=steps;i++){
-    const t=i/steps; const ease=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
-    window.scrollTo({top:start+delta*ease,behavior:'instant'}); await sleep(14);
-  }
-  await sleep(100+Math.random()*180);
+  el.scrollIntoView({behavior:'smooth',block:'center'}); await sleep(180);
 }
 
 async function humanClick(el){
   if(!el) throw new Error('Cannot click null');
   await smoothScrollTo(el);
-  if(CONFIG?.humanMode){
-    el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
-    el.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
-    await sleep(50+Math.random()*120);
-  }
   el.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));
   await sleep(20+Math.random()*30);
   el.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
@@ -260,244 +177,80 @@ async function humanType(el,text){
   el.focus(); await sleep(65);
   let cur='';
   for(const ch of text){
-    if(Math.random()<0.018&&ch.match(/[a-zA-Z]/)){
-      const w=String.fromCharCode(ch.charCodeAt(0)+(Math.random()<.5?1:-1));
-      cur+=w; setNative(el,cur); await sleep(50+Math.random()*65);
-      cur=cur.slice(0,-1); setNative(el,cur); await sleep(80+Math.random()*90);
-    }
     cur+=ch; setNative(el,cur);
-    await sleep(40+Math.random()*80+(ch.match(/[\s.,!?]/)?Math.random()*100:0));
+    await sleep(40+Math.random()*80);
   }
 }
 
 function waitFor(fn,timeout=10000){
   return new Promise((res,rej)=>{
     const deadline=Date.now()+timeout;
-    const tick=()=>{
-      const el=typeof fn==='function'?fn():document.querySelector(fn);
-      if(el) return res(el);
-      if(Date.now()>deadline) return rej(new Error('Timeout'));
-      setTimeout(tick,250);
-    };
+    const tick=()=>{ const el=typeof fn==='function'?fn():document.querySelector(fn); if(el) return res(el); if(Date.now()>deadline) return rej(new Error('Timeout')); setTimeout(tick,250); };
     tick();
   });
 }
 
-const waitForModal=(t=10000)=>waitFor(
-  ()=>document.querySelector('.artdeco-modal[role="dialog"]')||document.querySelector('[data-test-modal]'),
-  t
-);
+const waitForModal=(t=10000)=>waitFor(()=>document.querySelector('.artdeco-modal[role="dialog"]')||document.querySelector('[data-test-modal]'),t);
 
 // ════════════════════════════════════════════════════════════════
 //  LINKEDIN NAVIGATION
 // ════════════════════════════════════════════════════════════════
 
-/**
- * Build a LinkedIn job search URL from the user's job preferences.
- * Uses the first search term + location from their SmartApply profile.
- */
 function buildSearchUrl(jobPrefs, searchTermIndex = 0) {
   const terms    = (jobPrefs?.search_terms || []).filter(Boolean);
   const keyword  = terms[searchTermIndex] || 'Software Engineer';
   const location = jobPrefs?.search_location || 'India';
-
-  const params = new URLSearchParams({
-    keywords:  keyword,
-    location:  location,
-    f_LF:      'f_AL',    // Easy Apply filter
-    f_TPR:     '',        // date posted (will be set below)
-    sortBy:    'DD',      // most recent
-  });
-
-  // Experience level mapping
+  const params = new URLSearchParams({ keywords: keyword, location, f_LF: 'f_AL', sortBy: 'DD' });
   const expMap = { 'Internship': '1', 'Entry level': '2', 'Associate': '3', 'Mid-Senior level': '4', 'Director': '5', 'Executive': '6' };
   const expLevels = (jobPrefs?.experience_level || []).map(e => expMap[e]).filter(Boolean);
   if (expLevels.length) params.set('f_E', expLevels.join(','));
-
-  // Work type mapping
   const workMap = { 'On-site': '1', 'Remote': '2', 'Hybrid': '3' };
   const workTypes = (jobPrefs?.on_site || []).map(w => workMap[w]).filter(Boolean);
   if (workTypes.length) params.set('f_WT', workTypes.join(','));
-
-  // Date posted
   const dateMap = { 'Past 24 hours': 'r86400', 'Past week': 'r604800', 'Past month': 'r2592000' };
   const dateFilter = dateMap[jobPrefs?.date_posted];
   if (dateFilter) params.set('f_TPR', dateFilter);
-  else params.delete('f_TPR');
-
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
-/**
- * Navigate to the correct search URL for a given keyword index.
- * Returns a promise that resolves when job cards appear.
- */
-async function navigateToSearch(searchTermIndex) {
-  const url = buildSearchUrl(CONFIG.jobPrefs, searchTermIndex);
-  const keyword = (CONFIG.jobPrefs?.search_terms || [])[searchTermIndex] || 'jobs';
-
-  panelLog(`🔍 Searching: "${keyword}"`, 'info');
-  panelLog(`  URL: ${url.slice(0, 80)}...`, 'info');
-
-  // Navigate
-  window.location.href = url;
-
-  // Wait for page to reload and job cards to appear
-  await sleep(3000);
-
-  // Wait up to 15s for job cards
-  try {
-    await waitFor(
-      () => document.querySelectorAll('li.scaffold-layout__list-item[data-occludable-job-id]').length > 0,
-      15000
-    );
-    panelLog('  ✓ Job listings loaded', 'ok');
-  } catch {
-    panelLog('  ⚠ Job cards slow to load — proceeding anyway', 'warn');
-  }
-
-  await sleep(1500);
-}
-
-/**
- * Apply the "Easy Apply" filter if not already active.
- * The filter button is: #searchFilter_applyWithLinkedin or button[aria-label="Easy Apply filter."]
- */
 async function applyEasyApplyFilter() {
-  // Check if filter is already active via URL
   if (window.location.href.includes('f_LF=f_AL') || window.location.href.includes('f_AL')) {
-    _easyApplyFilterActive = true;
-    return true;
+    _easyApplyFilterActive = true; return true;
   }
-
-  const filterBtn = document.querySelector(
-    '#searchFilter_applyWithLinkedin, ' +
-    'button[aria-label="Easy Apply filter."], ' +
-    'button[id="searchFilter_applyWithLinkedin"]'
-  );
-
-  if (!filterBtn) {
-    panelLog('  ℹ Easy Apply filter button not found (may already be active)', 'info');
-    _easyApplyFilterActive = true;
-    return false;
-  }
-
-  const isChecked = filterBtn.getAttribute('aria-checked') === 'true';
-  if (isChecked) {
-    panelLog('  ✓ Easy Apply filter already active', 'ok');
-    _easyApplyFilterActive = true;
-    return true;
-  }
-
-  panelLog('  🔧 Enabling Easy Apply filter...', 'info');
-  await humanClick(filterBtn);
-  await sleep(2000);  // wait for results to reload
-
-  _easyApplyFilterActive = true;
-  panelLog('  ✓ Easy Apply filter applied', 'ok');
-  return true;
+  _easyApplyFilterActive = true; return false;
 }
 
 // ════════════════════════════════════════════════════════════════
 //  JOB CARD DETECTION
 // ════════════════════════════════════════════════════════════════
 
-function getCards() {
-  return Array.from(document.querySelectorAll(
-    'li.scaffold-layout__list-item[data-occludable-job-id]'
-  ));
-}
-
-/**
- * Determine if a card is an Easy Apply job.
- * When Easy Apply filter is active (f_LF=f_AL), ALL cards are Easy Apply.
- * When not filtered, check for the Easy Apply badge.
- */
-function isEasyApply(card) {
-  // If Easy Apply filter is active, ALL listed jobs support Easy Apply
-  if (_easyApplyFilterActive || window.location.href.includes('f_LF=f_AL') || window.location.href.includes('f_AL')) {
-    return true;
-  }
-
-  // Badge check for unfiltered pages
-  const badge = card.querySelector('li.vjKDaKnQzyfIANmFwQYcDrKWoIOhQawWdbIPBwM');
-  if (badge && badge.textContent.toLowerCase().includes('easy apply')) return true;
-
-  return Array.from(card.querySelectorAll('ul li'))
-    .some(li => li.textContent.trim().toLowerCase() === 'easy apply');
-}
-
-function isApplied(card) {
-  return Array.from(card.querySelectorAll('li.job-card-container__footer-job-state'))
-    .some(li => li.textContent.toLowerCase().includes('applied'));
-}
-
-function getTitle(card) {
-  return (
-    card.querySelector('a.job-card-container__link')?.getAttribute('aria-label') ||
-    card.querySelector('a.job-card-container__link')?.textContent?.trim() ||
-    card.querySelector('.job-card-list__title')?.textContent?.trim() ||
-    'Unknown Job'
-  );
-}
-
-const getCompany = () =>
-  document.querySelector('.job-details-jobs-unified-top-card__company-name a')?.textContent?.trim() ||
-  document.querySelector('.jobs-unified-top-card__company-name a')?.textContent?.trim() || '';
-
-const getJD = () =>
-  document.querySelector('#job-details')?.innerText?.trim()?.slice(0, 2000) || '';
+function getCards() { return Array.from(document.querySelectorAll('li.scaffold-layout__list-item[data-occludable-job-id]')); }
+function isApplied(card) { return Array.from(card.querySelectorAll('li.job-card-container__footer-job-state')).some(li => li.textContent.toLowerCase().includes('applied')); }
+function getTitle(card) { return card.querySelector('a.job-card-container__link')?.getAttribute('aria-label') || card.querySelector('a.job-card-container__link')?.textContent?.trim() || card.querySelector('.job-card-list__title')?.textContent?.trim() || 'Unknown Job'; }
+const getCompany = () => document.querySelector('.job-details-jobs-unified-top-card__company-name a')?.textContent?.trim() || document.querySelector('.jobs-unified-top-card__company-name a')?.textContent?.trim() || '';
+const getJD = () => document.querySelector('#job-details')?.innerText?.trim()?.slice(0, 2000) || '';
 
 function getEasyApplyBtn() {
   for (const btn of document.querySelectorAll('button[data-live-test-job-apply-button], button.jobs-apply-button')) {
     const lbl = (btn.getAttribute('aria-label') || btn.textContent || '').toLowerCase();
     const ext  = !!btn.querySelector('[data-test-icon="link-external-small"]');
-    if (!ext && (lbl.includes('easy apply') || (lbl.includes('apply') && !lbl.includes('company website')))) {
-      return btn;
-    }
+    if (!ext && (lbl.includes('easy apply') || (lbl.includes('apply') && !lbl.includes('company website')))) return btn;
   }
   return null;
 }
 
-const getModal = () =>
-  document.querySelector('.artdeco-modal[role="dialog"]') ||
-  document.querySelector('[data-test-modal]');
+const getModal = () => document.querySelector('.artdeco-modal[role="dialog"]') || document.querySelector('[data-test-modal]');
 
 function getNavBtn(modal, type) {
-  if (type === 'submit') {
-    return modal.querySelector('button[data-easy-apply-submit-btn]') ||
-      modal.querySelector('button[data-live-test-easy-apply-submit-btn]') ||
-      Array.from(modal.querySelectorAll('button'))
-        .find(b => b.textContent.trim().toLowerCase().includes('submit application'));
-  }
-  if (type === 'review') {
-    return modal.querySelector('button[data-live-test-easy-apply-review-btn]') ||
-      Array.from(modal.querySelectorAll('button'))
-        .find(b => b.textContent.trim().toLowerCase() === 'review');
-  }
-  if (type === 'next') {
-    return modal.querySelector('button[data-easy-apply-next-button]') ||
-      modal.querySelector('button[data-live-test-easy-apply-next-button]') ||
-      Array.from(modal.querySelectorAll('footer button, .jobs-easy-apply-footer button'))
-        .find(b => {
-          const t = b.textContent.trim().toLowerCase();
-          const a = (b.getAttribute('aria-label') || '').toLowerCase();
-          return t === 'next' || a.includes('next') || a.includes('continue');
-        });
-  }
+  if (type === 'submit') return modal.querySelector('button[data-easy-apply-submit-btn]') || Array.from(modal.querySelectorAll('button')).find(b => b.textContent.trim().toLowerCase().includes('submit application'));
+  if (type === 'review') return modal.querySelector('button[data-live-test-easy-apply-review-btn]') || Array.from(modal.querySelectorAll('button')).find(b => b.textContent.trim().toLowerCase() === 'review');
+  if (type === 'next')   return modal.querySelector('button[data-easy-apply-next-button]') || Array.from(modal.querySelectorAll('footer button, .jobs-easy-apply-footer button')).find(b => { const t=b.textContent.trim().toLowerCase(); return t==='next'||t.includes('continue'); });
   return null;
 }
 
 function getLabel(el) {
   if (el.getAttribute('aria-label')) return el.getAttribute('aria-label');
-  try {
-    if (el.id) {
-      const l = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
-      if (l) return l.textContent.trim();
-    }
-  } catch {}
-  const pl = el.closest('label');
-  if (pl) return pl.textContent.trim();
+  try { if (el.id) { const l = document.querySelector(`label[for="${CSS.escape(el.id)}"]`); if (l) return l.textContent.trim(); } } catch {}
   const c = el.closest('.fb-dash-form-element, .artdeco-text-input');
   if (c) { const l = c.querySelector('label'); if (l) return l.textContent.trim(); }
   return el.getAttribute('placeholder') || '';
@@ -505,20 +258,12 @@ function getLabel(el) {
 
 async function closeModal() {
   const btn = document.querySelector('button[aria-label="Dismiss"], button.artdeco-modal__dismiss');
-  if (btn) {
-    btn.click();
-    await sleep(700);
-    const discard = Array.from(document.querySelectorAll('button'))
-      .find(b => b.textContent.trim().toLowerCase().includes('discard'));
-    if (discard) discard.click();
-    await sleep(400);
-  }
+  if (btn) { btn.click(); await sleep(700); const discard = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim().toLowerCase().includes('discard')); if (discard) discard.click(); await sleep(400); }
 }
 
 async function handleDone() {
   await sleep(1000);
-  const done = Array.from(document.querySelectorAll('button'))
-    .find(b => ['done','not now','dismiss'].some(t => b.textContent.trim().toLowerCase().includes(t)));
+  const done = Array.from(document.querySelectorAll('button')).find(b => ['done','not now','dismiss'].some(t => b.textContent.trim().toLowerCase().includes(t)));
   if (done) done.click(); else await closeModal();
   await sleep(500);
 }
@@ -529,11 +274,7 @@ async function handleDone() {
 
 async function apiPost(path, body) {
   const url = CONFIG.serverUrl.replace(/\/$/, '') + path;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CONFIG.token}` },
-    body: JSON.stringify(body),
-  });
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${CONFIG.token}`}, body: JSON.stringify(body) });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.detail || `HTTP ${r.status}`);
   return data;
@@ -543,38 +284,20 @@ async function generateCoverLetter(jobId, jobTitle, company, jd) {
   if (COVER_LETTER_CACHE[jobId]) return COVER_LETTER_CACHE[jobId];
   if (!CONFIG.coverLetter) return CONFIG.profile?.cover_letter || '';
   try {
-    const res = await apiPost('/api/ai/cover-letter', {
-      job_title: jobTitle, company, job_description: (jd || '').slice(0, 1500),
-    });
+    const res = await apiPost('/api/ai/cover-letter', { job_title: jobTitle, company, job_description: (jd || '').slice(0, 1500) });
     const letter = res.cover_letter || '';
-    if (letter) {
-      COVER_LETTER_CACHE[jobId] = letter;
-      STATS.letters++; updateStats();
-      panelLog(`✦ AI letter: ${jobTitle.slice(0, 28)}`, 'ai');
-    }
+    if (letter) { COVER_LETTER_CACHE[jobId] = letter; STATS.letters++; updateStats(); panelLog(`✦ AI letter: ${jobTitle.slice(0, 28)}`, 'ai'); }
     return letter;
-  } catch (e) {
-    panelLog(`Cover letter error: ${e.message}`, 'warn');
-    return CONFIG.profile?.cover_letter || '';
-  }
+  } catch (e) { panelLog(`Cover letter error: ${e.message}`, 'warn'); return CONFIG.profile?.cover_letter || ''; }
 }
 
 async function aiAnswerQuestion(question, jobTitle, company) {
-  try {
-    const r = await apiPost('/api/ai/answer-question', {
-      question, job_title: jobTitle || '', company: company || '',
-    });
-    return r.answer || '';
-  } catch { return ''; }
+  try { const r = await apiPost('/api/ai/answer-question', { question, job_title: jobTitle || '', company: company || '' }); return r.answer || ''; }
+  catch { return ''; }
 }
 
 async function logApp(jobTitle, company, jobLink, result, reason) {
-  try {
-    await apiPost('/api/jobs/log', {
-      platform: 'linkedin', job_title: jobTitle,
-      company, job_link: jobLink, result, reason: reason || '',
-    });
-  } catch {}
+  try { await apiPost('/api/jobs/log', { platform:'linkedin', job_title:jobTitle, company, job_link:jobLink, result, reason: reason||'' }); } catch {}
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -598,28 +321,20 @@ async function getAnswer(rawLabel, type, opts, jobTitle, company) {
   if (lbl.includes('street') || (lbl.includes('address') && !lbl.includes('email'))) return p.street || '';
   if (lbl.includes('linkedin'))                            return p.linkedin_profile || '';
   if (lbl.includes('website') || lbl.includes('portfolio')) return p.website || '';
-  if (lbl.includes('github'))                              return p.website || '';
-
-  if (lbl.includes('cover letter') || lbl.includes('why do you want') || lbl.includes('motivation'))
-    return COVER_LETTER_CACHE[CONFIG._currentJobId] || p.cover_letter || '';
-
-  if (lbl.includes('summary') || lbl.includes('about yourself'))
-    return p.linkedin_summary || p.cover_letter || '';
-
+  if (lbl.includes('cover letter') || lbl.includes('why do you want')) return COVER_LETTER_CACHE[CONFIG._currentJobId] || p.cover_letter || '';
+  if (lbl.includes('summary') || lbl.includes('about yourself')) return p.linkedin_summary || p.cover_letter || '';
   if (lbl.match(/years.{0,10}experience|total experience/)) return String(p.years_of_experience || '0');
   if (lbl.includes('expected') && (lbl.includes('salary') || lbl.includes('ctc'))) return String(p.desired_salary || '0');
   if (lbl.includes('current') && (lbl.includes('ctc') || lbl.includes('salary'))) return String(p.current_ctc || '0');
   if (lbl.includes('notice period') || lbl.includes('joining period')) return String(p.notice_period || '0');
-  if (lbl.includes('gpa') || lbl.includes('grade point')) return '8.5';
   if (lbl.includes('confidence') || lbl.includes('rate yourself')) return String(p.confidence_level || '7');
 
   const bools = [
-    { re: /authorized|legally authorized|eligible to work/, val: true  },
-    { re: /visa sponsorship|require sponsorship/,           val: false },
-    { re: /willing to relocate|open to relocation/,         val: true  },
-    { re: /currently employed|presently working/,            val: false },
-    { re: /full.?time/,                                      val: jp.job_type?.includes('Full-time') ?? true },
-    { re: /remote work|comfortable remote/,                  val: jp.on_site?.includes('Remote') ?? true  },
+    { re: /authorized|legally authorized|eligible to work/, val: true },
+    { re: /visa sponsorship|require sponsorship/, val: false },
+    { re: /willing to relocate|open to relocation/, val: true },
+    { re: /full.?time/, val: jp.job_type?.includes('Full-time') ?? true },
+    { re: /remote work|comfortable remote/, val: jp.on_site?.includes('Remote') ?? true },
   ];
   for (const { re, val } of bools) {
     if (lbl.match(re)) {
@@ -628,17 +343,11 @@ async function getAnswer(rawLabel, type, opts, jobTitle, company) {
     }
   }
 
-  if (lbl.match(/highest education|education level|highest degree/)) {
-    if (opts?.length) return opts.find(o => o.toLowerCase().includes('bachelor')) || opts[1] || opts[0] || "Bachelor's";
-    return "Bachelor's";
-  }
-
   if (type === 'select' && opts?.length && !lbl.includes('country code')) {
     const first = opts.find(o => o && o !== 'Select an option');
     if (first) { panelLog(`  ⚠ Auto-select: "${rawLabel?.slice(0, 22)}"`, 'warn'); return first; }
   }
 
-  // AI fallback
   if (rawLabel && rawLabel.length > 4 && type !== 'resume') {
     const ai = await aiAnswerQuestion(rawLabel, jobTitle, company);
     if (ai) { panelLog(`  🤖 AI: "${rawLabel.slice(0, 22)}" → "${ai}"`, 'ai'); return ai; }
@@ -651,101 +360,56 @@ async function getAnswer(rawLabel, type, opts, jobTitle, company) {
 // ════════════════════════════════════════════════════════════════
 
 async function fillStep(modal, jobTitle, company) {
-  // Text inputs
   for (const el of modal.querySelectorAll('input.artdeco-text-input--input, input[type="text"]')) {
     if (el.readOnly || el.disabled || el.type === 'hidden') continue;
     const lbl = getLabel(el); if (!lbl) continue;
     const ans = await getAnswer(lbl, 'text', [], jobTitle, company);
-    if (ans && el.value !== ans) {
-      await humanDelay(80, 250);
-      if (CONFIG.humanMode && ans.length > 12) await humanType(el, ans);
-      else setNative(el, ans);
-    }
+    if (ans && el.value !== ans) { await humanDelay(80, 250); setNative(el, ans); }
     await sleep(50);
   }
-
-  // Textareas
   for (const el of modal.querySelectorAll('textarea')) {
     if (el.readOnly || el.disabled) continue;
     const lbl = getLabel(el); if (!lbl) continue;
     const ans = await getAnswer(lbl, 'textarea', [], jobTitle, company);
-    if (ans && el.value !== ans) {
-      await humanDelay(130, 450);
-      if (CONFIG.humanMode) await humanType(el, ans);
-      else setNative(el, ans);
-    }
+    if (ans && el.value !== ans) { await humanDelay(130, 450); setNative(el, ans); }
     await sleep(70);
   }
-
-  // Selects
   for (const sel of modal.querySelectorAll('select')) {
     if (sel.disabled) continue;
     const lbl  = getLabel(sel);
     const opts = Array.from(sel.options).map(o => o.text.trim()).filter(t => t && t !== 'Select an option');
-
     if (lbl.toLowerCase().includes('country code') || lbl.toLowerCase().includes('phone country')) {
-      const country = CONFIG.profile?.country || 'India';
-      const opt = Array.from(sel.options).find(o => o.text.includes(country));
+      const opt = Array.from(sel.options).find(o => o.text.includes(CONFIG.profile?.country || 'India'));
       if (opt && sel.value !== opt.value) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
       continue;
     }
-    if (lbl.toLowerCase().includes('email')) {
-      const eOpt = Array.from(sel.options).find(o => o.text.includes('@') || o.value.includes('@'));
-      if (eOpt && sel.value !== eOpt.value) { sel.value = eOpt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
-      continue;
-    }
-
     const ans = await getAnswer(lbl, 'select', opts, jobTitle, company);
     if (ans) {
-      const match = Array.from(sel.options).find(o =>
-        o.text.trim().toLowerCase() === ans.toLowerCase() ||
-        o.text.trim().toLowerCase().includes(ans.toLowerCase())
-      );
-      if (match && sel.value !== match.value) {
-        await humanDelay(70, 180);
-        sel.value = match.value;
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      const match = Array.from(sel.options).find(o => o.text.trim().toLowerCase() === ans.toLowerCase() || o.text.trim().toLowerCase().includes(ans.toLowerCase()));
+      if (match && sel.value !== match.value) { await humanDelay(70, 180); sel.value = match.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
     }
     await sleep(55);
   }
-
-  // Radio buttons
   const rgs = {};
-  modal.querySelectorAll('input[type="radio"]').forEach(r => {
-    const n = r.name || 'rg'; if (!rgs[n]) rgs[n] = []; rgs[n].push(r);
-  });
+  modal.querySelectorAll('input[type="radio"]').forEach(r => { const n = r.name || 'rg'; if (!rgs[n]) rgs[n] = []; rgs[n].push(r); });
   for (const radios of Object.values(rgs)) {
     if (radios.some(r => r.checked)) continue;
     const lbl  = getLabel(radios[0]);
-    const opts = radios.map(r => {
-      try { return document.querySelector(`label[for="${CSS.escape(r.id)}"]`)?.textContent?.trim() || r.value || ''; }
-      catch { return r.value || ''; }
-    });
+    const opts = radios.map(r => { try { return document.querySelector(`label[for="${CSS.escape(r.id)}"]`)?.textContent?.trim() || r.value || ''; } catch { return r.value || ''; } });
     const ans = await getAnswer(lbl, 'radio', opts, jobTitle, company);
-    let picked = false;
     if (ans) {
       const idx = opts.findIndex(o => o.toLowerCase() === ans.toLowerCase() || o.toLowerCase().startsWith(ans.toLowerCase()));
-      if (idx >= 0) { await humanDelay(70, 180); radios[idx].click(); picked = true; }
-    }
-    if (!picked && radios.length) { await sleep(70); radios[0].click(); }
+      if (idx >= 0) { await humanDelay(70, 180); radios[idx].click(); }
+    } else if (radios.length) { await sleep(70); radios[0].click(); }
     await sleep(55);
   }
-
-  // Consent checkboxes
   for (const cb of modal.querySelectorAll('input[type="checkbox"]:not(:checked)')) {
     const lbl = getLabel(cb).toLowerCase();
-    if (lbl.includes('agree') || lbl.includes('certify') || lbl.includes('consent') || lbl.includes('confirm')) {
-      await humanDelay(55, 140); cb.click();
-    }
+    if (lbl.includes('agree') || lbl.includes('certify') || lbl.includes('consent') || lbl.includes('confirm')) { await humanDelay(55, 140); cb.click(); }
     await sleep(35);
   }
-
-  // Resume card
   const rCards = modal.querySelectorAll('.jobs-document-upload-redesign-card__container, [data-test-resume-card]');
-  if (rCards.length > 0 && !rCards[0].getAttribute('aria-checked')) {
-    await humanDelay(130, 350); await humanClick(rCards[0]);
-  }
+  if (rCards.length > 0 && !rCards[0].getAttribute('aria-checked')) { await humanDelay(130, 350); await humanClick(rCards[0]); }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -766,29 +430,18 @@ async function applyToJob(card) {
   await humanDelay(CONFIG.humanMode ? 1200 : 600, CONFIG.humanMode ? 2800 : 1200);
 
   let company = '', jd = '', link = '';
-  for (let i = 0; i < 10; i++) {
-    company = getCompany(); jd = getJD(); link = window.location.href;
-    if (company) break;
-    await sleep(400);
-  }
+  for (let i = 0; i < 10; i++) { company = getCompany(); jd = getJD(); link = window.location.href; if (company) break; await sleep(400); }
   panelLog(`  🏢 ${company || '(company unknown)'}`, 'info');
 
   const jobId = card.getAttribute('data-occludable-job-id') || (title + company);
   CONFIG._currentJobId = jobId;
   if (CONFIG.coverLetter && company) generateCoverLetter(jobId, title, company, jd);
 
-  // Find Easy Apply button
   let eBtn = null;
   for (let i = 0; i < 10; i++) { eBtn = getEasyApplyBtn(); if (eBtn) break; await sleep(350); }
-  if (!eBtn) {
-    panelLog('  ⊘ No Easy Apply button — skip', 'warn');
-    STATS.skipped++; updateStats();
-    return false;
-  }
+  if (!eBtn) { panelLog('  ⊘ No Easy Apply button — skip', 'warn'); STATS.skipped++; updateStats(); return false; }
 
-  // Wait for cover letter
-  if (CONFIG.coverLetter && company && !COVER_LETTER_CACHE[jobId])
-    for (let i = 0; i < 8 && !COVER_LETTER_CACHE[jobId]; i++) await sleep(500);
+  if (CONFIG.coverLetter && company && !COVER_LETTER_CACHE[jobId]) for (let i = 0; i < 8 && !COVER_LETTER_CACHE[jobId]; i++) await sleep(500);
 
   await humanDelay(300, 900);
   await humanClick(eBtn);
@@ -810,14 +463,7 @@ async function applyToJob(card) {
     const nextBtn   = getNavBtn(modal, 'next');
 
     if (submitBtn) {
-      if (CONFIG.dryRun) {
-        panelLog(`  🔒 DRY RUN: ${title.slice(0, 28)}`, 'warn');
-        await closeModal(); await sleep(700);
-        STATS.applied++; updateStats();
-        await logApp(title, company, link, 'Dry Run');
-        setCurrentJob('');
-        return true;
-      }
+      if (CONFIG.dryRun) { panelLog(`  🔒 DRY RUN: ${title.slice(0, 28)}`, 'warn'); await closeModal(); await sleep(700); STATS.applied++; updateStats(); await logApp(title, company, link, 'Dry Run'); setCurrentJob(''); return true; }
       panelLog(`  ✅ SUBMITTING!`, 'ok');
       await humanDelay(CONFIG.humanMode ? 500 : 150, CONFIG.humanMode ? 1200 : 450);
       await humanClick(submitBtn);
@@ -826,162 +472,86 @@ async function applyToJob(card) {
       STATS.applied++; updateStats();
       await logApp(title, company, link, 'Applied');
       panelLog(`  🎉 Applied #${STATS.applied}: ${title.slice(0, 28)}`, 'ok');
-      setCurrentJob('');
-      return true;
-
-    } else if (reviewBtn) {
-      panelLog(`  → Review`, 'info');
-      await humanClick(reviewBtn); await humanDelay(700, 1600);
-
-    } else if (nextBtn) {
-      panelLog(`  → Step ${step + 1}`, 'info');
-      await humanClick(nextBtn); await humanDelay(700, 1800);
-
-    } else {
-      panelLog(`  ⚠ No nav button at step ${step + 1}`, 'warn');
-      break;
-    }
+      setCurrentJob(''); return true;
+    } else if (reviewBtn) { panelLog(`  → Review`, 'info'); await humanClick(reviewBtn); await humanDelay(700, 1600);
+    } else if (nextBtn) { panelLog(`  → Step ${step + 1}`, 'info'); await humanClick(nextBtn); await humanDelay(700, 1800);
+    } else { panelLog(`  ⚠ No nav button at step ${step + 1}`, 'warn'); break; }
   }
 
-  await closeModal();
-  STATS.errors++; updateStats();
+  await closeModal(); STATS.errors++; updateStats();
   await logApp(title, company, link, 'Failed', 'Navigation failed');
-  panelLog(`  ✗ Failed: ${title.slice(0, 28)}`, 'err');
-  setCurrentJob('');
-  return false;
+  panelLog(`  ✗ Failed: ${title.slice(0, 28)}`, 'err'); setCurrentJob(''); return false;
 }
 
 // ════════════════════════════════════════════════════════════════
-//  MAIN BOT LOOP — Iterates over all search terms
+//  MAIN BOT LOOP
 // ════════════════════════════════════════════════════════════════
 
 async function startBot(config) {
   if (BOT_RUNNING) { panelLog('Already running', 'warn'); return; }
-
-  CONFIG = config;
-  BOT_RUNNING = true;
-  _easyApplyFilterActive = false;
-  STATS = { applied: 0, skipped: 0, errors: 0, letters: 0 };
-  COVER_LETTER_CACHE = {};
-
-  setStatus('running');
-  updateStats();
+  CONFIG = config; BOT_RUNNING = true; _easyApplyFilterActive = false;
+  STATS = { applied: 0, skipped: 0, errors: 0, letters: 0 }; COVER_LETTER_CACHE = {};
+  setStatus('running'); updateStats();
   chrome.runtime.sendMessage({ type: 'BOT_STATUS', running: true }).catch(() => {});
-
   panelLog('🤖 Bot started', 'ok');
   panelLog(`${config.dryRun ? '🔒 Dry Run' : '🚀 LIVE'} | Human: ${config.humanMode ? 'ON' : 'OFF'} | Max: ${config.maxApps}`, 'info');
 
   const searchTerms = (config.jobPrefs?.search_terms || []).filter(Boolean);
-  if (!searchTerms.length) {
-    panelLog('❌ No search terms! Add them in Profile → Job Preferences', 'err');
-    BOT_RUNNING = false; setStatus('err'); return;
-  }
-
+  if (!searchTerms.length) { panelLog('❌ No search terms! Add them in Profile → Job Preferences', 'err'); BOT_RUNNING = false; setStatus('err'); return; }
   panelLog(`📋 Search terms: ${searchTerms.slice(0, 3).join(', ')}`, 'info');
 
-  // Loop through each search term
   for (let termIdx = 0; termIdx < searchTerms.length && BOT_RUNNING; termIdx++) {
     const term = searchTerms[termIdx];
     panelLog(`\n══ Search ${termIdx + 1}/${searchTerms.length}: "${term}" ══`, 'ok');
 
-    // Navigate to the search URL for this term
-    // (on first term, check if we're already on a good LinkedIn Jobs page)
     const alreadyOnJobs = window.location.href.includes('linkedin.com/jobs');
     const hasCards = document.querySelectorAll('li.scaffold-layout__list-item[data-occludable-job-id]').length > 0;
 
     if (!alreadyOnJobs || !hasCards) {
-      // Navigate to search page — this causes a page reload so we need to re-inject
       const url = buildSearchUrl(config.jobPrefs, termIdx);
       panelLog(`🔍 Navigating: "${term}"`, 'info');
-      panelLog(`  ${url.slice(0, 75)}...`, 'info');
-
-      // Save state so after reload the bot restarts at this term
-      await chrome.storage.local.set({
-        botRunning: true,
-        botConfig: { ...config, _resumeTermIndex: termIdx },
-      });
-
-      window.location.href = url;
-      return; // Page will reload; content script will re-init and pick up from storage
+      await chrome.storage.local.set({ botRunning: true, botConfig: { ...config, _resumeTermIndex: termIdx } });
+      window.location.href = url; return;
     }
 
-    // Apply Easy Apply filter if not already active
-    await applyEasyApplyFilter();
-    await sleep(1000);
+    await applyEasyApplyFilter(); await sleep(1000);
 
-    // Process pages of results for this search term
     let page = 0;
     while (BOT_RUNNING && page < 4) {
       const cards = getCards();
-      const todo  = cards.filter(c => !isApplied(c));  // all cards are Easy Apply when filter is active
-
+      const todo  = cards.filter(c => !isApplied(c));
       panelLog(`  Page ${page + 1}: ${cards.length} jobs found, ${todo.length} not applied`, 'info');
-
-      if (!cards.length) {
-        panelLog('  No job cards found on this page', 'warn');
-        break;
-      }
-      if (!todo.length) {
-        panelLog('  All visible jobs already applied', 'warn');
-        break;
-      }
+      if (!cards.length) { panelLog('  No job cards found on this page', 'warn'); break; }
+      if (!todo.length) { panelLog('  All visible jobs already applied', 'warn'); break; }
 
       for (const card of todo) {
         if (!BOT_RUNNING) break;
-        if (config.maxApps > 0 && STATS.applied >= config.maxApps) {
-          panelLog(`🎯 Reached max (${config.maxApps})`, 'ok');
-          BOT_RUNNING = false; break;
-        }
-        try {
-          await applyToJob(card);
-        } catch (e) {
-          panelLog(`Error: ${e.message}`, 'err');
-          STATS.errors++; updateStats();
-          try { await closeModal(); } catch {}
-          await sleep(1500);
-        }
-        if (BOT_RUNNING) {
-          const gap = config.humanMode ? 3500 + Math.random() * 4500 : 1800;
-          panelLog(`  ⏱ ${Math.round(gap / 1000)}s pause…`, 'info');
-          await sleep(gap);
-        }
+        if (config.maxApps > 0 && STATS.applied >= config.maxApps) { panelLog(`🎯 Reached max (${config.maxApps})`, 'ok'); BOT_RUNNING = false; break; }
+        try { await applyToJob(card); }
+        catch (e) { panelLog(`Error: ${e.message}`, 'err'); STATS.errors++; updateStats(); try { await closeModal(); } catch {} await sleep(1500); }
+        if (BOT_RUNNING) { const gap = config.humanMode ? 3500 + Math.random() * 4500 : 1800; panelLog(`  ⏱ ${Math.round(gap/1000)}s pause…`, 'info'); await sleep(gap); }
       }
 
       if (!BOT_RUNNING) break;
-
-      // Scroll to bottom to load more / go to next page
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       await sleep(2500);
 
-      // Click "Next" pagination button if visible
       const nextPage = document.querySelector('button[aria-label="Page 2"], button.artdeco-pagination__button--next');
-      if (nextPage && !nextPage.disabled) {
-        panelLog('  ▶ Going to next page', 'info');
-        await humanClick(nextPage);
-        await sleep(3000);
-      }
-
+      if (nextPage && !nextPage.disabled) { panelLog('  ▶ Going to next page', 'info'); await humanClick(nextPage); await sleep(3000); }
       page++;
     }
 
-    // If there are more search terms, navigate to the next one
     if (BOT_RUNNING && termIdx + 1 < searchTerms.length) {
       const nextUrl = buildSearchUrl(config.jobPrefs, termIdx + 1);
       panelLog(`\n🔍 Next search term: "${searchTerms[termIdx + 1]}"`, 'info');
-      await chrome.storage.local.set({
-        botRunning: true,
-        botConfig: { ...config, _resumeTermIndex: termIdx + 1 },
-      });
-      window.location.href = nextUrl;
-      return; // reload
+      await chrome.storage.local.set({ botRunning: true, botConfig: { ...config, _resumeTermIndex: termIdx + 1 } });
+      window.location.href = nextUrl; return;
     }
   }
 
-  BOT_RUNNING = false;
-  _lastStorageRunning = false;
+  BOT_RUNNING = false; _lastStorageRunning = false;
   await chrome.storage.local.set({ botRunning: false });
   chrome.runtime.sendMessage({ type: 'BOT_STATUS', running: false }).catch(() => {});
-  setStatus('ok');
-  setCurrentJob('');
+  setStatus('ok'); setCurrentJob('');
   panelLog(`\n✅ All done! Applied:${STATS.applied} Skipped:${STATS.skipped} Errors:${STATS.errors} AI:${STATS.letters}`, 'ok');
 }

@@ -10,7 +10,13 @@ services:
       - key: JWT_SECRET
         sync: false        # Set in Render Dashboard
 
-      # ── Email — Brevo (300 emails/day free, sends to anyone, no domain needed) ─
+      # ── NVIDIA NIM AI ─────────────────────────────────────────────────────
+      - key: NVIDIA_API_KEYS
+        sync: false        # Set in Render Dashboard — nvapi-xxxx
+      - key: NVIDIA_MODEL
+        value: "meta/llama-3.3-70b-instruct"
+
+      # ── Email — Brevo (300 emails/day free) ───────────────────────────────
       - key: BREVO_API_KEY
         sync: false        # Set in Render Dashboard — never put keys in code!
       - key: BREVO_FROM
@@ -18,24 +24,16 @@ services:
       - key: BREVO_FROM_NAME
         value: "SmartApply"
 
-      # ── App URL — REQUIRED for correct password reset links ───────────────
+      # ── App URL ───────────────────────────────────────────────────────────
       - key: APP_URL
         value: "https://smart-apply-7zty.onrender.com"
       - key: FRONTEND_URL
         value: "https://smart-apply-7zty.onrender.com"
 
       # ── Other settings ────────────────────────────────────────────────────
-      - key: BROWSERLESS_API_KEY
-        value: 2U8qE922A3wUFje73af3acf67061fe881d4135c168e40e52f
-      - key: BOT_ENABLED
-        value: "true"
-      - key: USE_LOCAL_CHROME
-        value: "true"
       - key: DB_NAME
         value: smartapply
       - key: JWT_ALGORITHM
         value: HS256
       - key: JWT_EXPIRE_HOURS
         value: "24"
-      - key: OPENROUTER_MODEL
-        value: meta-llama/llama-3.3-70b-instruct:free

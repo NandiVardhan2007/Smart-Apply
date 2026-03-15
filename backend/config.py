@@ -55,9 +55,8 @@ NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 #   google/gemma-3-27b-it                 (27B, fast)
 #   nvidia/llama-3.1-nemotron-70b-instruct (70B, NVIDIA-tuned)
 #   mistralai/mixtral-8x7b-instruct-v0.1  (47B, Mixtral)
+# Bug fix: admin_config key is "nvidia_model", not "openrouter_model"
 NVIDIA_MODEL = _admin_cfg.get("nvidia_model") or os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
-
-BOT_ENABLED = os.getenv("BOT_ENABLED", "false").lower() == "true"
 
 # ── Security ──────────────────────────────────────────────────────────────────
 DISPOSABLE_DOMAINS = {

@@ -46,8 +46,6 @@ async def _send(to: str, subject: str, html: str):
         raise RuntimeError("Email delivery failed. Check your BREVO_API_KEY.") from exc
 
 
-# ── Public helpers ────────────────────────────────────────────────────────────
-
 async def send_verification_email(to: str, pin: str):
     subject = "SmartApply - Verify Your Account"
     html = f"""

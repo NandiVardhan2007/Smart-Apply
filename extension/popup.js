@@ -102,7 +102,6 @@ async function loadDashboard(serverUrl, token, email) {
   $('user-email-display').textContent = email;
   addLog('Logged in. Loading profile…', 'info');
   await loadProfile(serverUrl, token);
-  await loadBotStatus(serverUrl, token);
   await loadSettings();
   $('last-refresh').textContent = `Refreshed ${timeStr()}`;
 }
@@ -114,7 +113,6 @@ async function loadProfile(serverUrl, token) {
 
     const profile  = data.profile  || {};
     const prefs    = data.job_preferences || {};
-    const accounts = data.platform_accounts || {};
 
     const name    = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Unknown';
     $('profile-avatar').textContent = name[0]?.toUpperCase() || '?';
@@ -123,11 +121,8 @@ async function loadProfile(serverUrl, token) {
       `${profile.current_city || ''}${profile.current_city && profile.country ? ', ' : ''}${profile.country || ''}` +
       (profile.years_of_experience ? ` · ${profile.years_of_experience}yr exp` : '');
 
-    // Show search terms preview
     const terms = prefs.search_terms || [];
-    if (terms.length) {
-      $('profile-meta').textContent += ` | 🔍 ${terms.slice(0, 2).join(', ')}${terms.length > 2 ? '…' : ''}`;
-    }
+    if (terms.length) $('profile-meta').textContent += ` | 🔍 ${terms.slice(0, 2).join(', ')}${terms.length > 2 ? '…' : ''}`;
 
     show('profile-card');
 
@@ -136,7 +131,6 @@ async function loadProfile(serverUrl, token) {
     if (!profile.last_name)    missing.push('Last name');
     if (!profile.phone_number) missing.push('Phone');
     if (!terms.length)         missing.push('Search terms (Job Preferences)');
-    if (!accounts.linkedin_email) missing.push('LinkedIn email (Platform Logins)');
 
     if (missing.length) {
       $('profile-status-badge').innerHTML = '<span class="dot dot-yellow"></span> Incomplete';
@@ -151,17 +145,6 @@ async function loadProfile(serverUrl, token) {
   } catch (err) {
     addLog(`Profile error: ${err.message}`, 'err');
   }
-}
-
-async function loadBotStatus(serverUrl, token) {
-  try {
-    const { ok, data } = await apiCall(serverUrl, '/api/jobs/bot/status', 'GET', null, token);
-    if (ok && data.status === 'running') {
-      setStatus('Bot running…', 'running'); show('btn-stop'); hide('btn-start');
-    }
-    const { ok:sOk, data:sData } = await apiCall(serverUrl, '/api/jobs/stats', 'GET', null, token);
-    if (sOk) updateStats({ applied: sData.applied||0, skipped: sData.skipped||0, errors: sData.failed||0 });
-  } catch {}
 }
 
 async function loadSettings() {
@@ -195,7 +178,7 @@ async function startBot() {
 
   const terms = (prefs.search_terms || []).filter(Boolean);
   if (!terms.length) {
-    addLog('❌ No job search terms! Go to SmartApply → Profile → Job Preferences and add search terms (e.g. "Java intern", "Python developer")', 'err');
+    addLog('❌ No job search terms! Go to SmartApply → Profile → Job Preferences and add search terms', 'err');
     return;
   }
 
@@ -215,7 +198,6 @@ async function startBot() {
     _resumeTermIndex: 0,
   };
 
-  // Save to storage FIRST (primary signal)
   await storageSet({ botConfig: config, botRunning: true, botStats: { applied:0, skipped:0, errors:0, letters:0 } });
 
   setStatus('Starting…', 'running');
@@ -225,21 +207,15 @@ async function startBot() {
   addLog(`Bot starting — searching: "${firstTerm}"`, 'ok');
   addLog(`${config.dryRun ? '🔒 Dry Run' : '🚀 LIVE'} mode`, 'info');
 
-  // Build the first search URL
   const searchUrl = buildSearchUrl(prefs, 0);
   addLog(`Opening: ${searchUrl.slice(0, 65)}...`, 'info');
 
   try {
-    // Check for existing LinkedIn Jobs tabs
     const liTabs = await chrome.tabs.query({ url: '*://www.linkedin.com/jobs/*' });
-
     if (liTabs.length > 0) {
-      // Navigate the existing tab to the correct search URL
-      const tab = liTabs[0];
-      await chrome.tabs.update(tab.id, { url: searchUrl, active: true });
+      await chrome.tabs.update(liTabs[0].id, { url: searchUrl, active: true });
       addLog(`Navigating existing tab to search results…`, 'ok');
     } else {
-      // Open a new tab with the search URL
       chrome.tabs.create({ url: searchUrl });
       addLog('Opened LinkedIn Jobs search tab. Bot will start automatically.', 'ok');
     }
@@ -248,7 +224,6 @@ async function startBot() {
   }
 }
 
-/** Mirror of the content script's buildSearchUrl for the popup */
 function buildSearchUrl(jobPrefs, index) {
   const terms    = (jobPrefs?.search_terms || []).filter(Boolean);
   const keyword  = terms[index] || 'Software Engineer';
@@ -278,8 +253,6 @@ async function stopBot() {
     const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/jobs/*' });
     for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { type:'BOT_STOP' }).catch(()=>{});
   } catch {}
-  if (stored.token && stored.serverUrl)
-    apiCall(stored.serverUrl, '/api/jobs/bot/stop', 'POST', null, stored.token).catch(()=>{});
   setStatus('Stopped', 'idle'); hide('btn-stop'); show('btn-start');
   addLog('Bot stopped', 'warn');
 }
@@ -323,14 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-refresh-profile').addEventListener('click', async () => {
     const s = await storageGet(['serverUrl','token']);
     if (s.token) { addLog('Refreshing…','info'); await loadProfile(s.serverUrl, s.token); $('last-refresh').textContent=`Refreshed ${timeStr()}`; }
-  });
-  $('btn-back-incomplete')?.addEventListener('click', async () => {
-    const s=await storageGet(['serverUrl','token','userEmail']);
-    await loadDashboard(s.serverUrl,s.token,s.userEmail);
-  });
-  $('btn-open-profile')?.addEventListener('click', async () => {
-    const s=await storageGet(['serverUrl']);
-    chrome.tabs.create({url:(s.serverUrl||DEFAULT_SERVER)+'/profile.html'});
   });
   ['opt-dry-run','opt-cover-letter','opt-human-mode'].forEach(id => $(id)?.addEventListener('change',saveSettings));
   $('opt-max-apps')?.addEventListener('change',saveSettings);

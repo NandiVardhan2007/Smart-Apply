@@ -1,79 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Profile Setup — SmartApply</title>
-  <link rel="stylesheet" href="css/main.css" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile Setup — SmartApply</title><link rel="stylesheet" href="css/main.css" />
   <style>
-    .profile-layout { display: grid; grid-template-columns: 220px 1fr; gap: 32px; align-items: start; }
-    .profile-nav { position: sticky; top: 88px; }
-    .profile-nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-radius: var(--radius-sm);
-      font-size: 14px; color: var(--text-2); cursor: pointer;
-      transition: var(--transition); margin-bottom: 2px;
-    }
-    .profile-nav-item:hover { background: var(--surface); color: var(--text); }
-    .profile-nav-item.active { background: rgba(79,124,255,0.1); color: var(--primary); font-weight: 500; }
-    .profile-nav-item .check { margin-left: auto; color: var(--accent); font-size: 14px; display: none; }
-    .profile-nav-item.done .check { display: block; }
-    .section-panel { display: none; }
-    .section-panel.active { display: block; animation: fadeIn 0.3s ease; }
-    .tag-input-wrap {
-      min-height: 46px;
-      background: var(--bg-2);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 8px 10px;
-      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-      cursor: text;
-    }
-    .tag-input-wrap:focus-within { border-color: var(--primary); }
-    @media (max-width: 700px) { .profile-layout { grid-template-columns: 1fr; } .profile-nav { display: none; } }
-    .profile-nav-item > span { pointer-events: none; }
+    .profile-layout{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start}
+    .profile-nav{position:sticky;top:88px}
+    .profile-nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;color:var(--text-2);cursor:pointer;transition:var(--transition);margin-bottom:2px}
+    .profile-nav-item:hover{background:var(--surface);color:var(--text)}
+    .profile-nav-item.active{background:rgba(79,124,255,0.1);color:var(--primary);font-weight:500}
+    .profile-nav-item .check{margin-left:auto;color:var(--accent);font-size:14px;display:none}
+    .profile-nav-item.done .check{display:block}
+    .section-panel{display:none}.section-panel.active{display:block;animation:fadeIn 0.3s ease}
+    .tag-input-wrap{min-height:46px;background:var(--bg-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;cursor:text}
+    .tag-input-wrap:focus-within{border-color:var(--primary)}
+    @media(max-width:700px){.profile-layout{grid-template-columns:1fr}.profile-nav{display:none}}
+    .profile-nav-item>span{pointer-events:none}
+    .ai-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--radius-sm);background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);color:var(--primary);font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;flex-shrink:0}
+    .ai-btn:hover{background:rgba(99,102,241,0.22);border-color:rgba(99,102,241,0.5)}
+    .ai-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .ai-btn .ai-spin{width:11px;height:11px;border:1.5px solid rgba(99,102,241,0.3);border-top-color:var(--primary);border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+    .ai-btn.ai-loading .ai-spin{display:inline-block}.ai-btn.ai-loading .ai-lbl{display:none}
+    .field-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+    .field-hdr label{margin-bottom:0!important;font-size:13px;font-weight:500;color:var(--text-2);letter-spacing:0.03em;text-transform:uppercase}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div id="toast-container"></div>
-
-  <nav class="navbar">
-    <div class="container">
-      <a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a>
-      <div class="nav-links" id="nav-actions"></div>
-    </div>
-  </nav>
-
+  <div class="bg-grid"></div><div id="toast-container"></div>
+  <nav class="navbar"><div class="container"><a href="index.html" class="nav-logo"><div class="logo-dot"></div>Smart<span>Apply</span></a><div class="nav-links" id="nav-actions"></div></div></nav>
   <div class="page-wrapper">
     <div class="container" style="padding-top:40px;padding-bottom:80px">
       <div style="margin-bottom:36px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
-        <div>
-          <h2>Profile Setup</h2>
-          <p class="text-muted" style="margin-top:6px">Fill in your details so the bot can apply accurately on your behalf</p>
-        </div>
+        <div><h2>Profile Setup</h2><p class="text-muted" style="margin-top:6px">Fill in your details so the extension can apply accurately on your behalf</p></div>
         <a href="resume.html" class="btn btn-ghost">← Resume Upload</a>
       </div>
-
       <div class="profile-layout">
-        <!-- Sidebar nav -->
         <nav class="profile-nav">
-          <div class="profile-nav-item active" data-section="personal">
-            <span>👤</span> Personal <span class="check">✓</span>
-          </div>
-          <div class="profile-nav-item" data-section="professional">
-            <span>💼</span> Professional <span class="check">✓</span>
-          </div>
-          <div class="profile-nav-item" data-section="preferences">
-            <span>🎯</span> Job Preferences <span class="check">✓</span>
-          </div>
-          <div class="profile-nav-item" data-section="platforms">
-            <span>🔐</span> Platform Logins <span class="check">✓</span>
-          </div>
+          <div class="profile-nav-item active" data-section="personal"><span>👤</span> Personal <span class="check">✓</span></div>
+          <div class="profile-nav-item" data-section="professional"><span>💼</span> Professional <span class="check">✓</span></div>
+          <div class="profile-nav-item" data-section="preferences"><span>🎯</span> Job Preferences <span class="check">✓</span></div>
+          <div class="profile-nav-item" data-section="platforms"><span>🔐</span> Platform Logins <span class="check">✓</span></div>
         </nav>
-
-        <!-- Content -->
         <div>
+
           <!-- Personal -->
           <div class="section-panel active" id="section-personal">
             <div class="card">
@@ -92,51 +62,13 @@
               <div style="margin-top:24px">
                 <h4 style="margin-bottom:16px;font-size:0.95rem;color:var(--text-2)">Equal Opportunity (Optional)</h4>
                 <div class="grid-2">
-                  <div class="form-group">
-                    <label>Gender</label>
-                    <select id="gender">
-                      <option value="">Prefer not to say</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                      <option value="Decline">Decline</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Disability Status</label>
-                    <select id="disability_status">
-                      <option value="Decline">Decline</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Ethnicity</label>
-                    <select id="ethnicity">
-                      <option value="Decline">Decline to answer</option>
-                      <option value="Asian">Asian</option>
-                      <option value="Black or African American">Black or African American</option>
-                      <option value="Hispanic/Latino">Hispanic / Latino</option>
-                      <option value="White">White</option>
-                      <option value="American Indian or Alaska Native">American Indian or Alaska Native</option>
-                      <option value="Native Hawaiian or Other Pacific Islander">Native Hawaiian or Other Pacific Islander</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Veteran Status</label>
-                    <select id="veteran_status">
-                      <option value="Decline">Decline to answer</option>
-                      <option value="No">No, not a veteran</option>
-                      <option value="Yes">Yes, I am a veteran</option>
-                      <option value="I am not a protected veteran">I am not a protected veteran</option>
-                    </select>
-                  </div>
+                  <div class="form-group"><label>Gender</label><select id="gender"><option value="">Prefer not to say</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Decline">Decline</option></select></div>
+                  <div class="form-group"><label>Disability Status</label><select id="disability_status"><option value="Decline">Decline</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+                  <div class="form-group"><label>Ethnicity</label><select id="ethnicity"><option value="Decline">Decline to answer</option><option value="Asian">Asian</option><option value="Black or African American">Black or African American</option><option value="Hispanic/Latino">Hispanic / Latino</option><option value="White">White</option><option value="Other">Other</option></select></div>
+                  <div class="form-group"><label>Veteran Status</label><select id="veteran_status"><option value="Decline">Decline to answer</option><option value="No">No, not a veteran</option><option value="Yes">Yes, I am a veteran</option></select></div>
                 </div>
               </div>
-              <div style="margin-top:20px;text-align:right">
-                <button class="btn btn-primary" data-save-and-next="personal:professional">Next: Professional →</button>
-              </div>
+              <div style="margin-top:20px;text-align:right"><button class="btn btn-primary" data-save-and-next="personal:professional">Next: Professional →</button></div>
             </div>
           </div>
 
@@ -148,15 +80,7 @@
                 <div class="form-group"><label>LinkedIn Profile URL</label><input type="url" id="linkedin_profile" placeholder="https://linkedin.com/in/yourname" /></div>
                 <div class="form-group"><label>Portfolio Website</label><input type="url" id="website" placeholder="https://yourportfolio.com" /></div>
                 <div class="form-group"><label>Years of Experience</label>
-                  <select id="years_of_experience">
-                    <option value="0">0 — Fresher / Intern</option>
-                    <option value="1">1 year</option>
-                    <option value="2">2 years</option>
-                    <option value="3">3 years</option>
-                    <option value="4">4 years</option>
-                    <option value="5">5 years</option>
-                    <option value="6">6+ years</option>
-                  </select>
+                  <select id="years_of_experience"><option value="0">0 — Fresher / Intern</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6+ years</option></select>
                 </div>
                 <div class="grid-2">
                   <div class="form-group"><label>Desired Salary (₹ per annum)</label><input type="number" id="desired_salary" placeholder="800000" /></div>
@@ -167,36 +91,48 @@
                   <div class="form-group"><label>Recent / Current Employer</label><input type="text" id="recent_employer" placeholder="Company name (or Fresher)" /></div>
                 </div>
                 <div class="grid-2">
-                  <div class="form-group">
-                    <label>Confidence Level <span class="text-muted">(1–10, for bot form answers)</span></label>
-                    <input type="number" id="confidence_level" placeholder="7" min="1" max="10" value="7" />
-                  </div>
-                  <div class="form-group">
-                    <label>Gemini API Key <span class="text-muted">(optional — for AI form answers)</span></label>
-                    <input type="text" id="gemini_api_key" placeholder="AIzaSy..." autocomplete="off" />
-                  </div>
-                  <div class="form-group">
-                    <label>Gemini Model <span class="text-muted">(higher = smarter, lower = faster &amp; more quota)</span></label>
-                    <select id="gemini_model">
-                      <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — Fastest, highest quota ⚡</option>
-                      <option value="gemini-2.0-flash" selected>gemini-2.0-flash — Balanced (default) ✅</option>
-                      <option value="gemini-2.5-flash">gemini-2.5-flash — Smarter, lower quota 🧠</option>
-                      <option value="gemini-2.5-pro">gemini-2.5-pro — Best quality, lowest quota 🏆</option>
-                    </select>
+                  <div class="form-group"><label>Confidence Level (1–10)</label><input type="number" id="confidence_level" placeholder="7" min="1" max="10" value="7" /></div>
+                  <div class="form-group"><label>Gemini API Key (optional)</label><input type="text" id="gemini_api_key" placeholder="AIzaSy..." autocomplete="off" /></div>
+                  <div class="form-group"><label>Gemini Model</label>
+                    <select id="gemini_model"><option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — Fastest ⚡</option><option value="gemini-2.0-flash" selected>gemini-2.0-flash — Balanced ✅</option><option value="gemini-2.5-flash">gemini-2.5-flash — Smarter 🧠</option><option value="gemini-2.5-pro">gemini-2.5-pro — Best 🏆</option></select>
                   </div>
                 </div>
-                <div class="form-group"><label>LinkedIn Headline <span class="text-muted">(120 chars)</span></label><input type="text" id="linkedin_headline" placeholder="MBA Finance | Financial Analyst | Excel | SQL" maxlength="120" /></div>
-                <div class="form-group"><label>LinkedIn Summary / About</label><textarea id="linkedin_summary" rows="4" placeholder="Write a short professional bio…"></textarea></div>
+
+                <!-- LinkedIn Headline + AI -->
                 <div class="form-group">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-                    <label style="margin-bottom:0">Cover Letter Template</label>
-                    <button type="button" class="btn btn-ghost btn-sm" id="ai-cover-btn" data-action="ai-cover" style="font-size:12px">
-                      <span class="spinner"></span><span class="btn-text">✨ Generate with AI</span>
-                    </button>
+                  <div class="field-hdr">
+                    <label>LinkedIn Headline <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(120 chars)</span></label>
+                    <button type="button" class="ai-btn" id="ai-headline-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  </div>
+                  <input type="text" id="linkedin_headline" placeholder="MBA Finance | Financial Analyst | Excel | SQL" maxlength="120" />
+                </div>
+
+                <!-- LinkedIn Summary + AI -->
+                <div class="form-group">
+                  <div class="field-hdr">
+                    <label>LinkedIn Summary / About</label>
+                    <button type="button" class="ai-btn" id="ai-summary-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  </div>
+                  <textarea id="linkedin_summary" rows="4" placeholder="Write a short professional bio…"></textarea>
+                </div>
+
+                <!-- Cover Letter + AI -->
+                <div class="form-group">
+                  <div class="field-hdr">
+                    <label>Cover Letter Template</label>
+                    <button type="button" class="ai-btn" id="ai-cover-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
                   </div>
                   <textarea id="cover_letter" rows="6" placeholder="Dear Hiring Manager,&#10;&#10;I am…"></textarea>
                 </div>
-                <div class="form-group"><label>Skills Summary</label><textarea id="skills_summary" rows="3" placeholder="Python, SQL, Excel, Power BI, Data Analysis…"></textarea></div>
+
+                <!-- Skills Summary + AI -->
+                <div class="form-group">
+                  <div class="field-hdr">
+                    <label>Skills Summary</label>
+                    <button type="button" class="ai-btn" id="ai-skills-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Generate</span></button>
+                  </div>
+                  <textarea id="skills_summary" rows="3" placeholder="Python, SQL, Excel, Power BI, Data Analysis…"></textarea>
+                </div>
               </div>
               <div style="margin-top:20px;display:flex;gap:12px;justify-content:space-between">
                 <button class="btn btn-ghost" data-switch-to="personal">← Back</button>
@@ -210,75 +146,62 @@
             <div class="card">
               <h4 style="margin-bottom:24px">Job Preferences</h4>
               <div style="display:flex;flex-direction:column;gap:18px">
+
+                <!-- Search Terms + AI -->
                 <div class="form-group">
-                  <label>Search Terms (Job Titles)</label>
+                  <div class="field-hdr">
+                    <label>Search Terms (Job Titles)</label>
+                    <button type="button" class="ai-btn" id="ai-search-terms-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Suggest</span></button>
+                  </div>
                   <div class="tag-input-wrap" id="search-terms-tags"></div>
                   <input type="hidden" id="search_terms" />
-                  <span class="text-sm text-muted" style="margin-top:4px">Type a job title and press Enter. E.g. "Business Analyst"</span>
+                  <span class="text-sm text-muted" style="margin-top:4px">Type a job title and press Enter, or let AI suggest from your profile</span>
                 </div>
+
                 <div class="form-group"><label>Preferred Location</label><input type="text" id="search_location" placeholder="India" value="India" /></div>
-                <div class="form-group">
-                  <label>Experience Level</label>
-                  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px" id="exp-level-group">
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Internship" style="margin-right:6px">Internship</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Entry level" checked style="margin-right:6px">Entry level</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Associate" style="margin-right:6px">Associate</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Mid-Senior level" style="margin-right:6px">Mid-Senior</label>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Job Type</label>
-                  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Full-time" checked style="margin-right:6px">Full-time</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Internship" style="margin-right:6px">Internship</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Part-time" style="margin-right:6px">Part-time</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Contract" style="margin-right:6px">Contract</label>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Work Mode</label>
-                  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="On-site" checked style="margin-right:6px">On-site</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Hybrid" checked style="margin-right:6px">Hybrid</label>
-                    <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Remote" checked style="margin-right:6px">Remote</label>
-                  </div>
-                </div>
+
+                <div class="form-group"><label>Experience Level</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Internship" style="margin-right:6px">Internship</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Entry level" checked style="margin-right:6px">Entry level</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Associate" style="margin-right:6px">Associate</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="exp_level" value="Mid-Senior level" style="margin-right:6px">Mid-Senior</label>
+                </div></div>
+
+                <div class="form-group"><label>Job Type</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Full-time" checked style="margin-right:6px">Full-time</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Internship" style="margin-right:6px">Internship</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="job_type" value="Part-time" style="margin-right:6px">Part-time</label>
+                </div></div>
+
+                <div class="form-group"><label>Work Mode</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="On-site" checked style="margin-right:6px">On-site</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Hybrid" checked style="margin-right:6px">Hybrid</label>
+                  <label class="badge badge-neutral" style="cursor:pointer"><input type="checkbox" name="on_site" value="Remote" checked style="margin-right:6px">Remote</label>
+                </div></div>
+
                 <div class="grid-2">
-                  <div class="form-group"><label>Date Posted Filter</label>
-                    <select id="date_posted">
-                      <option value="Past week">Past week</option>
-                      <option value="Past month" selected>Past month</option>
-                      <option value="Past 24 hours">Past 24 hours</option>
-                      <option value="Any time">Any time</option>
-                    </select>
-                  </div>
-                  <div class="form-group"><label>Sort By</label>
-                    <select id="sort_by">
-                      <option value="Most recent" selected>Most recent</option>
-                      <option value="Most relevant">Most relevant</option>
-                    </select>
-                  </div>
+                  <div class="form-group"><label>Date Posted Filter</label><select id="date_posted"><option value="Past week">Past week</option><option value="Past month" selected>Past month</option><option value="Past 24 hours">Past 24 hours</option><option value="Any time">Any time</option></select></div>
+                  <div class="form-group"><label>Sort By</label><select id="sort_by"><option value="Most recent" selected>Most recent</option><option value="Most relevant">Most relevant</option></select></div>
                 </div>
-                <div class="form-group">
-                  <label>Applications per Search Term <span class="text-muted">(switch_number — bot moves to next keyword after this many)</span></label>
-                  <input type="number" id="switch_number" value="15" min="1" max="100" placeholder="15" />
-                </div>
-                <div class="toggle-row">
-                  <div>
-                    <div style="font-size:14px;font-weight:500">Easy Apply Only</div>
-                    <div class="text-sm text-muted">Only apply to one-click Easy Apply jobs</div>
-                  </div>
-                  <label class="toggle"><input type="checkbox" id="easy_apply_only" checked /><span class="toggle-slider"></span></label>
-                </div>
+
+                <div class="form-group"><label>Applications per Search Term</label><input type="number" id="switch_number" value="15" min="1" max="100" placeholder="15" /></div>
+
+                <div class="toggle-row"><div><div style="font-size:14px;font-weight:500">Easy Apply Only</div><div class="text-sm text-muted">Only apply to one-click Easy Apply jobs</div></div><label class="toggle"><input type="checkbox" id="easy_apply_only" checked /><span class="toggle-slider"></span></label></div>
+
                 <div class="grid-2">
+                  <!-- Bad Words + AI -->
                   <div class="form-group">
-                    <label>Keywords to Skip <span class="text-muted">(Bad Words)</span></label>
+                    <div class="field-hdr">
+                      <label>Keywords to Skip <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(Bad Words)</span></label>
+                      <button type="button" class="ai-btn" id="ai-bad-words-btn"><span class="ai-spin"></span><span class="ai-lbl">✨ Suggest</span></button>
+                    </div>
                     <div class="tag-input-wrap" id="bad-words-tags"></div>
                     <input type="hidden" id="bad_words" />
                     <span class="text-sm text-muted" style="margin-top:4px">Jobs with these words are skipped</span>
                   </div>
+
                   <div class="form-group">
-                    <label>Preferred Keywords <span class="text-muted">(Good Words)</span></label>
+                    <label>Preferred Keywords <span style="color:var(--text-2);font-weight:400;text-transform:none;letter-spacing:0">(Good Words)</span></label>
                     <div class="tag-input-wrap" id="good-words-tags"></div>
                     <input type="hidden" id="good_words" />
                     <span class="text-sm text-muted" style="margin-top:4px">Bot prefers companies matching these</span>
@@ -295,307 +218,295 @@
           <!-- Platform Logins -->
           <div class="section-panel" id="section-platforms">
             <div class="card">
-              <div class="alert alert-info" style="margin-bottom:24px">
-                <span>🔒</span>
-                <span>Credentials are stored encrypted and only used by the automation bot. Your registration email is separate from these.</span>
-              </div>
+              <div class="alert alert-info" style="margin-bottom:24px"><span>🔒</span><span>Credentials are stored encrypted and used by the Chrome extension for automation.</span></div>
               <h4 style="margin-bottom:20px">Platform Login Credentials</h4>
-
               <div style="display:flex;flex-direction:column;gap:24px">
-                <div>
-                  <div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px">💼 LinkedIn</div>
-                  <div class="grid-2">
-                    <div class="form-group"><label>LinkedIn Email</label><input type="email" id="linkedin_email" placeholder="your@email.com" /></div>
-                    <div class="form-group"><label>LinkedIn Password <span class="text-muted text-sm">(leave blank to keep saved password)</span></label><input type="password" id="linkedin_password" placeholder="Enter new password to update" autocomplete="new-password" /></div>
-                  </div>
-                </div>
+                <div><div style="font-weight:600;margin-bottom:12px">💼 LinkedIn</div><div class="grid-2"><div class="form-group"><label>LinkedIn Email</label><input type="email" id="linkedin_email" placeholder="your@email.com" /></div><div class="form-group"><label>LinkedIn Password <span class="text-muted text-sm">(leave blank to keep saved)</span></label><input type="password" id="linkedin_password" placeholder="Enter new password to update" autocomplete="new-password" /></div></div></div>
                 <hr style="border-color:var(--border)">
-                <div>
-                  <div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px">🔍 Indeed</div>
-                  <div class="grid-2">
-                    <div class="form-group"><label>Indeed Email</label><input type="email" id="indeed_email" placeholder="your@email.com" /></div>
-                    <div class="form-group"><label>Indeed Password</label><input type="password" id="indeed_password" placeholder="••••••••" /></div>
-                  </div>
-                </div>
+                <div><div style="font-weight:600;margin-bottom:12px">🔍 Indeed</div><div class="grid-2"><div class="form-group"><label>Indeed Email</label><input type="email" id="indeed_email" placeholder="your@email.com" /></div><div class="form-group"><label>Indeed Password</label><input type="password" id="indeed_password" placeholder="••••••••" /></div></div></div>
                 <hr style="border-color:var(--border)">
-                <div>
-                  <div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px">🎓 Internshala</div>
-                  <div class="grid-2">
-                    <div class="form-group"><label>Internshala Email</label><input type="email" id="internshala_email" placeholder="your@email.com" /></div>
-                    <div class="form-group"><label>Internshala Password</label><input type="password" id="internshala_password" placeholder="••••••••" /></div>
-                  </div>
-                </div>
+                <div><div style="font-weight:600;margin-bottom:12px">🎓 Internshala</div><div class="grid-2"><div class="form-group"><label>Internshala Email</label><input type="email" id="internshala_email" placeholder="your@email.com" /></div><div class="form-group"><label>Internshala Password</label><input type="password" id="internshala_password" placeholder="••••••••" /></div></div></div>
                 <hr style="border-color:var(--border)">
-                <div>
-                  <div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px">📋 Naukri</div>
-                  <div class="grid-2">
-                    <div class="form-group"><label>Naukri Email</label><input type="email" id="naukri_email" placeholder="your@email.com" /></div>
-                    <div class="form-group"><label>Naukri Password</label><input type="password" id="naukri_password" placeholder="••••••••" /></div>
-                  </div>
-                </div>
+                <div><div style="font-weight:600;margin-bottom:12px">📋 Naukri</div><div class="grid-2"><div class="form-group"><label>Naukri Email</label><input type="email" id="naukri_email" placeholder="your@email.com" /></div><div class="form-group"><label>Naukri Password</label><input type="password" id="naukri_password" placeholder="••••••••" /></div></div></div>
               </div>
-
               <div style="margin-top:28px;display:flex;gap:12px;justify-content:space-between">
                 <button class="btn btn-ghost" data-switch-to="preferences">← Back</button>
-                <button class="btn btn-accent btn-lg" id="finish-btn" data-action="save-all">
-                  <span class="spinner"></span>
-                  <span class="btn-text">Save & Go to Dashboard →</span>
-                </button>
+                <button class="btn btn-accent btn-lg" id="finish-btn"><span class="spinner"></span><span class="btn-text">Save & Go to Dashboard →</span></button>
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
   </div>
-
   <script src="js/app.js"></script>
   <script>
-    // ── Guard: require authentication ─────────────────────────────────────
-    if (!auth.requireAuth()) { throw new Error('not authenticated'); }
+    if (!auth.requireAuth()) throw new Error('not authenticated');
 
-    // ── Read parsed resume data immediately (sync, before any async) ──────
     var _parsedResume = null;
     try { _parsedResume = JSON.parse(sessionStorage.getItem('parsed_profile') || 'null'); } catch(e) {}
 
-    // ── Utility: safely fill a field ──────────────────────────────────────
+    // tag input helpers — kept so we can re-init when AI appends tags
+    var _stHelper, _bwHelper;
+
+    // ── Navigation ──────────────────────────────────────────────────────
     function fillIf(id, val) {
       if (val === undefined || val === null || val === '') return;
-      var el = document.getElementById(id);
-      if (el) el.value = val;
+      var el = document.getElementById(id); if (el) el.value = val;
+    }
+    function switchSection(id) {
+      document.querySelectorAll('.profile-nav-item').forEach(function(n){ n.classList.remove('active'); });
+      document.querySelectorAll('.section-panel').forEach(function(p){ p.classList.remove('active'); });
+      var nav = document.querySelector('[data-section="'+id+'"]');
+      if (nav) nav.classList.add('active');
+      var panel = document.getElementById('section-'+id);
+      if (panel) panel.classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    function markDone(id) { var n = document.querySelector('[data-section="'+id+'"]'); if (n) n.classList.add('done'); }
+    document.querySelectorAll('.profile-nav-item').forEach(function(n){ n.addEventListener('click', function(){ switchSection(n.getAttribute('data-section')); }); });
+    document.querySelectorAll('[data-save-and-next]').forEach(function(b){ b.addEventListener('click', function(){ var p=b.getAttribute('data-save-and-next').split(':'); markDone(p[0]); switchSection(p[1]); }); });
+    document.querySelectorAll('[data-switch-to]').forEach(function(b){ b.addEventListener('click', function(){ switchSection(b.getAttribute('data-switch-to')); }); });
+
+    // ── Tag inputs ──────────────────────────────────────────────────────
+    _stHelper  = initTagInput('search-terms-tags', 'search_terms', []);
+    _bwHelper  = initTagInput('bad-words-tags',    'bad_words',    ['US Citizen', '10+ years']);
+    initTagInput('good-words-tags', 'good_words', []);
+
+    // ── AI helpers ──────────────────────────────────────────────────────
+    function aiBtn(id, loading) {
+      var b = document.getElementById(id);
+      b.disabled = loading;
+      if (loading) b.classList.add('ai-loading'); else b.classList.remove('ai-loading');
     }
 
-    // ── Navigation ────────────────────────────────────────────────────────
-    function switchSection(sectionId) {
-      document.querySelectorAll('.profile-nav-item').forEach(function(n) { n.classList.remove('active'); });
-      document.querySelectorAll('.section-panel').forEach(function(p) { p.classList.remove('active'); });
-      var navItem = document.querySelector('[data-section="' + sectionId + '"]');
-      if (navItem) navItem.classList.add('active');
-      var panel = document.getElementById('section-' + sectionId);
-      if (panel) { panel.classList.add('active'); }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Builds a rich context string from whatever the user has filled so far
+    function profileCtx() {
+      var parts = [];
+      var fn = document.getElementById('first_name').value.trim();
+      var ln = document.getElementById('last_name').value.trim();
+      if (fn || ln) parts.push('Name: ' + [fn, ln].filter(Boolean).join(' '));
+      var yoe = document.getElementById('years_of_experience').value;
+      if (yoe) parts.push('Years of experience: ' + yoe);
+      var re = document.getElementById('recent_employer').value.trim();
+      if (re) parts.push('Recent employer: ' + re);
+      var hl = document.getElementById('linkedin_headline').value.trim();
+      if (hl) parts.push('Headline: ' + hl);
+      var sk = document.getElementById('skills_summary').value.trim();
+      if (sk) parts.push('Skills: ' + sk);
+      var sm = document.getElementById('linkedin_summary').value.trim();
+      if (sm) parts.push('Summary: ' + sm.slice(0, 200));
+      var city = document.getElementById('current_city').value.trim();
+      var country = document.getElementById('country').value.trim();
+      if (city || country) parts.push('Location: ' + [city, country].filter(Boolean).join(', '));
+      try {
+        var terms = JSON.parse(document.getElementById('search_terms').value || '[]');
+        if (terms.length) parts.push('Target roles: ' + terms.slice(0,4).join(', '));
+      } catch(e) {}
+      return parts.join('\n') || 'Job seeker looking for opportunities in India';
     }
 
-    function markDone(sectionId) {
-      var navItem = document.querySelector('[data-section="' + sectionId + '"]');
-      if (navItem) navItem.classList.add('done');
+    // Parse a JSON array from AI response, fallback to comma-split
+    function parseArrayAnswer(raw) {
+      raw = (raw || '').trim();
+      var m = raw.match(/\[[\s\S]*?\]/);
+      if (m) { try { var a = JSON.parse(m[0]); if (Array.isArray(a)) return a.map(function(s){ return String(s).trim(); }).filter(Boolean); } catch(e) {} }
+      return raw.replace(/[\[\]"']/g,'').split(/[,\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
     }
 
-    // ── Wire up all nav clicks via event delegation ───────────────────────
-    document.querySelectorAll('.profile-nav-item').forEach(function(navItem) {
-      navItem.addEventListener('click', function() {
-        switchSection(navItem.getAttribute('data-section'));
-      });
+    // ── AI: LinkedIn Headline ───────────────────────────────────────────
+    document.getElementById('ai-headline-btn').addEventListener('click', async function() {
+      aiBtn('ai-headline-btn', true);
+      try {
+        var r = await api.post('/ai/answer-question', {
+          question: 'Write a LinkedIn headline (max 120 characters). Use this format: Role | Skill | Skill | Skill. Be specific and keyword-rich for ATS. Return ONLY the headline text, nothing else.',
+          user_info: profileCtx()
+        });
+        var val = (r.answer||'').trim().replace(/^["'`]|["'`]$/g,'').slice(0,120);
+        if (val) { document.getElementById('linkedin_headline').value = val; showToast('Headline generated!', 'success'); }
+        else showToast('Try again — fill in more profile details first', 'info');
+      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
+      finally { aiBtn('ai-headline-btn', false); }
     });
 
-    // Wire up saveAndNext buttons
-    document.querySelectorAll('[data-save-and-next]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var parts = btn.getAttribute('data-save-and-next').split(':');
-        markDone(parts[0]);
-        switchSection(parts[1]);
-      });
+    // ── AI: LinkedIn Summary ────────────────────────────────────────────
+    document.getElementById('ai-summary-btn').addEventListener('click', async function() {
+      aiBtn('ai-summary-btn', true);
+      try {
+        var r = await api.post('/ai/answer-question', {
+          question: 'Write a professional LinkedIn "About" summary (2-3 sentences, max 400 characters). Highlight background, key skills, and career goal. Write in first person. Return ONLY the summary text.',
+          user_info: profileCtx()
+        });
+        var val = (r.answer||'').trim().replace(/^["'`]|["'`]$/g,'');
+        if (val) { document.getElementById('linkedin_summary').value = val; showToast('Summary generated!', 'success'); }
+        else showToast('Try again — fill in more profile details first', 'info');
+      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
+      finally { aiBtn('ai-summary-btn', false); }
     });
 
-    // Wire up switchTo (Back) buttons
-    document.querySelectorAll('[data-switch-to]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        switchSection(btn.getAttribute('data-switch-to'));
-      });
+    // ── AI: Cover Letter ────────────────────────────────────────────────
+    document.getElementById('ai-cover-btn').addEventListener('click', async function() {
+      aiBtn('ai-cover-btn', true);
+      var terms = []; try { terms = JSON.parse(document.getElementById('search_terms').value||'[]'); } catch(e) {}
+      var jobTitle = terms[0] || 'the open position';
+      try {
+        var r = await api.post('/ai/cover-letter', { user_info: profileCtx(), job_title: jobTitle, company: 'your organisation' });
+        var val = (r.cover_letter||'').trim();
+        if (val) { document.getElementById('cover_letter').value = val; showToast('Cover letter generated!', 'success'); }
+        else showToast('Try again — fill in more profile details first', 'info');
+      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
+      finally { aiBtn('ai-cover-btn', false); }
     });
 
-    // Wire up save button
-    var _finishBtn = document.getElementById('finish-btn');
-    if (_finishBtn) {
-      _finishBtn.addEventListener('click', saveAll);
-    }
+    // ── AI: Skills Summary ──────────────────────────────────────────────
+    document.getElementById('ai-skills-btn').addEventListener('click', async function() {
+      aiBtn('ai-skills-btn', true);
+      try {
+        var r = await api.post('/ai/answer-question', {
+          question: 'List this candidate\'s top technical and soft skills as a single comma-separated line (e.g. "Python, SQL, Excel, Power BI, Communication"). Max 20 skills. Return ONLY the comma-separated list.',
+          user_info: profileCtx()
+        });
+        var val = (r.answer||'').trim().replace(/^["'`]|["'`]$/g,'').replace(/\n/g,', ');
+        if (val) { document.getElementById('skills_summary').value = val; showToast('Skills generated!', 'success'); }
+        else showToast('Try again — fill in more profile details first', 'info');
+      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
+      finally { aiBtn('ai-skills-btn', false); }
+    });
 
-    // Wire up AI cover letter
-    var _aiCoverBtn = document.getElementById('ai-cover-btn');
-    if (_aiCoverBtn) {
-      _aiCoverBtn.addEventListener('click', generateAICoverLetter);
-    }
+    // ── AI: Search Terms ────────────────────────────────────────────────
+    document.getElementById('ai-search-terms-btn').addEventListener('click', async function() {
+      aiBtn('ai-search-terms-btn', true);
+      try {
+        var r = await api.post('/ai/answer-question', {
+          question: 'Suggest 6-8 specific LinkedIn job search terms (job titles) suited for this candidate. Return ONLY a JSON array of strings, e.g. ["Business Analyst","Data Analyst","Financial Analyst"]. No explanation.',
+          user_info: profileCtx()
+        });
+        var terms = parseArrayAnswer(r.answer);
+        if (terms.length) {
+          var existing = []; try { existing = JSON.parse(document.getElementById('search_terms').value||'[]'); } catch(e) {}
+          var toAdd = terms.filter(function(t){ return !existing.includes(t); });
+          _stHelper = initTagInput('search-terms-tags', 'search_terms', existing.concat(toAdd));
+          showToast(toAdd.length + ' job titles added!', 'success');
+        } else { showToast('Could not parse suggestions — try again', 'error'); }
+      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
+      finally { aiBtn('ai-search-terms-btn', false); }
+    });
 
-    // ── Tag inputs ────────────────────────────────────────────────────────
-    initTagInput('search-terms-tags', 'search_terms', []);
-    initTagInput('bad-words-tags',    'bad_words',    ['US Citizen', '10+ years']);
-    initTagInput('good-words-tags',   'good_words',   []);
+    // ── AI: Bad Words ───────────────────────────────────────────────────
+    document.getElementById('ai-bad-words-btn').addEventListener('click', async function() {
+      aiBtn('ai-bad-words-btn', true);
+      try {
+        var r = await api.post('/ai/answer-question', {
+          question: 'Suggest 5-8 keywords this candidate should skip in job search (roles or requirements they are NOT suited for or want to avoid). Examples: "Senior 10+ years", "US Citizen", "Security Clearance", "15+ years". Return ONLY a JSON array of strings. No explanation.',
+          user_info: profileCtx()
+        });
+        var words = parseArrayAnswer(r.answer);
+        if (words.length) {
+          var existing = []; try { existing = JSON.parse(document.getElementById('bad_words').value||'[]'); } catch(e) {}
+          var toAdd = words.filter(function(w){ return !existing.includes(w); });
+          _bwHelper = initTagInput('bad-words-tags', 'bad_words', existing.concat(toAdd));
+          showToast(toAdd.length + ' skip keywords added!', 'success');
+        } else { showToast('Could not parse suggestions — try again', 'error'); }
+      } catch(e) { showToast((e&&e.detail)||'AI unavailable','error'); }
+      finally { aiBtn('ai-bad-words-btn', false); }
+    });
 
-    // ── Apply parsed resume data into form fields ─────────────────────────
+    // ── Load existing profile then overlay parsed resume ────────────────
     function applyParsedResume() {
       if (!_parsedResume) return;
-      fillIf('first_name',          _parsedResume.first_name);
-      fillIf('last_name',           _parsedResume.last_name);
-      fillIf('middle_name',         _parsedResume.middle_name);
-      fillIf('phone_number',        _parsedResume.phone_number);
-      fillIf('current_city',        _parsedResume.current_city);
-      fillIf('state',               _parsedResume.state);
-      fillIf('years_of_experience', _parsedResume.years_of_experience);
-      fillIf('linkedin_profile',    _parsedResume.linkedin_profile);
-      fillIf('website',             _parsedResume.website);
-      fillIf('linkedin_headline',   _parsedResume.linkedin_headline);
-      fillIf('linkedin_summary',    _parsedResume.linkedin_summary);
-      fillIf('cover_letter',        _parsedResume.cover_letter);
-      fillIf('skills_summary',      _parsedResume.skills_summary);
-      if (_parsedResume.search_terms && _parsedResume.search_terms.length) {
-        initTagInput('search-terms-tags', 'search_terms', _parsedResume.search_terms);
-      }
+      ['first_name','last_name','middle_name','phone_number','current_city','state',
+       'years_of_experience','linkedin_profile','website','linkedin_headline',
+       'linkedin_summary','cover_letter','skills_summary'].forEach(function(k){ fillIf(k, _parsedResume[k]); });
+      if (_parsedResume.search_terms && _parsedResume.search_terms.length)
+        _stHelper = initTagInput('search-terms-tags', 'search_terms', _parsedResume.search_terms);
       showToast('Profile pre-filled from your resume!', 'success');
-      sessionStorage.removeItem('parsed_profile');
-      _parsedResume = null;
+      sessionStorage.removeItem('parsed_profile'); _parsedResume = null;
     }
 
-    // ── Load existing profile from server, then overlay parsed resume ─────
     api.get('/profile/me').then(function(data) {
-      var p  = data.profile           || {};
-      var jp = data.job_preferences   || {};
-      var pa = data.platform_accounts || {};
-
-      Object.keys(p).forEach(function(k) { fillIf(k, p[k]); });
-
-      fillIf('search_location', jp.search_location);
-      fillIf('date_posted',     jp.date_posted);
-      fillIf('sort_by',         jp.sort_by);
+      var p=data.profile||{}, jp=data.job_preferences||{}, pa=data.platform_accounts||{};
+      Object.keys(p).forEach(function(k){ fillIf(k, p[k]); });
+      fillIf('search_location', jp.search_location); fillIf('date_posted', jp.date_posted);
+      fillIf('sort_by', jp.sort_by);
       if (jp.switch_number !== undefined) fillIf('switch_number', jp.switch_number);
-      if (jp.easy_apply_only !== undefined) {
-        document.getElementById('easy_apply_only').checked = jp.easy_apply_only;
-      }
-      if (jp.search_terms && jp.search_terms.length) initTagInput('search-terms-tags', 'search_terms', jp.search_terms);
-      if (jp.bad_words    && jp.bad_words.length)    initTagInput('bad-words-tags', 'bad_words', jp.bad_words);
-      if (jp.good_words   && jp.good_words.length)   initTagInput('good-words-tags', 'good_words', jp.good_words);
-
-      ['exp_level', 'job_type', 'on_site'].forEach(function(name) {
-        var field = { exp_level: 'experience_level', job_type: 'job_type', on_site: 'on_site' }[name];
-        var values = jp[field] || [];
-        if (values.length) {
-          document.querySelectorAll('[name="' + name + '"]').forEach(function(cb) {
-            cb.checked = values.indexOf(cb.value) !== -1;
-          });
-        }
+      if (jp.easy_apply_only !== undefined) document.getElementById('easy_apply_only').checked = jp.easy_apply_only;
+      if (jp.search_terms && jp.search_terms.length) _stHelper = initTagInput('search-terms-tags','search_terms', jp.search_terms);
+      if (jp.bad_words    && jp.bad_words.length)    _bwHelper = initTagInput('bad-words-tags',   'bad_words',    jp.bad_words);
+      if (jp.good_words   && jp.good_words.length)   initTagInput('good-words-tags','good_words', jp.good_words);
+      ['exp_level','job_type','on_site'].forEach(function(name){
+        var field={exp_level:'experience_level',job_type:'job_type',on_site:'on_site'}[name];
+        var vals=jp[field]||[];
+        if (vals.length) document.querySelectorAll('[name="'+name+'"]').forEach(function(cb){ cb.checked=vals.indexOf(cb.value)!==-1; });
       });
-
-      Object.keys(pa).forEach(function(k) { if (k.indexOf('password') === -1) fillIf(k, pa[k]); });
-
-      // Parsed resume always wins — applied last so it overrides any server data
+      Object.keys(pa).forEach(function(k){ if(k.indexOf('password')===-1) fillIf(k,pa[k]); });
       applyParsedResume();
+    }).catch(function(){ applyParsedResume(); });
 
-    }).catch(function() {
-      // Backend unreachable — still fill from parsed resume if available
-      applyParsedResume();
-    });
+    // ── Save all ────────────────────────────────────────────────────────
+    document.getElementById('finish-btn').addEventListener('click', saveAll);
 
-    // ── Save all sections ─────────────────────────────────────────────────
     async function saveAll() {
-      var btn = document.getElementById('finish-btn');
-      setLoading(btn, true);
-
+      var btn = document.getElementById('finish-btn'); setLoading(btn, true);
       var profileData = {
-        first_name:        document.getElementById('first_name').value.trim(),
-        last_name:         document.getElementById('last_name').value.trim(),
-        middle_name:       document.getElementById('middle_name').value.trim(),
-        phone_number:      document.getElementById('phone_number').value.trim(),
-        current_city:      document.getElementById('current_city').value.trim(),
-        state:             document.getElementById('state').value.trim(),
-        zipcode:           document.getElementById('zipcode').value.trim(),
-        country:           document.getElementById('country').value.trim(),
-        street:            document.getElementById('street').value.trim(),
-        gender:            document.getElementById('gender').value,
-        disability_status: document.getElementById('disability_status').value,
-        ethnicity:         document.getElementById('ethnicity').value,
-        veteran_status:    document.getElementById('veteran_status').value,
-        linkedin_profile:  document.getElementById('linkedin_profile').value.trim(),
-        website:           document.getElementById('website').value.trim(),
-        years_of_experience: document.getElementById('years_of_experience').value,
-        desired_salary:    parseInt(document.getElementById('desired_salary').value) || null,
-        current_ctc:       parseInt(document.getElementById('current_ctc').value)    || 0,
-        notice_period:     parseInt(document.getElementById('notice_period').value)  || 0,
-        recent_employer:   document.getElementById('recent_employer').value.trim(),
-        confidence_level:  document.getElementById('confidence_level').value.trim() || '7',
-        gemini_api_key:    document.getElementById('gemini_api_key').value.trim(),
-        gemini_model:      document.getElementById('gemini_model').value,
-        linkedin_headline: document.getElementById('linkedin_headline').value.trim(),
-        linkedin_summary:  document.getElementById('linkedin_summary').value.trim(),
-        cover_letter:      document.getElementById('cover_letter').value.trim(),
-        skills_summary:    document.getElementById('skills_summary').value.trim(),
+        first_name:document.getElementById('first_name').value.trim(),
+        last_name:document.getElementById('last_name').value.trim(),
+        middle_name:document.getElementById('middle_name').value.trim(),
+        phone_number:document.getElementById('phone_number').value.trim(),
+        current_city:document.getElementById('current_city').value.trim(),
+        state:document.getElementById('state').value.trim(),
+        zipcode:document.getElementById('zipcode').value.trim(),
+        country:document.getElementById('country').value.trim(),
+        street:document.getElementById('street').value.trim(),
+        gender:document.getElementById('gender').value,
+        disability_status:document.getElementById('disability_status').value,
+        ethnicity:document.getElementById('ethnicity').value,
+        veteran_status:document.getElementById('veteran_status').value,
+        linkedin_profile:document.getElementById('linkedin_profile').value.trim(),
+        website:document.getElementById('website').value.trim(),
+        years_of_experience:document.getElementById('years_of_experience').value,
+        desired_salary:parseInt(document.getElementById('desired_salary').value)||null,
+        current_ctc:parseInt(document.getElementById('current_ctc').value)||0,
+        notice_period:parseInt(document.getElementById('notice_period').value)||0,
+        recent_employer:document.getElementById('recent_employer').value.trim(),
+        confidence_level:document.getElementById('confidence_level').value.trim()||'7',
+        gemini_api_key:document.getElementById('gemini_api_key').value.trim(),
+        gemini_model:document.getElementById('gemini_model').value,
+        linkedin_headline:document.getElementById('linkedin_headline').value.trim(),
+        linkedin_summary:document.getElementById('linkedin_summary').value.trim(),
+        cover_letter:document.getElementById('cover_letter').value.trim(),
+        skills_summary:document.getElementById('skills_summary').value.trim(),
       };
-
-      var getChecked = function(name) {
-        return Array.from(document.querySelectorAll('[name="' + name + '"]:checked')).map(function(c) { return c.value; });
-      };
+      var getChecked=function(name){ return Array.from(document.querySelectorAll('[name="'+name+'"]:checked')).map(function(c){return c.value;}); };
       var jobPrefs = {
-        search_terms:     JSON.parse(document.getElementById('search_terms').value || '[]'),
-        search_location:  document.getElementById('search_location').value.trim(),
-        experience_level: getChecked('exp_level'),
-        job_type:         getChecked('job_type'),
-        on_site:          getChecked('on_site'),
-        date_posted:      document.getElementById('date_posted').value,
-        sort_by:          document.getElementById('sort_by').value,
-        switch_number:    parseInt(document.getElementById('switch_number').value) || 15,
-        easy_apply_only:  document.getElementById('easy_apply_only').checked,
-        bad_words:        JSON.parse(document.getElementById('bad_words').value  || '[]'),
-        good_words:       JSON.parse(document.getElementById('good_words').value || '[]'),
+        search_terms:JSON.parse(document.getElementById('search_terms').value||'[]'),
+        search_location:document.getElementById('search_location').value.trim(),
+        experience_level:getChecked('exp_level'),
+        job_type:getChecked('job_type'),
+        on_site:getChecked('on_site'),
+        date_posted:document.getElementById('date_posted').value,
+        sort_by:document.getElementById('sort_by').value,
+        switch_number:parseInt(document.getElementById('switch_number').value)||15,
+        easy_apply_only:document.getElementById('easy_apply_only').checked,
+        bad_words:JSON.parse(document.getElementById('bad_words').value||'[]'),
+        good_words:JSON.parse(document.getElementById('good_words').value||'[]'),
       };
-
-      // Build platforms object — only include passwords if the user actually typed one.
-      // Empty password fields must be omitted so we never overwrite a saved password with "".
-      var _pw = function(id) {
-        var v = document.getElementById(id).value;
-        return v && v.length >= 1 ? v : undefined;
+      var _pw=function(id){ var v=document.getElementById(id).value; return v&&v.length>=1?v:undefined; };
+      var platforms={
+        linkedin_email:document.getElementById('linkedin_email').value.trim(),
+        indeed_email:document.getElementById('indeed_email').value.trim(),
+        internshala_email:document.getElementById('internshala_email').value.trim(),
+        naukri_email:document.getElementById('naukri_email').value.trim(),
       };
-      var platforms = {
-        linkedin_email:       document.getElementById('linkedin_email').value.trim(),
-        indeed_email:         document.getElementById('indeed_email').value.trim(),
-        internshala_email:    document.getElementById('internshala_email').value.trim(),
-        naukri_email:         document.getElementById('naukri_email').value.trim(),
-      };
-      var _passwords = {
-        linkedin_password:    _pw('linkedin_password'),
-        indeed_password:      _pw('indeed_password'),
-        internshala_password: _pw('internshala_password'),
-        naukri_password:      _pw('naukri_password'),
-      };
-      // Only merge passwords that have a value
-      Object.keys(_passwords).forEach(function(k) {
-        if (_passwords[k] !== undefined) platforms[k] = _passwords[k];
-      });
-
+      var _pw_map={linkedin_password:_pw('linkedin_password'),indeed_password:_pw('indeed_password'),internshala_password:_pw('internshala_password'),naukri_password:_pw('naukri_password')};
+      Object.keys(_pw_map).forEach(function(k){ if(_pw_map[k]!==undefined) platforms[k]=_pw_map[k]; });
       try {
         await api.put('/profile/update', profileData);
         await api.put('/profile/job-preferences', jobPrefs);
         await api.put('/profile/platform-accounts', platforms);
         showToast('Profile saved!', 'success');
-        setTimeout(function() { window.location.href = 'dashboard.html'; }, 900);
-      } catch(err) {
-        showToast((err && err.detail) || 'Could not save profile', 'error');
-        setLoading(btn, false);
-      }
-    }
-
-    // ── AI Cover Letter ───────────────────────────────────────────────────
-    async function generateAICoverLetter() {
-      var btn = document.getElementById('ai-cover-btn');
-      if (!btn) return;
-      setLoading(btn, true);
-      var parts = [
-        document.getElementById('first_name').value + ' ' + document.getElementById('last_name').value,
-        document.getElementById('linkedin_headline').value,
-        document.getElementById('skills_summary').value,
-        (document.getElementById('years_of_experience').value || '0') + ' years experience',
-        document.getElementById('linkedin_summary').value,
-      ].filter(Boolean);
-      var userInfo = parts.join('\n');
-      var terms = [];
-      try { terms = JSON.parse(document.getElementById('search_terms').value || '[]'); } catch(e) {}
-      var jobTitle = terms[0] || 'the open position';
-      try {
-        var data = await api.post('/ai/cover-letter', { user_info: userInfo, job_title: jobTitle, company: 'your organisation' });
-        document.getElementById('cover_letter').value = data.cover_letter;
-        showToast('Cover letter generated!', 'success');
-      } catch(err) {
-        showToast((err && err.detail) || 'AI unavailable', 'error');
-      } finally {
-        setLoading(btn, false);
-      }
+        setTimeout(function(){ window.location.href='dashboard.html'; }, 900);
+      } catch(err) { showToast((err&&err.detail)||'Could not save profile','error'); setLoading(btn,false); }
     }
   </script>
 </body>

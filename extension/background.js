@@ -10,7 +10,6 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (['BOT_LOG', 'BOT_STATS', 'BOT_STATUS'].includes(message.type)) {
-    // Forward to popup (will fail silently if popup is closed — that's fine)
     chrome.runtime.sendMessage(message).catch(() => {});
     sendResponse({ ok: true });
     return false;
@@ -29,7 +28,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(data => sendResponse({ ok: true, data }))
       .catch(err => sendResponse({ ok: false, error: err.message }));
 
-    return true; // keep channel open for async response
+    return true;
   }
 
   sendResponse({ ok: true });

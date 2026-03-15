@@ -59,7 +59,7 @@
             </div>
             <div class="toggle-row" style="margin-top:8px">
               <div>
-                <div style="font-size:14px;font-weight:500">OpenRouter AI</div>
+                <div style="font-size:14px;font-weight:500">NVIDIA NIM AI</div>
                 <div class="text-sm text-muted" id="key-count">Checking keys…</div>
               </div>
               <span class="badge" id="ai-status">—</span>
@@ -100,20 +100,20 @@
 
         <!-- API Keys -->
         <div id="sec-keys" class="hidden">
-          <h3 style="margin-bottom:24px">OpenRouter API Keys</h3>
+          <h3 style="margin-bottom:24px">NVIDIA NIM API Keys</h3>
           <div class="card" style="margin-bottom:20px">
             <div class="alert alert-info" style="margin-bottom:16px">
-              <span>ℹ</span><span>Only <strong>free</strong> OpenRouter models are used. Keys are rotated automatically to avoid rate limits.</span>
+              <span>ℹ</span><span>Get free NVIDIA API keys at <a href="https://build.nvidia.com/models" target="_blank">build.nvidia.com/models</a>. Keys rotate automatically on rate limits.</span>
             </div>
             <h4 style="margin-bottom:12px">Current Model</h4>
             <div class="form-group" style="margin-bottom:20px">
-              <label>Free Model</label>
+              <label>NVIDIA NIM Model</label>
               <select id="or_model">
-                <option value="mistralai/mistral-7b-instruct:free">Mistral 7B Instruct (free)</option>
-                <option value="stepfun/step-3.5-flash:free">StepFun Step 3.5 Flash (free)</option>
-                <option value="google/gemma-3-4b-it:free">Google Gemma 3 4B (free)</option>
-                <option value="microsoft/phi-3-mini-128k-instruct:free">Microsoft Phi-3 Mini (free)</option>
-                <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (free)</option>
+                <option value="meta/llama-3.3-70b-instruct">Llama 3.3 70B — best overall ⭐</option>
+                <option value="meta/llama-3.1-70b-instruct">Llama 3.1 70B</option>
+                <option value="google/gemma-3-27b-it">Gemma 3 27B — fastest ⚡</option>
+                <option value="nvidia/llama-3.1-nemotron-70b-instruct">Nemotron 70B — NVIDIA tuned</option>
+                <option value="mistralai/mixtral-8x7b-instruct-v0.1">Mixtral 8x7B</option>
               </select>
             </div>
             <h4 style="margin-bottom:12px">Loaded Keys <span id="key-count-badge" class="badge badge-primary" style="font-size:12px">0</span></h4>
@@ -125,7 +125,7 @@
               <div class="form-group">
                 <label>Add New Key</label>
                 <div style="display:flex;gap:8px">
-                  <input type="text" id="new-key-input" placeholder="sk-or-v1-…" style="flex:1" />
+                  <input type="text" id="new-key-input" placeholder="nvapi-…" style="flex:1" />
                   <button class="btn btn-primary" onclick="addKey()">Add</button>
                 </div>
               </div>
@@ -167,7 +167,7 @@
       if (name === 'users') loadUsers();
     }
 
-    // ── Health checks ─────────────────────────────────────────────────────
+    // ── Health checks ─────────────────────────────────────────────────────────
     async function checkHealth() {
       try {
         await api.get('/health');
@@ -197,8 +197,8 @@
           </div>
         `;
 
-        // Key status
-        const keyCount = data.openrouter_keys || 0;
+        // Key status — API returns nvidia_keys (not openrouter_keys)
+        const keyCount = data.nvidia_keys || 0;
         document.getElementById('key-count').textContent = `${keyCount} key${keyCount !== 1 ? 's' : ''} loaded`;
         document.getElementById('ai-status').textContent = keyCount ? '✓ Active' : '✕ No keys';
         document.getElementById('ai-status').className = `badge ${keyCount ? 'badge-success' : 'badge-danger'}`;
@@ -215,7 +215,7 @@
       }
     }
 
-    // ── SMTP ──────────────────────────────────────────────────────────────
+    // ── SMTP ──────────────────────────────────────────────────────────────────
     async function saveSMTP() {
       const btn = document.getElementById('save-smtp-btn');
       setLoading(btn, true);
@@ -245,13 +245,13 @@
       }
     }
 
-    // ── Keys ──────────────────────────────────────────────────────────────
+    // ── Keys ──────────────────────────────────────────────────────────────────
     async function loadKeys() {
       try {
         const data = await api.get('/admin/keys');
         keysData = data.keys || [];
         renderKeys();
-        document.getElementById('or_model').value = data.model || '';
+        document.getElementById('or_model').value = data.model || 'meta/llama-3.3-70b-instruct';
       } catch {
         document.getElementById('keys-list').innerHTML = '<p class="text-muted text-sm">Could not load keys</p>';
       }
@@ -266,7 +266,7 @@
       document.getElementById('keys-list').innerHTML = keysData.map((k, i) => `
         <div class="key-row">
           <span class="badge badge-neutral" style="font-size:11px;min-width:24px;text-align:center">${i + 1}</span>
-          <span class="key-mono">${k.slice(0, 18)}…${k.slice(-8)}</span>
+          <span class="key-mono">${k.slice(0, 14)}…${k.slice(-8)}</span>
           <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:12px" onclick="removeKey(${i})">✕</button>
         </div>
       `).join('');
@@ -276,7 +276,7 @@
       const input = document.getElementById('new-key-input');
       const val = input.value.trim();
       if (!val) return;
-      if (!val.startsWith('sk-or-v1-')) { showToast('Invalid OpenRouter key format', 'error'); return; }
+      if (!val.startsWith('nvapi-')) { showToast('Invalid NVIDIA key — must start with nvapi-', 'error'); return; }
       if (keysData.includes(val)) { showToast('Key already exists', 'info'); return; }
       keysData.push(val);
       input.value = '';
@@ -298,7 +298,7 @@
       }
     }
 
-    // ── Users ─────────────────────────────────────────────────────────────
+    // ── Users ─────────────────────────────────────────────────────────────────
     async function loadUsers() {
       try {
         const data = await api.get('/admin/users');
@@ -318,11 +318,11 @@
           </tr>
         `).join('');
       } catch {
-        document.getElementById('users-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">Could not load users. Admin endpoint may not be available.</td></tr>';
+        document.getElementById('users-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">Could not load users.</td></tr>';
       }
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────
+    // ── Init ──────────────────────────────────────────────────────────────────
     checkHealth();
     loadAdminStats();
   </script>

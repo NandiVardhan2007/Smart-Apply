@@ -11,7 +11,6 @@ router = APIRouter(prefix="/profile", tags=["profile"])
 
 
 class ProfileUpdate(BaseModel):
-    # Personal
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     middle_name: Optional[str] = None
@@ -21,8 +20,6 @@ class ProfileUpdate(BaseModel):
     country: Optional[str] = "India"
     street: Optional[str] = None
     zipcode: Optional[str] = None
-
-    # Professional
     linkedin_profile: Optional[str] = None
     website: Optional[str] = None
     linkedin_headline: Optional[str] = None
@@ -30,27 +27,17 @@ class ProfileUpdate(BaseModel):
     cover_letter: Optional[str] = None
     skills_summary: Optional[str] = None
     years_of_experience: Optional[str] = "0"
-
-    # EEO (optional)
     gender: Optional[str] = ""
     ethnicity: Optional[str] = ""
     disability_status: Optional[str] = "Decline"
     veteran_status: Optional[str] = "Decline"
-
-    # Salary
     desired_salary: Optional[int] = None
     current_ctc: Optional[int] = 0
     notice_period: Optional[int] = 0
-
-    # Bot answer helpers
     recent_employer: Optional[str] = None
     confidence_level: Optional[str] = "7"
-
-    # AI key (stored on profile, used when Gemini is preferred over OpenRouter)
     gemini_api_key: Optional[str] = None
     gemini_model: Optional[str] = "gemini-2.0-flash"
-
-    # Education / experience (raw text from resume)
     education_text: Optional[str] = None
     experience_text: Optional[str] = None
 
@@ -124,18 +111,15 @@ async def update_job_preferences(body: JobPreferences, current_user: dict = Depe
 @router.put("/platform-accounts")
 async def update_platform_accounts(body: PlatformAccounts, current_user: dict = Depends(get_current_user)):
     db = get_db()
-    # Only write fields that are non-None AND, for password fields, non-empty.
-    # This prevents an empty password field on the frontend from wiping a saved password.
     data = {}
     for k, v in body.model_dump().items():
         if v is None:
             continue
         if "password" in k and (not v or len(v.strip()) == 0):
-            continue  # skip empty passwords — keep whatever is already in DB
+            continue
         data[k] = v
 
     if data:
-        # Use $set with individual keys so we do a partial update, not a full replace
         await db.users.update_one(
             {"_id": ObjectId(current_user["user_id"])},
             {"$set": {f"platform_accounts.{k}": v for k, v in data.items()}}

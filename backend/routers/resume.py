@@ -34,7 +34,6 @@ async def upload_resume(
     if len(data) > MAX_RESUME_SIZE:
         raise HTTPException(413, detail="File too large. Maximum 5 MB.")
 
-    # Extract text
     parsed_data = {}
     if PDFMINER_AVAILABLE:
         try:
@@ -45,7 +44,6 @@ async def upload_resume(
     else:
         parsed_data = {"warning": "pdfminer not installed — parsed fields unavailable"}
 
-    # Store PDF in GridFS
     file_id = await gridfs.upload_from_stream(
         file.filename or "resume.pdf",
         io.BytesIO(data),
@@ -80,7 +78,6 @@ async def list_resumes(current_user: dict = Depends(get_current_user)):
         raise HTTPException(404, detail="User not found")
 
     resumes = user.get("resumes", [])
-    # Remove large raw parsed fields for listing
     slim = []
     for r in resumes:
         slim.append({
@@ -112,13 +109,11 @@ async def delete_resume(file_id: str, current_user: dict = Depends(get_current_u
     db = get_db()
     gridfs = get_gridfs()
 
-    # Remove from user's list
     await db.users.update_one(
         {"_id": ObjectId(current_user["user_id"])},
         {"$pull": {"resumes": {"file_id": file_id}}}
     )
 
-    # Remove from GridFS
     try:
         await gridfs.delete(ObjectId(file_id))
     except Exception:
