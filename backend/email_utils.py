@@ -1,111 +1,121 @@
 """
-email_utils.py — Resend HTTP API
-==================================
-Resend is the easiest email API — no domain needed to start.
-Free tier: 3,000 emails/month, 100/day.
+email_utils.py — Brevo (Sendinblue) HTTP API
+=============================================
+Free tier: 300 emails/day, NO domain verification needed.
+Just verify your Gmail address as a sender once.
 
-One-time setup (2 minutes):
-  1. Sign up at https://resend.com  (free, no credit card)
-  2. Go to https://resend.com/api-keys  → Create API Key → copy it
-  3. In Render Dashboard → Environment Variables → add:
-       RESEND_API_KEY = re_xxxxxxxxxxxx
-  4. Redeploy — done!
-
-The FROM address is automatically set to onboarding@resend.dev on the
-free plan (no domain needed). You can send to ANY email address.
-
-Optional: to send FROM your own domain later, verify it at resend.com/domains.
+One-time setup (3 minutes):
+  1. Sign up free at https://app.brevo.com  (no credit card)
+  2. Go to: https://app.brevo.com/senders  (Senders & IPs → Senders)
+     → Click "Add a new sender"
+     → Enter name: SmartApply
+     → Enter email: kovvurinandivardhanreddy7@gmail.com
+     → Brevo sends a verification email to your Gmail → click the link
+  3. Go to: https://app.brevo.com/settings/keys/api
+     → Click "Generate a new API key"
+     → Name it "SmartApply" → copy the key
+  4. In Render Dashboard → Environment Variables → add:
+       BREVO_API_KEY = xkeysib-xxxxxxxxxxxx
+       BREVO_FROM    = kovvurinandivardhanreddy7@gmail.com
+  5. Redeploy → emails work to ANY address worldwide
 """
 
 import logging
 import httpx
+import os
 
 from backend.config import APP_URL
-import os
 
 logger = logging.getLogger(__name__)
 
-RESEND_API_URL = "https://api.resend.com/emails"
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def _get_key() -> str:
-    key = os.getenv("RESEND_API_KEY", "")
+    key = os.getenv("BREVO_API_KEY", "")
     if not key:
         raise RuntimeError(
-            "RESEND_API_KEY is not set.\n"
+            "BREVO_API_KEY is not set in Render environment variables.\n"
             "Fix:\n"
-            "  1. Sign up free at https://resend.com\n"
-            "  2. Go to https://resend.com/api-keys → Create API Key\n"
-            "  3. Add RESEND_API_KEY=re_xxxx in Render Dashboard → Environment\n"
+            "  1. Sign up free at https://app.brevo.com\n"
+            "  2. Settings → API Keys → Generate a new API key\n"
+            "  3. Add BREVO_API_KEY=xkeysib-xxx in Render Dashboard → Environment\n"
             "  4. Redeploy"
         )
     return key
 
 
-def _get_from() -> str:
-    """
-    Use custom FROM if RESEND_FROM is set (requires verified domain).
-    Otherwise fall back to Resend's free shared sender — works immediately.
-    """
-    return os.getenv("RESEND_FROM", "SmartApply <onboarding@resend.dev>")
+def _get_from() -> tuple[str, str]:
+    """Returns (email, name) for the sender."""
+    email = os.getenv("BREVO_FROM", os.getenv("SMTP_USER", ""))
+    name  = os.getenv("BREVO_FROM_NAME", "SmartApply")
+    if not email:
+        raise RuntimeError(
+            "BREVO_FROM is not set.\n"
+            "Add BREVO_FROM=kovvurinandivardhanreddy7@gmail.com in Render Dashboard."
+        )
+    return email, name
 
 
 async def _send(to: str, subject: str, html: str) -> None:
-    """Send email via Resend HTTP API."""
-    api_key  = _get_key()
-    from_addr = _get_from()
+    """Send email via Brevo HTTP API."""
+    api_key         = _get_key()
+    from_email, from_name = _get_from()
 
     payload = {
-        "from":    from_addr,
-        "to":      [to],
-        "subject": subject,
-        "html":    html,
+        "sender":      {"name": from_name, "email": from_email},
+        "to":          [{"email": to}],
+        "subject":     subject,
+        "htmlContent": html,
     }
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                RESEND_API_URL,
+                BREVO_API_URL,
                 headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type":  "application/json",
+                    "api-key":      api_key,
+                    "Content-Type": "application/json",
+                    "Accept":       "application/json",
                 },
                 json=payload,
             )
 
-        logger.info(f"[Resend] HTTP {resp.status_code} | {resp.text[:300]}")
+        logger.info(f"[Brevo] HTTP {resp.status_code} | {resp.text[:300]}")
 
         if resp.status_code in (200, 201):
-            logger.info(f"[Resend] ✅ Sent '{subject}' → {to}")
+            logger.info(f"[Brevo] ✅ Sent '{subject}' → {to}")
             return
 
         body = resp.text[:400]
 
         if resp.status_code == 401:
             raise RuntimeError(
-                f"Resend 401 — API key is wrong or missing.\n"
-                f"Check RESEND_API_KEY in Render Dashboard.\n"
+                f"Brevo 401 — API key is wrong.\n"
+                f"Check BREVO_API_KEY in Render Dashboard.\n"
+                f"Response: {body}"
+            )
+        if resp.status_code == 400:
+            raise RuntimeError(
+                f"Brevo 400 — Bad request. Sender may not be verified.\n"
+                f"Fix: https://app.brevo.com/senders → verify {from_email}\n"
                 f"Response: {body}"
             )
         if resp.status_code == 403:
             raise RuntimeError(
-                f"Resend 403 — sender domain not verified or account restricted.\n"
-                f"Response: {body}"
-            )
-        if resp.status_code == 422:
-            raise RuntimeError(
-                f"Resend 422 — invalid request (bad email address or payload).\n"
+                f"Brevo 403 — Account restricted or sender not verified.\n"
+                f"Fix: https://app.brevo.com/senders → verify {from_email}\n"
                 f"Response: {body}"
             )
         if resp.status_code == 429:
-            raise RuntimeError("Resend 429 — rate limit hit (100/day on free plan).")
+            raise RuntimeError("Brevo 429 — rate limit hit (300/day on free plan).")
 
-        raise RuntimeError(f"Resend HTTP {resp.status_code}: {body}")
+        raise RuntimeError(f"Brevo HTTP {resp.status_code}: {body}")
 
     except httpx.TimeoutException:
-        raise RuntimeError("Resend API timed out after 15s.")
+        raise RuntimeError("Brevo API timed out after 15s.")
     except httpx.ConnectError as exc:
-        raise RuntimeError(f"Cannot reach Resend API: {exc}")
+        raise RuntimeError(f"Cannot reach Brevo API: {exc}")
     except RuntimeError:
         raise
     except Exception as exc:
