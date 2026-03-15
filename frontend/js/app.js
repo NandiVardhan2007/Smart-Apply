@@ -15,6 +15,41 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Google OAuth token handler ────────────────────────────────────────────────
+// Runs immediately (before DOMContentLoaded) on EVERY page.
+// The backend redirects to dashboard.html?oauth_token=<jwt> after Google login.
+// We grab the token, save it, clean the URL, then let the page continue normally.
+(function handleOAuthToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('oauth_token');
+  if (!token) return;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Save token + minimal user object so auth.isAuth becomes true
+    localStorage.setItem('sa_token', token);
+    localStorage.setItem('sa_user', JSON.stringify({
+      email: payload.email || '',
+      id:    payload.sub   || '',
+    }));
+  } catch (_) {
+    // If decode fails just store the token raw — auth will still work
+    localStorage.setItem('sa_token', token);
+    localStorage.setItem('sa_user', JSON.stringify({}));
+  }
+
+  // Remove ?oauth_token from the URL bar without reloading
+  const clean = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, '', clean);
+
+  // If we landed on login or signup, redirect to dashboard
+  const page = window.location.pathname.split('/').pop();
+  if (!page || page === 'login.html' || page === 'signup.html') {
+    window.location.href = 'dashboard.html';
+  }
+  // Otherwise we're already on the right page — just let it load normally
+})();
+
 // ── API client ────────────────────────────────────────────────────────────────
 const api = {
   async request(method, path, body = null, opts = {}) {
@@ -43,7 +78,6 @@ const api = {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const auth = {
   save(token, user) {
-    // Store token for extension copy-token feature; API calls use cookie
     localStorage.setItem('sa_token', token);
     localStorage.setItem('sa_user', JSON.stringify(user));
   },
@@ -166,7 +200,6 @@ function hydrateNavbar() {
 // ── Time helpers ──────────────────────────────────────────────────────────────
 function timeAgo(isoString) {
   if (!isoString) return '—';
-  // Ensure Z suffix for UTC parsing
   const str = isoString.endsWith('Z') || isoString.includes('+') ? isoString : isoString + 'Z';
   const diff = Date.now() - new Date(str).getTime();
   if (isNaN(diff)) return '—';
