@@ -1,33 +1,37 @@
-// background.js — SmartApply Extension Service Worker
+// ════════════════════════════════════════════════════════════════
+//  SmartApply Extension – Background Service Worker v2
+// ════════════════════════════════════════════════════════════════
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[SmartApply] Extension installed.');
+  console.log('[SmartApply] Extension installed/updated');
 });
 
-// Relay messages between popup and content script
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'API_CALL') {
-    handleApiCall(msg).then(sendResponse).catch(err => sendResponse({ ok: false, error: err.message }));
-    return true; // keep channel open for async
-  }
-  if (msg.type === 'OPEN_LINKEDIN') {
-    chrome.tabs.create({ url: 'https://www.linkedin.com/jobs/search/' });
+// Relay BOT_LOG / BOT_STATS / BOT_STATUS from content → popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+
+  if (['BOT_LOG', 'BOT_STATS', 'BOT_STATUS'].includes(message.type)) {
+    // Forward to popup (will fail silently if popup is closed — that's fine)
+    chrome.runtime.sendMessage(message).catch(() => {});
     sendResponse({ ok: true });
+    return false;
   }
-  if (msg.type === 'GET_STATUS') {
-    chrome.storage.local.get(['botState', 'stats'], data => sendResponse(data));
-    return true;
-  }
-});
 
-async function handleApiCall({ url, method, body, token }) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(url, {
-    method: method || 'GET',
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, data };
-}
+  // API proxy: content script can ask background to make API calls
+  if (message.type === 'API_CALL') {
+    const { url, method, body, token } = message.payload || {};
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const opts = { method: method || 'GET', headers };
+    if (body) opts.body = JSON.stringify(body);
+
+    fetch(url, opts)
+      .then(r => r.json())
+      .then(data => sendResponse({ ok: true, data }))
+      .catch(err => sendResponse({ ok: false, error: err.message }));
+
+    return true; // keep channel open for async response
+  }
+
+  sendResponse({ ok: true });
+  return false;
+});
