@@ -6,7 +6,7 @@ from pathlib import Path
 
 from backend.database import get_db
 from backend.auth import require_admin
-from backend.config import NVIDIA_API_KEYS, NVIDIA_MODEL, SMTP_USER
+from backend.config import NVIDIA_API_KEYS, NVIDIA_MODEL, SMTP_USER, MAILJET_API_KEY, MAILJET_FROM
 from backend.email_utils import send_verification_email
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -177,6 +177,53 @@ async def set_user_role(user_id: str, role: str, current_user: dict = Depends(re
     if result.matched_count == 0:
         raise HTTPException(404, detail="User not found")
     return {"message": f"Role set to {role}"}
+
+
+
+@router.get("/email-status")
+async def email_status(current_user: dict = Depends(require_admin)):
+    """Check Mailjet HTTP API email configuration."""
+    from backend.config import MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_FROM, APP_URL
+    issues = []
+    if not MAILJET_API_KEY:
+        issues.append(
+            "MAILJET_API_KEY is not set. "
+            "Sign up at app.mailjet.com, go to Account → API Keys, copy your API Key."
+        )
+    if not MAILJET_SECRET_KEY:
+        issues.append("MAILJET_SECRET_KEY is not set. Copy it from app.mailjet.com/account/apikeys")
+    if not MAILJET_FROM:
+        issues.append(
+            "MAILJET_FROM is not set. "
+            "Verify your Gmail at app.mailjet.com/account/sender, then set MAILJET_FROM=your@gmail.com"
+        )
+    return {
+        "mailjet_from": MAILJET_FROM or "(not set)",
+        "api_key_set": bool(MAILJET_API_KEY),
+        "secret_key_set": bool(MAILJET_SECRET_KEY),
+        "app_url": APP_URL,
+        "issues": issues,
+        "status": "ok" if not issues else "warning",
+    }
+
+
+@router.post("/send-test-email")
+async def send_test_email_admin(
+    body: TestEmailRequest,
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Send a test verification email to any address.
+    Use this to confirm Resend is working before going live.
+    """
+    try:
+        await send_verification_email(str(body.to), "123456")
+        return {
+            "message": f"Test email sent to {body.to}. Check your inbox (and spam folder).",
+            "pin_shown": "123456",
+        }
+    except RuntimeError as exc:
+        raise HTTPException(500, detail=str(exc))
 
 
 @router.delete("/users/{user_id}")

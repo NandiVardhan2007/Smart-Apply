@@ -182,7 +182,7 @@ async function loadResumes(serverUrl, token) {
         <div class="resume-date">${r.uploaded_at ? new Date(r.uploaded_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}</div>
       </div>`;
     }).join('');
-    await storageSet({ resumeData: data.resumes });
+    await storageSet({ resumeData: data.resumes });  // routing_keywords included per resume
   } catch (err) { el.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`; }
 }
 
@@ -229,7 +229,7 @@ async function startBot() {
   const config = {
     serverUrl:    stored.serverUrl,
     token:        stored.token,
-    profile,
+    profile,          // includes ai_memory for enriched question answering
     jobPrefs:     prefs,
     accounts:     stored.profileData.platform_accounts || {},
     coverLetter:  stored.coverLetter !== false,
@@ -239,7 +239,7 @@ async function startBot() {
     smartResume:  stored.smartResume !== false,
     maxApps:      parseInt(stored.maxApps) || 20,
     userEmail:    stored.userEmail,
-    resumeList:   stored.resumeData || [],
+    resumeList:   stored.resumeData || [],  // each resume has routing_keywords
     _resumeTermIndex: 0,
   };
 

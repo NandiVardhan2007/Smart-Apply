@@ -350,29 +350,41 @@ async function aiPickOption(question,options,jobTitle,company,jd){
   }catch{return '';}
 }
 
-// ── RESUME ROUTING ────────────────────────────────────────────────────────────
-async function pickBestResume(jobTitle,company){
-  const resumes=CONFIG.resumeList||[];
-  if(!resumes.length) return null;
-  if(resumes.length===1) return resumes[0];
-  const title=(jobTitle||'').toLowerCase();
-  const roleMap=[
-    {keywords:['crm','salesforce','hubspot','leadsquared','marketing ops'],type:'crm'},
-    {keywords:['data analyst','business analyst','analytics','power bi','tableau','mis'],type:'analyst'},
-    {keywords:['inside sales','sales executive','bdr','business development'],type:'sales'},
-    {keywords:['java','python','software developer','software engineer','backend','frontend','sde'],type:'dev'},
-    {keywords:['finance','financial analyst','accounting','audit','ca'],type:'finance'},
-    {keywords:['hr','human resource','talent','recruiter'],type:'hr'},
-    {keywords:['marketing','digital marketing','seo','sem','content'],type:'marketing'},
-    {keywords:['intern','trainee','graduate trainee','fresher'],type:'intern'},
-  ];
-  let detectedType=null;
-  for(const {keywords,type} of roleMap){if(keywords.some(k=>title.includes(k))){detectedType=type;break;}}
-  if(detectedType){
-    const match=resumes.find(r=>{const lbl=(r.label||'').toLowerCase();return roleMap.find(rm=>rm.type===detectedType)?.keywords.some(k=>lbl.includes(k));});
-    if(match){panelLog(`📄 Resume: "${match.label}" for "${jobTitle.slice(0,25)}"`,'ai');return match;}
+// ── RESUME ROUTING — Dynamic keyword-based (from dashboard settings) ──────────
+// Each resume has routing_keywords set by user in the Dashboard → Resumes tab.
+// The first resume whose keywords match the job title is used.
+// Fallback: most recently uploaded resume.
+async function pickBestResume(jobTitle, company) {
+  const resumes = CONFIG.resumeList || [];
+  if (!resumes.length) return null;
+  if (resumes.length === 1) return resumes[0];
+
+  const title = (jobTitle || '').toLowerCase();
+
+  // 1. Try user-defined routing_keywords first
+  for (const resume of resumes) {
+    const keywords = resume.routing_keywords || [];
+    if (keywords.length === 0) continue;
+    const matched = keywords.find(kw => title.includes(kw.toLowerCase().trim()));
+    if (matched) {
+      panelLog(`📄 Resume: "${resume.label}" matched keyword "${matched}" for "${jobTitle.slice(0,25)}"`, 'ai');
+      return resume;
+    }
   }
-  return resumes[resumes.length-1];
+
+  // 2. Try label-based matching as secondary fallback
+  for (const resume of resumes) {
+    const label = (resume.label || resume.filename || '').toLowerCase();
+    const labelWords = label.replace(/[_\-\.]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+    if (labelWords.some(w => title.includes(w))) {
+      panelLog(`📄 Resume: "${resume.label}" (label match) for "${jobTitle.slice(0,25)}"`, 'ai');
+      return resume;
+    }
+  }
+
+  // 3. Last resort: most recently uploaded
+  panelLog(`📄 Resume: "${resumes[resumes.length-1].label}" (fallback — no keyword match for "${jobTitle.slice(0,25)}")`, 'warn');
+  return resumes[resumes.length - 1];
 }
 
 async function logApp(jobTitle,company,jobLink,result,reason){

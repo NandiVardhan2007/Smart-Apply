@@ -27,6 +27,28 @@ def _check_rate_limit(key: str, max_attempts: int = MAX_LOGIN_ATTEMPTS, window_s
     _login_attempts[key] = attempts
 
 
+async def _try_send_email(coro, context: str) -> bool:
+    """
+    Await an email coroutine. Returns True on success, raises HTTPException with
+    a clear message on failure. Never silently swallows errors.
+    """
+    try:
+        await coro
+        return True
+    except RuntimeError as exc:
+        logger.error(f"[email] {context} — {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"Email could not be delivered: {exc} "
+                "— Please ask the admin to check RESEND_API_KEY and RESEND_FROM in Render."
+            )
+        )
+    except Exception as exc:
+        logger.error(f"[email] {context} unexpected — {exc}", exc_info=True)
+        raise HTTPException(500, detail="Email delivery failed due to an unexpected error.")
+
+
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
@@ -91,55 +113,49 @@ async def signup(body: SignupRequest):
     if existing:
         if existing.get("is_verified"):
             raise HTTPException(409, detail="Email already registered")
-        pin = generate_pin()
+        # Unverified account exists — resend OTP
+        pin     = generate_pin()
         expires = datetime.now(timezone.utc) + timedelta(minutes=PIN_EXPIRY_MINUTES)
         await db.users.update_one(
             {"email": email},
             {"$set": {"verification_pin": pin, "pin_expires": expires, "pin_attempts": 0}}
         )
-        asyncio.create_task(_send_verification(email, pin))
-        return {"message": "Verification code resent. Please check your email."}
+        await _try_send_email(
+            send_verification_email(email, pin),
+            f"resend-otp to {email}"
+        )
+        return {"message": "Verification code resent. Check your email."}
 
-    pin = generate_pin()
+    pin     = generate_pin()
     expires = datetime.now(timezone.utc) + timedelta(minutes=PIN_EXPIRY_MINUTES)
 
     user_doc = {
-        "email": email,
+        "email":         email,
         "password_hash": hash_password(body.password),
-        "role": "user",
-        "is_verified": False,
+        "role":          "user",
+        "is_verified":   False,
         "verification_pin": pin,
-        "pin_expires": expires,
-        "pin_attempts": 0,
-        "created_at": datetime.now(timezone.utc),
-        "profile": {},
-        "resumes": [],
+        "pin_expires":   expires,
+        "pin_attempts":  0,
+        "created_at":    datetime.now(timezone.utc),
+        "profile":       {},
+        "resumes":       [],
         "platform_accounts": {},
-        "job_preferences": {},
+        "job_preferences":   {},
     }
 
     await db.users.insert_one(user_doc)
-    asyncio.create_task(_send_verification(email, pin))
-    return {"message": "Account created. Check your email for the verification code."}
 
-
-async def _send_verification(email: str, pin: str):
-    try:
-        await send_verification_email(email, pin)
-    except Exception as exc:
-        logger.error(f"[signup] Email send failed for {email}: {exc}")
-
-
-async def _send_reset(email: str, token: str):
-    try:
-        await send_reset_email(email, token)
-    except Exception as exc:
-        logger.error(f"[reset] Email send failed for {email}: {exc}")
+    await _try_send_email(
+        send_verification_email(email, pin),
+        f"signup OTP to {email}"
+    )
+    return {"message": "Account created. Check your email for the 6-digit verification code."}
 
 
 @router.post("/verify")
 async def verify_email(body: VerifyRequest):
-    db = get_db()
+    db    = get_db()
     email = body.email.lower()
 
     _check_rate_limit(f"verify:{email}", max_attempts=5, window_sec=900)
@@ -167,14 +183,15 @@ async def verify_email(body: VerifyRequest):
 
     await db.users.update_one(
         {"email": email},
-        {"$set": {"is_verified": True}, "$unset": {"verification_pin": "", "pin_expires": "", "pin_attempts": ""}}
+        {"$set": {"is_verified": True},
+         "$unset": {"verification_pin": "", "pin_expires": "", "pin_attempts": ""}}
     )
     return {"message": "Email verified successfully. You can now log in."}
 
 
 @router.post("/resend-pin")
 async def resend_pin(body: ResendRequest):
-    db = get_db()
+    db    = get_db()
     email = body.email.lower()
 
     _check_rate_limit(f"resend:{email}", max_attempts=3, window_sec=600)
@@ -185,19 +202,22 @@ async def resend_pin(body: ResendRequest):
     if user.get("is_verified"):
         return {"message": "Account already verified"}
 
-    pin = generate_pin()
+    pin     = generate_pin()
     expires = datetime.now(timezone.utc) + timedelta(minutes=PIN_EXPIRY_MINUTES)
     await db.users.update_one(
         {"email": email},
         {"$set": {"verification_pin": pin, "pin_expires": expires, "pin_attempts": 0}}
     )
-    asyncio.create_task(_send_verification(email, pin))
-    return {"message": "New verification code sent"}
+    await _try_send_email(
+        send_verification_email(email, pin),
+        f"resend-pin to {email}"
+    )
+    return {"message": "New verification code sent. Check your email."}
 
 
 @router.post("/login")
 async def login(body: LoginRequest, response: Response):
-    db = get_db()
+    db    = get_db()
     email = body.email.lower()
 
     _check_rate_limit(f"login:{email}")
@@ -206,7 +226,7 @@ async def login(body: LoginRequest, response: Response):
     if not user or not verify_password(body.password, user.get("password_hash", "")):
         raise HTTPException(401, detail="Email or password is wrong. Try again.")
     if not user.get("is_verified"):
-        raise HTTPException(403, detail="Please verify your email before logging in")
+        raise HTTPException(403, detail="Please verify your email before logging in.")
 
     token = create_access_token(str(user["_id"]), email)
 
@@ -214,14 +234,13 @@ async def login(body: LoginRequest, response: Response):
         key="access_token", value=token,
         httponly=True, samesite="lax", max_age=86400 * 7
     )
-
     return {
         "access_token": token,
-        "token_type": "bearer",
+        "token_type":   "bearer",
         "user": {
-            "id": str(user["_id"]),
-            "email": email,
-            "role": user.get("role", "user"),
+            "id":          str(user["_id"]),
+            "email":       email,
+            "role":        user.get("role", "user"),
             "has_profile": bool(user.get("profile", {}).get("first_name")),
         }
     }
@@ -235,21 +254,25 @@ async def logout(response: Response):
 
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotRequest):
-    db = get_db()
+    db    = get_db()
     email = body.email.lower()
 
     _check_rate_limit(f"reset:{email}", max_attempts=3, window_sec=3600)
 
     user = await db.users.find_one({"email": email})
     if user:
-        token = generate_token()
+        token   = generate_token()
         expires = datetime.now(timezone.utc) + timedelta(hours=RESET_TOKEN_EXPIRY_HRS)
         await db.users.update_one(
             {"email": email},
             {"$set": {"reset_token": token, "reset_expires": expires}}
         )
-        asyncio.create_task(_send_reset(email, token))
+        await _try_send_email(
+            send_reset_email(email, token),
+            f"password reset to {email}"
+        )
 
+    # Always return same message so attackers can't enumerate accounts
     return {"message": "If that email is registered, a reset link has been sent."}
 
 
@@ -269,12 +292,12 @@ async def reset_password(body: ResetRequest):
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
     if expires and datetime.now(timezone.utc) > expires:
-        raise HTTPException(400, detail="Reset link has expired")
+        raise HTTPException(400, detail="Reset link has expired. Please request a new one.")
 
     await db.users.update_one(
         {"reset_token": body.token},
         {
-            "$set": {"password_hash": hash_password(body.new_password)},
+            "$set":   {"password_hash": hash_password(body.new_password)},
             "$unset": {"reset_token": "", "reset_expires": ""}
         }
     )

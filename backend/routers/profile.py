@@ -114,3 +114,36 @@ def _mask_passwords(accounts: dict) -> dict:
         if "password" in key and masked[key]:
             masked[key] = "••••••••"
     return masked
+
+
+class AIMemoryUpdate(BaseModel):
+    ai_memory: str  # The enriched AI response pasted back by the user
+
+
+@router.put("/ai-memory")
+async def update_ai_memory(body: AIMemoryUpdate, current_user: dict = Depends(get_current_user)):
+    """Store enriched AI knowledge about the user — used by the bot for unexpected questions."""
+    db = get_db()
+    await db.users.update_one(
+        {"_id": ObjectId(current_user["user_id"])},
+        {"$set": {"profile.ai_memory": body.ai_memory}}
+    )
+    return {"message": "AI memory updated successfully"}
+
+
+@router.put("/resume-keywords")
+async def update_resume_keywords(
+    file_id: str,
+    keywords: list[str],
+    current_user: dict = Depends(get_current_user),
+):
+    """Set custom routing keywords for a specific resume."""
+    db = get_db()
+    await db.users.update_one(
+        {
+            "_id": ObjectId(current_user["user_id"]),
+            "resumes.file_id": file_id,
+        },
+        {"$set": {"resumes.$.routing_keywords": keywords}}
+    )
+    return {"message": "Resume keywords updated"}

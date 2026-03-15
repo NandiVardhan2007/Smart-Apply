@@ -64,6 +64,7 @@
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="btn btn-primary" id="save-smtp-btn" onclick="saveSMTP()"><span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-floppy-disk"></i> Save SMTP Config</span></button>
                 <button class="btn btn-ghost" onclick="testSMTP()"><i class="fa-solid fa-paper-plane"></i> Send Test Email</button>
+        <button class="btn btn-ghost" onclick="checkEmailStatus()"><i class="fa-solid fa-stethoscope"></i> Check Email Config</button>
               </div>
             </div>
           </div>
@@ -222,6 +223,22 @@
 
     checkHealth();
     loadAdminStats();
+
+    async function checkEmailStatus() {
+      try {
+        const data = await api.get('/admin/email-status');
+        let msg = `Mailjet From: ${data.mailjet_from}\nAPI Key set: ${data.api_key_set}\nSecret Key set: ${data.secret_key_set}\nApp URL: ${data.app_url}`;
+        if (data.issues.length) {
+          msg += '\n\n⚠️ ISSUES:\n' + data.issues.join('\n\n');
+          msg += '\n\nSetup guide:\n1. Sign up at app.mailjet.com/signup\n2. Verify Gmail: app.mailjet.com/account/sender\n3. Get API keys: app.mailjet.com/account/apikeys\n4. Set MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_FROM in Render';
+        } else {
+          msg += '\n\n✅ Mailjet config looks correct! Try sending a test email below.';
+        }
+        alert(msg);
+      } catch(e) {
+        alert('Could not check email status: ' + (e.detail || e.message));
+      }
+    }
   </script>
 </body>
 </html>

@@ -16,37 +16,47 @@
     .setup-step{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
     .setup-step:last-child{border-bottom:none}
     .step-num{width:28px;height:28px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:13px;flex-shrink:0}
-    /* Memory section */
-    .memory-card{background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:var(--radius-lg);padding:24px}
-    .ai-prompt-box{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:'SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.8;color:var(--text-2);white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin:16px 0}
-    .ai-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:9999px;border:1px solid;font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition)}
-    .ai-chip:hover{transform:translateY(-1px)}
-    .ai-chip-chatgpt{background:rgba(16,163,127,0.1);border-color:rgba(16,163,127,0.3);color:#10a37f}
-    .ai-chip-claude{background:rgba(208,117,89,0.1);border-color:rgba(208,117,89,0.3);color:#d07559}
-    .ai-chip-gemini{background:rgba(79,124,255,0.1);border-color:rgba(79,124,255,0.3);color:var(--primary)}
-    .ai-chip-copy{background:rgba(148,163,200,0.1);border-color:rgba(148,163,200,0.25);color:var(--text-2)}
     /* Resume routing */
-    .resume-job-card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
-    .resume-job-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
-    .resume-role-tags{display:flex;flex-wrap:wrap;gap:6px}
-    /* Mobile sidebar overlay */
+    .resume-routing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;transition:var(--transition)}
+    .resume-routing-card:hover{border-color:var(--border-glow)}
+    .rrc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+    .kw-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(79,124,255,0.12);border:1px solid rgba(79,124,255,0.25);color:var(--primary);padding:3px 10px;border-radius:9999px;font-size:12px;font-weight:500}
+    .kw-tag .rm{background:none;border:none;cursor:pointer;color:inherit;padding:0;line-height:1;font-size:14px;opacity:0.7}.kw-tag .rm:hover{opacity:1}
+    .kw-input-row{display:flex;gap:8px;margin-top:10px}
+    .kw-input{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;flex:1;transition:var(--transition)}
+    .kw-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,124,255,0.1)}
+    .kw-input::placeholder{color:var(--text-3)}
+    /* Memory */
+    .memory-step{display:flex;align-items:flex-start;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;transition:var(--transition)}
+    .memory-step:hover{border-color:var(--border-glow)}
+    .ms-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;color:#fff}
+    .ms-body{flex:1;min-width:0}
+    .ms-title{font-weight:700;font-size:14px;margin-bottom:4px}
+    .ms-desc{font-size:13px;color:var(--text-2);line-height:1.5}
+    .prompt-box{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-family:'SF Mono',Consolas,monospace;font-size:12px;line-height:1.75;color:var(--text-2);white-space:pre-wrap;word-break:break-word;max-height:240px;overflow-y:auto;margin-top:10px;user-select:text}
+    .import-box{width:100%;min-height:120px;background:var(--bg-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);resize:vertical;outline:none;transition:var(--transition);margin-top:10px;line-height:1.6}
+    .import-box:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,124,255,0.1)}
+    .import-box::placeholder{color:var(--text-3)}
+    .ai-btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .ai-open-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9999px;border:1px solid;font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);background:none;font-family:'DM Sans',sans-serif}
+    .ai-open-btn:hover{transform:translateY(-1px)}
+    .ai-chatgpt{border-color:rgba(16,163,127,0.4);color:#10a37f}
+    .ai-claude{border-color:rgba(208,117,89,0.4);color:#d07559}
+    .ai-gemini{border-color:rgba(79,124,255,0.4);color:var(--primary)}
+    .memory-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;margin-top:10px}
+    .ms-ok{background:rgba(126,232,162,0.08);border:1px solid rgba(126,232,162,0.2);color:var(--accent)}
+    /* Mobile */
     .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:898}
     .sidebar-overlay.open{display:block}
     .mobile-sidebar-btn{display:none;background:none;border:none;color:var(--text);cursor:pointer;padding:8px;font-size:18px}
-    @media(max-width:900px){
-      .mobile-sidebar-btn{display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Syne',sans-serif;font-weight:600}
-      .overview-panels{grid-template-columns:1fr!important}
-    }
-    @media(max-width:600px){
-      .stats-overview{grid-template-columns:1fr 1fr!important}
-    }
+    @media(max-width:900px){.mobile-sidebar-btn{display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Syne',sans-serif;font-weight:600}.overview-panels{grid-template-columns:1fr!important}}
+    @media(max-width:600px){.stats-overview{grid-template-columns:1fr 1fr!important}}
   </style>
 </head>
 <body>
   <div class="bg-grid"></div>
   <div id="toast-container"></div>
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
   <nav class="navbar">
     <div class="container">
       <div style="display:flex;align-items:center;gap:12px">
@@ -61,7 +71,6 @@
       </div>
     </div>
   </nav>
-
   <div class="page-wrapper">
     <div class="dashboard-layout">
       <aside class="sidebar" id="sidebar">
@@ -80,20 +89,16 @@
         <a href="profile.html" class="sidebar-link"><span class="icon"><i class="fa-solid fa-user-pen"></i></span> Edit Profile</a>
         <button class="sidebar-link" onclick="auth.logout()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</button>
       </aside>
-
       <main class="main-content">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px">
-          <div>
-            <h3 id="welcome-msg">Welcome back!</h3>
-            <p class="text-muted text-sm" id="welcome-sub">Here's your job application overview</p>
-          </div>
+          <div><h3 id="welcome-msg">Welcome back!</h3><p class="text-muted text-sm" id="welcome-sub">Here's your job application overview</p></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <a href="resume.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-plus"></i> Upload Resume</a>
             <a href="/api/jobs/extension/download" class="btn btn-primary btn-sm"><i class="fa-brands fa-chrome"></i> Download Extension</a>
           </div>
         </div>
 
-        <!-- ── Overview ── -->
+        <!-- Overview -->
         <div id="tab-overview" class="tab-pane">
           <div class="grid-3 stagger stats-overview" id="stats-grid">
             <div class="stat-card skeleton" style="height:96px"></div>
@@ -101,23 +106,12 @@
             <div class="stat-card skeleton" style="height:96px"></div>
           </div>
           <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:24px" id="overview-panels">
-            <div class="card">
-              <h4 style="margin-bottom:16px"><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h4>
-              <div id="recent-apps">
-                <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
-                <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div>
-                <div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div>
-              </div>
-              <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary" style="display:block;margin-top:12px">View all <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
-            <div class="card">
-              <h4 style="margin-bottom:16px"><i class="fa-solid fa-chart-pie"></i> By Platform</h4>
-              <div id="platform-stats"><div class="skeleton" style="height:120px;border-radius:var(--radius-sm)"></div></div>
-            </div>
+            <div class="card"><h4 style="margin-bottom:16px"><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h4><div id="recent-apps"><div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div><div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div></div><a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary" style="display:block;margin-top:12px">View all <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="card"><h4 style="margin-bottom:16px"><i class="fa-solid fa-chart-pie"></i> By Platform</h4><div id="platform-stats"><div class="skeleton" style="height:120px;border-radius:var(--radius-sm)"></div></div></div>
           </div>
         </div>
 
-        <!-- ── History ── -->
+        <!-- History -->
         <div id="tab-history" class="tab-pane hidden">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
             <h4><i class="fa-solid fa-list-check"></i> Application History</h4>
@@ -129,93 +123,138 @@
             </div>
           </div>
           <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Job Title</th><th>Company</th><th>Platform</th><th>Status</th><th>Applied</th><th>Link</th></tr></thead>
-              <tbody id="history-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-2)">Loading…</td></tr></tbody>
-            </table>
+            <table><thead><tr><th>Job Title</th><th>Company</th><th>Platform</th><th>Status</th><th>Applied</th><th>Link</th></tr></thead>
+            <tbody id="history-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-2)">Loading…</td></tr></tbody></table>
           </div>
           <div id="history-pagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap"></div>
         </div>
 
-        <!-- ── Extension ── -->
+        <!-- Extension -->
         <div id="tab-extension" class="tab-pane hidden">
           <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(79,124,255,0.08),rgba(126,232,162,0.04));border-color:rgba(79,124,255,0.2)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
-              <div><h4 style="margin-bottom:6px"><i class="fa-brands fa-chrome"></i> SmartApply Chrome Extension</h4><p class="text-muted text-sm">Apply to jobs directly from your browser.</p></div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <a href="/api/jobs/extension/download" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download Extension</a>
-                <button onclick="copyAuthToken()" class="btn btn-ghost btn-sm" id="copy-token-btn"><i class="fa-solid fa-copy"></i> Copy Auth Token</button>
-              </div>
+              <div><h4 style="margin-bottom:6px"><i class="fa-brands fa-chrome"></i> SmartApply Chrome Extension</h4><p class="text-muted text-sm">Sign in with your SmartApply email &amp; password directly in the extension popup.</p></div>
+              <a href="/api/jobs/extension/download" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download</a>
             </div>
           </div>
           <div class="card" style="margin-bottom:20px">
-            <h4 style="margin-bottom:20px"><i class="fa-solid fa-circle-info"></i> Setup Instructions</h4>
-            <div class="setup-step"><div class="step-num">1</div><div><div style="font-weight:500;margin-bottom:3px">Download &amp; unzip the extension</div><div class="text-muted text-sm">Click "Download Extension" above and unzip to a permanent folder.</div></div></div>
-            <div class="setup-step"><div class="step-num">2</div><div><div style="font-weight:500;margin-bottom:3px">Load in Chrome</div><div class="text-muted text-sm">Go to <code style="background:var(--bg-3);padding:1px 6px;border-radius:4px;font-size:12px">chrome://extensions</code> → Enable Developer Mode → Load Unpacked → select the folder.</div></div></div>
-            <div class="setup-step"><div class="step-num">3</div><div><div style="font-weight:500;margin-bottom:3px">Sign in</div><div class="text-muted text-sm">Use your SmartApply email &amp; password to sign in directly in the extension popup.</div></div></div>
-            <div class="setup-step"><div class="step-num">4</div><div><div style="font-weight:500;margin-bottom:3px">Start applying on LinkedIn</div><div class="text-muted text-sm">Visit LinkedIn Jobs, open the extension popup, and click Start Bot.</div></div></div>
+            <h4 style="margin-bottom:20px"><i class="fa-solid fa-circle-info"></i> Setup</h4>
+            <div class="setup-step"><div class="step-num">1</div><div><div style="font-weight:500;margin-bottom:3px">Download &amp; unzip</div><div class="text-muted text-sm">Click "Download Extension" above and unzip to a permanent folder.</div></div></div>
+            <div class="setup-step"><div class="step-num">2</div><div><div style="font-weight:500;margin-bottom:3px">Load in Chrome</div><div class="text-muted text-sm"><code style="background:var(--bg-3);padding:1px 6px;border-radius:4px;font-size:12px">chrome://extensions</code> → Enable Developer Mode → Load Unpacked.</div></div></div>
+            <div class="setup-step"><div class="step-num">3</div><div><div style="font-weight:500;margin-bottom:3px">Sign in</div><div class="text-muted text-sm">Use your SmartApply email &amp; password in the popup.</div></div></div>
+            <div class="setup-step"><div class="step-num">4</div><div><div style="font-weight:500;margin-bottom:3px">Go to LinkedIn Jobs &amp; click Start Bot</div><div class="text-muted text-sm">Applications appear here automatically.</div></div></div>
           </div>
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-              <h4><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h4>
-              <a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary">View all <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
-            <div id="ext-recent-apps"><div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div><div class="skeleton" style="height:44px;border-radius:var(--radius-sm)"></div></div>
-          </div>
+          <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px"><h4><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h4><a href="#" onclick="showTab('history',null);return false" class="text-sm text-primary">View all</a></div><div id="ext-recent-apps"><div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:var(--radius-sm)"></div></div></div>
         </div>
 
-        <!-- ── Resumes ── -->
+        <!-- ═══════════════════════════════════════════════════
+             RESUMES TAB
+        ═══════════════════════════════════════════════════ -->
         <div id="tab-resumes" class="tab-pane hidden">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-            <h4><i class="fa-solid fa-file-lines"></i> Your Resumes</h4>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px">
+            <h4><i class="fa-solid fa-file-lines"></i> Resumes &amp; Routing Keywords</h4>
             <a href="resume.html" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Upload New</a>
           </div>
-          <div id="dash-resumes"><div class="skeleton" style="height:70px;border-radius:var(--radius);margin-bottom:10px"></div><div class="skeleton" style="height:70px;border-radius:var(--radius)"></div></div>
-
-          <div style="margin-top:28px">
-            <h4 style="margin-bottom:16px"><i class="fa-solid fa-route"></i> Resume Routing by Job Role</h4>
-            <p class="text-muted text-sm" style="margin-bottom:16px">The bot automatically picks the best resume based on job title keywords. Include role keywords in your resume label.</p>
-            <div id="resume-routing-table"></div>
+          <div class="alert alert-info" style="margin-bottom:20px">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Add <strong>routing keywords</strong> to each resume. When the bot sees a job title matching your keywords, it automatically picks that resume. <strong>As a software student</strong> — upload separate resumes for Python, Java, Frontend, etc. and tag them with relevant keywords.</span>
+          </div>
+          <div id="resume-routing-list">
+            <div class="skeleton" style="height:120px;border-radius:var(--radius);margin-bottom:12px"></div>
+            <div class="skeleton" style="height:120px;border-radius:var(--radius)"></div>
+          </div>
+          <div class="card" style="margin-top:20px;background:rgba(79,124,255,0.04);border-color:rgba(79,124,255,0.2)">
+            <h4 style="margin-bottom:14px"><i class="fa-solid fa-route"></i> How Routing Works</h4>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:var(--text-2)">
+              <div style="display:flex;gap:10px"><i class="fa-solid fa-circle-1" style="color:var(--primary);margin-top:2px;flex-shrink:0"></i><div>Bot reads the job title (e.g. <em>"Python Developer at TCS"</em>) and checks each resume's keywords.</div></div>
+              <div style="display:flex;gap:10px"><i class="fa-solid fa-circle-2" style="color:var(--primary);margin-top:2px;flex-shrink:0"></i><div>The <strong>first resume</strong> whose keyword matches the job title is used. If none match, the <strong>most recently uploaded</strong> is the fallback.</div></div>
+              <div style="display:flex;gap:10px"><i class="fa-solid fa-circle-3" style="color:var(--primary);margin-top:2px;flex-shrink:0"></i><div>Keywords are partial and case-insensitive — <em>"react"</em> matches <em>"React Developer"</em>, <em>"ReactJS"</em>, <em>"React Native"</em>.</div></div>
+            </div>
           </div>
         </div>
 
-        <!-- ── AI Memory ── -->
+        <!-- ═══════════════════════════════════════════════════
+             AI MEMORY TAB — Bidirectional sync
+        ═══════════════════════════════════════════════════ -->
         <div id="tab-memory" class="tab-pane hidden">
-          <div class="memory-card" style="margin-bottom:20px">
-            <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px">
-              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0"><i class="fa-solid fa-brain" style="color:#fff"></i></div>
-              <div>
-                <h3 style="margin-bottom:4px">AI Context Prompt</h3>
-                <p class="text-muted text-sm">Paste this prompt into any AI (ChatGPT, Claude, Gemini, etc.) to give it full context about you — so it can help you write cover letters, answer interview questions, negotiate salary, and more.</p>
+          <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:24px">
+            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-brain" style="color:#fff;font-size:1.3rem"></i></div>
+            <div><h3 style="margin-bottom:4px">AI Memory Sync</h3><p class="text-muted text-sm">Export your profile to any AI → let it build a rich profile about you → import back so the bot can answer <strong>any</strong> unexpected question during job applications.</p></div>
+          </div>
+
+          <!-- Step 1 -->
+          <div class="memory-step">
+            <div class="ms-num" style="background:linear-gradient(135deg,#4f7cff,#6366f1)">1</div>
+            <div class="ms-body">
+              <div class="ms-title"><i class="fa-solid fa-arrow-up-from-bracket"></i> Export — Copy your profile prompt</div>
+              <div class="ms-desc">Copy this prompt and open any AI. Paste it as the first message so the AI learns about you.</div>
+              <div class="ai-btn-row">
+                <button class="ai-open-btn ai-chatgpt" onclick="openAI('chatgpt')"><i class="fa-solid fa-comment-dots"></i> Open ChatGPT</button>
+                <button class="ai-open-btn ai-claude" onclick="openAI('claude')"><i class="fa-solid fa-wand-magic-sparkles"></i> Open Claude</button>
+                <button class="ai-open-btn ai-gemini" onclick="openAI('gemini')"><i class="fa-solid fa-gem"></i> Open Gemini</button>
+                <button class="ai-open-btn" style="border-color:var(--border);color:var(--text-2)" id="copy-export-btn" onclick="copyExportPrompt()"><i class="fa-solid fa-copy"></i> Copy Prompt</button>
+                <button class="ai-open-btn" style="border-color:var(--border);color:var(--text-2)" onclick="refreshMemoryPrompt()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+              </div>
+              <div class="prompt-box" id="export-prompt-box">Loading your profile…</div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="memory-step">
+            <div class="ms-num" style="background:linear-gradient(135deg,#10b981,#059669)">2</div>
+            <div class="ms-body">
+              <div class="ms-title"><i class="fa-solid fa-robot"></i> Ask — Send this follow-up to the AI</div>
+              <div class="ms-desc">After pasting your profile, send this follow-up message. The AI will create a comprehensive summary the bot can use.</div>
+              <div class="prompt-box" id="followup-box" style="max-height:150px;margin-top:10px">Based on everything above, create a comprehensive profile for me that a job application bot can use. Include:
+
+1. A detailed professional summary (5-6 sentences about who I am)
+2. Key skills categorized (Technical, Tools, Soft Skills)
+3. How I would answer these common job form questions:
+   - "Tell me about yourself"
+   - "Why are you applying for this role?"
+   - "What are your strengths?"
+   - "What is your weakness?"
+   - "Where do you see yourself in 5 years?"
+   - "Are you willing to relocate?" (answer: Yes)
+   - "Expected salary / CTC?" (give my expected salary)
+   - "Notice period / when can you join?" (give my notice period)
+   - "Are you authorized to work in India?" (answer: Yes)
+   - "Do you require visa sponsorship?" (answer: No)
+   - "Are you a fresher or experienced?"
+   - "Describe a challenge you overcame"
+   - "What projects have you worked on?"
+4. Any additional context that would help a bot fill unexpected form fields accurately.
+
+Format clearly with headers. Be specific and personalized to MY profile.</div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="copyFollowup()"><i class="fa-solid fa-copy"></i> Copy this message</button>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="memory-step">
+            <div class="ms-num" style="background:linear-gradient(135deg,#f59e0b,#d97706)">3</div>
+            <div class="ms-body">
+              <div class="ms-title"><i class="fa-solid fa-arrow-down-to-bracket"></i> Import — Paste the AI's response back</div>
+              <div class="ms-desc">Copy the AI's full response and paste it below. The bot will use this enriched knowledge for every unexpected question.</div>
+              <textarea class="import-box" id="ai-memory-import" placeholder="Paste the AI's complete response here…&#10;&#10;Example of what you'd get:&#10;&#10;## Professional Summary&#10;I am Nandu, a second-year B.Tech student at Aditya College...&#10;&#10;## Skills&#10;Technical: Python, Java, SQL...&#10;&#10;## Common Question Answers&#10;Tell me about yourself: I am..."></textarea>
+              <div id="memory-saved-status" style="display:none" class="memory-status ms-ok"></div>
+              <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+                <button class="btn btn-primary" id="save-memory-btn" onclick="saveAIMemory()"><span class="spinner"></span><span class="btn-text"><i class="fa-solid fa-floppy-disk"></i> Save to SmartApply</span></button>
+                <button class="btn btn-ghost btn-sm" onclick="clearAIMemory()"><i class="fa-solid fa-trash"></i> Clear</button>
               </div>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-              <button class="ai-chip ai-chip-chatgpt" onclick="openAI('chatgpt')"><i class="fa-solid fa-comment-dots"></i> Open ChatGPT</button>
-              <button class="ai-chip ai-chip-claude" onclick="openAI('claude')"><i class="fa-solid fa-wand-magic-sparkles"></i> Open Claude</button>
-              <button class="ai-chip ai-chip-gemini" onclick="openAI('gemini')"><i class="fa-solid fa-gem"></i> Open Gemini</button>
-              <button class="ai-chip ai-chip-copy" id="copy-prompt-btn" onclick="copyPrompt()"><i class="fa-solid fa-copy"></i> Copy Prompt</button>
-            </div>
           </div>
 
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-              <h4><i class="fa-solid fa-scroll"></i> Your Context Prompt</h4>
-              <button class="btn btn-ghost btn-sm" onclick="refreshMemoryPrompt()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <!-- Current memory -->
+          <div class="card" style="margin-top:4px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+              <h4><i class="fa-solid fa-database"></i> Stored AI Memory</h4>
+              <span id="memory-word-count" class="badge badge-neutral">Not set</span>
             </div>
-            <p class="text-muted text-sm" style="margin-bottom:12px">This prompt contains all the information the AI needs about you. Copy it and paste it at the start of any AI conversation.</p>
-            <div class="ai-prompt-box" id="memory-prompt-box">Loading your profile…</div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-              <button class="btn btn-primary" onclick="copyPrompt()"><i class="fa-solid fa-copy"></i> Copy to Clipboard</button>
-              <a href="profile.html" class="btn btn-ghost"><i class="fa-solid fa-user-pen"></i> Update Profile</a>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:20px">
-            <h4 style="margin-bottom:12px"><i class="fa-solid fa-lightbulb"></i> How to use this</h4>
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div><div class="text-sm"><strong>Copy the prompt</strong> above and paste it at the start of a new conversation in ChatGPT, Claude, or Gemini.</div></div>
-              <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div><div class="text-sm"><strong>Ask the AI anything</strong> — "Write me a cover letter for a Data Analyst role", "How should I answer salary expectations?", "Review my LinkedIn headline"</div></div>
-              <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div><div class="text-sm"><strong>Keep it updated</strong> — Whenever you update your profile or upload a new resume, refresh the prompt here.</div></div>
+            <div id="memory-preview" class="text-muted text-sm" style="line-height:1.7">No AI memory stored yet. Complete the 3 steps above.</div>
+            <div class="alert alert-info" style="margin-top:16px">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>The bot uses this for ANY unexpected question — "Describe a challenge", career goals, project details, unusual dropdowns. The richer this data, the better the bot performs.</span>
             </div>
           </div>
         </div>
@@ -223,316 +262,319 @@
       </main>
     </div>
   </div>
-
   <script src="js/app.js"></script>
   <script>
     if (!auth.requireAuth()) throw new Error();
+    let historyFilter=null, historyPage=0, _profileData=null, _resumes=[];
+    const PAGE_SIZE=20;
 
-    let historyFilter = null, historyPage = 0;
-    const PAGE_SIZE = 20;
+    document.getElementById('mobile-sidebar-btn').addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('open');});
+    document.getElementById('sidebar-overlay').addEventListener('click',()=>{document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');});
 
-    // ── Mobile sidebar ────────────────────────────────────────────────────
-    document.getElementById('mobile-sidebar-btn').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('sidebar-overlay').classList.toggle('open');
-    });
-    document.getElementById('sidebar-overlay').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('sidebar-overlay').classList.remove('open');
-    });
-
-    // ── Tab switching ─────────────────────────────────────────────────────
-    function showTab(name, navItem) {
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-      document.getElementById('tab-' + name).classList.remove('hidden');
-      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-      if (navItem) navItem.classList.add('active');
-      if (name === 'history')   loadHistory();
-      if (name === 'extension') loadExtRecent();
-      if (name === 'resumes')   loadDashResumes();
-      if (name === 'memory')    refreshMemoryPrompt();
-      // close mobile sidebar
+    function showTab(name,navItem){
+      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.add('hidden'));
+      document.getElementById('tab-'+name).classList.remove('hidden');
+      document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+      if(navItem) navItem.classList.add('active');
+      if(name==='history') loadHistory();
+      if(name==='extension') loadExtRecent();
+      if(name==='resumes') loadResumesTab();
+      if(name==='memory') loadMemoryTab();
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('sidebar-overlay').classList.remove('open');
     }
 
-    // ── Stats ─────────────────────────────────────────────────────────────
-    async function loadStats() {
-      try {
-        const data = await api.get('/jobs/stats');
-        document.getElementById('stats-grid').innerHTML = `
+    async function loadStats(){
+      try{
+        const data=await api.get('/jobs/stats');
+        document.getElementById('stats-grid').innerHTML=`
           <div class="stat-card fade-in"><div class="stat-label">Total Applied</div><div class="stat-value">${data.total}</div><div class="stat-sub">across all platforms</div></div>
           <div class="stat-card fade-in"><div class="stat-label">Successful</div><div class="stat-value" style="color:var(--accent)">${data.applied}</div><div class="stat-sub">${data.total?Math.round(data.applied/data.total*100):0}% success rate</div></div>
-          <div class="stat-card fade-in"><div class="stat-label">Failed / Skipped</div><div class="stat-value" style="color:var(--text-2)">${data.failed+data.skipped}</div><div class="stat-sub">${data.failed} failed · ${data.skipped} skipped</div></div>
-        `;
-        const platforms = data.by_platform || {};
-        document.getElementById('platform-stats').innerHTML = Object.entries(platforms).length
-          ? Object.entries(platforms).map(([p,c]) => `
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-                <span style="text-transform:capitalize;font-size:14px"><i class="fa-solid fa-layer-group" style="color:var(--primary);margin-right:6px"></i>${p}</span>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <div style="width:100px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden">
-                    <div style="width:${data.total?Math.round(c/data.total*100):0}%;height:100%;background:var(--primary);border-radius:3px"></div>
-                  </div>
-                  <span style="font-weight:600;font-size:14px;min-width:28px;text-align:right">${c}</span>
-                </div>
-              </div>
-            `).join('')
-          : '<p class="text-muted text-sm">No applications yet.</p>';
-      } catch(e) {}
+          <div class="stat-card fade-in"><div class="stat-label">Failed / Skipped</div><div class="stat-value" style="color:var(--text-2)">${data.failed+data.skipped}</div><div class="stat-sub">${data.failed} failed · ${data.skipped} skipped</div></div>`;
+        const platforms=data.by_platform||{};
+        document.getElementById('platform-stats').innerHTML=Object.entries(platforms).length
+          ?Object.entries(platforms).map(([p,c])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><span style="text-transform:capitalize;font-size:14px"><i class="fa-solid fa-layer-group" style="color:var(--primary);margin-right:6px"></i>${p}</span><div style="display:flex;align-items:center;gap:10px"><div style="width:100px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden"><div style="width:${data.total?Math.round(c/data.total*100):0}%;height:100%;background:var(--primary);border-radius:3px"></div></div><span style="font-weight:600;font-size:14px;min-width:28px;text-align:right">${c}</span></div></div>`).join('')
+          :'<p class="text-muted text-sm">No applications yet.</p>';
+      }catch(e){}
     }
 
-    // ── Recent ────────────────────────────────────────────────────────────
-    async function loadRecent() {
-      try {
-        const data = await api.get('/jobs/history?limit=5');
-        const apps = data.applications || [];
-        const el = document.getElementById('recent-apps');
-        if (!apps.length) { el.innerHTML = '<p class="text-muted text-sm" style="padding:12px 0">No applications yet.</p>'; return; }
-        el.innerHTML = apps.map(a => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-            <div><div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div><div class="text-muted text-sm">${escHtml(a.company)} · ${timeAgo(a.applied_at)}</div></div>
-            <span class="result-pill result-${a.result}">${a.result}</span>
-          </div>`).join('');
-      } catch(e) {}
+    async function loadRecent(){
+      try{
+        const data=await api.get('/jobs/history?limit=5');const apps=data.applications||[];const el=document.getElementById('recent-apps');
+        if(!apps.length){el.innerHTML='<p class="text-muted text-sm" style="padding:12px 0">No applications yet.</p>';return;}
+        el.innerHTML=apps.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px"><div><div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div><div class="text-muted text-sm">${escHtml(a.company)} · ${timeAgo(a.applied_at)}</div></div><span class="result-pill result-${a.result}">${a.result}</span></div>`).join('');
+      }catch(e){}
     }
 
-    // ── Ext recent ────────────────────────────────────────────────────────
-    async function loadExtRecent() {
-      try {
-        const data = await api.get('/jobs/history?limit=8');
-        const apps = data.applications || [];
-        const el = document.getElementById('ext-recent-apps');
-        if (!apps.length) { el.innerHTML = '<p class="text-muted text-sm">No applications logged yet.</p>'; return; }
-        el.innerHTML = apps.map(a => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px">
-            <div><div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div><div class="text-muted text-sm">${escHtml(a.company)} · ${escHtml(a.platform)} · ${timeAgo(a.applied_at)}</div></div>
-            <span class="result-pill result-${a.result}">${a.result}</span>
-          </div>`).join('');
-      } catch(e) {}
+    async function loadExtRecent(){
+      try{
+        const data=await api.get('/jobs/history?limit=6');const apps=data.applications||[];const el=document.getElementById('ext-recent-apps');
+        if(!apps.length){el.innerHTML='<p class="text-muted text-sm">No applications logged yet.</p>';return;}
+        el.innerHTML=apps.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px"><div><div style="font-size:14px;font-weight:500">${escHtml(a.job_title)}</div><div class="text-muted text-sm">${escHtml(a.company)} · ${escHtml(a.platform)} · ${timeAgo(a.applied_at)}</div></div><span class="result-pill result-${a.result}">${a.result}</span></div>`).join('');
+      }catch(e){}
     }
 
-    // ── History ───────────────────────────────────────────────────────────
-    async function loadHistory(page=0) {
-      historyPage = page;
-      const params = new URLSearchParams({skip: page*PAGE_SIZE, limit: PAGE_SIZE});
-      if (historyFilter) params.append('result', historyFilter);
-      const tbody = document.getElementById('history-tbody');
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr>';
-      try {
-        const data = await api.get('/jobs/history?' + params);
-        const apps = data.applications || [];
-        if (!apps.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-2)">No applications found</td></tr>'; return; }
-        tbody.innerHTML = apps.map(a => {
-          const linkCell = a.job_link
-            ? `<td><a href="${escHtml(a.job_link)}" target="_blank" rel="noopener" style="color:var(--primary);font-size:13px"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>`
-            : `<td class="text-muted text-sm">—</td>`;
-          return `<tr>
-            <td>${escHtml(a.job_title)}</td>
-            <td>${escHtml(a.company)}</td>
-            <td><span class="badge badge-neutral" style="text-transform:capitalize">${escHtml(a.platform)}</span></td>
-            <td><span class="result-pill result-${a.result}">${a.result}</span></td>
-            <td class="text-muted" style="font-size:13px;white-space:nowrap">${timeAgo(a.applied_at)}<br><span style="font-size:11px">${formatDate(a.applied_at)}</span></td>
-            ${linkCell}
-          </tr>`;
+    async function loadHistory(page=0){
+      historyPage=page;
+      const params=new URLSearchParams({skip:page*PAGE_SIZE,limit:PAGE_SIZE});
+      if(historyFilter) params.append('result',historyFilter);
+      const tbody=document.getElementById('history-tbody');
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-2)">Loading…</td></tr>';
+      try{
+        const data=await api.get('/jobs/history?'+params);const apps=data.applications||[];
+        if(!apps.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-2)">No applications found</td></tr>';return;}
+        tbody.innerHTML=apps.map(a=>{
+          const lk=a.job_link?`<td><a href="${escHtml(a.job_link)}" target="_blank" rel="noopener" style="color:var(--primary);font-size:13px"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>`:`<td class="text-muted text-sm">—</td>`;
+          return `<tr><td>${escHtml(a.job_title)}</td><td>${escHtml(a.company)}</td><td><span class="badge badge-neutral" style="text-transform:capitalize">${escHtml(a.platform)}</span></td><td><span class="result-pill result-${a.result}">${a.result}</span></td><td class="text-muted" style="font-size:13px;white-space:nowrap">${timeAgo(a.applied_at)}<br><span style="font-size:11px">${formatDate(a.applied_at)}</span></td>${lk}</tr>`;
         }).join('');
-        const totalPages = Math.ceil(data.total / PAGE_SIZE);
-        const pag = document.getElementById('history-pagination');
-        pag.innerHTML = '';
-        for (let i = 0; i < totalPages; i++) {
-          const btn = document.createElement('button');
-          btn.className = 'filter-btn' + (i===page?' active':'');
-          btn.textContent = i+1;
-          btn.onclick = () => loadHistory(i);
-          pag.appendChild(btn);
-        }
-      } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>'; }
+        const totalPages=Math.ceil(data.total/PAGE_SIZE);
+        const pag=document.getElementById('history-pagination');pag.innerHTML='';
+        for(let i=0;i<totalPages;i++){const btn=document.createElement('button');btn.className='filter-btn'+(i===page?' active':'');btn.textContent=i+1;btn.onclick=()=>loadHistory(i);pag.appendChild(btn);}
+      }catch(e){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">Failed to load history</td></tr>';}
     }
 
-    function filterHistory(result, btn) {
-      historyFilter = result;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadHistory(0);
+    function filterHistory(result,btn){historyFilter=result;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');loadHistory(0);}
+
+    // ═══════════ RESUMES TAB ═══════════
+
+    async function loadResumesTab(){
+      try{
+        const data=await api.get('/resume/list');_resumes=data.resumes||[];renderResumeRoutingList(_resumes);
+      }catch(e){document.getElementById('resume-routing-list').innerHTML='<p class="text-muted text-sm">Could not load resumes. <a href="resume.html">Upload one →</a></p>';}
     }
 
-    // ── Dash resumes ──────────────────────────────────────────────────────
-    async function loadDashResumes() {
-      try {
-        const data = await api.get('/resume/list');
-        const el = document.getElementById('dash-resumes');
-        if (!data.resumes.length) {
-          el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-2)"><i class="fa-solid fa-file-circle-plus" style="font-size:48px;margin-bottom:16px;color:var(--text-3)"></i><h4>No resumes uploaded</h4><a href="resume.html" class="btn btn-primary" style="margin-top:16px">Upload Resume</a></div>`;
-          renderResumRoutingTable([]);
-          return;
-        }
-        el.innerHTML = data.resumes.map(r => `
-          <div class="card card-sm" style="margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <i class="fa-solid fa-file-pdf" style="font-size:28px;color:var(--danger)"></i>
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:500">${escHtml(r.label||r.filename)}</div>
-              <div class="text-muted text-sm">${escHtml(r.parsed_name||'')} · ${formatDate(r.uploaded_at)}</div>
-            </div>
-            <a href="resume.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i> Manage</a>
-          </div>`).join('');
-        renderResumRoutingTable(data.resumes);
-      } catch(e) {}
-    }
+    function renderResumeRoutingList(resumes){
+      const el=document.getElementById('resume-routing-list');
+      if(!resumes.length){el.innerHTML=`<div style="text-align:center;padding:48px 20px;color:var(--text-2)"><i class="fa-solid fa-file-circle-plus" style="font-size:48px;margin-bottom:16px;color:var(--text-3);display:block"></i><h4>No resumes uploaded</h4><a href="resume.html" class="btn btn-primary" style="margin-top:16px"><i class="fa-solid fa-plus"></i> Upload Resume</a></div>`;return;}
 
-    function renderResumRoutingTable(resumes) {
-      const el = document.getElementById('resume-routing-table');
-      const roleMap = [
-        {type:'dev',    icon:'fa-code',         color:'#4f7cff', keywords:['java','python','developer','sde','backend','frontend','fullstack'],   label:'Dev Resume'},
-        {type:'crm',    icon:'fa-handshake',     color:'#10b981', keywords:['crm','salesforce','hubspot','leadsquared'],                           label:'CRM Resume'},
-        {type:'analyst',icon:'fa-chart-bar',     color:'#f59e0b', keywords:['analyst','power bi','mis','tableau','data'],                          label:'Analytics Resume'},
-        {type:'sales',  icon:'fa-phone-volume',  color:'#8b5cf6', keywords:['sales','bdr','inside sales'],                                         label:'Sales Resume'},
-        {type:'finance',icon:'fa-indian-rupee-sign',color:'#06b6d4',keywords:['finance','accounting','audit','ca','mba'],                          label:'Finance Resume'},
-        {type:'marketing',icon:'fa-bullhorn',   color:'#ef4444', keywords:['marketing','seo','sem','digital','content'],                           label:'Marketing Resume'},
-        {type:'hr',     icon:'fa-users',         color:'#a78bfa', keywords:['hr','recruitment','talent','human resource'],                         label:'HR Resume'},
-      ];
-
-      el.innerHTML = roleMap.map(role => {
-        const matched = resumes.find(r =>
-          role.keywords.some(k => (r.label||'').toLowerCase().includes(k))
-        );
-        return `<div class="resume-job-card">
-          <div class="resume-job-header">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:8px;background:${role.color}22;border:1px solid ${role.color}44;display:flex;align-items:center;justify-content:center;color:${role.color};flex-shrink:0">
-                <i class="fa-solid ${role.icon}"></i>
-              </div>
-              <div>
-                <div style="font-weight:600;font-size:14px">${role.label}</div>
-                <div class="text-muted text-sm">${matched ? '<i class="fa-solid fa-circle-check" style="color:var(--accent)"></i> Matched: '+escHtml(matched.label) : '<i class="fa-solid fa-circle-xmark" style="color:var(--text-3)"></i> No match — will use latest'}</div>
+      el.innerHTML=resumes.map((r,idx)=>{
+        const keywords=r.routing_keywords||[];
+        const kwHtml=keywords.map(kw=>`<span class="kw-tag">${escHtml(kw)}<button class="rm" onclick="removeKeyword(${idx},'${escHtml(kw)}')" title="Remove">×</button></span>`).join('');
+        const previewTitle=r.label||r.filename||`Resume ${idx+1}`;
+        return `<div class="resume-routing-card" id="rrc-${idx}">
+          <div class="rrc-header">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0">
+              <i class="fa-solid fa-file-pdf" style="font-size:24px;color:var(--danger);flex-shrink:0"></i>
+              <div style="min-width:0">
+                <div style="font-weight:700;font-size:15px;color:var(--text)">${escHtml(previewTitle)}</div>
+                <div style="font-size:12px;color:var(--text-3)">${escHtml(r.filename||'')} · ${formatDate(r.uploaded_at)}</div>
               </div>
             </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+              ${keywords.length===0
+                ?'<span class="badge badge-neutral"><i class="fa-solid fa-arrow-down"></i> Fallback</span>'
+                :`<span class="badge badge-success"><i class="fa-solid fa-route"></i> ${keywords.length} keyword${keywords.length!==1?'s':''}</span>`}
+              <a href="resume.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i></a>
+            </div>
           </div>
-          <div class="resume-role-tags">
-            ${role.keywords.map(k=>`<span class="badge badge-neutral" style="font-size:11px">${k}</span>`).join('')}
+          <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px;align-items:center" id="kw-chips-${idx}">
+            ${kwHtml}${keywords.length===0?'<span class="text-muted text-sm" style="font-size:12px">Add keywords below — this resume is currently used as fallback</span>':''}
           </div>
+          <div class="kw-input-row">
+            <input type="text" class="kw-input" id="kw-input-${idx}" placeholder="e.g. python, django, flask  (comma-separated, press Enter to add)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addKeyword(${idx})}" />
+            <button class="btn btn-primary btn-sm" onclick="addKeyword(${idx})"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
+          <div style="margin-top:10px" id="kw-suggestions-${idx}"></div>
         </div>`;
       }).join('');
+
+      resumes.forEach((r,idx)=>generateKeywordSuggestions(idx, r.label||r.filename||''));
     }
 
-    // ── Profile ───────────────────────────────────────────────────────────
-    let _profileData = null;
-    async function loadProfile() {
-      try {
-        const data = await api.get('/profile/me');
-        _profileData = data;
-        const fn = data.profile?.first_name || '';
-        const ln = data.profile?.last_name || '';
-        const name = fn||ln ? `${fn} ${ln}`.trim() : (auth.user?.email?.split('@')[0]||'User');
-        document.getElementById('sidebar-name').textContent = name;
-        document.getElementById('sidebar-email').textContent = auth.user?.email||'';
-        document.getElementById('welcome-msg').textContent = `Welcome back, ${fn||name}!`;
-      } catch(e) {}
+    function generateKeywordSuggestions(idx, label){
+      const el=document.getElementById(`kw-suggestions-${idx}`);if(!el)return;
+      const l=label.toLowerCase();
+      const mappings=[
+        {match:['python','django','flask','fastapi'],         suggest:['python','django','flask','fastapi','backend','rest api','python developer']},
+        {match:['java','spring','jee','j2ee'],                suggest:['java','spring boot','spring','hibernate','java developer']},
+        {match:['react','frontend','fe','vue','angular','ui'],suggest:['react','javascript','typescript','html','css','frontend','react developer']},
+        {match:['fullstack','full','mern','mean','node'],     suggest:['full stack','nodejs','react','mongodb','express','mern']},
+        {match:['android','mobile','kotlin','flutter'],       suggest:['android','kotlin','flutter','mobile developer']},
+        {match:['data','ml','ai','machine','nlp','ds'],       suggest:['data science','machine learning','python','tensorflow','data analyst']},
+        {match:['sql','database','dba','mysql','postgres'],   suggest:['sql','mysql','postgresql','database','nosql','mongodb']},
+        {match:['devops','cloud','aws','azure','docker'],     suggest:['devops','aws','docker','kubernetes','cloud','ci/cd']},
+        {match:['sde','software','developer','engineer'],     suggest:['software engineer','software developer','sde','programmer']},
+        {match:['test','qa','quality','selenium'],            suggest:['qa engineer','test automation','selenium','quality assurance']},
+        {match:['intern','fresher','trainee','grad'],         suggest:['intern','fresher','graduate trainee','entry level','trainee']},
+        {match:['cyber','security','ethical','network'],      suggest:['cybersecurity','network security','ethical hacking']},
+        {match:['c','cpp','embedded','iot'],                  suggest:['c programming','c++','embedded systems','iot']},
+      ];
+      let suggestions=[];
+      for(const {match,suggest} of mappings){if(match.some(m=>l.includes(m))){suggestions=suggest;break;}}
+      if(!suggestions.length){el.innerHTML='';return;}
+      const resume=_resumes[idx];const existing=(resume?.routing_keywords||[]).map(k=>k.toLowerCase());
+      const filtered=suggestions.filter(s=>!existing.includes(s.toLowerCase()));
+      if(!filtered.length){el.innerHTML='';return;}
+      el.innerHTML=`<div style="font-size:11px;color:var(--text-3);margin-bottom:6px"><i class="fa-solid fa-wand-magic-sparkles"></i> Suggested keywords for this resume:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${filtered.map(s=>`<button class="badge badge-neutral" style="cursor:pointer;font-size:11px;border-style:dashed;background:none" onclick="quickAddKeyword(${idx},'${escHtml(s)}')">${escHtml(s)} <i class="fa-solid fa-plus" style="font-size:9px"></i></button>`).join('')}</div>`;
     }
 
-    // ── Copy auth token ───────────────────────────────────────────────────
-    function copyAuthToken() {
-      const token = localStorage.getItem('sa_token');
-      const btn = document.getElementById('copy-token-btn');
-      if (!token) { showToast('No token found — please log in again.', 'error'); return; }
-      navigator.clipboard.writeText(token).then(() => {
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-        btn.style.color = 'var(--accent)';
-        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy Auth Token'; btn.style.color=''; }, 2500);
-      }).catch(() => { prompt('Copy your token (Ctrl+C):', token); });
+    async function addKeyword(idx){
+      const input=document.getElementById(`kw-input-${idx}`);
+      const raw=input.value.trim().toLowerCase();if(!raw)return;
+      const newKws=raw.split(',').map(k=>k.trim()).filter(k=>k.length>0);if(!newKws.length)return;
+      const resume=_resumes[idx];const existing=resume.routing_keywords||[];
+      const toAdd=newKws.filter(k=>!existing.map(e=>e.toLowerCase()).includes(k));
+      if(!toAdd.length){showToast('Keyword(s) already added','info');input.value='';return;}
+      await saveResumeKeywords(idx,[...existing,...toAdd]);input.value='';
+    }
+    async function quickAddKeyword(idx,kw){
+      const resume=_resumes[idx];const existing=resume.routing_keywords||[];
+      if(existing.map(k=>k.toLowerCase()).includes(kw.toLowerCase()))return;
+      await saveResumeKeywords(idx,[...existing,kw]);
+    }
+    async function removeKeyword(idx,kw){
+      const resume=_resumes[idx];const updated=(resume.routing_keywords||[]).filter(k=>k!==kw);
+      await saveResumeKeywords(idx,updated);
+    }
+    async function saveResumeKeywords(idx,keywords){
+      try{
+        const resume=_resumes[idx];
+        const q=keywords.map(k=>`keywords=${encodeURIComponent(k)}`).join('&');
+        await api.put(`/profile/resume-keywords?file_id=${resume.file_id}${q?'&'+q:''}`);
+        _resumes[idx].routing_keywords=keywords;renderResumeRoutingList(_resumes);
+        showToast('Keywords saved — bot will use this routing','success');
+      }catch(e){showToast('Could not save: '+(e.detail||e.message||'error'),'error');}
     }
 
-    // ── AI Memory ─────────────────────────────────────────────────────────
-    async function refreshMemoryPrompt() {
-      const box = document.getElementById('memory-prompt-box');
-      box.textContent = 'Loading your profile data…';
-      try {
-        const data = await api.get('/profile/me');
-        _profileData = data;
-        box.textContent = buildMemoryPrompt(data);
-      } catch(e) {
-        box.textContent = 'Could not load profile. Please update your profile first.';
+    // ═══════════ AI MEMORY TAB ═══════════
+
+    async function loadMemoryTab(){
+      await refreshMemoryPrompt();
+      if(_profileData) loadStoredMemory();
+    }
+
+    async function refreshMemoryPrompt(){
+      const box=document.getElementById('export-prompt-box');
+      if(box) box.textContent='Loading your profile…';
+      try{
+        const data=await api.get('/profile/me');_profileData=data;
+        if(box) box.textContent=buildExportPrompt(data);
+        loadStoredMemory();
+      }catch(e){if(box) box.textContent='Could not load profile. Please update your profile first.';}
+    }
+
+    function loadStoredMemory(){
+      if(!_profileData)return;
+      const mem=_profileData?.profile?.ai_memory||'';
+      const ta=document.getElementById('ai-memory-import');
+      const preview=document.getElementById('memory-preview');
+      const count=document.getElementById('memory-word-count');
+      const status=document.getElementById('memory-saved-status');
+      if(mem){
+        if(ta) ta.value=mem;
+        const wc=mem.trim().split(/\s+/).length;
+        if(count){count.textContent=`${wc} words stored`;count.className='badge badge-success';}
+        if(preview) preview.textContent=mem.slice(0,300)+(mem.length>300?'…':'');
+        if(status){status.innerHTML='<i class="fa-solid fa-circle-check"></i> AI memory active — bot uses this for unexpected questions';status.className='memory-status ms-ok';status.style.display='flex';}
+      }else{
+        if(count){count.textContent='Not set';count.className='badge badge-neutral';}
+        if(preview) preview.textContent='No AI memory stored yet. Complete the 3 steps above.';
+        if(status) status.style.display='none';
       }
     }
 
-    function buildMemoryPrompt(data) {
-      const p = data.profile || {};
-      const jp = data.job_preferences || {};
-      const pa = data.platform_accounts || {};
-
-      const lines = [
-        '## My Profile Context for Job Applications',
+    function buildExportPrompt(data){
+      const p=data.profile||{},jp=data.job_preferences||{};
+      return [
+        '## My Profile — SmartApply Export',
+        `(${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})})`,
         '',
-        '### Personal Information',
-        `Name: ${[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ') || 'Not set'}`,
-        `Email: ${data.email || ''}`,
-        `Phone: ${p.phone_number || ''}`,
-        `Location: ${[p.current_city, p.state, p.country].filter(Boolean).join(', ') || 'Not set'}`,
+        '### Personal Details',
+        `Name: ${[p.first_name,p.middle_name,p.last_name].filter(Boolean).join(' ')||'Not set'}`,
+        `Email: ${data.email||''}`,
+        `Phone: ${p.phone_number||''}`,
+        `Location: ${[p.current_city,p.state,p.country].filter(Boolean).join(', ')||'Not set'}`,
         '',
-        '### Professional Background',
-        `Years of Experience: ${p.years_of_experience || '0'}`,
-        `Recent Employer: ${p.recent_employer || ''}`,
-        `Desired Salary: ${p.desired_salary ? '₹' + p.desired_salary.toLocaleString('en-IN') + ' per annum' : 'Not set'}`,
-        `Current CTC: ${p.current_ctc ? '₹' + p.current_ctc.toLocaleString('en-IN') + ' per annum' : '0'}`,
-        `Notice Period: ${p.notice_period || '0'} days`,
-        `LinkedIn: ${p.linkedin_profile || ''}`,
-        `Portfolio: ${p.website || ''}`,
+        '### Professional',
+        `Years of Experience: ${p.years_of_experience||'0'}`,
+        `Recent Employer / College: ${p.recent_employer||'Not set'}`,
+        `LinkedIn: ${p.linkedin_profile||'Not set'}`,
+        `Portfolio: ${p.website||'Not set'}`,
         '',
         '### Skills',
-        p.skills_summary || 'Not filled',
+        p.skills_summary||'Not filled',
         '',
-        '### LinkedIn Headline',
-        p.linkedin_headline || 'Not set',
+        '### Headline',
+        p.linkedin_headline||'Not set',
         '',
         '### Professional Summary',
-        p.linkedin_summary || 'Not set',
+        p.linkedin_summary||'Not set',
         '',
         '### Job Preferences',
-        `Target Roles: ${(jp.search_terms || []).join(', ') || 'Not set'}`,
-        `Location: ${jp.search_location || 'India'}`,
-        `Experience Level: ${(jp.experience_level || []).join(', ')}`,
-        `Job Type: ${(jp.job_type || []).join(', ')}`,
-        `Work Mode: ${(jp.on_site || []).join(', ')}`,
-        `Keywords to Skip: ${(jp.bad_words || []).join(', ') || 'None'}`,
+        `Target Roles: ${(jp.search_terms||[]).join(', ')||'Not set'}`,
+        `Location: ${jp.search_location||'India'}`,
+        `Experience Level: ${(jp.experience_level||[]).join(', ')}`,
+        `Job Type: ${(jp.job_type||[]).join(', ')}`,
+        `Work Mode: ${(jp.on_site||[]).join(', ')}`,
         '',
-        '### Cover Letter Template',
-        p.cover_letter || 'Not set',
+        '### Salary & Availability',
+        `Expected Salary: ${p.desired_salary?'₹'+Number(p.desired_salary).toLocaleString('en-IN')+' per annum':'Not set'}`,
+        `Notice Period: ${p.notice_period||'0'} days`,
         '',
+        '### Cover Letter',
+        p.cover_letter||'Not set',
+        '',
+        ...(p.ai_memory?['### Previously Enriched Knowledge (summary)',p.ai_memory.slice(0,800),'']:['### AI Memory','Not set yet','']),
         '---',
-        'Use this context to help me with job applications, cover letters, interview prep, salary negotiation, and any career-related questions. Always refer to the information above when personalizing your responses for me.',
-      ];
-
-      return lines.join('\n');
+        'END OF PROFILE',
+      ].join('\n');
     }
 
-    function copyPrompt() {
-      const box = document.getElementById('memory-prompt-box');
-      const text = box.textContent;
-      const btn = document.getElementById('copy-prompt-btn');
-      navigator.clipboard.writeText(text).then(() => {
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy Prompt'; }, 2500);
-        showToast('Prompt copied! Paste it in your AI of choice.', 'success');
-      }).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-        showToast('Prompt copied!', 'success');
-      });
+    async function copyExportPrompt(){
+      const box=document.getElementById('export-prompt-box');const text=box?.textContent||'';const btn=document.getElementById('copy-export-btn');
+      navigator.clipboard.writeText(text).then(()=>{btn.innerHTML='<i class="fa-solid fa-check"></i> Copied!';btn.style.color='var(--accent)';setTimeout(()=>{btn.innerHTML='<i class="fa-solid fa-copy"></i> Copy Prompt';btn.style.color='';},2500);showToast('Profile prompt copied! Paste it into your AI of choice.','success');})
+        .catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Copied!','success');});
     }
 
-    function openAI(platform) {
-      copyPrompt();
-      const urls = {
-        chatgpt: 'https://chat.openai.com',
-        claude: 'https://claude.ai',
-        gemini: 'https://gemini.google.com',
-      };
-      setTimeout(() => window.open(urls[platform], '_blank'), 400);
+    async function copyFollowup(){
+      const box=document.getElementById('followup-box');const text=box?.textContent||'';
+      navigator.clipboard.writeText(text).then(()=>showToast('Follow-up message copied!','success'))
+        .catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Copied!','success');});
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────
-    loadProfile();
-    loadStats();
-    loadRecent();
+    function openAI(platform){
+      copyExportPrompt();
+      const urls={chatgpt:'https://chat.openai.com',claude:'https://claude.ai',gemini:'https://gemini.google.com'};
+      setTimeout(()=>window.open(urls[platform],'_blank'),400);
+    }
+
+    async function saveAIMemory(){
+      const ta=document.getElementById('ai-memory-import');const text=ta?.value?.trim()||'';
+      if(!text){showToast('Paste the AI response first','error');return;}
+      if(text.length<50){showToast('Content seems too short — copy the full AI response','error');return;}
+      const btn=document.getElementById('save-memory-btn');setLoading(btn,true);
+      try{
+        await api.put('/profile/ai-memory',{ai_memory:text});
+        if(_profileData) _profileData.profile.ai_memory=text;
+        loadStoredMemory();showToast('AI memory saved! Bot will use this for unexpected questions.','success');
+      }catch(e){showToast('Could not save: '+(e.detail||e.message||'error'),'error');}
+      finally{setLoading(btn,false);}
+    }
+
+    async function clearAIMemory(){
+      if(!confirm('Clear your stored AI memory?'))return;
+      try{
+        await api.put('/profile/ai-memory',{ai_memory:''});
+        if(_profileData) _profileData.profile.ai_memory='';
+        document.getElementById('ai-memory-import').value='';
+        loadStoredMemory();showToast('AI memory cleared.','info');
+      }catch(e){showToast('Error: '+(e.detail||''),'error');}
+    }
+
+    async function loadProfile(){
+      try{
+        const data=await api.get('/profile/me');_profileData=data;
+        const fn=data.profile?.first_name||'',ln=data.profile?.last_name||'';
+        const name=fn||ln?`${fn} ${ln}`.trim():(auth.user?.email?.split('@')[0]||'User');
+        document.getElementById('sidebar-name').textContent=name;
+        document.getElementById('sidebar-email').textContent=auth.user?.email||'';
+        document.getElementById('welcome-msg').textContent=`Welcome back, ${fn||name}!`;
+      }catch(e){}
+    }
+
+    loadProfile(); loadStats(); loadRecent();
   </script>
 </body>
 </html>

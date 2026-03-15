@@ -5,27 +5,60 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      # ── REQUIRED ──────────────────────────────────────────────────────────────
       - key: MONGO_URI
-        sync: false        # Required — Set in Render Dashboard
+        sync: false
+
       - key: JWT_SECRET
-        sync: false        # Required — Set in Render Dashboard
-      - key: FERNET_KEY
-        sync: false        # Optional — for encrypting platform passwords
+        sync: false
+
+      # ── EMAIL — Mailjet HTTP API (works on Render free tier) ──────────────────
+      # Uses HTTPS port 443 — Render never blocks this. Free: 200/day, 6000/month.
+      #
+      # Setup (3 minutes):
+      #   1. Sign up FREE at https://app.mailjet.com/signup
+      #   2. Verify your Gmail as sender:
+      #      https://app.mailjet.com/account/sender
+      #      → "Add a Sender Domain or Address" → "Single email address"
+      #      → Enter your Gmail → click verification link sent to your Gmail
+      #   3. Get API keys:
+      #      https://app.mailjet.com/account/apikeys
+      #      → Copy "API Key" and "Secret Key"
+      #   4. Fill in the 4 variables below and redeploy
+      - key: MAILJET_API_KEY
+        sync: false
+
+      - key: MAILJET_SECRET_KEY
+        sync: false
+
+      - key: MAILJET_FROM
+        sync: false        # your verified Gmail, e.g. kovvurinandivardhanreddy7@gmail.com
+
+      - key: MAILJET_FROM_NAME
+        value: "SmartApply"
+
+      # ── AI — NVIDIA NIM ──────────────────────────────────────────────────────
       - key: NVIDIA_API_KEYS
-        sync: false        # Set in Render Dashboard — nvapi-xxxx
+        sync: false
+
       - key: NVIDIA_MODEL
         value: "meta/llama-3.3-70b-instruct"
-      - key: RESEND_API_KEY
-        sync: false        # Set in Render Dashboard — get key from https://resend.com
-      - key: RESEND_FROM
-        value: "SmartApply <onboarding@resend.dev>"  # Change to your verified domain after setup
+
+      # ── App ───────────────────────────────────────────────────────────────────
       - key: APP_URL
         value: "https://smart-apply-7zty.onrender.com"
+
       - key: FRONTEND_URL
         value: "https://smart-apply-7zty.onrender.com"
+
       - key: DB_NAME
         value: smartapply
+
       - key: JWT_ALGORITHM
         value: HS256
+
       - key: JWT_EXPIRE_HOURS
         value: "24"
+
+      - key: FERNET_KEY
+        sync: false

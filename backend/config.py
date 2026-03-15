@@ -38,12 +38,18 @@ SMTP_USER       = _admin_cfg.get("smtp_user") or os.getenv("SMTP_USER", "")
 SMTP_PASS       = _admin_cfg.get("smtp_pass") or os.getenv("SMTP_PASS", "")
 SMTP_FROM       = os.getenv("SMTP_FROM", f"SmartApply <{SMTP_USER}>")
 
-# ── Resend (fast transactional email — https://resend.com) ────────────────────
-# Set RESEND_API_KEY in Render Dashboard (e.g. re_xxxxxxxxxxxx)
-# Set RESEND_FROM to your verified sender, e.g. "SmartApply <noreply@yourdomain.com>"
-# Until you verify a domain, use the Resend sandbox: "onboarding@resend.dev" (only delivers to your own email)
-RESEND_API_KEY   = os.getenv("RESEND_API_KEY", "")
-RESEND_FROM      = os.getenv("RESEND_FROM", "SmartApply <onboarding@resend.dev>")
+# ── Gmail SMTP (sends to ANY email, no domain needed) ────────────────────────
+# Setup (2 min):
+#   1. Go to https://myaccount.google.com/apppasswords
+#   2. Select App: Mail, Device: Other → name it "SmartApply" → Generate
+#   3. Copy the 16-char password (no spaces)
+#   4. Set in Render Dashboard:
+#        GMAIL_USER = your-gmail@gmail.com
+#        GMAIL_PASS = abcdefghijklmnop   (the App Password, no spaces)
+MAILJET_API_KEY    = os.getenv("MAILJET_API_KEY", "")
+MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY", "")
+MAILJET_FROM       = os.getenv("MAILJET_FROM", "")
+MAILJET_FROM_NAME  = os.getenv("MAILJET_FROM_NAME", "SmartApply")
 
 APP_URL         = os.getenv("APP_URL", "http://localhost:8000")
 FRONTEND_URL    = os.getenv("FRONTEND_URL", "http://localhost:8000")

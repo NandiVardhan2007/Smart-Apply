@@ -90,6 +90,7 @@ async def list_resumes(current_user: dict = Depends(get_current_user)):
             "label": r.get("label"),
             "uploaded_at": r.get("uploaded_at"),
             "parsed_name": _get_name(r.get("parsed", {})),
+            "routing_keywords": r.get("routing_keywords", []),
         })
     return {"resumes": slim}
 
