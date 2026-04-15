@@ -9,9 +9,15 @@ def repair_json(content: str) -> str:
     if not content:
         return "{}"
 
+    # First attempt to clean out markdown blocks
     content = content.strip()
-    
-    # 0. Find the first '{' and last '}'
+    if content.startswith("```"):
+        if "```json" in content:
+            content = content.split("```json", 1)[1].split("```", 1)[0].strip()
+        else:
+            content = content.split("```", 1)[1].split("```", 1)[0].strip()
+
+    # 0. Find the first '{'
     start_idx = content.find('{')
     if start_idx == -1:
         return "{}"
@@ -19,9 +25,8 @@ def repair_json(content: str) -> str:
     # Check if there is anything after the last } and remove it
     end_idx = content.rfind('}')
     if end_idx != -1 and end_idx > start_idx:
-        # If we have a complete JSON object followed by text, we might be fine,
-        # but if we're truncated, we want to KEEP the truncated part to attempt repair.
-        # So we only cut if the curly braces are balanced.
+        # If we have a relatively balanced object, we take it.
+        # Otherwise we assume it's truncated and take everything from {
         if content[start_idx:end_idx+1].count('{') == content[start_idx:end_idx+1].count('}'):
              content = content[start_idx:end_idx+1]
         else:
@@ -35,20 +40,41 @@ def repair_json(content: str) -> str:
     
     content = re.sub(r'":\s*"([^"]*)"', fix_newlines, content)
 
-    # 2. Fix missing commas between elements (heuristic)
+    # 2. Fix unescaped quotes inside strings (CRITICAL for llama results)
+    # This tries to escape quotes that are not followed by , : } or ]
+    # Or preceded by { , or :
+    def fix_internal_quotes(match):
+        text = match.group(1)
+        # Escape quotes that are not structural
+        # This is a bit risky but often necessary
+        fixed = text.replace('"', '\\"')
+        return f'": "{fixed}"'
+    
+    # We only apply this to values known to be strings in our schema
+    # like summary, name, findings, icon, title, reason, suggestion
+    target_keys = ["summary", "name", "icon", "title", "grade", "reason", "suggestion", "finding"]
+    for key in target_keys:
+        # Match complete values
+        content = re.sub(rf'"{key}"\s*:\s*"(.+?)"(?=\s*[,}}])', fix_internal_quotes, content, flags=re.DOTALL)
+        # Handle cases where it's truncated or doesn't have a trailing comma yet
+        content = re.sub(rf'"{key}"\s*:\s*"([^"]+)"\s*$', fix_internal_quotes, content, flags=re.DOTALL)
+
+    # 3. Fix missing commas between elements (heuristic)
     content = re.sub(r'\}\s*\{', '}, {', content)
     content = re.sub(r'\]\s*\[', '], [', content)
     content = re.sub(r'\"\s*\"', '", "', content)
+    content = re.sub(r'\"\s*\{', '", {', content)
+    content = re.sub(r'\}\s*\"', '}, "', content)
 
-    # 3. Remove trailing unclosed key or partial property
+    # 4. Remove trailing unclosed key or partial property
     content = re.sub(r',?\s*\"[^\"]*\"\s*:\s*$', '', content)
     content = re.sub(r',\s*$', '', content)
 
-    # 4. Close open quotes if odd number
+    # 5. Close open quotes if odd number
     if content.count('"') % 2 != 0:
         content += '"'
 
-    # 5. Stack-based closer for brackets and braces
+    # 6. Stack-based closer for brackets and braces
     stack = []
     in_string = False
     escaped = False
@@ -84,17 +110,20 @@ def robust_json_loads(content: str) -> dict:
         # First attempt: Clean up markdown blocks if present
         cleaned = content.strip()
         if "```json" in cleaned:
-            cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+            cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
         elif "```" in cleaned:
-            cleaned = cleaned.split("```")[1].split("```")[0].strip()
+            cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
             
         return json.loads(cleaned)
-    except json.JSONDecodeError:
+    except Exception:
         try:
             # Second attempt: Repair the string
             repaired = repair_json(content)
             return json.loads(repaired)
         except Exception as e:
-            logger.error(f"Failed to parse and repair JSON: {e}")
-            logger.debug(f"Raw content was: {content[:1000]}")
+            # Be noisy about the failure and show the content for debugging
+            # We use warning so it's visible in most logs
+            logger.warning(f"[JSON Repair] Failed to parse/repair. Error: {e}")
+            # Only log a slice to keep logs manageable but useful
+            logger.warning(f"[JSON Repair] Snippet of failed content: {content[:1000]}")
             return {}
