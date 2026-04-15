@@ -326,7 +326,10 @@ Question: {question}{options_text}"""
             doc["id"] = str(doc["_id"])
             doc.pop("_id", None)
             if isinstance(doc.get("created_at"), datetime):
-                doc["created_at"] = doc["created_at"].isoformat()
+                dt = doc["created_at"]
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                doc["created_at"] = dt.isoformat()
             apps.append(doc)
 
         return apps

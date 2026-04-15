@@ -5,8 +5,9 @@ Handles AI-powered job search, application Q&A, and tracking.
 
 import logging
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional, Dict
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import PlainTextResponse
+from typing import Optional, Dict, Any, List
 
 from app.api.user import get_current_user
 from app.schemas.linkedin_applier import (
@@ -18,6 +19,7 @@ from app.schemas.linkedin_applier import (
     ApplicationLogCreate,
 )
 from app.services.linkedin_applier_service import linkedin_applier_service
+from app.services.engine_service import engine_service
 
 logger = logging.getLogger(__name__)
 
@@ -238,3 +240,45 @@ async def report_automation_error(
     except Exception as e:
         logger.error(f"[LinkedIn Applier API] Error reporting failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send error report: {str(e)}")
+
+# ── OTA Sandbox Engine ───────────────────────────────────────────────
+
+@router.get("/engine/latest", response_class=PlainTextResponse)
+async def get_latest_engine_script(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Returns the latest, auto-healed JavaScript automation engine payload.
+    Served as plain text for direct injection into the Flutter WebView.
+    """
+    try:
+        script = await engine_service.get_latest_script()
+        return script
+    except Exception as e:
+        logger.error(f"[Engine Fetch] {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch engine")
+
+@router.post("/engine/heal")
+async def heal_engine_script(
+    request: dict,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Triggered by the Flutter app when the JS engine encounters a DOM error.
+    The AI sandbox analyzes the DOM string and auto-patches the Engine script in MongoDB.
+    """
+    error_msg = request.get("error_message", "Unknown DOM mismatch")
+    html_snapshot = request.get("html_snapshot", "")
+    
+    if not html_snapshot:
+        raise HTTPException(status_code=400, detail="HTML snapshot is required for healing.")
+        
+    try:
+        # We process healing inline, or we could dispatch it as a background task.
+        # But Flutter wants to know when it's done so it can reload.
+        new_script_version = await engine_service.auto_heal_script(error_msg, html_snapshot)
+        return {"status": "success", "message": "Script healed and updated OTA."}
+    except Exception as e:
+        logger.error(f"[Engine Heal] {e}")
+        raise HTTPException(status_code=500, detail="Failed to heal script")
+
