@@ -2,7 +2,7 @@ import asyncio
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, user
+from app.api import auth, user, ats
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
 
@@ -44,6 +44,7 @@ async def shutdown_event():
 # Routes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
+app.include_router(ats.router, prefix="/api/ats", tags=["ATS Analysis"])
 
 @app.get("/")
 async def root():
