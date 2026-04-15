@@ -40,6 +40,9 @@ def extract_and_seed():
 
     js_code = content[start_idx:end_idx + len(end_tag)].strip()
     
+    # Sanitize Dart escaping: Replace \$ with $ for clean JavaScript injection
+    js_code = js_code.replace("\\$", "$")
+    
     import asyncio
     sys.path.append(backend_root)
     from app.services.engine_service import engine_service
