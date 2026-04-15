@@ -37,7 +37,7 @@ async def optimize_linkedin_profile(
 
     # Run AI analysis
     logger.info(f"[LinkedIn Optimizer] Running analysis for user {current_user['id']}")
-    analysis_result = await analyze_linkedin_profile(profile_dict)
+    analysis_result = await analyze_linkedin_profile(profile_dict, user_id=current_user["id"])
 
     # Persist to MongoDB
     optimization_doc = {

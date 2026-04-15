@@ -7,6 +7,8 @@ Evaluates across 8 categories and returns structured improvement data.
 import json
 import logging
 from app.services.ai_parser import get_next_client
+from app.services.memory_service import memory_service
+from app.schemas.memory import MemoryCreate
 
 logger = logging.getLogger(__name__)
 
@@ -140,19 +142,29 @@ def _format_profile_for_ai(profile_data: dict) -> str:
     return "\n".join(parts)
 
 
-async def analyze_linkedin_profile(profile_data: dict) -> dict:
+async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> dict:
     """
     Performs a comprehensive AI analysis of the provided LinkedIn profile data.
-    Returns a structured dict with scores, categories, strengths, weaknesses,
-    and a prioritized improvement plan.
+    Uses user memory if available to personalize recommendations.
     """
     client = get_next_client()
+    
+    # Fetch user memory for personalization if user_id is provided
+    user_context = ""
+    if user_id:
+        try:
+            memories = await memory_service.get_memories(user_id, category="career_goals")
+            if memories:
+                goals = [m.get("content") for m in memories]
+                user_context = f"\n\nUSER'S CAREER GOALS & PREFERENCES (Tailor advice to these):\n" + "\n".join([f"- {g}" for g in goals])
+        except Exception as e:
+            logger.warning(f"Failed to fetch user memory for analysis: {e}")
 
     formatted_profile = _format_profile_for_ai(profile_data)
     # Truncate to avoid huge context windows
     formatted_profile = formatted_profile[:8000]
 
-    user_content = f"Analyze this LinkedIn profile and provide optimization suggestions:\n\n{formatted_profile}"
+    user_content = f"Analyze this LinkedIn profile and provide optimization suggestions{user_context}:\n\n{formatted_profile}"
 
     try:
         response = await client.chat.completions.create(
@@ -190,6 +202,22 @@ async def analyze_linkedin_profile(profile_data: dict) -> dict:
             logger.warning("[LinkedIn Analyzer] Attempting to repair malformed/truncated JSON...")
             repaired_content = _repair_json(raw_content)
             result = json.loads(repaired_content)
+
+        # After successful analysis, potentially update user memory with new insights
+        if user_id and result.get("overall_score", 0) > 70:
+            try:
+                # Store the summary as a memory of the user's current standing
+                await memory_service.create_memory(
+                    user_id, 
+                    MemoryCreate(
+                        category="profile_status",
+                        key="linkedin_summary",
+                        content=result.get("summary", ""),
+                        metadata={"score": result.get("overall_score")}
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to auto-update memory: {e}")
 
         return _validate_and_normalize(result)
 
