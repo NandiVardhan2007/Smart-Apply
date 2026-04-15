@@ -227,7 +227,7 @@ async def report_automation_error(
 
         # Send email to admin
         await email_service.send_email(
-            to_email="kovvurinandivardhanreddy200@gmail.com",
+            to_email="kovvurinandivardhanreddy2007@gmail.com",
             subject=subject,
             body=body,
             is_html=True,
