@@ -5,7 +5,19 @@ from datetime import datetime, timezone
 from pymongo import MongoClient
 
 def extract_and_seed():
-    dart_file = r"d:\SMARTAPPLY\Frontend\lib\features\auto_applier\utils\automation_script.dart"
+    # Detect the root directory dynamically
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    backend_root = BASE_DIR
+    frontend_root = os.path.dirname(os.path.dirname(backend_root)) # Assumes standard structure
+    
+    dart_file = os.path.join(frontend_root, "Frontend", "lib", "features", "auto_applier", "utils", "automation_script.dart")
+    
+    # If standard relative path fails, try to find it relative to scripts/
+    if not os.path.exists(dart_file):
+         # Fallback for localized environments
+         dart_file = os.path.join(backend_root, "..", "Frontend", "lib", "features", "auto_applier", "utils", "automation_script.dart")
+
+    print(f"Reading engine from: {dart_file}")
     
     with open(dart_file, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -24,7 +36,7 @@ def extract_and_seed():
     js_code = content[start_idx:end_idx].strip()
     
     import asyncio
-    sys.path.append(r"d:\SMARTAPPLY\Backend")
+    sys.path.append(backend_root)
     from app.services.engine_service import engine_service
     from app.core.config import settings
 
