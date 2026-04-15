@@ -5,7 +5,10 @@ Evaluates across 8 categories and returns structured improvement data.
 """
 
 import json
+import logging
 from app.services.ai_parser import get_next_client
+
+logger = logging.getLogger(__name__)
 
 
 ANALYSIS_SYSTEM_PROMPT = """You are an elite ATS (Applicant Tracking System) resume analyst and career strategist.
@@ -142,16 +145,16 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
             result = json.loads(raw_content)
         except json.JSONDecodeError:
             # Try to repair truncated JSON
-            print("[ATS Analyzer] Attempting to repair malformed/truncated JSON...")
+            logger.warning("[ATS Analyzer] Attempting to repair malformed/truncated JSON...")
             repaired_content = _repair_json(raw_content)
             result = json.loads(repaired_content)
             
         return _validate_and_normalize(result)
         
     except Exception as e:
-        print(f"[ATS Analyzer] Final failure: {e}")
+        logger.error(f"[ATS Analyzer] Final failure: {e}")
         # Log the first 500 chars of raw_content if possible for debugging
-        try: print(f"[ATS Analyzer] Raw content was: {raw_content[:500]}...")
+        try: logger.error(f"[ATS Analyzer] Raw content was: {raw_content[:500]}...")
         except: pass
         return _fallback_result(f"Analysis error: {str(e)}")
 

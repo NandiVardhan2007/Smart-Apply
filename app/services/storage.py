@@ -1,7 +1,10 @@
 import boto3
 import asyncio
+import logging
 from botocore.exceptions import ClientError
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class StorageService:
     def __init__(self):
@@ -25,7 +28,7 @@ class StorageService:
             )
             return f"{settings.R2_ENDPOINT_URL}/{settings.R2_BUCKET_NAME}/{file_name}"
         except ClientError as e:
-            print(f"R2 Upload Error: {e}")
+            logger.error(f"R2 Upload Error: {e}")
             return None
 
     async def generate_presigned_url(self, file_name, expiration=3600):
@@ -39,7 +42,7 @@ class StorageService:
             )
             return url
         except ClientError as e:
-            print(f"R2 Presigned URL Error: {e}")
+            logger.error(f"R2 Presigned URL Error: {e}")
             return None
 
     def get_key_from_url(self, url: str) -> str:

@@ -1,5 +1,8 @@
 import io
+import logging
 from pdfminer.high_level import extract_text
+
+logger = logging.getLogger(__name__)
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
     """Extracts raw text from a PDF file provided as bytes."""
@@ -9,5 +12,5 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         text = extract_text(fp)
         return text.strip()
     except Exception as e:
-        print(f"Error extracting PDF: {e}")
+        logger.error(f"Error extracting PDF: {e}")
         return ""

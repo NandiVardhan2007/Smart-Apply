@@ -1,10 +1,15 @@
 import asyncio
 import httpx
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, user, ats
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Smart Apply API", version="1.0.0")
 
@@ -27,19 +32,36 @@ async def self_ping():
         while True:
             try:
                 response = await client.get(SELF_URL, timeout=10)
-                print(f"[Self-Ping] ✅ Health check OK — status {response.status_code}")
+                logger.info(f"[Self-Ping] ✅ Health check OK — status {response.status_code}")
+            except asyncio.CancelledError:
+                logger.info("[Self-Ping] 🛑 Ping task cancelled.")
+                break
             except Exception as e:
-                print(f"[Self-Ping] ⚠️ Ping failed: {e}")
+                logger.warning(f"[Self-Ping] ⚠️ Ping failed: {e}")
             await asyncio.sleep(PING_INTERVAL_SECONDS)
 
-@app.on_event("startup")
-async def startup_event():
-    await connect_to_mongo()
-    asyncio.create_task(self_ping())
+# Track background tasks
+background_tasks = set()
 
-@app.on_event("shutdown")
-async def shutdown_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting up Smart Apply API...")
+    await connect_to_mongo()
+    
+    ping_task = asyncio.create_task(self_ping())
+    background_tasks.add(ping_task)
+    ping_task.add_done_callback(background_tasks.discard)
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Smart Apply API...")
+    for task in background_tasks:
+        task.cancel()
     await close_mongo_connection()
+
+app.router.lifespan_context = lifespan
 
 # Routes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

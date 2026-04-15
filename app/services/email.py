@@ -1,5 +1,8 @@
+import logging
 import httpx
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self):
@@ -25,7 +28,7 @@ class EmailService:
                 response.raise_for_status()
                 return True
         except Exception as e:
-            print(f"Brevo Email Error: {e}")
+            logger.error(f"Brevo Email Error: {e}")
             return False
 
     async def send_otp_email(self, email, otp):

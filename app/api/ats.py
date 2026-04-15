@@ -10,7 +10,7 @@ from app.db.mongodb import get_database
 from app.services.pdf_handler import extract_text_from_pdf
 from app.services.ats_analyzer import analyze_resume_ats
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -63,7 +63,7 @@ async def scan_resume(
         "milestones": analysis_result.get("milestones", []),
         "drawbacks": analysis_result.get("drawbacks", []),
         "improvement_plan": analysis_result.get("improvement_plan", []),
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     
     # 5. Persist to MongoDB
