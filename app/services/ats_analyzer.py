@@ -11,6 +11,48 @@ from app.services.ai_parser import get_next_client
 logger = logging.getLogger(__name__)
 
 
+def is_resume(text: str) -> bool:
+    """
+    Strictly validates if the provided text is a resume.
+    Checks for presence of standard resume sections and metadata.
+    """
+    if not text or len(text.strip()) < 100:
+        return False
+
+    text_lower = text.lower()
+    
+    # Standard resume sections
+    sections = [
+        "experience", "work history", "employment", 
+        "education", "academic",
+        "skills", "technologies", "expertise",
+        "projects", "achievements",
+        "contact", "summary", "objective"
+    ]
+    
+    # Requirement: Must find at least 3 standard section headers
+    found_sections = [s for s in sections if s in text_lower]
+    
+    # Requirement: Often resumes have contact markers
+    contact_markers = ["@", "phone", "mobile", "linkedin.com", "github.com", "address"]
+    found_markers = [m for m in contact_markers if m in text_lower]
+    
+    # Reject logic for common non-resume documents
+    blacklisted_keywords = [
+        "question bank", "assignment", "homework", "lecture notes", 
+        "syllabus", "examination", "marksheet", "transcript",
+        "letter of recommendation", "cover letter"
+    ]
+    is_blacklisted = any(k in text_lower for k in blacklisted_keywords)
+    
+    # A valid resume should have at least 3 sections AND at least 1 contact marker
+    # and NOT be in the blacklist.
+    is_valid = len(found_sections) >= 3 and len(found_markers) >= 1 and not is_blacklisted
+    
+    logger.info(f"[ATS Validation] Result: {is_valid} (Sections: {len(found_sections)}, Markers: {len(found_markers)}, Blacklisted: {is_blacklisted})")
+    return is_valid
+
+
 ANALYSIS_SYSTEM_PROMPT = """You are an elite ATS (Applicant Tracking System) resume analyst and career strategist.
 
 Your task is to perform a DEEP, comprehensive analysis of the provided resume text. You must evaluate the resume across exactly 8 categories and return a structured JSON report.

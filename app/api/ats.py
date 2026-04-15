@@ -8,7 +8,7 @@ from typing import Optional
 from app.api.user import get_current_user
 from app.db.mongodb import get_database
 from app.services.pdf_handler import extract_text_from_pdf
-from app.services.ats_analyzer import analyze_resume_ats
+from app.services.ats_analyzer import analyze_resume_ats, is_resume
 from bson import ObjectId
 from datetime import datetime, timezone
 
@@ -26,21 +26,22 @@ async def scan_resume(
     Upload a resume PDF and optionally a job description.
     Runs a comprehensive AI-powered ATS analysis and persists the results.
     """
-    # 1. Validate file type
+    # 1. Validate file extension
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(
-            status_code=400,
-            detail="Only PDF files are supported. Please upload a .pdf file."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF files are supported for ATS analysis."
         )
     
     # 2. Extract text from PDF
     file_content = await file.read()
     resume_text = extract_text_from_pdf(file_content)
     
-    if not resume_text or len(resume_text.strip()) < 50:
+    # 3. Strict Resume Content Validation
+    if not is_resume(resume_text):
         raise HTTPException(
-            status_code=400,
-            detail="Could not extract sufficient text from the PDF. Ensure your resume is not image-based or encrypted."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded document does not appear to be a resume. Please upload a professional resume file (PDF) containing your experience, skills, and education."
         )
     
     # 3. Run AI analysis
