@@ -1,6 +1,7 @@
 import os
 import sys
 import certifi
+from datetime import datetime, timezone
 from pymongo import MongoClient
 
 def extract_and_seed():
@@ -28,7 +29,32 @@ def extract_and_seed():
     from app.core.config import settings
 
     async def run():
+        from app.db.mongodb import db, get_database
+        from app.core.config import settings
+        from motor.motor_asyncio import AsyncIOMotorClient
+        import certifi
+
+        # Manually initialize the client
+        db.client = AsyncIOMotorClient(
+            settings.MONGO_URI,
+            tlsCAFile=certifi.where()
+        )
+        
         await engine_service.seed_initial_script(js_code)
+        
+        # Also force a new version to ensure latest logic is used
+        database = db.client.get_database("smartapply")
+        latest = await database["automation_engines"].find_one({}, sort=[("version", -1)])
+        new_v = (latest["version"] + 1) if latest else 1
+        
+        await database["automation_engines"].update_many({}, {"$set": {"status": "archived"}})
+        await database["automation_engines"].insert_one({
+            "version": new_v,
+            "javascript": js_code,
+            "status": "active",
+            "created_at": datetime.now(timezone.utc)
+        })
+        print(f"Forced engine update to Version {new_v}")
         
     asyncio.run(run())
     print("Successfully seeded OTA script into MongoDB!")

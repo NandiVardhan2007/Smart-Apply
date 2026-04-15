@@ -78,7 +78,7 @@ ERROR:
 {error_msg}
 
 DOM SNAPSHOT (Truncated):
-{html_snapshot[:10000]}
+{html_snapshot[:30000]}
 
 CURRENT JAVASCRIPT:
 {current_script}
