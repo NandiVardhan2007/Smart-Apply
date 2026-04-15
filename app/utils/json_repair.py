@@ -41,25 +41,23 @@ def repair_json(content: str) -> str:
     content = re.sub(r'":\s*"([^"]*)"', fix_newlines, content)
 
     # 2. Fix unescaped quotes inside strings (CRITICAL for llama results)
-    # This tries to escape quotes that are not followed by , : } or ]
-    # Or preceded by { , or :
-    def fix_internal_quotes(match):
+    def fix_internal_quotes(match, key_name):
         text = match.group(1)
-        # Escape quotes that are not structural
-        # This is a bit risky but often necessary
         fixed = text.replace('"', '\\"')
-        return f'": "{fixed}"'
+        return f'"{key_name}": "{fixed}"'
     
-    # We only apply this to values known to be strings in our schema
-    # like summary, name, findings, icon, title, reason, suggestion
-    target_keys = ["summary", "name", "icon", "title", "grade", "reason", "suggestion", "finding"]
+    target_keys = ["summary", "name", "icon", "title", "grade", "reason", "suggestion", "finding", "overall_grade"]
     for key in target_keys:
         # Match complete values
-        content = re.sub(rf'"{key}"\s*:\s*"(.+?)"(?=\s*[,}}])', fix_internal_quotes, content, flags=re.DOTALL)
+        content = re.sub(rf'"{key}"\s*:\s*"(.+?)"(?=\s*[,}}])', lambda m, k=key: fix_internal_quotes(m, k), content, flags=re.DOTALL)
         # Handle cases where it's truncated or doesn't have a trailing comma yet
-        content = re.sub(rf'"{key}"\s*:\s*"([^"]+)"\s*$', fix_internal_quotes, content, flags=re.DOTALL)
+        content = re.sub(rf'"{key}"\s*:\s*"([^"]+)"\s*$', lambda m, k=key: fix_internal_quotes(m, k), content, flags=re.DOTALL)
 
-    # 3. Fix missing commas between elements (heuristic)
+    # 3. Fix mismatched array closers (e.g., [ ... })
+    # This specifically targets cases where an array should end with ] but the AI put }
+    content = re.sub(r'\[\s*([^\[\]]+?)\s*\}', r'[\1]', content)
+
+    # 4. Fix missing commas between elements (heuristic)
     content = re.sub(r'\}\s*\{', '}, {', content)
     content = re.sub(r'\]\s*\[', '], [', content)
     content = re.sub(r'\"\s*\"', '", "', content)
