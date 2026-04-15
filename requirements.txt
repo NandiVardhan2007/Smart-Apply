@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+motor
+pydantic
+pydantic-settings
+passlib[bcrypt]
+python-jose[cryptography]
+boto3
+python-multipart
+requests
+python-dotenv
+email-validator
+pdfminer.six
+openai
