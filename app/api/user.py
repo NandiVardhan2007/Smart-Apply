@@ -12,14 +12,21 @@ from bson import ObjectId
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
+from bson.errors import InvalidId
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_access_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
     
     user_id = payload.get("sub")
+    try:
+        user_object_id = ObjectId(user_id)
+    except (InvalidId, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token")
+
     db = get_database()
-    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    user = await db.users.find_one({"_id": user_object_id})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -31,13 +38,13 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
     # Presign URLs for R2 resources
     if current_user.get("profile_pic_url"):
         key = storage_service.get_key_from_url(current_user["profile_pic_url"])
-        presigned_url = storage_service.generate_presigned_url(key)
+        presigned_url = await storage_service.generate_presigned_url(key)
         if presigned_url:
             current_user["profile_pic_url"] = presigned_url
             
     if current_user.get("resume_url"):
         key = storage_service.get_key_from_url(current_user["resume_url"])
-        presigned_url = storage_service.generate_presigned_url(key)
+        presigned_url = await storage_service.generate_presigned_url(key)
         if presigned_url:
             current_user["resume_url"] = presigned_url
             
@@ -56,12 +63,12 @@ async def update_profile(profile_update: UserProfileUpdate, current_user: dict =
     # Presign before returning
     if current_user.get("profile_pic_url"):
         key = storage_service.get_key_from_url(current_user["profile_pic_url"])
-        p_url = storage_service.generate_presigned_url(key)
+        p_url = await storage_service.generate_presigned_url(key)
         if p_url: current_user["profile_pic_url"] = p_url
 
     if current_user.get("resume_url"):
         key = storage_service.get_key_from_url(current_user["resume_url"])
-        r_url = storage_service.generate_presigned_url(key)
+        r_url = await storage_service.generate_presigned_url(key)
         if r_url: current_user["resume_url"] = r_url
         
     return UserOut(**current_user)
@@ -70,7 +77,7 @@ async def update_profile(profile_update: UserProfileUpdate, current_user: dict =
 async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     file_content = await file.read()
     file_name = f"avatars/{current_user['id']}_{file.filename}"
-    url = storage_service.upload_file(file_content, file_name, file.content_type)
+    url = await storage_service.upload_file(file_content, file_name, file.content_type)
     
     if not url:
         raise HTTPException(status_code=500, detail="Error uploading file to storage")
@@ -79,14 +86,14 @@ async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depen
     await db.users.update_one({"_id": ObjectId(current_user["id"])}, {"$set": {"profile_pic_url": url}})
     
     # Return presigned URL for immediate display
-    presigned_url = storage_service.generate_presigned_url(file_name)
+    presigned_url = await storage_service.generate_presigned_url(file_name)
     return {"url": presigned_url or url}
 
 @router.post("/upload-resume", status_code=status.HTTP_201_CREATED)
 async def upload_resume(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     file_content = await file.read()
     file_name = f"resumes/{current_user['id']}_{file.filename}"
-    url = storage_service.upload_file(file_content, file_name, file.content_type)
+    url = await storage_service.upload_file(file_content, file_name, file.content_type)
     
     if not url:
         raise HTTPException(status_code=500, detail="Error uploading file to storage")
@@ -123,15 +130,22 @@ async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
     profile_pic_url = current_user.get("profile_pic_url")
     if profile_pic_url:
         key = storage_service.get_key_from_url(profile_pic_url)
-        presigned_pic_url = storage_service.generate_presigned_url(key)
+        presigned_pic_url = await storage_service.generate_presigned_url(key)
         if presigned_pic_url:
             profile_pic_url = presigned_pic_url
+
+    # Calculate ATS Score (from latest real scan)
+    latest_scan = await db.ats_scans.find_one({"user_id": user_id}, sort=[("created_at", -1)])
+    ats_score = latest_scan["overall_score"] if latest_scan else 0
+    ats_grade = latest_scan["overall_grade"] if latest_scan else "N/A"
 
     return {
         "user": {
             "full_name": current_user.get("full_name") or current_user.get("first_name", "User"),
             "resume_url": current_user.get("resume_url"),
-            "profile_pic_url": profile_pic_url
+            "profile_pic_url": profile_pic_url,
+            "ats_score": ats_score,
+            "ats_grade": ats_grade
         },
         "stats": {
             "total_applications": total_apps,
@@ -142,22 +156,6 @@ async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
         "recent_applications": recent_apps
     }
 
-@router.get("/ats-results")
-async def get_ats_results(current_user: dict = Depends(get_current_user)):
-    # Mock analysis based on user skills for now, since we haven't stored scans yet
-    skills = current_user.get("skills", "")
-    score = 85 if skills else 40
-    
-    return {
-        "overall_score": score,
-        "status": "Excellent" if score > 80 else "Good",
-        "description": "Your resume is highly optimized for technical roles." if score > 80 else "Add more technical keywords.",
-        "details": {
-            "experience": "92%",
-            "education": "100%"
-        },
-        "missing_keywords": ["CI/CD Pipelines", "Kubernetes", "Clean Architecture"] if not "CI/CD" in skills else ["Cloud Optimization"],
-    }
 
 @router.post("/parse-resume")
 async def parse_resume(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
@@ -170,9 +168,7 @@ async def parse_resume(file: UploadFile = File(...), current_user: dict = Depend
         raise HTTPException(status_code=400, detail="Could not extract text from PDF")
         
     # 3. Parse with AI (NVIDIA NIM)
-    print(f"DEBUG: Extracting text from PDF, length: {len(text)}")
     parsed_data = await parse_resume_with_ai(text)
-    print(f"DEBUG: Parsed data from AI: {parsed_data}")
     
     # 4. Check if it's actually a resume
     if not parsed_data.get("isResume", True):

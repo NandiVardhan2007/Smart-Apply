@@ -44,7 +44,7 @@ async def register(user_in: UserCreate):
     )
     
     # Send Email
-    email_sent = email_service.send_otp_email(user_in.email, otp)
+    email_sent = await email_service.send_otp_email(user_in.email, otp)
     
     return {
         "message": "User registered. Please verify your email with the OTP sent.",
@@ -102,6 +102,6 @@ async def login(credentials: UserLogin):
 async def request_otp(email: str):
     # Simulated OTP for Demo
     otp = ''.join(random.choices(string.digits, k=6))
-    if email_service.send_otp_email(email, otp):
+    if await email_service.send_otp_email(email, otp):
         return {"message": "OTP sent successfully"}
     raise HTTPException(status_code=500, detail="Error sending email")

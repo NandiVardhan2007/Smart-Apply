@@ -1,4 +1,5 @@
 import boto3
+import asyncio
 from botocore.exceptions import ClientError
 from app.core.config import settings
 
@@ -12,9 +13,11 @@ class StorageService:
             region_name='auto'  # R2 expects 'auto'
         )
 
-    def upload_file(self, file_data, file_name, content_type):
+    async def upload_file(self, file_data, file_name, content_type):
         try:
-            self.s3.put_object(
+            # Wrap blocking S3 call in a thread
+            await asyncio.to_thread(
+                self.s3.put_object,
                 Bucket=settings.R2_BUCKET_NAME,
                 Key=file_name,
                 Body=file_data,
@@ -25,9 +28,11 @@ class StorageService:
             print(f"R2 Upload Error: {e}")
             return None
 
-    def generate_presigned_url(self, file_name, expiration=3600):
+    async def generate_presigned_url(self, file_name, expiration=3600):
         try:
-            url = self.s3.generate_presigned_url(
+            # Wrap blocking S3 call in a thread
+            url = await asyncio.to_thread(
+                self.s3.generate_presigned_url,
                 'get_object',
                 Params={'Bucket': settings.R2_BUCKET_NAME, 'Key': file_name},
                 ExpiresIn=expiration

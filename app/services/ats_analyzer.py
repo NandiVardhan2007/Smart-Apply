@@ -112,7 +112,7 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
                 {"role": "user", "content": user_content}
             ],
             temperature=0.1, # Lower temperature for better formatting
-            max_tokens=2048 # Sufficient for the structured response
+            max_tokens=4096 # Increased from 2048 to handle more detailed analysis without truncation
         )
         
         raw_content = response.choices[0].message.content.strip()
@@ -124,10 +124,18 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
             raw_content = raw_content.split("```")[1].split("```")[0].strip()
         
         # 2. Extract JSON part if there is preamble text
+        # If the content is truncated, rfind('}') might find the last COMPLETE object
+        # which isn't what we want if we're going to try to REPAIR the truncated rest.
         start_idx = raw_content.find('{')
-        end_idx = raw_content.rfind('}')
-        if start_idx != -1 and end_idx != -1:
-            raw_content = raw_content[start_idx:end_idx+1]
+        if start_idx != -1:
+            raw_content = raw_content[start_idx:]
+            # Only cut at the last } if we are sure it's the end of the root object
+            # and not a truncated middle parts
+            if raw_content.count('{') == raw_content.count('}') and raw_content.strip().endswith('}'):
+                pass # Already complete
+            elif raw_content.rfind('}') > raw_content.rfind('{') and not _is_likely_truncated(raw_content):
+                end_idx = raw_content.rfind('}')
+                raw_content = raw_content[:end_idx+1]
         
         # 3. Attempt robust parse
         try:
@@ -148,22 +156,51 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         return _fallback_result(f"Analysis error: {str(e)}")
 
 
+def _is_likely_truncated(content: str) -> bool:
+    """Heuristic to check if JSON content ended abruptly."""
+    content = content.strip()
+    return not (content.endswith('}') or content.endswith(']'))
+
+
 def _repair_json(content: str) -> str:
-    """Simple heuristic to close unclosed JSON structures."""
+    """Robust heuristic to close unclosed JSON structures and handle minor malformations."""
     content = content.strip()
     if not content.startswith('{'): return "{}"
     
-    # Close open quotes
+    # 1. Remove trailing garbage that would confuse the closer
+    # If it ends with something like '"key": ', remove it
+    import re
+    
+    # Try to find the last relatively "stable" point
+    # Remove trailing unclosed key or partial property
+    # matches: ,"key": or "key": or , "key"
+    content = re.sub(r',?\s*\"[^\"]*\"\s*:\s*$', '', content)
+    # matches trailing comma
+    content = re.sub(r',\s*$', '', content)
+
+    # 2. Close open quotes if odd number
     if content.count('"') % 2 != 0:
         content += '"'
         
+    # 3. Stack-based closer for brackets and braces
     stack = []
-    for char in content:
-        if char == '{': stack.append('}')
-        elif char == '[': stack.append(']')
-        elif char == '}' or char == ']':
-            if stack and stack[-1] == char:
-                stack.pop()
+    in_string = False
+    escaped = False
+    
+    for i, char in enumerate(content):
+        if char == '"' and not escaped:
+            in_string = not in_string
+        elif not in_string:
+            if char == '{': stack.append('}')
+            elif char == '[': stack.append(']')
+            elif char == '}' or char == ']':
+                if stack and stack[-1] == char:
+                    stack.pop()
+        
+        if char == '\\' and not escaped:
+            escaped = True
+        else:
+            escaped = False
     
     # Add missing closers in reverse order
     for closer in reversed(stack):
