@@ -93,6 +93,9 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
     """
     client = get_next_client()
     
+    # Truncate text to avoid huge context windows and speed up processing
+    resume_text = resume_text[:8000]
+    
     user_content = f"Analyze this resume for ATS compatibility:\n\n{resume_text}"
     
     if job_description and job_description.strip():
@@ -101,7 +104,8 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         user_content += "\n\n(No job description provided — evaluate for general market alignment based on the candidate's apparent target role.)"
 
     try:
-        response = client.chat.completions.create(
+        # Use await because get_next_client now returns AsyncOpenAI
+        response = await client.chat.completions.create(
             model="meta/llama-3.1-8b-instruct",
             messages=[
                 {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
