@@ -2,7 +2,6 @@ import os
 import sys
 import certifi
 from datetime import datetime, timezone
-from pymongo import MongoClient
 
 def extract_and_seed():
     # Detect the root directory dynamically

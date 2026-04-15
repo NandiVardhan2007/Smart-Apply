@@ -58,7 +58,7 @@ class EngineService:
         version = latest_doc.get("version", 1)
 
         system_prompt = """You are an elite JavaScript engineer specialized in DOM manipulation and browser automation.
-You are maintaining a LinkedIn auto-applier JS script.
+You are maintaining a LinkedIn auto-applier JS script (IIFE).
 The script recently failed with an error. You are provided with:
 1. The Error Message
 2. The HTML DOM Snapshot of where it failed
@@ -68,17 +68,19 @@ Your task is to analyze the DOM snapshot, find why the script failed (e.g., chan
 
 CRITICAL INSTRUCTIONS:
 - You must return ONLY the complete, fully functioning JavaScript code.
-- DO NOT wrap the code in Markdown blocks like ```javascript.
-- Return RAW text.
-- Do NOT remove any existing features. Just patch the broken selector/logic.
+- DO NOT wrap the code in Markdown blocks. Return RAW text.
+- Do NOT remove any existing features (Human mode, Heartbeats, etc.). Just patch the broken selector/logic.
+- EXTREMELY IMPORTANT: You MUST preserve the `const CONFIG = { ... };` block at the beginning.
+- EXTREMELY IMPORTANT: You MUST wrap the code in a `(function() { ... })();` IIFE.
+- EXTREMELY IMPORTANT: You MUST keep the `window.__SA_ENGINE_RUNNING` lock logic at the very top of the function to prevent multiple instances.
 """
 
         user_prompt = f"""
 ERROR:
 {error_msg}
 
-DOM SNAPSHOT (Truncated):
-{html_snapshot[:30000]}
+DOM SNAPSHOT (Targeting context):
+{html_snapshot[:80000]}
 
 CURRENT JAVASCRIPT:
 {current_script}
@@ -93,18 +95,18 @@ CURRENT JAVASCRIPT:
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
-                max_tokens=6000,
+                max_tokens=8000,
             )
             
             healed_script = response.choices[0].message.content
             # Cleanup markdown if AI ignores instructions
-            if healed_script.startswith("```"):
+            if healed_script.strip().startswith("```"):
                 # Handle possible ```javascript\n or just ```\n
                 lines = healed_script.split("\n")
-                if lines[0].startswith("```"):
+                if lines[0].strip().startswith("```"):
                     healed_script = "\n".join(lines[1:])
-            if healed_script.endswith("```"):
-                healed_script = healed_script.rsplit("```", 1)[0]
+            if healed_script.strip().endswith("```"):
+                healed_script = healed_script.strip().rsplit("```", 1)[0]
             
             healed_script = healed_script.strip()
                 
