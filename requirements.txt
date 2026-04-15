@@ -8,6 +8,7 @@ python-jose[cryptography]
 boto3
 python-multipart
 requests
+httpx
 python-dotenv
 email-validator
 pdfminer.six
