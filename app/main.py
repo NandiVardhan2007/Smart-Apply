@@ -4,7 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, user, ats, linkedin, memory
+from app.api import auth, user, ats, linkedin, memory, linkedin_applier
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
 
@@ -69,6 +69,7 @@ app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(ats.router, prefix="/api/ats", tags=["ATS Analysis"])
 app.include_router(linkedin.router, prefix="/api/linkedin", tags=["LinkedIn Optimizer"])
 app.include_router(memory.router, prefix="/api/memory", tags=["User Memory"])
+app.include_router(linkedin_applier.router, prefix="/api/linkedin-applier", tags=["LinkedIn Auto Applier"])
 
 @app.get("/")
 async def root():

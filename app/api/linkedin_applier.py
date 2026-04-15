@@ -1,0 +1,173 @@
+"""
+LinkedIn Auto Applier API Router
+Handles AI-powered job search, application Q&A, and tracking.
+"""
+
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+
+from app.api.user import get_current_user
+from app.schemas.linkedin_applier import (
+    SearchTermRequest,
+    SearchTermResult,
+    AnswerQuestionRequest,
+    AnswerQuestionResponse,
+    SaveAnswerRequest,
+    ApplicationLogCreate,
+)
+from app.services.linkedin_applier_service import linkedin_applier_service
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+@router.post("/search-terms", response_model=SearchTermResult)
+async def generate_search_terms(
+    request: SearchTermRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Generate AI-powered LinkedIn job search queries, keywords, and filters
+    based on the user's resume, skills, and preferences.
+    """
+    try:
+        result = await linkedin_applier_service.generate_search_terms(
+            user_id=current_user["id"],
+            resume_text=request.resume_text,
+            skills=request.skills,
+            experience=request.experience,
+            education=request.education,
+            location=request.location,
+            job_preferences=request.job_preferences,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Search term generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate search terms: {str(e)}")
+
+
+@router.post("/answer-question", response_model=AnswerQuestionResponse)
+async def answer_application_question(
+    request: AnswerQuestionRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Use AI + memory to answer a LinkedIn application question.
+    Returns the answer with a confidence score.
+    If confidence is low, needs_user_input will be True.
+    """
+    try:
+        result = await linkedin_applier_service.answer_question(
+            user_id=current_user["id"],
+            question=request.question,
+            question_type=request.question_type or "text",
+            options=request.options,
+            job_title=request.job_title,
+            company_name=request.company_name,
+            job_description=request.job_description,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Question answering error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to answer question: {str(e)}")
+
+
+@router.post("/save-answer", status_code=status.HTTP_201_CREATED)
+async def save_answer(
+    request: SaveAnswerRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Save a user-provided or confirmed answer to memory for future reuse.
+    """
+    try:
+        result = await linkedin_applier_service.save_answer_to_memory(
+            user_id=current_user["id"],
+            question=request.question,
+            answer=request.answer,
+            job_title=request.job_title,
+            company_name=request.company_name,
+            question_type=request.question_type or "text",
+        )
+        return {"message": "Answer saved successfully", "memory_id": result.get("id")}
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Save answer error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save answer: {str(e)}")
+
+
+@router.post("/log-application", status_code=status.HTTP_201_CREATED)
+async def log_application(
+    request: ApplicationLogCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Log a LinkedIn job application attempt (applied, skipped, failed, paused).
+    """
+    try:
+        result = await linkedin_applier_service.log_application(
+            user_id=current_user["id"],
+            job_title=request.job_title,
+            company_name=request.company_name,
+            job_url=request.job_url,
+            status=request.status,
+            notes=request.notes,
+            questions_answered=request.questions_answered,
+            questions_manual=request.questions_manual,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Log application error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to log application: {str(e)}")
+
+
+@router.get("/history")
+async def get_application_history(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get the user's LinkedIn auto-apply application history.
+    """
+    apps = await linkedin_applier_service.get_application_history(
+        current_user["id"], limit
+    )
+    return {"applications": apps, "total": len(apps)}
+
+
+@router.get("/stats")
+async def get_session_stats(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get today's application stats (applied count, total, etc).
+    """
+    stats = await linkedin_applier_service.get_session_stats(current_user["id"])
+    return stats
+
+
+@router.get("/saved-answers")
+async def get_saved_answers(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get all saved LinkedIn Q&A answers from the user's memory.
+    """
+    from app.services.memory_service import memory_service
+
+    memories = await memory_service.get_memories(
+        current_user["id"], "linkedin_qa"
+    )
+
+    answers = []
+    for mem in memories:
+        answers.append({
+            "id": mem.get("id"),
+            "question": mem.get("metadata", {}).get("original_question", mem.get("key", "")),
+            "answer": mem.get("content", ""),
+            "question_type": mem.get("metadata", {}).get("question_type", "text"),
+            "saved_at": mem.get("metadata", {}).get("saved_at", ""),
+        })
+
+    return {"answers": answers, "total": len(answers)}

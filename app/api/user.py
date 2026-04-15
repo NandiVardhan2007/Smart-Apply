@@ -98,8 +98,18 @@ async def upload_resume(file: UploadFile = File(...), current_user: dict = Depen
     if not url:
         raise HTTPException(status_code=500, detail="Error uploading file to storage")
         
+    # Extract and store text content for AI features (like Auto Applier)
+    text_content = ""
+    try:
+        text_content = extract_text_from_pdf(file_content)
+    except Exception as e:
+        print(f"Warning: Could not extract text from resume: {e}")
+
     db = get_database()
-    await db.users.update_one({"_id": ObjectId(current_user["id"])}, {"$set": {"resume_url": url}})
+    await db.users.update_one(
+        {"_id": ObjectId(current_user["id"])}, 
+        {"$set": {"resume_url": url, "resume_content": text_content}}
+    )
     return {"url": url}
 
 @router.get("/dashboard")
