@@ -5,7 +5,7 @@ Handles AI-powered job search, application Q&A, and tracking.
 
 import logging
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from fastapi.responses import PlainTextResponse
 from typing import Optional, Dict, Any, List
 
