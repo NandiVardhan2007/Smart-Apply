@@ -148,6 +148,7 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
     else:
         user_content += "\n\n(No job description provided — evaluate for general market alignment based on the candidate's apparent target role.)"
 
+    raw_content = ""
     try:
         # Use await because get_next_client now returns AsyncOpenAI
         response = await client.chat.completions.create(
@@ -209,48 +210,63 @@ def _is_likely_truncated(content: str) -> bool:
 
 def _repair_json(content: str) -> str:
     """Robust heuristic to close unclosed JSON structures and handle minor malformations."""
-    content = content.strip()
-    if not content.startswith('{'): return "{}"
-    
-    # 1. Remove trailing garbage that would confuse the closer
-    # If it ends with something like '"key": ', remove it
     import re
+
+    content = content.strip()
+    if not content.startswith('{'):
+        start_idx = content.find('{')
+        if start_idx != -1:
+            content = content[start_idx:]
+        else:
+            return "{}"
+
+    # 1. Handle unescaped newlines in strings
+    # This is a common issue with LLMs returning long summaries
+    def fix_newlines(match):
+        return match.group(0).replace('\n', '\\n').replace('\r', '\\r')
     
-    # Try to find the last relatively "stable" point
-    # Remove trailing unclosed key or partial property
+    content = re.sub(r'":\s*"([^"]*)"', fix_newlines, content)
+
+    # 2. Fix missing commas between elements (heuristic)
+    # matches "string" { or "string" [ or } { or ] [ or "string" "string"
+    content = re.sub(r'\}\s*\{', '}, {', content)
+    content = re.sub(r'\]\s*\[', '], [', content)
+    content = re.sub(r'\"\s*\"', '", "', content)
+
+    # 3. Remove trailing unclosed key or partial property
     # matches: ,"key": or "key": or , "key"
     content = re.sub(r',?\s*\"[^\"]*\"\s*:\s*$', '', content)
-    # matches trailing comma
     content = re.sub(r',\s*$', '', content)
 
-    # 2. Close open quotes if odd number
+    # 4. Close open quotes if odd number
     if content.count('"') % 2 != 0:
         content += '"'
-        
-    # 3. Stack-based closer for brackets and braces
+
+    # 5. Stack-based closer for brackets and braces
     stack = []
     in_string = False
     escaped = False
-    
-    for i, char in enumerate(content):
+
+    for char in content:
         if char == '"' and not escaped:
             in_string = not in_string
         elif not in_string:
-            if char == '{': stack.append('}')
-            elif char == '[': stack.append(']')
+            if char == '{':
+                stack.append('}')
+            elif char == '[':
+                stack.append(']')
             elif char == '}' or char == ']':
                 if stack and stack[-1] == char:
                     stack.pop()
-        
+
         if char == '\\' and not escaped:
             escaped = True
         else:
             escaped = False
-    
-    # Add missing closers in reverse order
+
     for closer in reversed(stack):
         content += closer
-        
+
     return content
 
 

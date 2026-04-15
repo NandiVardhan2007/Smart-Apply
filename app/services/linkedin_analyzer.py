@@ -87,7 +87,9 @@ Your task is to perform a DEEP, comprehensive analysis of the provided LinkedIn 
 - Include CONCRETE examples and templates in suggestions (e.g., "Change your headline to: 'Senior Flutter Developer | Building AI-Powered Mobile Apps | Ex-Google'")
 - Scores should be realistic — most profiles score 40-75
 - The overall_score should be a weighted average reflecting all categories
-- Return ONLY the JSON object, no other text, no markdown code blocks
+- Ensure all strings are properly escaped (especially quotes inside summaries).
+- Ensure all items in arrays and objects are separated by commas.
+- Return ONLY the valid JSON object, no other text, no markdown code blocks.
 """
 
 
@@ -166,6 +168,7 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
 
     user_content = f"Analyze this LinkedIn profile and provide optimization suggestions{user_context}:\n\n{formatted_profile}"
 
+    raw_content = ""
     try:
         response = await client.chat.completions.create(
             model="meta/llama-3.1-8b-instruct",
@@ -242,17 +245,35 @@ def _repair_json(content: str) -> str:
 
     content = content.strip()
     if not content.startswith('{'):
-        return "{}"
+        start_idx = content.find('{')
+        if start_idx != -1:
+            content = content[start_idx:]
+        else:
+            return "{}"
 
-    # Remove trailing unclosed key or partial property
+    # 1. Handle unescaped newlines in strings
+    # This is a common issue with LLMs returning long summaries
+    def fix_newlines(match):
+        return match.group(0).replace('\n', '\\n').replace('\r', '\\r')
+    
+    content = re.sub(r'":\s*"([^"]*)"', fix_newlines, content)
+
+    # 2. Fix missing commas between elements (heuristic)
+    # matches "string" { or "string" [ or } { or ] [ or "string" "string"
+    content = re.sub(r'\}\s*\{', '}, {', content)
+    content = re.sub(r'\]\s*\[', '], [', content)
+    content = re.sub(r'\"\s*\"', '", "', content)
+
+    # 3. Remove trailing unclosed key or partial property
+    # matches: ,"key": or "key": or , "key"
     content = re.sub(r',?\s*\"[^\"]*\"\s*:\s*$', '', content)
     content = re.sub(r',\s*$', '', content)
 
-    # Close open quotes if odd number
+    # 4. Close open quotes if odd number
     if content.count('"') % 2 != 0:
         content += '"'
 
-    # Stack-based closer for brackets and braces
+    # 5. Stack-based closer for brackets and braces
     stack = []
     in_string = False
     escaped = False
