@@ -25,7 +25,7 @@ class EmailService:
         retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.RequestError)),
         reraise=True
     )
-    async def send_email(self, recipient_email: str, subject: str, html_content: str, text_content: Optional[str] = None):
+    async def send_email(self, recipient_email: str, subject: str, html_content: str, text_content: Optional[str] = None, attachments: Optional[list] = None):
         payload = {
             "sender": {"email": self.sender, "name": "Smart Apply"},
             "to": [{"email": recipient_email}],
@@ -34,6 +34,10 @@ class EmailService:
         }
         if text_content:
             payload["textContent"] = text_content
+        
+        if attachments:
+            # Brevo expects format: [{"content": "base64", "name": "file.png"}]
+            payload["attachment"] = attachments
 
         headers = {
             "accept": "application/json",

@@ -58,6 +58,7 @@ class LinkedInApplierService:
         client = get_next_client()
 
         system_prompt = """You are a career expert AI. Generate optimized LinkedIn job search terms.
+STRICT REQUIREMENT: Only target jobs with the "Easy Apply" feature.
 Return ONLY valid JSON with these fields:
 {
   "search_queries": ["query1", "query2", ...],  // 5-8 ranked LinkedIn search queries
@@ -67,12 +68,13 @@ Return ONLY valid JSON with these fields:
     "experience_level": "entry/mid/senior/executive",
     "job_type": "full-time/part-time/contract/internship",
     "remote": "remote/onsite/hybrid",
-    "date_posted": "past_24h/past_week/past_month"
+    "date_posted": "past_24h/past_week/past_month",
+    "easy_apply": true                          // Always true
   },
   "linkedin_search_urls": ["url1", "url2", ...]  // 3-5 pre-built LinkedIn job search URLs
 }
-Make queries specific and targeted. LinkedIn search URLs should use the format:
-https://www.linkedin.com/jobs/search/?keywords=ENCODED_QUERY&location=LOCATION
+Make queries specific and targeted. LinkedIn search URLs MUST include the Easy Apply filter (f_AL=true).
+Format: https://www.linkedin.com/jobs/search/?keywords=ENCODED_QUERY&location=LOCATION&f_AL=true
 No preamble or explanation, ONLY the JSON object."""
 
         try:

@@ -4,8 +4,9 @@ Handles AI-powered job search, application Q&A, and tracking.
 """
 
 import logging
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional
+from typing import Optional, Dict
 
 from app.api.user import get_current_user
 from app.schemas.linkedin_applier import (
@@ -171,3 +172,69 @@ async def get_saved_answers(
         })
 
     return {"answers": answers, "total": len(answers)}
+
+
+@router.post("/report-error")
+async def report_automation_error(
+    request: dict,  # Using dict for flexibility with screenshot data
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Report an automation failure with logs and optional screenshot.
+    Emails the report to the admin.
+    """
+    try:
+        from app.services.email import email_service
+        
+        # Extract data from request
+        error_msg = request.get("error_message", "Unknown error")
+        job_title = request.get("job_title", "Unknown")
+        job_url = request.get("job_url", "Unknown")
+        action = request.get("action", "Unknown")
+        stack_trace = request.get("stack_trace", "")
+        screenshot_base64 = request.get("screenshot_base64")
+        webview_state = request.get("webview_state", {})
+
+        # Log with user info
+        user_email = current_user.get("email", "Unknown User")
+        
+        # Build email content
+        subject = f"🚨 LinkedIn Automation Failure: {job_title}"
+        
+        body = f"""
+        <h3>Automation Failure Report</h3>
+        <p><b>User:</b> {user_email}</p>
+        <p><b>Job:</b> {job_title}</p>
+        <p><b>URL:</b> {job_url}</p>
+        <p><b>Action:</b> {action}</p>
+        <p><b>Error:</b> {error_msg}</p>
+        <hr>
+        <h4>WebView State:</h4>
+        <pre>{webview_state}</pre>
+        <hr>
+        <h4>Stack Trace:</h4>
+        <pre>{stack_trace}</pre>
+        """
+
+        # Attachments
+        attachments = []
+        if screenshot_base64:
+            attachments.append({
+                "filename": f"failure_screenshot_{int(datetime.now().timestamp())}.png",
+                "content": screenshot_base64,
+                "content_type": "image/png"
+            })
+
+        # Send email to admin
+        await email_service.send_email(
+            to_email="kovvurinandivardhanreddy200@gmail.com",
+            subject=subject,
+            body=body,
+            is_html=True,
+            attachments=attachments
+        )
+
+        return {"status": "success", "message": "Error report sent to admin"}
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Error reporting failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send error report: {str(e)}")
