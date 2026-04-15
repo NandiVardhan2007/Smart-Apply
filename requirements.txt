@@ -13,3 +13,4 @@ python-dotenv
 email-validator
 pdfminer.six
 openai
+tenacity
