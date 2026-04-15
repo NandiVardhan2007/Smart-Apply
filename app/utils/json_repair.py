@@ -11,93 +11,115 @@ def repair_json(content: str) -> str:
 
     # First attempt to clean out markdown blocks
     content = content.strip()
-    if content.startswith("```"):
-        if "```json" in content:
-            content = content.split("```json", 1)[1].split("```", 1)[0].strip()
-        else:
-            content = content.split("```", 1)[1].split("```", 1)[0].strip()
+    if "```json" in content:
+        content = content.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in content:
+        content = content.split("```", 1)[1].split("```", 1)[0].strip()
 
-    # 0. Find the first '{'
+    # Find the first '{'
     start_idx = content.find('{')
     if start_idx == -1:
         return "{}"
-    
-    # Check if there is anything after the last } and remove it
-    end_idx = content.rfind('}')
-    if end_idx != -1 and end_idx > start_idx:
-        # If we have a relatively balanced object, we take it.
-        # Otherwise we assume it's truncated and take everything from {
-        if content[start_idx:end_idx+1].count('{') == content[start_idx:end_idx+1].count('}'):
-             content = content[start_idx:end_idx+1]
-        else:
-             content = content[start_idx:]
-    else:
-        content = content[start_idx:]
+    content = content[start_idx:]
 
-    # 1. Handle unescaped newlines in strings
-    def fix_newlines(match):
-        return match.group(0).replace('\n', '\\n').replace('\r', '\\r')
-    
-    content = re.sub(r'":\s*"([^"]*)"', fix_newlines, content)
-
-    # 2. Fix unescaped quotes inside strings (CRITICAL for llama results)
-    def fix_internal_quotes(match, key_name):
-        text = match.group(1)
-        fixed = text.replace('"', '\\"')
-        return f'"{key_name}": "{fixed}"'
-    
-    target_keys = ["summary", "name", "icon", "title", "grade", "reason", "suggestion", "finding", "overall_grade"]
-    for key in target_keys:
-        # Match complete values
-        content = re.sub(rf'"{key}"\s*:\s*"(.+?)"(?=\s*[,}}])', lambda m, k=key: fix_internal_quotes(m, k), content, flags=re.DOTALL)
-        # Handle cases where it's truncated or doesn't have a trailing comma yet
-        content = re.sub(rf'"{key}"\s*:\s*"([^"]+)"\s*$', lambda m, k=key: fix_internal_quotes(m, k), content, flags=re.DOTALL)
-
-    # 3. Fix mismatched array closers (e.g., [ ... })
-    # This specifically targets cases where an array should end with ] but the AI put }
-    content = re.sub(r'\[\s*([^\[\]]+?)\s*\}', r'[\1]', content)
-
-    # 4. Fix missing commas between elements (heuristic)
-    content = re.sub(r'\}\s*\{', '}, {', content)
-    content = re.sub(r'\]\s*\[', '], [', content)
-    content = re.sub(r'\"\s*\"', '", "', content)
-    content = re.sub(r'\"\s*\{', '", {', content)
-    content = re.sub(r'\}\s*\"', '}, "', content)
-
-    # 4. Remove trailing unclosed key or partial property
-    content = re.sub(r',?\s*\"[^\"]*\"\s*:\s*$', '', content)
-    content = re.sub(r',\s*$', '', content)
-
-    # 5. Close open quotes if odd number
-    if content.count('"') % 2 != 0:
-        content += '"'
-
-    # 6. Stack-based closer for brackets and braces
+    # State machine to repair JSON
+    repaired = []
     stack = []
     in_string = False
     escaped = False
-
-    for char in content:
-        if char == '"' and not escaped:
-            in_string = not in_string
-        elif not in_string:
-            if char == '{':
+    
+    i = 0
+    while i < len(content):
+        char = content[i]
+        
+        if in_string:
+            if char == '"' and not escaped:
+                # Potential end of string. Peek ahead to see if it's structural.
+                # A structural quote is followed by , } ] or : or whitespace + one of those.
+                j = i + 1
+                is_structural = False
+                while j < len(content):
+                    next_c = content[j]
+                    if next_c in ' \t\n\r':
+                        j += 1
+                        continue
+                    if next_c in ',}]:':
+                        is_structural = True
+                        break
+                    else:
+                        break
+                
+                if is_structural or i == len(content) - 1:
+                    in_string = False
+                    repaired.append('"')
+                else:
+                    # Internal unescaped quote! Escape it.
+                    repaired.append('\\"')
+            elif char == '\\' and not escaped:
+                escaped = True
+                repaired.append(char)
+            else:
+                if char == '\n' or char == '\r':
+                    repaired.append('\\n') # Escape newlines in strings
+                else:
+                    repaired.append(char)
+                escaped = False
+        else:
+            if char == '"':
+                # Potential start of string.
+                # Check if we need a missing comma before this quote.
+                # If the previous non-whitespace char was " } or ] or a digit, we need a comma.
+                prev_idx = len(repaired) - 1
+                while prev_idx >= 0 and repaired[prev_idx] in ' \t\n\r':
+                    prev_idx -= 1
+                
+                if prev_idx >= 0 and repaired[prev_idx] in '"}]0123456789':
+                    repaired.append(',')
+                    repaired.append(' ')
+                
+                in_string = True
+                repaired.append('"')
+            elif char == '{':
                 stack.append('}')
+                repaired.append(char)
             elif char == '[':
                 stack.append(']')
+                repaired.append(char)
             elif char == '}' or char == ']':
-                if stack and stack[-1] == char:
-                    stack.pop()
+                # If the AI uses } instead of ], or vice versa, we try to follow the stack
+                if stack:
+                    expected = stack.pop()
+                    repaired.append(expected)
+                else:
+                    # Ignore extra closers
+                    pass
+            elif char == ':':
+                repaired.append(char)
+            elif char == ',':
+                # Avoid trailing commas before closing braces
+                peek_idx = i + 1
+                while peek_idx < len(content) and content[peek_idx] in ' \t\n\r':
+                    peek_idx += 1
+                if peek_idx < len(content) and content[peek_idx] in '}]':
+                    # Skip this comma
+                    pass
+                else:
+                    repaired.append(char)
+            elif char.isdigit() or char == '.':
+                repaired.append(char)
+            elif char in ' \t\n\r':
+                repaired.append(char)
+        
+        i += 1
 
-        if char == '\\' and not escaped:
-            escaped = True
-        else:
-            escaped = False
+    # Close everything
+    if in_string:
+        repaired.append('"')
+    
+    while stack:
+        repaired.append(stack.pop())
 
-    for closer in reversed(stack):
-        content += closer
-
-    return content
+    return "".join(repaired)
 
 def robust_json_loads(content: str) -> dict:
     """Attempts to load JSON, repairing it if necessary."""
