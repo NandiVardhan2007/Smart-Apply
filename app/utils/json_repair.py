@@ -116,10 +116,27 @@ def repair_json(content: str) -> str:
     if in_string:
         repaired.append('"')
     
-    while stack:
-        repaired.append(stack.pop())
+    # NEW: Handle mid-property truncation.
+    # If the last structural char was a quote " and we're inside an object, 
+    # we might be waiting for a colon. Check the context.
+    final_str = "".join(repaired).strip()
+    
+    # If it ends with a dangling key (e.g., ... { "partial_key" )
+    # we need to remove that last key to make it valid JSON before closing braces
+    if final_str.endswith('"') or final_str.endswith('",'):
+        # Primitive check: if no colon exists since the last { or ,
+        last_brace = max(final_str.rfind('{'), final_str.rfind(','))
+        last_colon = final_str.rfind(':')
+        if last_brace > last_colon:
+            # We have a key without a value. Prune it.
+            final_str = final_str[:last_brace+1].strip()
+            if final_str.endswith(','):
+                final_str = final_str[:-1].strip()
 
-    return "".join(repaired)
+    while stack:
+        final_str += stack.pop()
+
+    return final_str
 
 def robust_json_loads(content: str) -> dict:
     """Attempts to load JSON, repairing it if necessary."""
