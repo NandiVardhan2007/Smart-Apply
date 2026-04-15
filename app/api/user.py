@@ -28,11 +28,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @router.get("/profile", response_model=UserOut)
 async def get_profile(current_user: dict = Depends(get_current_user)):
+    # Presign URLs for R2 resources
     if current_user.get("profile_pic_url"):
         key = storage_service.get_key_from_url(current_user["profile_pic_url"])
         presigned_url = storage_service.generate_presigned_url(key)
         if presigned_url:
             current_user["profile_pic_url"] = presigned_url
+            
+    if current_user.get("resume_url"):
+        key = storage_service.get_key_from_url(current_user["resume_url"])
+        presigned_url = storage_service.generate_presigned_url(key)
+        if presigned_url:
+            current_user["resume_url"] = presigned_url
             
     return UserOut(**current_user)
 
@@ -45,6 +52,17 @@ async def update_profile(profile_update: UserProfileUpdate, current_user: dict =
         update_data["is_profile_completed"] = True
         await db.users.update_one({"_id": ObjectId(current_user["id"])}, {"$set": update_data})
         current_user.update(update_data)
+        
+    # Presign before returning
+    if current_user.get("profile_pic_url"):
+        key = storage_service.get_key_from_url(current_user["profile_pic_url"])
+        p_url = storage_service.generate_presigned_url(key)
+        if p_url: current_user["profile_pic_url"] = p_url
+
+    if current_user.get("resume_url"):
+        key = storage_service.get_key_from_url(current_user["resume_url"])
+        r_url = storage_service.generate_presigned_url(key)
+        if r_url: current_user["resume_url"] = r_url
         
     return UserOut(**current_user)
 
