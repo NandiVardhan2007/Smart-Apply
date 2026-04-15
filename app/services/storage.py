@@ -37,4 +37,12 @@ class StorageService:
             print(f"R2 Presigned URL Error: {e}")
             return None
 
+    def get_key_from_url(self, url: str) -> str:
+        """Extracts the object key from the full R2 URL."""
+        if not url: return ""
+        prefix = f"{settings.R2_ENDPOINT_URL}/{settings.R2_BUCKET_NAME}/"
+        if url.startswith(prefix):
+            return url[len(prefix):]
+        return url
+
 storage_service = StorageService()

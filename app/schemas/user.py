@@ -33,13 +33,14 @@ class UserOut(UserBase):
     education: Optional[str] = None
     experience: Optional[str] = None
     skills: Optional[str] = None
-    is_verified: bool = False
+    is_profile_completed: bool = False
     profile_pic_url: Optional[str] = None
     resume_url: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+    is_profile_completed: bool = False
 
 class OTPVerify(BaseModel):
     email: EmailStr

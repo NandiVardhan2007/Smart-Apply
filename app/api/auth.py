@@ -76,7 +76,11 @@ async def verify_otp(data: OTPVerify):
     
     # Generate token
     access_token = create_access_token(data={"sub": str(user["_id"])})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "is_profile_completed": user.get("is_profile_completed", False)
+    }
 
 @router.post("/login", response_model=Token)
 async def login(credentials: UserLogin):
@@ -88,7 +92,11 @@ async def login(credentials: UserLogin):
     
     # Generate token
     access_token = create_access_token(data={"sub": str(user["_id"])})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "is_profile_completed": user.get("is_profile_completed", False)
+    }
 
 @router.post("/request-otp")
 async def request_otp(email: str):

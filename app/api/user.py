@@ -28,6 +28,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @router.get("/profile", response_model=UserOut)
 async def get_profile(current_user: dict = Depends(get_current_user)):
+    if current_user.get("profile_pic_url"):
+        key = storage_service.get_key_from_url(current_user["profile_pic_url"])
+        presigned_url = storage_service.generate_presigned_url(key)
+        if presigned_url:
+            current_user["profile_pic_url"] = presigned_url
+            
     return UserOut(**current_user)
 
 @router.put("/profile", response_model=UserOut)
@@ -36,6 +42,7 @@ async def update_profile(profile_update: UserProfileUpdate, current_user: dict =
     update_data = {k: v for k, v in profile_update.dict().items() if v is not None}
     
     if update_data:
+        update_data["is_profile_completed"] = True
         await db.users.update_one({"_id": ObjectId(current_user["id"])}, {"$set": update_data})
         current_user.update(update_data)
         
@@ -52,7 +59,10 @@ async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depen
         
     db = get_database()
     await db.users.update_one({"_id": ObjectId(current_user["id"])}, {"$set": {"profile_pic_url": url}})
-    return {"url": url}
+    
+    # Return presigned URL for immediate display
+    presigned_url = storage_service.generate_presigned_url(file_name)
+    return {"url": presigned_url or url}
 
 @router.post("/upload-resume", status_code=status.HTTP_201_CREATED)
 async def upload_resume(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
@@ -133,6 +143,8 @@ async def parse_resume(file: UploadFile = File(...), current_user: dict = Depend
         raise HTTPException(status_code=400, detail="Could not extract text from PDF")
         
     # 3. Parse with AI (NVIDIA NIM)
+    print(f"DEBUG: Extracting text from PDF, length: {len(text)}")
     parsed_data = await parse_resume_with_ai(text)
+    print(f"DEBUG: Parsed data from AI: {parsed_data}")
     
     return parsed_data
