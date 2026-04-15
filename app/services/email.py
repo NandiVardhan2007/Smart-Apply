@@ -68,14 +68,6 @@ class EmailService:
             logger.error(f"Failed to send OTP email to {email}: {str(e)}")
             return False
 
-    async def send_reset_password_email(self, email: str, reset_link: str):
-        subject = "Smart Apply - Reset Your Password"
-        content = f"<h1>Reset Your Password</h1><p>Click <a href='{reset_link}'>here</a> to reset your password.</p>"
-        try:
-            return await self.send_email(email, subject, content)
-        except Exception:
-            return False
-
     async def send_welcome_email(self, email: str, full_name: Optional[str] = None):
         subject = "Welcome to Smart Apply! 🚀"
         html_content = get_welcome_email_html(full_name)

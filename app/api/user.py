@@ -13,6 +13,9 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 from bson.errors import InvalidId
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_access_token(token)
@@ -103,7 +106,7 @@ async def upload_resume(file: UploadFile = File(...), current_user: dict = Depen
     try:
         text_content = extract_text_from_pdf(file_content)
     except Exception as e:
-        print(f"Warning: Could not extract text from resume: {e}")
+        logger.warning(f"Could not extract text from resume: {e}")
 
     db = get_database()
     await db.users.update_one(

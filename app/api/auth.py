@@ -5,7 +5,7 @@ from app.core.security import get_password_hash, verify_password, create_access_
 from app.services.email import email_service
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
 
@@ -43,7 +43,7 @@ async def register(user_in: UserCreate):
         {
             "$set": {
                 "otp": hashed_otp, 
-                "expires_at": datetime.utcnow() + timedelta(minutes=10),
+                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10),
                 "attempts": 0
             }
         },
@@ -68,7 +68,7 @@ async def verify_otp(data: OTPVerify, background_tasks: BackgroundTasks):
     if not otp_record:
         raise HTTPException(status_code=400, detail="No OTP requested for this email")
     
-    if otp_record["expires_at"] < datetime.utcnow():
+    if otp_record["expires_at"] < datetime.now(timezone.utc):
         await db.otps.delete_one({"email": data.email})
         raise HTTPException(status_code=400, detail="OTP has expired")
 
@@ -136,7 +136,7 @@ async def forgot_password(request: ForgotPasswordRequest):
         {
             "$set": {
                 "otp": hashed_otp, 
-                "expires_at": datetime.utcnow() + timedelta(minutes=10),
+                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10),
                 "attempts": 0,
                 "purpose": "password_reset"
             }
@@ -158,7 +158,7 @@ async def reset_password(data: PasswordReset):
     if not otp_record:
         raise HTTPException(status_code=400, detail="No password reset requested for this email")
     
-    if otp_record["expires_at"] < datetime.utcnow():
+    if otp_record["expires_at"] < datetime.now(timezone.utc):
         await db.otps.delete_one({"email": data.email})
         raise HTTPException(status_code=400, detail="OTP has expired")
     
@@ -197,7 +197,7 @@ async def request_otp(email: str):
         {
             "$set": {
                 "otp": hashed_otp, 
-                "expires_at": datetime.utcnow() + timedelta(minutes=10),
+                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10),
                 "attempts": 0
             }
         },

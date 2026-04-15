@@ -1,7 +1,10 @@
 import os
 import json
+import logging
 from openai import AsyncOpenAI
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # List of API keys for rotation
 API_KEYS = [
@@ -61,7 +64,7 @@ async def parse_resume_with_ai(resume_text: str) -> dict:
             
         return json.loads(raw_content)
     except Exception as e:
-        print(f"AI Parsing Error: {e}")
+        logger.error(f"AI Parsing Error: {e}")
         return {
             "firstName": "", "lastName": "", "email": "", "phone": "",
             "location": "", "education": "", "experience": "", "skills": "",
