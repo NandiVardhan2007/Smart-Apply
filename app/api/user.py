@@ -101,10 +101,19 @@ async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
         del app["_id"]
         recent_apps.append(app)
 
+    # Get profile pic URL if exists
+    profile_pic_url = current_user.get("profile_pic_url")
+    if profile_pic_url:
+        key = storage_service.get_key_from_url(profile_pic_url)
+        presigned_pic_url = storage_service.generate_presigned_url(key)
+        if presigned_pic_url:
+            profile_pic_url = presigned_pic_url
+
     return {
         "user": {
             "full_name": current_user.get("full_name") or current_user.get("first_name", "User"),
-            "resume_url": current_user.get("resume_url")
+            "resume_url": current_user.get("resume_url"),
+            "profile_pic_url": profile_pic_url
         },
         "stats": {
             "total_applications": total_apps,

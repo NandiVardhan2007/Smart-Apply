@@ -1,6 +1,6 @@
 import os
 import json
-from openai import OpenAI
+from openai import AsyncOpenAI
 from app.core.config import settings
 
 # List of API keys for rotation
@@ -22,40 +22,31 @@ def get_next_client():
     key = API_KEYS[_key_index]
     _key_index = (_key_index + 1) % len(API_KEYS)
     
-    return OpenAI(
+    return AsyncOpenAI(
         base_url="https://integrate.api.nvidia.com/v1",
         api_key=key
     )
 
 async def parse_resume_with_ai(resume_text: str) -> dict:
-    """Uses NVIDIA NIM (Llama 3.1 Nemotron 70B) to extract structured data from resume text."""
+    """Uses NVIDIA NIM (Llama 3.1 8B) to extract structured data from resume text."""
+    # Truncate text to avoid huge context windows and speed up processing
+    resume_text = resume_text[:6000]
+    
     client = get_next_client()
     
-    system_prompt = """
-    You are an expert HR assistant. Your task is to extract profile information from a candidate's resume text.
-    Return ONLY a valid JSON object with the following fields:
-    {
-      "firstName": "string",
-      "lastName": "string",
-      "email": "string",
-      "phone": "string",
-      "location": "string",
-      "education": "Brief summary of education (e.g. Master's in CS, Stanford)",
-      "experience": "Brief summary of key work experience (e.g. 5+ years in Web Development)",
-      "skills": "Comma separated list of key skills"
-    }
-    If a field is not found, use an empty string. Do not include any other text in your response.
-    """
+    system_prompt = """Extract profile info from resume. Return ONLY JSON.
+    Fields: firstName, lastName, email, phone, location, education, experience, skills.
+    Use empty string if not found. No preamble."""
 
     try:
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model="meta/llama-3.1-8b-instruct",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Extract info from this resume:\n\n{resume_text}"}
+                {"role": "user", "content": f"Resume Text:\n{resume_text}"}
             ],
-            temperature=0.2,
-            max_tokens=1024
+            temperature=0.1,
+            max_tokens=600
         )
         
         raw_content = response.choices[0].message.content
