@@ -111,29 +111,65 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
                 {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
                 {"role": "user", "content": user_content}
             ],
-            temperature=0.3,
-            max_tokens=4096
+            temperature=0.1, # Lower temperature for better formatting
+            max_tokens=2048 # Sufficient for the structured response
         )
         
-        raw_content = response.choices[0].message.content
+        raw_content = response.choices[0].message.content.strip()
         
-        # Clean up markdown code blocks if present
+        # 1. Clean up markdown code blocks
         if "```json" in raw_content:
             raw_content = raw_content.split("```json")[1].split("```")[0].strip()
         elif "```" in raw_content:
             raw_content = raw_content.split("```")[1].split("```")[0].strip()
         
-        # Parse and validate the response
-        result = json.loads(raw_content)
+        # 2. Extract JSON part if there is preamble text
+        start_idx = raw_content.find('{')
+        end_idx = raw_content.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            raw_content = raw_content[start_idx:end_idx+1]
+        
+        # 3. Attempt robust parse
+        try:
+            result = json.loads(raw_content)
+        except json.JSONDecodeError:
+            # Try to repair truncated JSON
+            print("[ATS Analyzer] Attempting to repair malformed/truncated JSON...")
+            repaired_content = _repair_json(raw_content)
+            result = json.loads(repaired_content)
+            
         return _validate_and_normalize(result)
         
-    except json.JSONDecodeError as e:
-        print(f"[ATS Analyzer] JSON parse error: {e}")
-        print(f"[ATS Analyzer] Raw content: {raw_content[:500]}")
-        return _fallback_result("AI returned invalid JSON. Please try again.")
     except Exception as e:
-        print(f"[ATS Analyzer] Error: {e}")
-        return _fallback_result(str(e))
+        print(f"[ATS Analyzer] Final failure: {e}")
+        # Log the first 500 chars of raw_content if possible for debugging
+        try: print(f"[ATS Analyzer] Raw content was: {raw_content[:500]}...")
+        except: pass
+        return _fallback_result(f"Analysis error: {str(e)}")
+
+
+def _repair_json(content: str) -> str:
+    """Simple heuristic to close unclosed JSON structures."""
+    content = content.strip()
+    if not content.startswith('{'): return "{}"
+    
+    # Close open quotes
+    if content.count('"') % 2 != 0:
+        content += '"'
+        
+    stack = []
+    for char in content:
+        if char == '{': stack.append('}')
+        elif char == '[': stack.append(']')
+        elif char == '}' or char == ']':
+            if stack and stack[-1] == char:
+                stack.pop()
+    
+    # Add missing closers in reverse order
+    for closer in reversed(stack):
+        content += closer
+        
+    return content
 
 
 def _validate_and_normalize(result: dict) -> dict:

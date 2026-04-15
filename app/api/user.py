@@ -174,4 +174,11 @@ async def parse_resume(file: UploadFile = File(...), current_user: dict = Depend
     parsed_data = await parse_resume_with_ai(text)
     print(f"DEBUG: Parsed data from AI: {parsed_data}")
     
+    # 4. Check if it's actually a resume
+    if not parsed_data.get("isResume", True):
+        raise HTTPException(
+            status_code=400, 
+            detail="It is not the resume. Please upload the resume"
+        )
+    
     return parsed_data

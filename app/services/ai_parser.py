@@ -35,7 +35,10 @@ async def parse_resume_with_ai(resume_text: str) -> dict:
     client = get_next_client()
     
     system_prompt = """Extract profile info from resume. Return ONLY JSON.
-    Fields: firstName, lastName, email, phone, location, education, experience, skills, portfolioUrl, linkedinUrl, githubUrl.
+    First, determine if the input text is actually a resume/CV. 
+    Fields: 
+    isResume: boolean, 
+    firstName, lastName, email, phone, location, education, experience, skills, portfolioUrl, linkedinUrl, githubUrl.
     Use empty string if not found. No preamble."""
 
     try:
