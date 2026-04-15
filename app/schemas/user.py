@@ -25,6 +25,9 @@ class UserProfileUpdate(BaseModel):
     education: Optional[str] = None
     experience: Optional[str] = None
     skills: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
 
 class UserOut(UserBase):
     id: str
@@ -36,6 +39,9 @@ class UserOut(UserBase):
     is_profile_completed: bool = False
     profile_pic_url: Optional[str] = None
     resume_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
