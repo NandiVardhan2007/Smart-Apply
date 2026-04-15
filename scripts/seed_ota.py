@@ -23,7 +23,7 @@ def extract_and_seed():
         content = f.read()
 
     # Extract the JS portion
-    start_tag = "let BOT_RUNNING = true;"
+    start_tag = "(function() {"
     end_tag = "})();"
     
     start_idx = content.find(start_tag)
