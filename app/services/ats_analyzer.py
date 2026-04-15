@@ -7,6 +7,7 @@ Evaluates across 8 categories and returns structured improvement data.
 import json
 import logging
 from app.services.ai_parser import get_next_client
+from app.utils.json_repair import robust_json_loads
 
 logger = logging.getLogger(__name__)
 
@@ -162,36 +163,12 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         )
         
         raw_content = response.choices[0].message.content.strip()
+        result = robust_json_loads(raw_content)
+
+        if not result:
+            logger.error(f"[ATS Analyzer] Failed to parse AI response: {raw_content[:500]}")
+            return _fallback_result("Invalid AI response format")
         
-        # 1. Clean up markdown code blocks
-        if "```json" in raw_content:
-            raw_content = raw_content.split("```json")[1].split("```")[0].strip()
-        elif "```" in raw_content:
-            raw_content = raw_content.split("```")[1].split("```")[0].strip()
-        
-        # 2. Extract JSON part if there is preamble text
-        # If the content is truncated, rfind('}') might find the last COMPLETE object
-        # which isn't what we want if we're going to try to REPAIR the truncated rest.
-        start_idx = raw_content.find('{')
-        if start_idx != -1:
-            raw_content = raw_content[start_idx:]
-            # Only cut at the last } if we are sure it's the end of the root object
-            # and not a truncated middle parts
-            if raw_content.count('{') == raw_content.count('}') and raw_content.strip().endswith('}'):
-                pass # Already complete
-            elif raw_content.rfind('}') > raw_content.rfind('{') and not _is_likely_truncated(raw_content):
-                end_idx = raw_content.rfind('}')
-                raw_content = raw_content[:end_idx+1]
-        
-        # 3. Attempt robust parse
-        try:
-            result = json.loads(raw_content)
-        except json.JSONDecodeError:
-            # Try to repair truncated JSON
-            logger.warning("[ATS Analyzer] Attempting to repair malformed/truncated JSON...")
-            repaired_content = _repair_json(raw_content)
-            result = json.loads(repaired_content)
-            
         return _validate_and_normalize(result)
         
     except Exception as e:
@@ -200,74 +177,6 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         try: logger.error(f"[ATS Analyzer] Raw content was: {raw_content[:500]}...")
         except: pass
         return _fallback_result(f"Analysis error: {str(e)}")
-
-
-def _is_likely_truncated(content: str) -> bool:
-    """Heuristic to check if JSON content ended abruptly."""
-    content = content.strip()
-    return not (content.endswith('}') or content.endswith(']'))
-
-
-def _repair_json(content: str) -> str:
-    """Robust heuristic to close unclosed JSON structures and handle minor malformations."""
-    import re
-
-    content = content.strip()
-    if not content.startswith('{'):
-        start_idx = content.find('{')
-        if start_idx != -1:
-            content = content[start_idx:]
-        else:
-            return "{}"
-
-    # 1. Handle unescaped newlines in strings
-    # This is a common issue with LLMs returning long summaries
-    def fix_newlines(match):
-        return match.group(0).replace('\n', '\\n').replace('\r', '\\r')
-    
-    content = re.sub(r'":\s*"([^"]*)"', fix_newlines, content)
-
-    # 2. Fix missing commas between elements (heuristic)
-    # matches "string" { or "string" [ or } { or ] [ or "string" "string"
-    content = re.sub(r'\}\s*\{', '}, {', content)
-    content = re.sub(r'\]\s*\[', '], [', content)
-    content = re.sub(r'\"\s*\"', '", "', content)
-
-    # 3. Remove trailing unclosed key or partial property
-    # matches: ,"key": or "key": or , "key"
-    content = re.sub(r',?\s*\"[^\"]*\"\s*:\s*$', '', content)
-    content = re.sub(r',\s*$', '', content)
-
-    # 4. Close open quotes if odd number
-    if content.count('"') % 2 != 0:
-        content += '"'
-
-    # 5. Stack-based closer for brackets and braces
-    stack = []
-    in_string = False
-    escaped = False
-
-    for char in content:
-        if char == '"' and not escaped:
-            in_string = not in_string
-        elif not in_string:
-            if char == '{':
-                stack.append('}')
-            elif char == '[':
-                stack.append(']')
-            elif char == '}' or char == ']':
-                if stack and stack[-1] == char:
-                    stack.pop()
-
-        if char == '\\' and not escaped:
-            escaped = True
-        else:
-            escaped = False
-
-    for closer in reversed(stack):
-        content += closer
-
-    return content
 
 
 def _validate_and_normalize(result: dict) -> dict:

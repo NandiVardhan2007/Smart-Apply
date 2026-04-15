@@ -13,6 +13,7 @@ from bson import ObjectId
 from app.services.ai_parser import get_next_client
 from app.services.memory_service import memory_service
 from app.db.mongodb import get_database
+from app.utils.json_repair import robust_json_loads
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ No preamble or explanation, ONLY the JSON object."""
             )
 
             raw = response.choices[0].message.content
-            parsed = self._extract_json(raw)
+            parsed = robust_json_loads(raw)
 
             # Ensure all required fields exist with defaults
             result = {
@@ -192,7 +193,7 @@ Question: {question}{options_text}"""
             )
 
             raw = response.choices[0].message.content
-            parsed = self._extract_json(raw)
+            parsed = robust_json_loads(raw)
 
             answer = parsed.get("answer", "")
             confidence = float(parsed.get("confidence", 0.0))
@@ -517,26 +518,6 @@ Question: {question}{options_text}"""
             "filters": {},
             "linkedin_search_urls": urls,
         }
-
-    def _extract_json(self, raw: str) -> Dict[str, Any]:
-        """Extract JSON from AI response, handling markdown code blocks."""
-        try:
-            if "```json" in raw:
-                raw = raw.split("```json")[1].split("```")[0].strip()
-            elif "```" in raw:
-                raw = raw.split("```")[1].split("```")[0].strip()
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            # Try to find JSON object in the response
-            start = raw.find("{")
-            end = raw.rfind("}") + 1
-            if start != -1 and end > start:
-                try:
-                    return json.loads(raw[start:end])
-                except json.JSONDecodeError:
-                    pass
-            logger.warning(f"[LinkedIn Applier] Failed to parse AI response: {raw[:200]}")
-            return {}
 
 
 linkedin_applier_service = LinkedInApplierService()
