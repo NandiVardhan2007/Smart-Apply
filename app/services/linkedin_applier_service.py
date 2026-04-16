@@ -584,6 +584,12 @@ Question: {question}{options_text}"""
             parts.append(f"Phone: {user['phone']}")
         if (user.get("location")):
             parts.append(f"Location: {user['location']}")
+        if (user.get("current_city")):
+            parts.append(f"City: {user['current_city']}")
+        if (user.get("state")):
+            parts.append(f"State: {user['state']}")
+        if (user.get("country")):
+            parts.append(f"Country: {user['country']}")
         if (user.get("education")):
             parts.append(f"Education: {user['education']}")
         if (user.get("experience")):
