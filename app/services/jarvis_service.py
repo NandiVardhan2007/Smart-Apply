@@ -206,7 +206,11 @@ If the user wants a resume, follow this protocol:
             if any(word in query_and_reply for word in trigger_words):
                 if "GENERATE_RESUME" not in raw:
                     logger.info(f"[JARVIS] Attaching 5 template previews for user {user_id}")
-                    r2_base = f"{settings.R2_ENDPOINT_URL}/{settings.R2_BUCKET_NAME}"
+                    # Fallback to hardcoded values if settings are missing on Render
+                    r2_endpoint = getattr(settings, "R2_ENDPOINT_URL", "https://cd4169bab555620c3c81b0b380e7328c.r2.cloudflarestorage.com")
+                    r2_bucket = getattr(settings, "R2_BUCKET_NAME", "smartapply")
+                    r2_base = f"{r2_endpoint}/{r2_bucket}"
+                    
                     template_previews = [
                         {"style": "executive_gold", "name": "Executive Gold", "image": f"{r2_base}/previews/resumes/executive_gold.jpg"},
                         {"style": "modern_premium", "name": "Modern Premium", "image": f"{r2_base}/previews/resumes/modern_premium.jpg"},
