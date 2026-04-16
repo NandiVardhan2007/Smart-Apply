@@ -28,6 +28,9 @@ class UserProfileUpdate(BaseModel):
     portfolio_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
+    current_city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
 
 class UserOut(UserBase):
     id: str
@@ -42,6 +45,9 @@ class UserOut(UserBase):
     portfolio_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
+    current_city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

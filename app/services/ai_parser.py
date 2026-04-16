@@ -41,7 +41,7 @@ async def parse_resume_with_ai(resume_text: str) -> dict:
     First, determine if the input text is actually a resume/CV. 
     Fields: 
     isResume: boolean, 
-    firstName, lastName, email, phone, location, education, experience, skills, portfolioUrl, linkedinUrl, githubUrl.
+    firstName, lastName, email, phone, current_city, state, country, education, experience, skills, portfolioUrl, linkedinUrl, githubUrl.
     Use empty string if not found. No preamble."""
 
     try:
