@@ -162,15 +162,17 @@ Rules:
 - For checkbox questions, select ALL relevant options.
 - For text questions, keep answers to 1-3 sentences unless the question asks for detail.
 - For number questions, return only a number.
-- If you genuinely cannot determine the answer from the profile data, return EXACTLY: "NEEDS_USER_INPUT"
-- Do NOT fabricate information. If unsure, say "NEEDS_USER_INPUT".
+- For "years of experience" questions: Calculate based on the resume dates. If not found, return 0 or NEEDS_USER_INPUT. Do NOT guess.
+- STRICT GROUNDING: Answer ONLY based on the provided Applicant Profile and Resume.
+- If you genuinely cannot determine the answer from the data, return EXACTLY: "NEEDS_USER_INPUT"
+- Do NOT fabricate or hallucinate information.
 
 Return ONLY valid JSON:
-{{
+{
   "answer": "your answer here or NEEDS_USER_INPUT",
   "confidence": 0.0-1.0,
   "explanation": "brief reasoning"
-}}"""
+}"""
 
         user_message = f"""Applicant Profile:
 {user_context}
@@ -461,27 +463,25 @@ Question: {question}{options_text}"""
             return "No profile data available."
 
         parts = []
-        if user.get("full_name"):
+        if (user.get("full_name")):
             parts.append(f"Name: {user['full_name']}")
-        if user.get("email"):
+        if (user.get("email")):
             parts.append(f"Email: {user['email']}")
-        if user.get("phone"):
+        if (user.get("phone")):
             parts.append(f"Phone: {user['phone']}")
-        if user.get("location"):
+        if (user.get("location")):
             parts.append(f"Location: {user['location']}")
-        if user.get("education"):
+        if (user.get("education")):
             parts.append(f"Education: {user['education']}")
-        if user.get("experience"):
+        if (user.get("experience")):
             parts.append(f"Experience: {user['experience']}")
-        if user.get("skills"):
+        if (user.get("skills")):
             parts.append(f"Skills: {user['skills']}")
-        if user.get("linkedin_url"):
-            parts.append(f"LinkedIn: {user['linkedin_url']}")
-        if user.get("github_url"):
-            parts.append(f"GitHub: {user['github_url']}")
-        if user.get("portfolio_url"):
-            parts.append(f"Portfolio: {user['portfolio_url']}")
-
+        
+        # NEW: Include full resume content for data-rich answering
+        if (user.get("resume_content")):
+            parts.append(f"FULL RESUME TEXT:\n{user['resume_content'][:8000]}")
+            
         return "\n".join(parts) if parts else "Minimal profile data available."
 
     def _fallback_search_terms(
