@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     R2_BUCKET_NAME: str
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
     BREVO_API_KEY: str
     BREVO_FROM: str
     NVIDIA_NIM_KEY_1: Optional[str] = None
