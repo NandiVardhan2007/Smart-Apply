@@ -1,14 +1,181 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/admin/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>admin_ui</title>
-    <script type="module" crossorigin src="/admin/assets/index-B2OeqCqY.js"></script>
-    <link rel="stylesheet" crossorigin href="/admin/assets/index-CDHPbW-v.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | Smart Apply</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Login View (Default if no token) -->
+        <div id="login-view" class="view hidden">
+            <div class="login-container">
+                <div class="login-card glass">
+                    <div class="header-icon">
+                        <i data-lucide="shield" class="icon-lg"></i>
+                    </div>
+                    <h1>Admin Portal</h1>
+                    <p class="subtitle">Secure access for Smart Apply platform</p>
+                    
+                    <form id="login-form">
+                        <div class="input-group">
+                            <label>Email Address</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="mail"></i>
+                                <input type="email" id="login-email" required placeholder="admin@smartapply.com">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Password</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="lock"></i>
+                                <input type="password" id="login-password" required placeholder="••••••••">
+                            </div>
+                        </div>
+                        <div id="login-error" class="error-msg hidden"></div>
+                        <button type="submit" class="btn-primary">
+                            Enter Dashboard <i data-lucide="arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Portal View -->
+        <div id="portal-view" class="view hidden">
+            <div class="layout">
+                <!-- Sidebar -->
+                <aside class="sidebar glass">
+                    <div class="brand">
+                        <div class="brand-icon">
+                            <i data-lucide="shield"></i>
+                        </div>
+                        <div>
+                            <h2>Admin</h2>
+                            <p>Smart Apply</p>
+                        </div>
+                    </div>
+                    
+                    <nav>
+                        <ul class="menu">
+                            <li>
+                                <a href="#dashboard" class="menu-item active" data-view="dashboard">
+                                    <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#users" class="menu-item" data-view="users">
+                                    <i data-lucide="users"></i> <span>Users</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#logs" class="menu-item" data-view="logs">
+                                    <i data-lucide="clipboard-list"></i> <span>Audit Logs</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    
+                    <div class="sidebar-footer">
+                        <button id="logout-btn" class="logout-link">
+                            <i data-lucide="log-out"></i> <span>Sign Out</span>
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Page Content -->
+                <main class="content">
+                    <header class="page-header">
+                        <h2 id="page-title">Overview</h2>
+                        <div class="user-profile">
+                            <div class="profile-info">
+                                <p class="name">Administrator</p>
+                                <p class="role">Admin Portal Access</p>
+                            </div>
+                            <div class="avatar"></div>
+                        </div>
+                    </header>
+
+                    <!-- Dynamic Content Sections -->
+                    <div id="dashboard-content" class="content-section">
+                        <div class="metrics-grid" id="metrics-grid">
+                            <!-- Metrics will be loaded here -->
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                        </div>
+                        
+                        <div class="dashboard-grid">
+                            <div class="card glass span-2 chart-card">
+                                <h3>Platform Activity</h3>
+                                <div class="chart-container" id="traffic-bars">
+                                    <!-- Bar chart here -->
+                                </div>
+                            </div>
+                            <div class="card glass session-card">
+                                <h3>Active Sessions</h3>
+                                <div class="session-list" id="report-list">
+                                    <!-- reports here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="users-content" class="content-section hidden">
+                        <div class="search-bar">
+                            <div class="input-wrapper">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="user-search" placeholder="Search by name or email...">
+                            </div>
+                        </div>
+                        <div class="table-container glass">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <!-- Users here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="logs-content" class="content-section hidden">
+                        <div class="card glass">
+                            <div class="log-stream" id="logs-stream">
+                                <!-- Logs here -->
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Components: Modals, Notifications -->
+    <div id="modal-container" class="modal-overlay hidden">
+        <div class="modal glass">
+            <h3 id="modal-title">Action Title</h3>
+            <div id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="modal-cancel">Cancel</button>
+                <button class="btn-primary" id="modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin/admin.js"></script>
+</body>
 </html>

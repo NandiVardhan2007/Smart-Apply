@@ -103,7 +103,7 @@ async def admin_spa_fallback(path_name: str):
     index_file = os.path.join(admin_static_path, "index.html")
     if os.path.isfile(index_file):
         return FileResponse(index_file)
-    return {"error": "Admin portal build not found. Run npm run build in admin_ui."}
+    return {"error": "Admin portal files not found in app/static/admin."}
 
 @app.get("/")
 async def root():
