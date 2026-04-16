@@ -203,9 +203,10 @@ If the user wants a resume, follow this protocol:
             trigger_words = ["template", "style", "pick", "choose", "resume", "layout", "design", "cv", "gallery"]
             query_and_reply = (message + " " + reply).lower()
             
-            if any(word in query_and_reply for word in trigger_words) and "ACTION" not in raw:
-                logger.info(f"[JARVIS] Attaching 5 template previews for user {user_id}")
-                template_previews = [
+            if any(word in query_and_reply for word in trigger_words):
+                if "GENERATE_RESUME" not in raw:
+                    logger.info(f"[JARVIS] Attaching 5 template previews for user {user_id}")
+                    template_previews = [
                     {"style": "executive_gold", "name": "Executive Gold", "image": "/static/previews/resumes/executive_gold.jpg"},
                     {"style": "modern_premium", "name": "Modern Premium", "image": "/static/previews/resumes/modern_premium.jpg"},
                     {"style": "creative_premium", "name": "Creative Premium", "image": "/static/previews/resumes/creative_premium.jpg"},
