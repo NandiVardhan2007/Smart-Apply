@@ -1,7 +1,9 @@
 import io
 import logging
+import os
 from fpdf import FPDF
 from typing import Dict, List, Any, Optional
+from docxtpl import DocxTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +13,7 @@ class ResumeGenerator:
     def __init__(self):
         # Using standard fonts which are best for ATS (helvetica)
         self.font_main = "helvetica"
+        self.template_dir = os.path.join(os.path.dirname(__file__), "..", "static", "templates", "resumes")
 
     def _sanitize_text(self, text: Any) -> str:
         """
@@ -44,8 +47,22 @@ class ResumeGenerator:
 
     def generate_pdf(self, data: Dict[str, Any], style: str = "standard") -> bytes:
         """
-        Generates a professional PDF. Supports 'standard' (ATS-focused) and 'premium' (Visual-focused).
+        Generates a professional resume. 
+        Supports FPDF styles (standard, premium, creative, minimalist, startup, academic)
+        and new DOCX template styles (executive_gold, modern_premium, etc.)
         """
+        # Map of DOCX templates
+        docx_templates = {
+            "executive_gold": "executive_gold.docx",
+            "modern_premium": "modern_premium.docx",
+            "creative_premium": "creative_premium.docx",
+            "structured_standard": "structured_standard.docx",
+            "minimalist_sleek": "minimalist_sleek.docx"
+        }
+
+        if style in docx_templates:
+            return self.generate_docx(data, docx_templates[style])
+
         if style == "premium":
             return self.generate_premium_pdf(data)
         if style == "creative":
@@ -634,6 +651,36 @@ class ResumeGenerator:
             pdf.multi_cell(0, 5, self._sanitize_text(", ".join(data["skills"])))
             
         return pdf.output()
+
+    def generate_docx(self, data: Dict[str, Any], template_filename: str) -> bytes:
+        """Generates a resume using a DOCX template."""
+        template_path = os.path.join(self.template_dir, template_filename)
+        if not os.path.exists(template_path):
+            logger.error(f"Template not found: {template_path}")
+            # Fallback to standard PDF if template is missing
+            return self.generate_pdf(data, style="standard")
+
+        try:
+            doc = DocxTemplate(template_path)
+            # Prepare context
+            # We ensure structure matches what the template expects
+            context = {
+                'name': data.get('name', 'RESUME'),
+                'contact': data.get('contact', {}),
+                'summary': data.get('summary', ''),
+                'skills': data.get('skills', []),
+                'experience': data.get('experience', []),
+                'education': data.get('education', [])
+            }
+            
+            doc.render(context)
+            
+            output = io.BytesIO()
+            doc.save(output)
+            return output.getvalue()
+        except Exception as e:
+            logger.error(f"Error generating DOCX resume: {e}")
+            return self.generate_pdf(data, style="standard")
 
 
 resume_generator = ResumeGenerator()

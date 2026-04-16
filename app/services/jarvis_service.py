@@ -94,8 +94,13 @@ If the user wants a resume, follow this protocol:
    - **Minimalist**: Sleek, high-whitespace, sophisticated.
    - **Startup**: Tech-focused, high contrast dark theme, courier elements.
    - **Academic**: Highly formal, dense Times font, suitable for research/CVs.
+   - **Executive Gold**: (NEW) High-end premium template.
+   - **Modern Premium**: (NEW) Sophisticated layout.
+   - **Creative Premium**: (NEW) Graphic resume.
+   - **Structured Standard**: (NEW) Traditional layout.
+   - **Minimalist Sleek**: (NEW) Modern look.
 3. Once they pick a style (or say "you choose"), output the command line: [ACTION: GENERATE_RESUME|style]
-   (e.g., [ACTION: GENERATE_RESUME|startup] or [ACTION: GENERATE_RESUME|academic]).
+   (e.g., [ACTION: GENERATE_RESUME|executive_gold] or [ACTION: GENERATE_RESUME|minimalist_sleek]).
 4. Use a British, polite tone.
 """
 
@@ -193,11 +198,24 @@ If the user wants a resume, follow this protocol:
                 except Exception as e:
                     logger.error(f"[JARVIS] Model switch failed: {e}")
 
+            # E. Attach Template Previews if relevant
+            template_previews = []
+            trigger_words = ["template", "style", "pick", "choose", "resume"]
+            if any(word in reply.lower() for word in trigger_words) and "ACTION" not in raw:
+                template_previews = [
+                    {"style": "executive_gold", "name": "Executive Gold", "image": "/static/previews/resumes/executive_gold.jpg"},
+                    {"style": "modern_premium", "name": "Modern Premium", "image": "/static/previews/resumes/modern_premium.jpg"},
+                    {"style": "creative_premium", "name": "Creative Premium", "image": "/static/previews/resumes/creative_premium.jpg"},
+                    {"style": "structured_standard", "name": "Structured Standard", "image": "/static/previews/resumes/structured_standard.jpg"},
+                    {"style": "minimalist_sleek", "name": "Minimalist Sleek", "image": "/static/previews/resumes/minimalist_sleek.jpg"},
+                ]
+
             return {
                 "message": reply,
                 "suggestions": suggestions,
                 "memory_updated": memory_updated,
-                "action_taken": action_taken
+                "action_taken": action_taken,
+                "template_previews": template_previews
             }
 
         except Exception as e:
@@ -333,32 +351,36 @@ If the user wants a resume, follow this protocol:
             if not resume_data:
                 raise Exception("AI failed to structure the resume data (None returned).")
 
-            # 2. Generate PDF bytes with selected style
-            logger.info(f"Starting PDF generation for user {user_id} with style: {style}...")
-            pdf_bytes = resume_generator.generate_pdf(resume_data, style=style)
+            # 2. Generate resume bytes with selected style
+            is_docx = style.lower() in ["executive_gold", "modern_premium", "creative_premium", "structured_standard", "minimalist_sleek"]
+            ext = "docx" if is_docx else "pdf"
+            format_name = "Word Document" if is_docx else "PDF"
+
+            logger.info(f"Starting {format_name} generation for user {user_id} with style: {style}...")
+            resume_bytes = resume_generator.generate_pdf(resume_data, style=style)
             
-            if not pdf_bytes:
-                raise Exception("PDF generation engine returned empty bytes.")
+            if not resume_bytes:
+                raise Exception(f"{format_name} generation engine returned empty bytes.")
 
             if not user_email:
-                logger.error(f"No email found for user {user_id}. Cannnot dispatch successful PDF.")
+                logger.error(f"No email found for user {user_id}. Cannnot dispatch successful {format_name}.")
                 return
 
-            # 3. Prepare attachment for Brevo
-            attachment_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
+            # 3. Prepare attachment
+            attachment_b64 = base64.b64encode(resume_bytes).decode('utf-8')
             attachments = [
                 {
                     "content": attachment_b64,
-                    "name": f"Resume_{user_name.replace(' ', '_')}_{style.capitalize()}.pdf"
+                    "name": f"Resume_{user_name.replace(' ', '_')}_{style.capitalize()}.{ext}"
                 }
             ]
 
             # 4. Send Success Email
-            subject = "Your Resume is Ready! 📄"
+            subject = f"Your {style.capitalize()} Resume is Ready! 📄"
             body = f"""
             <h3>Hello {user_name},</h3>
-            <p>JARVIS has finished crafting your new resume in the <b>{style.capitalize()}</b> style.</p>
-            <p>You'll find the PDF attached to this email.</p>
+            <p>JARVIS has finished crafting your new resume in the <b>{style.replace('_', ' ').capitalize()}</b> style.</p>
+            <p>You'll find the {format_name} attached to this email.</p>
             <br>
             <p>Best of luck with your applications!</p>
             <p><b>Team SmartApply & JARVIS</b></p>
