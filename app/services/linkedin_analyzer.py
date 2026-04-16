@@ -82,16 +82,12 @@ Your task is to perform a DEEP, comprehensive analysis of the provided LinkedIn 
 }
 
 **RULES:**
-- Be specific and actionable — generic advice like "improve your profile" is not helpful
-- Provide at least 2 findings and 2 suggestions per category
-- Provide at least 3 strengths and 3 weaknesses
-- Provide at least 5 improvement items (mix of HIGH/MEDIUM/LOW priority)
-- Include CONCRETE examples and templates in suggestions (e.g., "Change your headline to: 'Senior Flutter Developer | Building AI-Powered Mobile Apps | Ex-Google'")
-- Scores should be realistic — most profiles score 40-75
-- The overall_score should be a weighted average reflecting all categories
-- Ensure all strings are properly escaped (especially quotes inside summaries).
-- Ensure all items in arrays and objects are separated by commas.
-- Return ONLY the valid JSON object, no other text, no markdown code blocks.
+- **Student/Entry Mode**: If the profile indicates the user is a student (e.g. headline says 'Student at' or experience is empty but education is present), pivot advice to focus on: Projects, Skills, Societies, Internships, and Academic Achievements. Do NOT grill students for missing "work progression narratives".
+- **No Hallucinations/Generic Strengths**: Never list "Potential to improve" or "Opportunity to start from scratch" as a strength. Strengths must be things that ARE ALREADY GOOD in the current profile data (e.g. "Professional photo detected", "High connection count", "Strong set of 40+ skills"). If no strengths exist, be honest.
+- **Strict Evidence-Based Improvements**: If the technical data shows `has_profile_photo: true`, DO NOT suggest "Add a photo". Instead, if the score is low, suggest "Updating to a high-resolution, business-oriented headshot".
+- **Be Actionable**: Provide specific and actionable suggestions — generic advice like "improve your profile" is forbidden. Include CONCRETE examples and templates (e.g., "Change your headline to: 'Software Engineering Student | Future-Focused Developer | Active in Coding Society'").
+- **Weighted Scoring**: The overall_score should realistically reflect the content. A profile with only Education and Skills should score between 30-50, not 0 nor 80.
+- **Valid JSON**: Ensure all strings are properly escaped and all items in arrays/objects are separated by commas. Return ONLY the valid JSON object.
 """
 
 
