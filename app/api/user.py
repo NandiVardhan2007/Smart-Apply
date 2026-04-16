@@ -3,6 +3,7 @@ from typing import List, Optional
 from app.schemas.user import UserOut, UserProfileUpdate
 from app.db.mongodb import get_database
 from app.core.security import decode_access_token
+from app.core.config import settings
 from app.services.storage import storage_service
 from app.services.pdf_handler import extract_text_from_pdf
 from app.services.ai_parser import parse_resume_with_ai
@@ -80,6 +81,8 @@ async def update_profile(profile_update: UserProfileUpdate, current_user: dict =
 @router.post("/upload-avatar", status_code=status.HTTP_201_CREATED)
 async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     file_content = await file.read()
+    if len(file_content) > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"File too large. Max size is {settings.MAX_UPLOAD_BYTES // (1024*1024)}MB.")
     file_name = f"avatars/{current_user['id']}_{file.filename}"
     url = await storage_service.upload_file(file_content, file_name, file.content_type)
     
@@ -96,6 +99,8 @@ async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depen
 @router.post("/upload-resume", status_code=status.HTTP_201_CREATED)
 async def upload_resume(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     file_content = await file.read()
+    if len(file_content) > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"File too large. Max size is {settings.MAX_UPLOAD_BYTES // (1024*1024)}MB.")
     file_name = f"resumes/{current_user['id']}_{file.filename}"
     url = await storage_service.upload_file(file_content, file_name, file.content_type)
     
@@ -198,10 +203,10 @@ async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
             "recent_applications": recent_apps
         }
     except Exception as e:
-        logger.error(f"Error fetching dashboard data for user {current_user.get('id')}: {e}")
+        logger.error(f"Error fetching dashboard data for user {current_user.get('id')}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, 
-            detail=f"Dashboard Sync Error: {str(e)}"
+            detail="Dashboard sync error. Please try again later."
         )
 
 

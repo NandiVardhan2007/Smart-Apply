@@ -15,20 +15,22 @@ API_KEYS = [
 # Filter out None values
 API_KEYS = [k for k in API_KEYS if k]
 
+# Pre-create client pool for reuse (avoid creating new HTTP client per call)
+_clients = [
+    AsyncOpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=k)
+    for k in API_KEYS
+] if API_KEYS else []
+
 _key_index = 0
 
 def get_next_client():
     global _key_index
-    if not API_KEYS:
+    if not _clients:
         raise Exception("No NVIDIA NIM API keys provided in .env")
     
-    key = API_KEYS[_key_index]
-    _key_index = (_key_index + 1) % len(API_KEYS)
-    
-    return AsyncOpenAI(
-        base_url="https://integrate.api.nvidia.com/v1",
-        api_key=key
-    )
+    client = _clients[_key_index]
+    _key_index = (_key_index + 1) % len(_clients)
+    return client
 
 async def parse_resume_with_ai(resume_text: str) -> dict:
     """Uses NVIDIA NIM (Llama 3.1 8B) to extract structured data from resume text."""

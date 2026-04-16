@@ -1,7 +1,7 @@
 import logging
 import uuid
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.mongodb import get_database
 from app.schemas.memory import MemoryCreate, MemoryUpdate
 
@@ -13,7 +13,7 @@ class MemoryService:
 
     async def create_memory(self, user_id: str, memory_in: MemoryCreate) -> Dict[str, Any]:
         db = get_database()
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
         
         # New memory item structure (without user_id, which is top-level)
         memory_item = memory_in.dict()
@@ -81,7 +81,7 @@ class MemoryService:
 
     async def update_memory(self, user_id: str, memory_id: str, memory_update: MemoryUpdate) -> Optional[Dict[str, Any]]:
         db = get_database()
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
         
         # Build update object for the array element
         update_fields = {}
@@ -118,7 +118,7 @@ class MemoryService:
             return []
         
         import re
-        pattern = re.compile(query_str, re.IGNORECASE)
+        pattern = re.compile(re.escape(query_str), re.IGNORECASE)
         
         results = []
         for m in doc["memories"]:

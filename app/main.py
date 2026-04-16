@@ -13,19 +13,6 @@ from app.db.mongodb import connect_to_mongo, close_mongo_connection
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Smart Apply API", version="1.0.0")
-
-# CORS Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-SELF_URL = "https://smart-apply-tn6h.onrender.com/health"
-PING_INTERVAL_SECONDS = 10 * 60  # 10 minutes
 
 async def self_ping():
     """Pings the health endpoint at intervals to prevent Render free tier spin-down."""
@@ -75,7 +62,16 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
     logger.info("👋 Application shutdown complete.")
 
-app.router.lifespan_context = lifespan
+app = FastAPI(title="Smart Apply API", version="1.0.0", lifespan=lifespan)
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Routes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

@@ -8,12 +8,12 @@ from app.services.ai_parser import get_next_client
 from app.services.memory_service import memory_service
 from app.services.email import email_service
 from app.db.mongodb import get_database
+from app.core.config import settings
 from app.schemas.memory import MemoryCreate
 
 logger = logging.getLogger(__name__)
 
 JARVIS_MEMORY_CATEGORY = "jarvis_context"
-ADMIN_EMAIL = "kovvurinandivardhanreddy2007@gmail.com"
 
 class JarvisService:
     # Keywords that hint the user is reporting a bug or giving feedback
@@ -217,7 +217,7 @@ Instructions:
         
         try:
             await email_service.send_email(
-                recipient_email=ADMIN_EMAIL,
+                recipient_email=settings.ADMIN_EMAIL,
                 subject=subject,
                 html_content=body
             )

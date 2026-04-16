@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 
 class UserBase(BaseModel):
@@ -9,7 +9,7 @@ class UserBase(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
     full_name: Optional[str] = None
 
 class UserLogin(BaseModel):
@@ -64,4 +64,4 @@ class ForgotPasswordRequest(BaseModel):
 class PasswordReset(BaseModel):
     email: EmailStr
     otp: str
-    new_password: str
+    new_password: str = Field(..., min_length=8, description="Password must be at least 8 characters")

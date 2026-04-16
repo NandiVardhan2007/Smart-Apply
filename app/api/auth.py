@@ -109,6 +109,9 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    if not user.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Email not verified. Please verify your email first.")
+    
     # Generate token
     access_token = create_access_token(data={"sub": str(user["_id"])})
     return {
@@ -184,10 +187,10 @@ async def reset_password(data: PasswordReset):
 @router.post("/request-otp")
 async def request_otp(email: str):
     db = get_database()
-    # Check if user exists
+    # Check if user exists — don't reveal whether user exists
     user = await db.users.find_one({"email": email})
     if not user:
-         raise HTTPException(status_code=404, detail="User not found")
+         return {"message": "If an account with this email exists, an OTP has been sent."}
          
     otp = ''.join(random.choices(string.digits, k=6))
     hashed_otp = get_password_hash(otp)

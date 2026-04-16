@@ -5,6 +5,7 @@ Handles AI-powered job search, application Q&A, and tracking.
 
 import logging
 from datetime import datetime
+from app.core.config import settings
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from fastapi.responses import PlainTextResponse
 from typing import Optional, Dict, Any, List
@@ -229,10 +230,9 @@ async def report_automation_error(
 
         # Send email to admin
         await email_service.send_email(
-            to_email="kovvurinandivardhanreddy2007@gmail.com",
+            recipient_email=settings.ADMIN_EMAIL,
             subject=subject,
-            body=body,
-            is_html=True,
+            html_content=body,
             attachments=attachments
         )
 

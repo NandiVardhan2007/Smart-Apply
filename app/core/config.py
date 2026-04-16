@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     
     RENDER_EXTERNAL_URL: str = "https://smart-apply-tn6h.onrender.com"
     PING_INTERVAL: int = 180 # 3 minutes
+    ADMIN_EMAIL: str = "kovvurinandivardhanreddy2007@gmail.com"
+    MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024  # 10MB
 
     class Config:
         env_file = ".env"

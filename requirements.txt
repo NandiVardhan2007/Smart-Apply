@@ -4,6 +4,7 @@ motor
 pydantic
 pydantic-settings
 passlib[bcrypt]
+bcrypt
 python-jose[cryptography]
 boto3
 python-multipart

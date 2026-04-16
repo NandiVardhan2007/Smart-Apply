@@ -6,6 +6,7 @@ Handles resume scanning, history retrieval, and scan detail lookups.
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, status
 from typing import Optional
 from app.api.user import get_current_user
+from app.core.config import settings
 from app.db.mongodb import get_database
 from app.services.pdf_handler import extract_text_from_pdf
 from app.services.ats_analyzer import analyze_resume_ats, is_resume
@@ -35,6 +36,11 @@ async def scan_resume(
     
     # 2. Extract text from PDF
     file_content = await file.read()
+    if len(file_content) > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Max size is {settings.MAX_UPLOAD_BYTES // (1024*1024)}MB."
+        )
     resume_text = extract_text_from_pdf(file_content)
     
     # 3. Strict Resume Content Validation
