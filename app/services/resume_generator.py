@@ -52,6 +52,10 @@ class ResumeGenerator:
             return self.generate_creative_pdf(data)
         if style == "minimalist":
             return self.generate_minimalist_pdf(data)
+        if style == "startup":
+            return self.generate_startup_pdf(data)
+        if style == "academic":
+            return self.generate_academic_pdf(data)
             
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
@@ -451,6 +455,184 @@ class ResumeGenerator:
                 pdf.multi_cell(170, 6, self._sanitize_text(content), align='C')
                 pdf.ln(8)
 
+        return pdf.output()
+
+    def generate_startup_pdf(self, data: Dict[str, Any]) -> bytes:
+        """
+        Generates a tech-focused, high contrast 'Startup' resume.
+        Features dark headers and Courier font elements.
+        """
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        
+        # Colors
+        header_bg = (18, 18, 18)
+        accent_color = (0, 212, 255) # Cyber Cyan
+        text_color = (40, 40, 40)
+        
+        # 1. Tech Header
+        pdf.set_fill_color(*header_bg)
+        pdf.rect(0, 0, 210, 45, 'F')
+        
+        pdf.set_text_color(*accent_color)
+        pdf.set_y(12)
+        pdf.set_font("courier", style="B", size=24)
+        name = self._sanitize_text(data.get("name", "RESUME"))
+        pdf.cell(0, 10, f"> {name.upper()}_", ln=True)
+        
+        pdf.set_font(self.font_main, size=10)
+        pdf.set_text_color(200, 200, 200)
+        
+        contact = data.get("contact", {})
+        contact_items = [v for v in contact.values() if v]
+        pdf.cell(0, 6, self._sanitize_text(" // ".join(contact_items)), ln=True)
+        pdf.ln(15)
+        
+        pdf.set_text_color(*text_color)
+        
+        # 2. Tech Skills (Prominent in Startup CVs)
+        if data.get("skills"):
+            pdf.set_font("courier", style="B", size=12)
+            pdf.set_text_color(*accent_color)
+            pdf.cell(0, 8, "/* TECH_STACK */", ln=True)
+            
+            pdf.set_font(self.font_main, size=10)
+            pdf.set_text_color(*text_color)
+            pdf.multi_cell(0, 5, self._sanitize_text(" | ".join(data["skills"])))
+            pdf.ln(4)
+            
+        # 3. Summary
+        if data.get("summary"):
+            pdf.set_font("courier", style="B", size=12)
+            pdf.set_text_color(*accent_color)
+            pdf.cell(0, 8, "/* EXEC_SUMMARY */", ln=True)
+            
+            pdf.set_font(self.font_main, size=10)
+            pdf.set_text_color(*text_color)
+            pdf.multi_cell(0, 5, self._sanitize_text(data["summary"]))
+            pdf.ln(4)
+            
+        # 4. Experience
+        if data.get("experience"):
+            pdf.set_font("courier", style="B", size=12)
+            pdf.set_text_color(*accent_color)
+            pdf.cell(0, 8, "/* EXPERIENCE_LOG */", ln=True)
+            
+            pdf.set_text_color(*text_color)
+            for exp in data["experience"]:
+                pdf.set_font(self.font_main, style="B", size=11)
+                pdf.cell(140, 6, self._sanitize_text(exp.get("title", "")), ln=False)
+                pdf.set_font("courier", size=9)
+                pdf.cell(0, 6, self._sanitize_text(exp.get("period", "")), ln=True, align='R')
+                
+                pdf.set_font(self.font_main, style="B", size=10)
+                pdf.set_text_color(100, 100, 100)
+                pdf.cell(140, 5, self._sanitize_text(exp.get("company", "")), ln=False)
+                pdf.cell(0, 5, self._sanitize_text(exp.get("location", "")), ln=True, align='R')
+                
+                pdf.ln(2)
+                pdf.set_font(self.font_main, size=10)
+                pdf.set_text_color(*text_color)
+                for bullet in exp.get("bullets", []):
+                    pdf.set_x(15)
+                    pdf.cell(4, 5, ">", ln=False)
+                    pdf.multi_cell(0, 5, self._sanitize_text(bullet))
+                pdf.ln(3)
+
+        # 5. Education
+        if data.get("education"):
+            pdf.set_font("courier", style="B", size=12)
+            pdf.set_text_color(*accent_color)
+            pdf.cell(0, 8, "/* EDUCATION */", ln=True)
+            
+            pdf.set_text_color(*text_color)
+            for edu in data["education"]:
+                pdf.set_font(self.font_main, style="B", size=10)
+                pdf.cell(140, 5, self._sanitize_text(edu.get("degree", "")), ln=False)
+                pdf.set_font("courier", size=9)
+                pdf.cell(0, 5, self._sanitize_text(edu.get("period", "")), ln=True, align='R')
+                
+                pdf.set_font(self.font_main, size=10)
+                pdf.cell(0, 5, self._sanitize_text(edu.get("school", "")), ln=True)
+                pdf.ln(2)
+                
+        return pdf.output()
+
+    def generate_academic_pdf(self, data: Dict[str, Any]) -> bytes:
+        """
+        Generates a highly formal, academic CV format using Times font.
+        Focuses on density and traditional structure.
+        """
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        
+        font_acad = "times"
+        
+        # 1. Centered Header
+        pdf.set_font(font_acad, style="B", size=18)
+        name = self._sanitize_text(data.get("name", "Curriculum Vitae"))
+        pdf.cell(0, 8, name.upper(), ln=True, align='C')
+        
+        pdf.set_font(font_acad, size=11)
+        contact = data.get("contact", {})
+        contact_arr = [v for v in contact.values() if v]
+        pdf.cell(0, 6, self._sanitize_text(" | ".join(contact_arr)), ln=True, align='C')
+        
+        pdf.set_line_width(0.3)
+        pdf.line(15, pdf.get_y()+2, 195, pdf.get_y()+2)
+        pdf.ln(6)
+        
+        # 2. Summary
+        if data.get("summary"):
+            pdf.set_font(font_acad, style="B", size=12)
+            pdf.cell(0, 6, "PROFILE", ln=True)
+            pdf.set_font(font_acad, size=11)
+            pdf.multi_cell(0, 5, self._sanitize_text(data["summary"]))
+            pdf.ln(4)
+            
+        # 3. Education (Usually first in Academic CVs)
+        if data.get("education"):
+            pdf.set_font(font_acad, style="B", size=12)
+            pdf.cell(0, 6, "EDUCATION", ln=True)
+            for edu in data["education"]:
+                pdf.set_font(font_acad, style="B", size=11)
+                pdf.cell(140, 5, self._sanitize_text(edu.get("school", "")), ln=False)
+                pdf.set_font(font_acad, size=11)
+                pdf.cell(0, 5, self._sanitize_text(edu.get("period", "")), ln=True, align='R')
+                
+                pdf.set_font(font_acad, style="I", size=11)
+                pdf.cell(0, 5, self._sanitize_text(edu.get("degree", "")), ln=True)
+                pdf.ln(2)
+                
+        # 4. Experience & Research
+        if data.get("experience"):
+            pdf.set_font(font_acad, style="B", size=12)
+            pdf.cell(0, 6, "EXPERIENCE & RESEARCH", ln=True)
+            for exp in data["experience"]:
+                pdf.set_font(font_acad, style="B", size=11)
+                pdf.cell(140, 5, self._sanitize_text(exp.get("title", "")), ln=False)
+                pdf.set_font(font_acad, size=11)
+                pdf.cell(0, 5, self._sanitize_text(exp.get("period", "")), ln=True, align='R')
+                
+                pdf.set_font(font_acad, style="I", size=11)
+                pdf.cell(0, 5, self._sanitize_text(exp.get("company", "")), ln=True)
+                
+                pdf.set_font(font_acad, size=11)
+                for bullet in exp.get("bullets", []):
+                    pdf.set_x(20)
+                    pdf.cell(3, 5, "-", ln=False)
+                    pdf.multi_cell(0, 5, self._sanitize_text(bullet))
+                pdf.ln(3)
+                
+        # 5. Skills
+        if data.get("skills"):
+            pdf.set_font(font_acad, style="B", size=12)
+            pdf.cell(0, 6, "TECHNICAL CAPABILITIES", ln=True)
+            pdf.set_font(font_acad, size=11)
+            pdf.multi_cell(0, 5, self._sanitize_text(", ".join(data["skills"])))
+            
         return pdf.output()
 
 

@@ -92,8 +92,10 @@ If the user wants a resume, follow this protocol:
    - **Premium**: Professional executive style (Navy & Slate).
    - **Creative**: Modern with sidebar and modern Emerald accents.
    - **Minimalist**: Sleek, high-whitespace, sophisticated.
+   - **Startup**: Tech-focused, high contrast dark theme, courier elements.
+   - **Academic**: Highly formal, dense Times font, suitable for research/CVs.
 3. Once they pick a style (or say "you choose"), output the command line: [ACTION: GENERATE_RESUME|style]
-   (e.g., [ACTION: GENERATE_RESUME|creative] or [ACTION: GENERATE_RESUME|premium]).
+   (e.g., [ACTION: GENERATE_RESUME|startup] or [ACTION: GENERATE_RESUME|academic]).
 4. Use a British, polite tone.
 """
 
@@ -315,45 +317,45 @@ If the user wants a resume, follow this protocol:
             logger.error(f"JARVIS Failed to send report email: {e}")
 
     async def _process_resume_generation(self, user_id: str, style: str = "premium"):
-        """Background task to generate and email the resume."""
+        """Background task to generate and email the resume with robust error handling."""
+        
+        # We fetch the email early so we can alert the user if things fail
+        db = get_database()
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user_email = user.get("email") if user else None
+        user_name = user.get("full_name", "User") if user else "User"
+
         try:
             # 1. Structure the data using AI
             resume_data = await self._structure_resume_data(user_id)
             if not resume_data:
-                logger.error(f"Failed to structure resume data for user {user_id}")
-                return
+                raise Exception("AI failed to structure the resume data (None returned).")
 
             # 2. Generate PDF bytes with selected style
             logger.info(f"Starting PDF generation for user {user_id} with style: {style}...")
             pdf_bytes = resume_generator.generate_pdf(resume_data, style=style)
             
             if not pdf_bytes:
-                logger.error(f"PDF generation returned empty bytes for user {user_id}")
-                return
+                raise Exception("PDF generation engine returned empty bytes.")
 
-            # 3. Get user email
-            db = get_database()
-            user = await db.users.find_one({"_id": ObjectId(user_id)})
-            user_email = user.get("email")
-            
             if not user_email:
-                logger.error(f"No email found for user {user_id}")
+                logger.error(f"No email found for user {user_id}. Cannnot dispatch successful PDF.")
                 return
 
-            # 4. Prepare attachment for Brevo
+            # 3. Prepare attachment for Brevo
             attachment_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
             attachments = [
                 {
                     "content": attachment_b64,
-                    "name": f"Resume_{user.get('full_name', 'User').replace(' ', '_')}_ATS.pdf"
+                    "name": f"Resume_{user_name.replace(' ', '_')}_{style.capitalize()}.pdf"
                 }
             ]
 
-            # 5. Send Email
-            subject = "Your ATS-Optimized Resume is Ready! 📄"
+            # 4. Send Success Email
+            subject = "Your Resume is Ready! 📄"
             body = f"""
-            <h3>Hello {user.get('full_name', 'there')},</h3>
-            <p>JARVIS has finished crafting your new resume. It has been optimized specifically for ATS readability while maintaining a professional design.</p>
+            <h3>Hello {user_name},</h3>
+            <p>JARVIS has finished crafting your new resume in the <b>{style.capitalize()}</b> style.</p>
             <p>You'll find the PDF attached to this email.</p>
             <br>
             <p>Best of luck with your applications!</p>
@@ -369,8 +371,41 @@ If the user wants a resume, follow this protocol:
             logger.info(f"Resume emailed successfully to {user_email}")
 
         except Exception as e:
-            logger.error(f"Error in background resume generation: {e}")
-            logger.error(traceback.format_exc())
+            error_trace = traceback.format_exc()
+            logger.error(f"Error in background resume generation: {e}\n{error_trace}")
+            
+            # 5. Graceful Failure Recovery
+            # Send fallback email to User
+            if user_email:
+                user_subject = "JARVIS Update: Resume Generation Delayed"
+                user_body = f"""
+                <h3>Hello {user_name},</h3>
+                <p>I apologize, but I encountered a technical anomaly while attempting to format your resume in the <b>{style.capitalize()}</b> format.</p>
+                <p>Our engineering team has been automatically notified and will review the engine configurations.</p>
+                <p>In the meantime, please try requesting a different template (like 'Standard' or 'Premium').</p>
+                <br>
+                <p>Regards,<br><b>JARVIS</b></p>
+                """
+                try:
+                    await email_service.send_email(user_email, user_subject, user_body)
+                except Exception as user_email_err:
+                    logger.error(f"Failed to send fallback email to user: {user_email_err}")
+
+            # Send trace alert to Administrator
+            admin_subject = f"CRITICAL: JARVIS Resume Generation Failure ({style})"
+            admin_body = f"""
+            <h3>Background Process Failure</h3>
+            <p><b>Target User:</b> {user_email} (ID: {user_id})</p>
+            <p><b>Template Requested:</b> {style}</p>
+            <p><b>Error:</b> {str(e)}</p>
+            <h4>Stack Trace:</h4>
+            <pre>{error_trace}</pre>
+            """
+            try:
+                await email_service.send_email(settings.ADMIN_EMAIL, admin_subject, admin_body)
+                logger.info(f"Administrator alerted of the resume failure.")
+            except Exception as admin_email_err:
+                logger.error(f"Failed to send alert to admin: {admin_email_err}")
 
     async def _structure_resume_data(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Uses AI to turn raw user profile/memories into structured resume JSON."""
