@@ -10,6 +10,7 @@ class JarvisMessage(BaseModel):
 class JarvisChatRequest(BaseModel):
     message: str
     history: Optional[List[JarvisMessage]] = []
+    deep_think: bool = False
 
 class JarvisChatResponse(BaseModel):
     message: str

@@ -25,7 +25,8 @@ async def chat_with_jarvis(
         result = await jarvis_service.chat(
             user_id=current_user["id"],
             message=request.message,
-            history=history_dicts
+            history=history_dicts,
+            deep_think=request.deep_think
         )
         return result
     except Exception as e:

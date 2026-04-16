@@ -22,16 +22,28 @@ class JarvisService:
     # Keywords that hint the user is reporting a bug, giving feedback, or requesting support
     _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "glitch", "failure", "broken link", "not loading", "report a bug", "report an issue", "app is down"]
 
-    async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False) -> Dict[str, Any]:
         """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
         
-        # 1. Gather context & preferred model
+        # 1. Gather context & preferred model in parallel
         db = get_database()
-        user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
-        preferred_model = user_doc.get("preferred_ai_model", "meta/llama-3.1-70b-instruct") if user_doc else "meta/llama-3.1-70b-instruct"
+        user_doc_task = db.users.find_one({"_id": ObjectId(user_id)})
+        user_context_task = self._get_full_user_context(user_id)
+        app_stats_task = self._get_app_stats(user_id)
         
-        user_context = await self._get_full_user_context(user_id)
-        app_stats = await self._get_app_stats(user_id)
+        user_doc, user_context, app_stats = await asyncio.gather(
+            user_doc_task,
+            user_context_task,
+            app_stats_task
+        )
+        
+        # Determine model based on deep_think override
+        if deep_think:
+            # Use High IQ model
+            preferred_model = user_doc.get("preferred_ai_model", "meta/llama-3.1-70b-instruct") if user_doc else "meta/llama-3.1-70b-instruct"
+        else:
+            # Use Fast model for normal chat
+            preferred_model = "meta/llama-3.1-8b-instruct"
         
         # 2. Build system prompt — JARVIS 2.0 Master Voice + Style Prompt
         system_prompt = f"""You are a highly intelligent AI assistant modeled after a calm, precise, and refined system known as JARVIS.
