@@ -70,7 +70,7 @@ def repair_json(content: str) -> str:
                 # Check if we need a missing comma before this quote.
                 # If the previous non-whitespace char was " } or ] or a digit, we need a comma.
                 prev_idx = len(repaired) - 1
-                while prev_idx >= 0 and repaired[prev_idx] in ' \t\n\r':
+                while prev_idx >= 0 and (repaired[prev_idx] in ' \t\n\r' or not repaired[prev_idx].strip()):
                     prev_idx -= 1
                 
                 if prev_idx >= 0 and repaired[prev_idx] in '"}]0123456789':

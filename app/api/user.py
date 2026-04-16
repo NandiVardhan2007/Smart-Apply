@@ -115,6 +115,26 @@ async def upload_resume(file: UploadFile = File(...), current_user: dict = Depen
     )
     return {"url": url}
 
+@router.get("/applications")
+async def get_user_applications(current_user: dict = Depends(get_current_user)):
+    """Fetches all job applications for the current user, sorted by date."""
+    try:
+        db = get_database()
+        cursor = db.applications.find({"user_id": current_user["id"]}).sort("applied_at", -1)
+        applications = await cursor.to_list(length=100)
+        
+        # Format for frontend
+        for app in applications:
+            app["id"] = str(app["_id"])
+            del app["_id"]
+            if "applied_at" in app and app["applied_at"]:
+                app["applied_at"] = app["applied_at"].isoformat()
+                
+        return applications
+    except Exception as e:
+        logger.error(f"Error fetching applications: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @router.get("/dashboard")
 async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
     try:

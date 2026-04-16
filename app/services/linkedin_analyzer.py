@@ -187,33 +187,16 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
 
         if not result:
             logger.error(f"[LinkedIn Analyzer] Failed to parse AI response: {raw_content[:500]}")
-            return _fallback_result("Invalid AI response format")
-
-        # After successful analysis, potentially update user memory with new insights
-        if user_id and result.get("overall_score", 0) > 70:
-            try:
-                # Store the summary as a memory of the user's current standing
-                await memory_service.create_memory(
-                    user_id, 
-                    MemoryCreate(
-                        category="profile_status",
-                        key="linkedin_summary",
-                        content=result.get("summary", ""),
-                        metadata={"score": result.get("overall_score")}
-                    )
-                )
-            except Exception as e:
-                logger.warning(f"Failed to auto-update memory: {e}")
+            # Raise exception instead of returning a fallback 0 score
+            # This allows the API to return 500 and the UI to show an error state
+            raise ValueError("AI produced invalid or unparseable JSON")
 
         return _validate_and_normalize(result)
 
     except Exception as e:
         logger.error(f"[LinkedIn Analyzer] Final failure: {e}")
-        try:
-            logger.error(f"[LinkedIn Analyzer] Raw content was: {raw_content[:500]}...")
-        except Exception:
-            pass
-        return _fallback_result(f"Analysis error: {str(e)}")
+        # Re-raise so the API handler can return a proper status code
+        raise e
 
 
 def _validate_and_normalize(result: dict) -> dict:
