@@ -277,8 +277,8 @@ If the user wants a resume, follow this protocol:
                 logger.error(f"Failed to structure resume data for user {user_id}")
                 return
 
-            # 2. Generate PDF bytes
-            pdf_bytes = resume_generator.generate_pdf(resume_data)
+            # 2. Generate PDF bytes with Premium Visual Style
+            pdf_bytes = resume_generator.generate_pdf(resume_data, style="premium")
             
             # 3. Get user email
             db = get_database()
@@ -325,50 +325,55 @@ If the user wants a resume, follow this protocol:
         """Uses AI to turn raw user profile/memories into structured resume JSON."""
         user_context = await self._get_full_user_context(user_id)
         
-        system_prompt = """You are an expert Resume Architect. 
-Your task is to take the provided user context and structure it into a CLEAN JSON format for resume generation.
-The user wants an ATS-FRIENDLY resume.
+        system_prompt = """You are the Senior JARVIS Resume Architect, optimized for Minimax-M2.7 document intelligence.
+Your task is to transform raw user career data into a HIGH-IMPACT, structured JSON for a Premium Resume.
 
-Output ONLY valid JSON in this exact structure:
+Output MUST be valid JSON in this structure:
 {
     "name": "Full Name",
     "contact": {"email": "...", "phone": "...", "location": "...", "linkedin": "...", "portfolio": "..."},
     "summary": "Impactful professional summary...",
-    "skills": ["Skill1", "Skill2"],
+    "skills": ["Expertise Domain 1", "Expertise Domain 2", ...],
     "experience": [
         {
             "title": "Job Title",
             "company": "Company Name",
-            "period": "Start - End",
+            "period": "MM/YYYY - MM/YYYY",
             "location": "City, State",
-            "bullets": ["Action verb driven result...", "Quantifiable achievement..."]
+            "bullets": [
+                "Action verb starting bullet focusing on Quantifiable Impact (e.g., 'Implemented X' is weak, use 'Architected X resulting in 30% reduction in Y').",
+                "Highlight technical prowess and leadership."
+            ]
         }
     ],
-    "education": [
-        {
-            "degree": "Degree Name",
-            "school": "Institution",
-            "period": "Years",
-            "location": "City, State"
-        }
-    ]
+    "education": [{"degree": "...", "school": "...", "period": "...", "location": "..."}]
 }
 
-- Professional Experience bullets MUST be impact-driven (e.g. 'Optimized X resulting in Y% gain').
-- If data is missing (like phone), omit the field or leave as empty string.
+CRITICAL INSTRUCTIONS:
+1. FOCUS ON METRICS: Every experience bullet point should aim to include a number ($ saved, % growth, time saved).
+2. TONE: Sophisticated, professional, and authoritative.
+3. SKILLS: Categorize into logical groups if possible.
 """
         client = get_next_client()
         try:
             response = await client.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
+                model="minimaxai/minimax-m2.7",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"User Context:\n{user_context}"}
                 ],
-                temperature=0.1, # Low temperature for strict structure
-                response_format={"type": "json_object"}
+                temperature=0.1
             )
-            return json.loads(response.choices[0].message.content)
+            # Minimax doesn't always support response_format=json_object via some adapters, 
+            # so we ensure we parse correctly.
+            content = response.choices[0].message.content
+            # Strip any markdown backticks if present
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[-1].split("```")[0].strip()
+            
+            return json.loads(content)
         except Exception as e:
             logger.error(f"AI Structuring failed: {e}")
             return None
