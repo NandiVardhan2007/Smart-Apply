@@ -40,11 +40,31 @@ class AdminService:
         # Consider a user active if they have verified emails, or based on recent logins if logged
         active_users = await db.users.count_documents({"is_verified": True})
         
+        # New: Email metrics
+        total_emails = await db.email_logs.count_documents({})
+        failed_emails = await db.email_logs.count_documents({"status": "failed"})
+        
         return {
             "total_users": total_users,
             "active_users": active_users,
             "banned_users": banned_users,
-            "total_applications": total_apps
+            "total_applications": total_apps,
+            "total_emails_sent": total_emails,
+            "failed_emails": failed_emails
         }
+
+    @staticmethod
+    async def get_email_logs(skip: int = 0, limit: int = 50) -> list:
+        """
+        Retrieves the latest filtered email notification logs.
+        """
+        db = get_database()
+        cursor = db.email_logs.find({}).sort("timestamp", -1).skip(skip).limit(limit)
+        logs = await cursor.to_list(length=limit)
+        
+        for log in logs:
+            log["id"] = str(log["_id"])
+            del log["_id"]
+        return logs
 
 admin_service = AdminService()

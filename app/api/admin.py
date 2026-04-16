@@ -91,3 +91,8 @@ async def get_audit_logs(skip: int = 0, limit: int = 100):
         log["id"] = str(log["_id"])
         
     return logs
+
+@router.get("/emails")
+async def get_email_logs(skip: int = 0, limit: int = 50):
+    logs = await admin_service.get_email_logs(skip, limit)
+    return logs

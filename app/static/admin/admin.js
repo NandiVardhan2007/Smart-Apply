@@ -46,6 +46,7 @@ const api = {
     getUsers() { return this.request('/admin/users'); },
     banUser(id, reason) { return this.request(`/admin/users/${id}/ban`, 'POST', { reason }); },
     getLogs() { return this.request('/admin/system/logs'); },
+    getEmails() { return this.request('/admin/emails'); },
     
     logout() {
         localStorage.removeItem('admin_token');
@@ -92,6 +93,7 @@ function renderSection(section) {
     if (section === 'dashboard') loadDashboard();
     if (section === 'users') loadUsers();
     if (section === 'logs') loadLogs();
+    if (section === 'emails') loadEmails();
 }
 
 // --- Dashboard Logic ---
@@ -103,8 +105,8 @@ async function loadDashboard() {
         const grid = document.getElementById('metrics-grid');
         const cards = [
             { label: 'Total Users', value: metrics.total_users, icon: 'users', color: 'bg-indigo-500' },
-            { label: 'Active Users', value: metrics.active_users, icon: 'user-check', color: 'bg-emerald-500' },
-            { label: 'Banned Users', value: metrics.banned_users, icon: 'user-x', color: 'bg-rose-500' },
+            { label: 'Emails Sent', value: metrics.total_emails_sent || 0, icon: 'mail', color: 'bg-emerald-500' },
+            { label: 'Failed Mails', value: metrics.failed_emails || 0, icon: 'alert-circle', color: 'bg-rose-500' },
             { label: 'Total Apps', value: metrics.total_applications, icon: 'briefcase', color: 'bg-amber-500' }
         ];
 
@@ -204,6 +206,39 @@ async function loadLogs() {
         lucide.createIcons();
     } catch (err) {
         stream.innerHTML = '<p class="p-8 text-center text-error">Stream disconnected.</p>';
+    }
+}
+
+// --- Emails Logic ---
+async function loadEmails() {
+    const tableBody = document.getElementById('emails-table-body');
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Fetching communication trail...</td></tr>';
+    
+    try {
+        const logs = await api.getEmails();
+        tableBody.innerHTML = logs.map(log => `
+            <tr>
+                <td>
+                    <div class="flex items-center gap-3">
+                        <div class="metric-icon bg-white/5" style="width: 32px; height:32px">
+                            <i data-lucide="mail" style="width: 14px"></i>
+                        </div>
+                        <span class="font-medium">${log.recipient}</span>
+                    </div>
+                </td>
+                <td><span class="text-secondary">${log.subject}</span></td>
+                <td>
+                    <div class="flex items-center">
+                        <div class="status-dot ${log.status === 'success' ? 'bg-success' : 'bg-error'}"></div>
+                        <span style="font-size: 13px">${log.status === 'success' ? 'Delivered' : 'Failed'}</span>
+                    </div>
+                </td>
+                <td><span class="log-time">${new Date(log.timestamp).toLocaleString()}</span></td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
+    } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-error">Communication trail blocked.</td></tr>';
     }
 }
 

@@ -79,6 +79,11 @@
                                     <i data-lucide="clipboard-list"></i> <span>Audit Logs</span>
                                 </a>
                             </li>
+                            <li>
+                                <a href="#emails" class="menu-item" data-view="emails">
+                                    <i data-lucide="at-sign"></i> <span>Emails</span>
+                                </a>
+                            </li>
                         </ul>
                     </nav>
                     
@@ -157,6 +162,24 @@
                             <div class="log-stream" id="logs-stream">
                                 <!-- Logs here -->
                             </div>
+                        </div>
+                    </div>
+
+                    <div id="emails-content" class="content-section hidden">
+                        <div class="table-container glass">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Recipient</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emails-table-body">
+                                    <!-- Emails here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </main>
