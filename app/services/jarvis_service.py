@@ -93,8 +93,15 @@ Structure:
             parsed = await asyncio.to_thread(robust_json_loads, raw)
             
             if not parsed:
-                logger.warning(f"[JARVIS] Parsing failed for raw content: {raw[:200]}...")
-                return self._get_fallback_response("I encountered a formatting issue while thinking. Could you please rephrase?")
+                logger.warning(f"[JARVIS] Parsing failed for raw content. Sending raw text as fallback. Snippet: {raw[:200]}...")
+                # Graceful recovery: If the LLM generates helpful conversational text but fails to wrap it securely in JSON,
+                # we just show the raw conversational text directly to the user instead of throwing an obscure "format error".
+                return {
+                    "message": raw,
+                    "suggestions": [],
+                    "memory_updated": False,
+                    "action_taken": None
+                }
 
             reply = parsed.get("response", "I'm sorry, I'm having trouble processing that.")
             suggestions = parsed.get("suggestions", [])
