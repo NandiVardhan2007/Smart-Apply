@@ -79,7 +79,7 @@ Instructions:
 
         try:
             response = await client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+                model="meta/llama-3.1-70b-instruct",
                 messages=messages,
                 temperature=0.7,
                 max_tokens=1000,
