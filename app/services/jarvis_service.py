@@ -207,13 +207,13 @@ If the user wants a resume, follow this protocol:
                 if "GENERATE_RESUME" not in raw:
                     logger.info(f"[JARVIS] Attaching 5 template previews for user {user_id}")
                     r2_base = f"{settings.R2_ENDPOINT_URL}/{settings.R2_BUCKET_NAME}"
-                template_previews = [
-                    {"style": "executive_gold", "name": "Executive Gold", "image": f"{r2_base}/previews/resumes/executive_gold.jpg"},
-                    {"style": "modern_premium", "name": "Modern Premium", "image": f"{r2_base}/previews/resumes/modern_premium.jpg"},
-                    {"style": "creative_premium", "name": "Creative Premium", "image": f"{r2_base}/previews/resumes/creative_premium.jpg"},
-                    {"style": "structured_standard", "name": "Structured Standard", "image": f"{r2_base}/previews/resumes/structured_standard.jpg"},
-                    {"style": "minimalist_sleek", "name": "Minimalist Sleek", "image": f"{r2_base}/previews/resumes/minimalist_sleek.jpg"},
-                ]
+                    template_previews = [
+                        {"style": "executive_gold", "name": "Executive Gold", "image": f"{r2_base}/previews/resumes/executive_gold.jpg"},
+                        {"style": "modern_premium", "name": "Modern Premium", "image": f"{r2_base}/previews/resumes/modern_premium.jpg"},
+                        {"style": "creative_premium", "name": "Creative Premium", "image": f"{r2_base}/previews/resumes/creative_premium.jpg"},
+                        {"style": "structured_standard", "name": "Structured Standard", "image": f"{r2_base}/previews/resumes/structured_standard.jpg"},
+                        {"style": "minimalist_sleek", "name": "Minimalist Sleek", "image": f"{r2_base}/previews/resumes/minimalist_sleek.jpg"},
+                    ]
 
             return {
                 "message": reply,
