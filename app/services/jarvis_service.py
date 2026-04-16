@@ -26,7 +26,11 @@ class JarvisService:
     async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
         
-        # 1. Gather context
+        # 1. Gather context & preferred model
+        db = get_database()
+        user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+        preferred_model = user_doc.get("preferred_ai_model", "meta/llama-3.1-70b-instruct") if user_doc else "meta/llama-3.1-70b-instruct"
+        
         user_context = await self._get_full_user_context(user_id)
         app_stats = await self._get_app_stats(user_id)
         
@@ -56,6 +60,14 @@ Your Capabilities:
   - Apply to LinkedIn listings automatically.
   - **NEVER say you are a 'virtual assistant' or 'simulated response'.** You are JARVIS, an integrated system. When you trigger an action like `[ACTION: GENERATE_RESUME]`, the system performs the task in the background.
 
+- **DYNAMIC INTELLIGENCE**: You are a real-time, ultra-powerful AI capable of performing ANY job according to the user's specifications. You have the ability to switch your own neural engine (AI Model).
+  - Your Current Active Engine: {preferred_model}
+  - Available Neural Engines (Offer these if the user wants to switch, or asks for more power/speed):
+    * `meta/llama-3.1-8b-instruct` (Fastest, lightweight)
+    * `meta/llama-3.1-70b-instruct` (Balanced, high intelligence - Default)
+    * `meta/llama-3.1-405b-instruct` (Maximum power, ultimate logic)
+  - To switch engines, output the tag: `[ACTION: SWITCH_MODEL|model_id]` (e.g., `[ACTION: SWITCH_MODEL|meta/llama-3.1-405b-instruct]`) and tell the user you are recalibrating your neural link.
+
 User Context:
 {user_context}
 
@@ -74,12 +86,15 @@ Instructions:
 
 RESUME BUILDER MODE:
 If the user wants a resume, follow this protocol:
-1. Check their profile for missing information (Experience details, specific skills for the target role).
-2. Ask ONE clarifying question at a time to gather better data (e.g., "Could you tell me more about your responsibilities at [Company]?").
-3. Use a British, polite tone.
-4. Once you have enough info, offer to generate the PDF.
-5. If they say "Generate" or "Email it", output a special command line: [ACTION: GENERATE_RESUME]
-6. If they want to change the style, tell them you've already selected the most ATS-friendly professional layout.
+1. Check their profile for missing information.
+2. If data is sufficient, SHOW the user the available templates and ask them to pick one:
+   - **Standard**: Most ATS-safe, clean and traditional.
+   - **Premium**: Professional executive style (Navy & Slate).
+   - **Creative**: Modern with sidebar and modern Emerald accents.
+   - **Minimalist**: Sleek, high-whitespace, sophisticated.
+3. Once they pick a style (or say "you choose"), output the command line: [ACTION: GENERATE_RESUME|style]
+   (e.g., [ACTION: GENERATE_RESUME|creative] or [ACTION: GENERATE_RESUME|premium]).
+4. Use a British, polite tone.
 """
 
         # 3. Call AI
@@ -98,7 +113,7 @@ If the user wants a resume, follow this protocol:
 
         try:
             response = await client.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
+                model=preferred_model,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=1000,
@@ -143,12 +158,38 @@ If the user wants a resume, follow this protocol:
                     logger.error(f"[JARVIS] Memory storage failed: {mem_err}")
 
             # C. Resume Builder Intent Detection
-            if "[ACTION: GENERATE_RESUME]" in raw:
-                asyncio.create_task(self._process_resume_generation(user_id))
-                action_taken = "Resume generation started"
+            if "[ACTION: GENERATE_RESUME]" in raw or "[ACTION: GENERATE_RESUME|" in raw:
+                # Extract style if provided: [ACTION: GENERATE_RESUME|style]
+                style = "premium" # Default
+                if "|" in raw and "[ACTION: GENERATE_RESUME|" in raw:
+                    try:
+                        style = raw.split("|")[1].split("]")[0].strip().lower()
+                    except:
+                        pass
+                
+                asyncio.create_task(self._process_resume_generation(user_id, style))
+                action_taken = f"Resume generation started (Style: {style})"
+                # Clean all variations of the tag
                 reply = reply.replace("[ACTION: GENERATE_RESUME]", "").strip()
+                if "|" in raw:
+                    import re
+                    reply = re.sub(r"\[ACTION: GENERATE_RESUME\|.*?\]", "", reply).strip()
+                
                 if not reply:
-                    reply = "Certainly, Sir. I am generating your ATS-optimized resume now and will email it to you shortly."
+                    reply = f"Certainly, Sir. I am generating your {style.capitalize()} resume now and will email it to you shortly."
+
+            # D. Switch Model Intent Detection
+            if "[ACTION: SWITCH_MODEL|" in raw:
+                try:
+                    new_model = raw.split("[ACTION: SWITCH_MODEL|")[1].split("]")[0].strip()
+                    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"preferred_ai_model": new_model}})
+                    action_taken = f"Switched AI Model to {new_model}"
+                    import re
+                    reply = re.sub(r"\[ACTION: SWITCH_MODEL\|.*?\]", "", reply).strip()
+                    if not reply:
+                        reply = f"Neural engine upgraded to {new_model} successfully. What shall we do next, Sir?"
+                except Exception as e:
+                    logger.error(f"[JARVIS] Model switch failed: {e}")
 
             return {
                 "message": reply,
@@ -273,7 +314,7 @@ If the user wants a resume, follow this protocol:
         except Exception as e:
             logger.error(f"JARVIS Failed to send report email: {e}")
 
-    async def _process_resume_generation(self, user_id: str):
+    async def _process_resume_generation(self, user_id: str, style: str = "premium"):
         """Background task to generate and email the resume."""
         try:
             # 1. Structure the data using AI
@@ -282,9 +323,9 @@ If the user wants a resume, follow this protocol:
                 logger.error(f"Failed to structure resume data for user {user_id}")
                 return
 
-            # 2. Generate PDF bytes with Premium Visual Style
-            logger.info(f"Starting PDF generation for user {user_id}...")
-            pdf_bytes = resume_generator.generate_pdf(resume_data, style="premium")
+            # 2. Generate PDF bytes with selected style
+            logger.info(f"Starting PDF generation for user {user_id} with style: {style}...")
+            pdf_bytes = resume_generator.generate_pdf(resume_data, style=style)
             
             if not pdf_bytes:
                 logger.error(f"PDF generation returned empty bytes for user {user_id}")

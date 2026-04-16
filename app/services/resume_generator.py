@@ -48,6 +48,10 @@ class ResumeGenerator:
         """
         if style == "premium":
             return self.generate_premium_pdf(data)
+        if style == "creative":
+            return self.generate_creative_pdf(data)
+        if style == "minimalist":
+            return self.generate_minimalist_pdf(data)
             
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
@@ -259,5 +263,195 @@ class ResumeGenerator:
         pdf.set_fill_color(240, 240, 240) # Light gray background for section headers
         pdf.cell(0, 7, title, ln=True, fill=True)
         pdf.ln(2)
+    def generate_creative_pdf(self, data: Dict[str, Any]) -> bytes:
+        """
+        Generates a modern, creative resume with a sidebar layout.
+        Uses Emerald/Teal accents.
+        """
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        
+        # Colors (Modern Emerald)
+        sidebar_bg = (242, 249, 247)
+        accent_color = (16, 185, 129)
+        text_color = (31, 41, 55)
+        
+        # 1. Sidebar Background
+        pdf.set_fill_color(*sidebar_bg)
+        pdf.rect(0, 0, 70, 297, 'F')
+        
+        # 2. Sidebar Content (Contact & Skills)
+        pdf.set_y(20)
+        pdf.set_x(10)
+        
+        # Contact
+        pdf.set_font(self.font_main, style="B", size=12)
+        pdf.set_text_color(*accent_color)
+        pdf.cell(50, 8, "CONTACT", ln=True)
+        pdf.set_text_color(*text_color)
+        pdf.set_font(self.font_main, size=9)
+        
+        contact = data.get("contact", {})
+        for key in ["email", "phone", "location", "linkedin", "portfolio"]:
+            val = contact.get(key)
+            if val:
+                pdf.set_x(10)
+                pdf.multi_cell(50, 5, self._sanitize_text(val))
+                pdf.ln(2)
+        
+        pdf.ln(10)
+        
+        # Skills
+        if data.get("skills"):
+            pdf.set_x(10)
+            pdf.set_font(self.font_main, style="B", size=12)
+            pdf.set_text_color(*accent_color)
+            pdf.cell(50, 8, "SKILLS", ln=True)
+            pdf.set_text_color(*text_color)
+            pdf.set_font(self.font_main, size=9)
+            
+            for skill in data["skills"]:
+                pdf.set_x(10)
+                # Small circle replacement for creative style
+                pdf.set_font("zapfdingbats", size=6)
+                pdf.cell(4, 5, chr(108), ln=False)
+                pdf.set_font(self.font_main, size=9)
+                pdf.multi_cell(46, 5, self._sanitize_text(skill))
+                pdf.ln(1)
+        
+        # 3. Main Content (Name, Summary, Experience)
+        pdf.set_left_margin(80)
+        pdf.set_y(20)
+        
+        # Name
+        pdf.set_font(self.font_main, style="B", size=24)
+        name = self._sanitize_text(data.get("name", "RESUME"))
+        pdf.set_text_color(*accent_color)
+        pdf.multi_cell(120, 10, name.upper())
+        pdf.ln(5)
+        
+        pdf.set_text_color(*text_color)
+        
+        # Summary
+        if data.get("summary"):
+            pdf.set_font(self.font_main, style="B", size=13)
+            pdf.cell(0, 8, "PROFILE", ln=True)
+            pdf.set_font(self.font_main, size=10)
+            pdf.multi_cell(0, 5, self._sanitize_text(data["summary"]))
+            pdf.ln(6)
+            
+        # Experience
+        if data.get("experience"):
+            pdf.set_font(self.font_main, style="B", size=13)
+            pdf.cell(0, 8, "EXPERIENCE", ln=True)
+            for exp in data["experience"]:
+                pdf.set_font(self.font_main, style="B", size=11)
+                pdf.cell(0, 6, self._sanitize_text(exp.get("title", "")), ln=True)
+                pdf.set_font(self.font_main, style="I", size=10)
+                pdf.cell(0, 5, self._sanitize_text(f"{exp.get('company', '')} | {exp.get('period', '')}"), ln=True)
+                
+                pdf.set_font(self.font_main, size=9)
+                pdf.set_text_color(75, 85, 99)
+                for bullet in exp.get("bullets", []):
+                    pdf.set_x(85)
+                    pdf.cell(3, 5, "-", ln=False)
+                    pdf.multi_cell(0, 5, self._sanitize_text(bullet))
+                pdf.set_text_color(*text_color)
+                pdf.ln(4)
+                
+        # Education
+        if data.get("education"):
+            pdf.set_font(self.font_main, style="B", size=13)
+            pdf.cell(0, 8, "EDUCATION", ln=True)
+            for edu in data["education"]:
+                pdf.set_font(self.font_main, style="B", size=10)
+                pdf.cell(0, 5, self._sanitize_text(edu.get("degree", "")), ln=True)
+                pdf.set_font(self.font_main, size=9)
+                pdf.cell(0, 5, self._sanitize_text(f"{edu.get('school', '')} | {edu.get('period', '')}"), ln=True)
+                pdf.ln(3)
+
+        return pdf.output()
+
+    def generate_minimalist_pdf(self, data: Dict[str, Any]) -> bytes:
+        """
+        Generates a sleek, high-whitespace minimalist resume.
+        Centered headers and clean lines.
+        """
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=20)
+        pdf.add_page()
+        
+        # Colors (Sophisticated Slate)
+        primary_color = (15, 23, 42)
+        secondary_color = (100, 116, 139)
+        
+        # 1. Centered Header
+        pdf.set_y(25)
+        pdf.set_font(self.font_main, style="B", size=26)
+        pdf.set_text_color(*primary_color)
+        name = self._sanitize_text(data.get("name", "RESUME"))
+        pdf.cell(0, 12, name.upper(), ln=True, align='C')
+        
+        pdf.set_font(self.font_main, size=10)
+        pdf.set_text_color(*secondary_color)
+        contact = data.get("contact", {})
+        contact_items = [v for v in contact.values() if v]
+        pdf.cell(0, 8, self._sanitize_text("   .   ".join(contact_items)), ln=True, align='C')
+        
+        pdf.ln(15)
+        
+        # 2. Content Sections
+        sections = [
+            ("SUMMARY", data.get("summary")),
+            ("SKILLS", ", ".join(data.get("skills", [])) if data.get("skills") else None),
+            ("EXPERIENCE", data.get("experience")),
+            ("EDUCATION", data.get("education"))
+        ]
+        
+        for title, content in sections:
+            if not content: continue
+            
+            # Section Label
+            pdf.set_font(self.font_main, style="B", size=10)
+            pdf.set_text_color(*secondary_color)
+            pdf.cell(0, 10, title, ln=True, align='C')
+            
+            # Simple line
+            pdf.set_draw_color(*secondary_color)
+            pdf.set_line_width(0.2)
+            pdf.line(80, pdf.get_y(), 130, pdf.get_y())
+            pdf.ln(4)
+            
+            pdf.set_text_color(*primary_color)
+            
+            if title == "EXPERIENCE":
+                for exp in content:
+                    pdf.set_font(self.font_main, style="B", size=11)
+                    pdf.cell(0, 6, self._sanitize_text(exp.get("title", "")).upper(), ln=True, align='C')
+                    pdf.set_font(self.font_main, size=10)
+                    pdf.cell(0, 5, self._sanitize_text(f"{exp.get('company', '')}  |  {exp.get('period', '')}"), ln=True, align='C')
+                    
+                    pdf.ln(2)
+                    pdf.set_font(self.font_main, size=10)
+                    for bullet in exp.get("bullets", []):
+                        pdf.set_x(20)
+                        pdf.multi_cell(170, 5, self._sanitize_text(bullet), align='C')
+                    pdf.ln(6)
+            elif title == "EDUCATION":
+                for edu in content:
+                    pdf.set_font(self.font_main, style="B", size=10)
+                    pdf.cell(0, 5, self._sanitize_text(edu.get("degree", "")).upper(), ln=True, align='C')
+                    pdf.set_font(self.font_main, size=9)
+                    pdf.cell(0, 5, self._sanitize_text(f"{edu.get('school', '')}  |  {edu.get('period', '')}"), ln=True, align='C')
+                    pdf.ln(4)
+            else:
+                pdf.set_font(self.font_main, size=10)
+                pdf.set_x(20)
+                pdf.multi_cell(170, 6, self._sanitize_text(content), align='C')
+                pdf.ln(8)
+
+        return pdf.output()
+
 
 resume_generator = ResumeGenerator()
