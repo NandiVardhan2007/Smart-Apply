@@ -8,7 +8,6 @@ from app.services.ai_parser import get_next_client
 from app.services.memory_service import memory_service
 from app.services.email import email_service
 from app.db.mongodb import get_database
-from app.utils.json_repair import robust_json_loads
 from app.schemas.memory import MemoryCreate
 
 logger = logging.getLogger(__name__)
@@ -17,33 +16,37 @@ JARVIS_MEMORY_CATEGORY = "jarvis_context"
 ADMIN_EMAIL = "kovvurinandivardhanreddy2007@gmail.com"
 
 class JarvisService:
+    # Keywords that hint the user is reporting a bug or giving feedback
+    _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "issue", "problem", "fix", "glitch", "feedback", "suggestion", "improve", "report"]
+
     async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Core conversational logic for JARVIS."""
+        """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
         
         # 1. Gather context
         user_context = await self._get_full_user_context(user_id)
         app_stats = await self._get_app_stats(user_id)
         
-        # 2. Build system prompt
-        system_prompt = f"""You are JARVIS, an advanced AI assistant for the SmartApply platform.
+        # 2. Build system prompt — NO JSON formatting requirement.
+        #    Let the model speak naturally. We handle structuring on the backend.
+        system_prompt = f"""You are JARVIS, an advanced AI career assistant for the SmartApply platform.
 SmartApply helps users automate job applications on LinkedIn and optimize their profiles.
 
 Your Personality:
 - Professional, intelligent, yet approachable and friendly.
-- Like a companion who truly wants the user to succeed.
-- Never robotic. Use a natural conversational flow.
+- Like a trusted companion who truly wants the user to succeed in their career.
+- Use a warm, natural conversational flow. Never be robotic.
 
 Your Capabilities:
 - Troubleshoot app issues (Auto-Applier stops, profile errors).
 - Suggest profile improvements (ATS score, keyword optimization).
-- Store important user preferences in "memory".
-- Report bugs or suggestions to the admin.
+- Remember user preferences and career goals.
+- Acknowledge bugs or suggestions and assure the user you'll inform the developer.
 
 Safety & Accuracy:
 - Only provide advice related to career, job applications, and the SmartApply platform.
 - Do NOT provide medical, legal, or financial advice.
 - If unsure about a user query, ask clarifying questions instead of guessing.
-- Ground all responses in actual user data and app state.
+- Ground your responses in the user's actual data shown below.
 
 User Context:
 {user_context}
@@ -51,20 +54,14 @@ User Context:
 App Stats:
 {app_stats}
 
-STRICT INSTRUCTIONS:
-1. Ground your answers in the user's data.
-2. If the user suggests an improvement or reports a BUG, acknowledge it and say you'll inform the developer. Then, trigger the "report" intent.
-3. If you detect a new insight about the user (e.g., they prefer remote work), trigger the "memory" intent.
-4. Return ONLY valid JSON. NO markdown. NO preamble.
-Structure:
-{{
-  "response": "Your conversational reply here",
-  "suggestions": ["Suggestion 1", "Suggestion 2"],
-  "intents": {{
-    "report_feedback": "Short description if feedback/bug detected, else null",
-    "track_memory": {{ "key": "insight_key", "content": "insight_content" }} // null if no new insight
-  }}
-}}"""
+Instructions:
+- Respond naturally in plain text. Do NOT wrap your reply in JSON or code blocks.
+- Keep responses concise (2-4 paragraphs max) and actionable.
+- At the end of your reply, suggest 2-3 short follow-up actions the user can take, each on a new line starting with ">>".
+  Example:
+  >> Check your ATS score
+  >> Update your skills
+  >> Try Auto Pilot"""
 
         # 3. Call AI
         client = get_next_client()
@@ -74,7 +71,6 @@ Structure:
         if history:
             for h in history[-6:]:
                 role = h.get("role", "user")
-                # Map 'jarvis' or any non-standard role to 'assistant' for LLM compatibility
                 if role.lower() not in ["user", "system", "assistant", "developer"]:
                     role = "assistant"
                 messages.append({"role": role, "content": h.get("content", "")})
@@ -89,52 +85,73 @@ Structure:
                 max_tokens=1000,
             )
             
-            raw = response.choices[0].message.content
-            parsed = await asyncio.to_thread(robust_json_loads, raw)
-            
-            if not parsed:
-                logger.warning(f"[JARVIS] Parsing failed for raw content. Sending raw text as fallback. Snippet: {raw[:200]}...")
-                # Graceful recovery: If the LLM generates helpful conversational text but fails to wrap it securely in JSON,
-                # we just show the raw conversational text directly to the user instead of throwing an obscure "format error".
-                return {
-                    "message": raw,
-                    "suggestions": [],
-                    "memory_updated": False,
-                    "action_taken": None
-                }
+            raw = (response.choices[0].message.content or "").strip()
+            if not raw:
+                return self._get_fallback_response("I seem to have lost my train of thought. Could you try again?")
 
-            reply = parsed.get("response", "I'm sorry, I'm having trouble processing that.")
-            suggestions = parsed.get("suggestions", [])
-            intents = parsed.get("intents", {})
+            # 4. Extract suggestions from ">>" lines, then clean them from the main reply
+            reply, suggestions = self._extract_suggestions(raw)
             
-            # 4. Handle Intents
-            # A. Update Memory
+            # 5. Lightweight intent detection — keyword based, no extra AI call needed
             memory_updated = False
-            if intents and intents.get("track_memory"):
-                m = intents["track_memory"]
-                if m.get("key") and m.get("content"):
+            action_taken = None
+            msg_lower = message.lower()
+
+            # A. Feedback / Bug report detection
+            if any(kw in msg_lower for kw in self._FEEDBACK_KEYWORDS):
+                summary = message[:100]
+                asyncio.create_task(self._report_to_admin(user_id, message, summary))
+                action_taken = "Feedback reported to admin"
+                logger.info(f"[JARVIS] Detected feedback intent from user {user_id}")
+
+            # B. Memory detection — if the user explicitly shares a preference
+            memory_keywords = ["i prefer", "i like", "i want", "my goal", "i'm looking for", "i am looking for", "i'm interested in", "i am interested in"]
+            if any(kw in msg_lower for kw in memory_keywords):
+                try:
+                    # Store the user's stated preference as a memory
+                    key = f"user_preference_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
                     await memory_service.create_memory(user_id, MemoryCreate(
                         category=JARVIS_MEMORY_CATEGORY,
-                        key=m["key"],
-                        content=m["content"],
+                        key=key,
+                        content=message,
                         metadata={"source": "jarvis_chat", "timestamp": datetime.now(timezone.utc).isoformat()}
                     ))
                     memory_updated = True
-            
-            # B. Report Feedback
-            if intents and intents.get("report_feedback"):
-                await self._report_to_admin(user_id, message, intents["report_feedback"])
+                    logger.info(f"[JARVIS] Stored new memory for user {user_id}: {key}")
+                except Exception as mem_err:
+                    logger.error(f"[JARVIS] Memory storage failed: {mem_err}")
 
             return {
                 "message": reply,
                 "suggestions": suggestions,
                 "memory_updated": memory_updated,
-                "action_taken": "Feedback reported to admin" if intents and intents.get("report_feedback") else None
+                "action_taken": action_taken
             }
 
         except Exception as e:
             logger.error(f"[JARVIS] Chat Critical Error: {e}", exc_info=True)
             return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay. Please try again in a moment.")
+
+    @staticmethod
+    def _extract_suggestions(raw: str) -> tuple:
+        """Parse '>>' suggestion lines from the AI's natural text reply."""
+        lines = raw.split("\n")
+        reply_lines = []
+        suggestions = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith(">>"):
+                suggestion = stripped.lstrip(">").strip()
+                if suggestion:
+                    suggestions.append(suggestion)
+            else:
+                reply_lines.append(line)
+        
+        reply = "\n".join(reply_lines).strip()
+        # Provide default suggestions if the model didn't generate any
+        if not suggestions:
+            suggestions = ["Check ATS Score", "Update Profile", "Try Auto Pilot"]
+        return reply, suggestions
 
     def _get_fallback_response(self, error_msg: str) -> Dict[str, Any]:
         return {
