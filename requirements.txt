@@ -17,3 +17,6 @@ openai
 tenacity
 psutil
 fpdf2
+docxtpl
+python-docx
+Pillow
