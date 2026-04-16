@@ -9,9 +9,8 @@ class ResumeGenerator:
     """Service to generate ATS-friendly resumes in PDF format."""
 
     def __init__(self):
-        # Using standard fonts which are best for ATS (Helvetica/Arial)
-        self.font_main = "Helvetica"
-        self.font_bold = "Helvetica-Bold"
+        # Using standard fonts which are best for ATS (helvetica)
+        self.font_main = "helvetica"
 
     def generate_pdf(self, data: Dict[str, Any]) -> bytes:
         """
@@ -31,7 +30,7 @@ class ResumeGenerator:
         pdf.add_page()
         
         # 1. Header (Name & Contact)
-        pdf.set_font(self.font_bold, size=18)
+        pdf.set_font(self.font_main, style="B", size=18)
         pdf.cell(0, 10, data.get("name", "RESUME").upper(), ln=True, align='C')
         
         pdf.set_font(self.font_main, size=10)
@@ -71,7 +70,7 @@ class ResumeGenerator:
             self._add_section_header(pdf, "PROFESSIONAL EXPERIENCE")
             for exp in data["experience"]:
                 # Title and Dates
-                pdf.set_font(self.font_bold, size=11)
+                pdf.set_font(self.font_main, style="B", size=11)
                 pdf.cell(100, 6, exp.get("title", ""), ln=False)
                 pdf.set_font(self.font_main, size=10)
                 pdf.cell(0, 6, exp.get("period", ""), ln=True, align='R')
@@ -97,7 +96,7 @@ class ResumeGenerator:
         if data.get("education"):
             self._add_section_header(pdf, "EDUCATION")
             for edu in data["education"]:
-                pdf.set_font(self.font_bold, size=11)
+                pdf.set_font(self.font_main, style="B", size=11)
                 pdf.cell(130, 6, edu.get("degree", ""), ln=False)
                 pdf.set_font(self.font_main, size=10)
                 pdf.cell(0, 6, edu.get("period", ""), ln=True, align='R')
@@ -112,7 +111,7 @@ class ResumeGenerator:
         return pdf.output()
 
     def _add_section_header(self, pdf: FPDF, title: str):
-        pdf.set_font(self.font_bold, size=12)
+        pdf.set_font(self.font_main, style="B", size=12)
         pdf.set_fill_color(240, 240, 240) # Light gray background for section headers
         pdf.cell(0, 7, title, ln=True, fill=True)
         pdf.ln(2)

@@ -19,7 +19,7 @@ JARVIS_MEMORY_CATEGORY = "jarvis_context"
 
 class JarvisService:
     # Keywords that hint the user is reporting a bug, giving feedback, or requesting support
-    _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "issue", "problem", "fix", "glitch", "feedback", "suggestion", "improve", "report", "email", "admin", "contact", "support", "help"]
+    _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "glitch", "failure", "broken link", "not loading", "report a bug", "report an issue", "app is down"]
 
     async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
@@ -37,6 +37,8 @@ Your Personality:
 - Professional, intelligent, yet approachable and friendly.
 - Like a trusted companion who truly wants the user to succeed in their career.
 - Use a warm, natural conversational flow. Never be robotic.
+- Your tone is deep, masculine, and authoritative yet polite.
+- **BILINGUAL SUPPORT**: You are fluent in both English and Telugu. If the user speaks to you in Telugu, respond in Telugu. You can also mix languages if appropriate for the user's region.
 
 Your Capabilities:
 - Troubleshoot app issues (Auto-Applier stops, profile errors).
