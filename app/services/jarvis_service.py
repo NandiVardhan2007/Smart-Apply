@@ -242,7 +242,9 @@ If the user wants a resume, follow this protocol:
         parts = [
             f"Name: {user.get('full_name', 'User')}",
             f"Skills: {user.get('skills', 'Not set')}",
-            f"Location: {user.get('current_city', '')}, {user.get('state', '')}, {user.get('country', '')}"
+            f"Location: {user.get('current_city', '')}, {user.get('state', '')}, {user.get('country', '')}",
+            f"Raw Experience: {user.get('experience', 'None provided')}",
+            f"Raw Education: {user.get('education', 'None provided')}"
         ]
         
         # Pull latest ATS scan to answer query about ATS score
