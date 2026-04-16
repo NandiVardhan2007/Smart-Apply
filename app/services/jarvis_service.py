@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 JARVIS_MEMORY_CATEGORY = "jarvis_context"
 
 class JarvisService:
-    # Keywords that hint the user is reporting a bug or giving feedback
-    _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "issue", "problem", "fix", "glitch", "feedback", "suggestion", "improve", "report"]
+    # Keywords that hint the user is reporting a bug, giving feedback, or requesting support
+    _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "issue", "problem", "fix", "glitch", "feedback", "suggestion", "improve", "report", "email", "admin", "contact", "support", "help"]
 
     async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
