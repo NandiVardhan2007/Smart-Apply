@@ -96,3 +96,20 @@ async def get_audit_logs(skip: int = 0, limit: int = 100):
 async def get_email_logs(skip: int = 0, limit: int = 50):
     logs = await admin_service.get_email_logs(skip, limit)
     return logs
+
+@router.get("/feedbacks")
+async def get_feedbacks(skip: int = 0, limit: int = 50):
+    feedbacks = await admin_service.get_feedbacks(skip, limit)
+    return feedbacks
+
+@router.post("/feedbacks/{feedback_id}/reply")
+async def reply_to_feedback(feedback_id: str, data: dict):
+    message = data.get("message")
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+        
+    success = await admin_service.reply_to_feedback(feedback_id, message)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send reply")
+        
+    return {"message": "Reply sent successfully"}

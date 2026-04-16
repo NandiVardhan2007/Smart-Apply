@@ -279,3 +279,76 @@ This code will expire in 10 minutes. For security, do not share this code with a
 Best regards,
 The Smart Apply Team
 """
+def get_support_reply_html(message: str) -> str:
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }}
+        .header {{
+            background: #4f46e5;
+            padding: 30px;
+            text-align: center;
+            color: #ffffff;
+        }}
+        .content {{
+            padding: 40px;
+        }}
+        .reply-box {{
+            background-color: #f1f5f9;
+            padding: 24px;
+            border-radius: 12px;
+            border-left: 4px solid #4f46e5;
+            margin: 24px 0;
+            font-style: italic;
+        }}
+        .footer {{
+            padding: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            background: #f8fafc;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="margin:0">Smart Apply Support</h2>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>Our team has reviewed your recent feedback. Below is a response from our administrator:</p>
+            
+            <div class="reply-box">
+                {message}
+            </div>
+            
+            <p>We hope this addresses your concerns. If you have any further questions, please don't hesitate to reach out.</p>
+            <p>Best regards,<br>The Smart Apply Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Smart Apply Inc. | Performance & AI-Driven Career Growth</p>
+        </div>
+    </div>
+</body>
+</html>
+"""

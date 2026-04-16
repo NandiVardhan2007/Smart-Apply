@@ -47,6 +47,8 @@ const api = {
     banUser(id, reason) { return this.request(`/admin/users/${id}/ban`, 'POST', { reason }); },
     getLogs() { return this.request('/admin/system/logs'); },
     getEmails() { return this.request('/admin/emails'); },
+    getFeedbacks() { return this.request('/admin/feedbacks'); },
+    replyToFeedback(id, message) { return this.request(`/admin/feedbacks/${id}/reply`, 'POST', { message }); },
     
     logout() {
         localStorage.removeItem('admin_token');
@@ -94,6 +96,7 @@ function renderSection(section) {
     if (section === 'users') loadUsers();
     if (section === 'logs') loadLogs();
     if (section === 'emails') loadEmails();
+    if (section === 'feedback') loadFeedbacks();
 }
 
 // --- Dashboard Logic ---
@@ -241,6 +244,92 @@ async function loadEmails() {
         tableBody.innerHTML = '<tr><td colspan="4" class="text-error">Communication trail blocked.</td></tr>';
     }
 }
+
+// --- Feedback Logic ---
+async function loadFeedbacks() {
+    const list = document.getElementById('feedback-list');
+    list.innerHTML = '<p class="p-8 text-secondary">Gathering user reports...</p>';
+    
+    try {
+        const feedbacks = await api.getFeedbacks();
+        if (feedbacks.length === 0) {
+            list.innerHTML = '<div class="p-20 text-center glass"><p class="text-secondary">No user reports found.</p></div>';
+            return;
+        }
+        
+        list.className = 'feedback-grid';
+        list.innerHTML = feedbacks.map(f => `
+            <div class="card glass feedback-card ${f.status === 'replied' ? 'replied' : ''}">
+                <div class="feedback-header">
+                    <div class="user-info">
+                        <div class="user-avatar">${f.user_email[0].toUpperCase()}</div>
+                        <div>
+                            <div class="font-medium">${f.user_name}</div>
+                            <div class="text-xs text-secondary">${f.user_email}</div>
+                        </div>
+                    </div>
+                    <span class="badge ${f.status === 'new' ? 'badge-admin' : 'badge-user'}">
+                        ${f.status.toUpperCase()}
+                    </span>
+                </div>
+                <div class="feedback-body">
+                    <p class="summary">${f.summary}</p>
+                    <div class="full-message">${f.message}</div>
+                </div>
+                <div class="feedback-footer">
+                    <div class="log-time">${new Date(f.created_at).toLocaleString()}</div>
+                    ${f.status === 'new' ? `
+                        <button class="btn-primary btn-sm" onclick="openReplyModal('${f.id}', '${f.user_email}')">
+                            <i data-lucide="reply"></i> Reply
+                        </button>
+                    ` : `
+                        <div class="replied-notice">
+                            <i data-lucide="check-circle"></i> Replied
+                        </div>
+                    `}
+                </div>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    } catch (err) {
+        list.innerHTML = '<p class="p-8 text-error">Failed to load feedback list.</p>';
+    }
+}
+
+window.openReplyModal = (feedbackId, userEmail) => {
+    const modal = document.getElementById('modal-container');
+    const title = document.getElementById('modal-title');
+    const body = document.getElementById('modal-body');
+    const confirmBtn = document.getElementById('modal-confirm');
+    const cancelBtn = document.getElementById('modal-cancel');
+
+    title.innerText = `Reply to ${userEmail}`;
+    body.innerHTML = `
+        <p class="mb-4">Enter your official response below. The user will receive this as an official Smart Apply support email.</p>
+        <textarea id="reply-text" rows="5" placeholder="Dear user, thank you for your feedback..."></textarea>
+    `;
+
+    confirmBtn.innerText = 'Send Response';
+    confirmBtn.onclick = async () => {
+        const message = document.getElementById('reply-text').value;
+        if (!message) return alert("Please enter a message");
+        
+        try {
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = 'Sending...';
+            await api.replyToFeedback(feedbackId, message);
+            modal.classList.add('hidden');
+            loadFeedbacks();
+        } catch (err) {
+            alert("Failed to send reply: " + err.message);
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = 'Send Response';
+        }
+    };
+
+    cancelBtn.onclick = () => modal.classList.add('hidden');
+    modal.classList.remove('hidden');
+};
 
 // --- Interaction Handlers ---
 window.toggleBan = (userId, currentStatus) => {

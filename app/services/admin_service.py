@@ -67,4 +67,52 @@ class AdminService:
             del log["_id"]
         return logs
 
+    @staticmethod
+    async def get_feedbacks(skip: int = 0, limit: int = 50) -> list:
+        """
+        Retrieves user feedbacks and reports.
+        """
+        db = get_database()
+        cursor = db.feedbacks.find({}).sort("created_at", -1).skip(skip).limit(limit)
+        feedbacks = await cursor.to_list(length=limit)
+        
+        for f in feedbacks:
+            f["id"] = str(f["_id"])
+            del f["_id"]
+        return feedbacks
+
+    @staticmethod
+    async def reply_to_feedback(feedback_id: str, message: str) -> bool:
+        """
+        Sends an official response to user feedback and updates status.
+        """
+        from app.services.email import email_service
+        from app.services.email_templates import get_support_reply_html
+        
+        db = get_database()
+        feedback = await db.feedbacks.find_one({"_id": ObjectId(feedback_id)})
+        if not feedback:
+            return False
+            
+        # 1. Send Email
+        html_content = get_support_reply_html(message)
+        success = await email_service.send_email(
+            recipient_email=feedback["user_email"],
+            subject="Response to your Smart Apply feedback",
+            html_content=html_content
+        )
+        
+        if success:
+            # 2. Update status in DB
+            await db.feedbacks.update_one(
+                {"_id": ObjectId(feedback_id)},
+                {"$set": {
+                    "status": "replied",
+                    "replied_at": datetime.now(timezone.utc),
+                    "reply_content": message
+                }}
+            )
+            return True
+        return False
+
 admin_service = AdminService()
