@@ -10,8 +10,8 @@ class MongoDB:
 db = MongoDB()
 
 async def connect_to_mongo():
-    db.client = AsyncIOMotorClient(settings.MONGO_URI)
-    logger.info("Connected to MongoDB")
+    db.client = AsyncIOMotorClient(settings.MONGO_URI, tz_aware=True)
+    logger.info("Connected to MongoDB (Timezone Aware)")
 
 async def close_mongo_connection():
     db.client.close()

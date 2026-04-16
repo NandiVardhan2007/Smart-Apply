@@ -68,7 +68,12 @@ async def verify_otp(data: OTPVerify, background_tasks: BackgroundTasks):
     if not otp_record:
         raise HTTPException(status_code=400, detail="No OTP requested for this email")
     
-    if otp_record["expires_at"] < datetime.now(timezone.utc):
+    # Safety check: Ensure expires_at is timezone-aware before comparison
+    expires_at = otp_record["expires_at"]
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+        
+    if expires_at < datetime.now(timezone.utc):
         await db.otps.delete_one({"email": data.email})
         raise HTTPException(status_code=400, detail="OTP has expired")
 
@@ -161,7 +166,12 @@ async def reset_password(data: PasswordReset):
     if not otp_record:
         raise HTTPException(status_code=400, detail="No password reset requested for this email")
     
-    if otp_record["expires_at"] < datetime.now(timezone.utc):
+    # Safety check: Ensure expires_at is timezone-aware before comparison
+    expires_at = otp_record["expires_at"]
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+        
+    if expires_at < datetime.now(timezone.utc):
         await db.otps.delete_one({"email": data.email})
         raise HTTPException(status_code=400, detail="OTP has expired")
     
