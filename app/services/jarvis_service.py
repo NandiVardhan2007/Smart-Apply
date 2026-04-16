@@ -2,6 +2,8 @@ import asyncio
 import logging
 import json
 from typing import List, Dict, Any, Optional
+import base64
+import traceback
 from datetime import datetime, timezone
 
 from app.services.ai_parser import get_next_client
@@ -281,8 +283,13 @@ If the user wants a resume, follow this protocol:
                 return
 
             # 2. Generate PDF bytes with Premium Visual Style
+            logger.info(f"Starting PDF generation for user {user_id}...")
             pdf_bytes = resume_generator.generate_pdf(resume_data, style="premium")
             
+            if not pdf_bytes:
+                logger.error(f"PDF generation returned empty bytes for user {user_id}")
+                return
+
             # 3. Get user email
             db = get_database()
             user = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -293,7 +300,6 @@ If the user wants a resume, follow this protocol:
                 return
 
             # 4. Prepare attachment for Brevo
-            import base64
             attachment_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
             attachments = [
                 {
@@ -322,7 +328,8 @@ If the user wants a resume, follow this protocol:
             logger.info(f"Resume emailed successfully to {user_email}")
 
         except Exception as e:
-            logger.error(f"Error in background resume generation: {e}", exc_info=True)
+            logger.error(f"Error in background resume generation: {e}")
+            logger.error(traceback.format_exc())
 
     async def _structure_resume_data(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Uses AI to turn raw user profile/memories into structured resume JSON."""
@@ -360,7 +367,7 @@ CRITICAL INSTRUCTIONS:
         client = get_next_client()
         try:
             response = await client.chat.completions.create(
-                model="minimaxai/minimax-m2.7",
+                model="meta/llama-3.1-70b-instruct",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"User Context:\n{user_context}"}

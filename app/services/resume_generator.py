@@ -12,6 +12,36 @@ class ResumeGenerator:
         # Using standard fonts which are best for ATS (helvetica)
         self.font_main = "helvetica"
 
+    def _sanitize_text(self, text: Any) -> str:
+        """
+        Converts text to Latin-1 compatible string, replacing unsupported characters.
+        This prevents UnicodeEncodeError when using core PDF fonts (Helvetica).
+        """
+        if text is None:
+            return ""
+        if not isinstance(text, str):
+            text = str(text)
+            
+        # Common AI characters and their ASCII equivalents
+        replacements = {
+            "\u2013": "-", # en dash
+            "\u2014": "-", # em dash
+            "\u2018": "'", # left single quote
+            "\u2019": "'", # right single quote
+            "\u201c": '"', # left double quote
+            "\u201d": '"', # right double quote
+            "\u2022": "-", # bullet point
+            "\u200b": "",  # zero width space
+            "\u2713": "check", # checkmark
+            "\u26a1": "fast",  # lightning
+        }
+        
+        for unicode_char, ascii_char in replacements.items():
+            text = text.replace(unicode_char, ascii_char)
+            
+        # Encode to latin-1, ignore remaining errors
+        return text.encode('latin-1', 'replace').decode('latin-1')
+
     def generate_pdf(self, data: Dict[str, Any], style: str = "standard") -> bytes:
         """
         Generates a professional PDF. Supports 'standard' (ATS-focused) and 'premium' (Visual-focused).
@@ -25,7 +55,8 @@ class ResumeGenerator:
         
         # 1. Header (Name & Contact)
         pdf.set_font(self.font_main, style="B", size=18)
-        pdf.cell(0, 10, data.get("name", "RESUME").upper(), ln=True, align='C')
+        name = self._sanitize_text(data.get("name", "RESUME"))
+        pdf.cell(0, 10, name.upper(), ln=True, align='C')
         
         pdf.set_font(self.font_main, size=10)
         contact = data.get("contact", {})
@@ -34,13 +65,13 @@ class ResumeGenerator:
         if contact.get("phone"): contact_line.append(contact["phone"])
         if contact.get("location"): contact_line.append(contact["location"])
         
-        pdf.cell(0, 6, " | ".join(contact_line), ln=True, align='C')
+        pdf.cell(0, 6, self._sanitize_text(" | ".join(contact_line)), ln=True, align='C')
         
         links = []
         if contact.get("linkedin"): links.append(contact["linkedin"])
         if contact.get("portfolio"): links.append(contact["portfolio"])
         if links:
-            pdf.cell(0, 6, " | ".join(links), ln=True, align='C')
+            pdf.cell(0, 6, self._sanitize_text(" | ".join(links)), ln=True, align='C')
             
         pdf.ln(5)
 
@@ -48,14 +79,14 @@ class ResumeGenerator:
         if data.get("summary"):
             self._add_section_header(pdf, "PROFESSIONAL SUMMARY")
             pdf.set_font(self.font_main, size=11)
-            pdf.multi_cell(0, 5, data["summary"])
+            pdf.multi_cell(0, 5, self._sanitize_text(data["summary"]))
             pdf.ln(5)
 
         # 3. Skills
         if data.get("skills"):
             self._add_section_header(pdf, "CORE COMPETENCIES")
             pdf.set_font(self.font_main, size=11)
-            skills_text = ", ".join(data["skills"])
+            skills_text = self._sanitize_text(", ".join(data["skills"]))
             pdf.multi_cell(0, 5, skills_text)
             pdf.ln(5)
 
@@ -65,15 +96,15 @@ class ResumeGenerator:
             for exp in data["experience"]:
                 # Title and Dates
                 pdf.set_font(self.font_main, style="B", size=11)
-                pdf.cell(100, 6, exp.get("title", ""), ln=False)
+                pdf.cell(100, 6, self._sanitize_text(exp.get("title", "")), ln=False)
                 pdf.set_font(self.font_main, size=10)
-                pdf.cell(0, 6, exp.get("period", ""), ln=True, align='R')
+                pdf.cell(0, 6, self._sanitize_text(exp.get("period", "")), ln=True, align='R')
                 
                 # Company and Location
                 pdf.set_font(self.font_main, style='I', size=11)
-                pdf.cell(100, 5, exp.get("company", ""), ln=False)
+                pdf.cell(100, 5, self._sanitize_text(exp.get("company", "")), ln=False)
                 pdf.set_font(self.font_main, size=10)
-                pdf.cell(0, 5, exp.get("location", ""), ln=True, align='R')
+                pdf.cell(0, 5, self._sanitize_text(exp.get("location", "")), ln=True, align='R')
                 
                 pdf.ln(2)
                 
@@ -83,7 +114,7 @@ class ResumeGenerator:
                     # Using a simple hyphen for 100% ATS safety and encoding compatibility
                     pdf.set_x(15)
                     pdf.cell(5, 5, "-", ln=False)
-                    pdf.multi_cell(0, 5, bullet)
+                    pdf.multi_cell(0, 5, self._sanitize_text(bullet))
                 pdf.ln(3)
 
         # 5. Education
@@ -91,14 +122,14 @@ class ResumeGenerator:
             self._add_section_header(pdf, "EDUCATION")
             for edu in data["education"]:
                 pdf.set_font(self.font_main, style="B", size=11)
-                pdf.cell(130, 6, edu.get("degree", ""), ln=False)
+                pdf.cell(130, 6, self._sanitize_text(edu.get("degree", "")), ln=False)
                 pdf.set_font(self.font_main, size=10)
-                pdf.cell(0, 6, edu.get("period", ""), ln=True, align='R')
+                pdf.cell(0, 6, self._sanitize_text(edu.get("period", "")), ln=True, align='R')
                 
                 pdf.set_font(self.font_main, size=11)
-                pdf.cell(130, 5, edu.get("school", ""), ln=False)
+                pdf.cell(130, 5, self._sanitize_text(edu.get("school", "")), ln=False)
                 pdf.set_font(self.font_main, size=10)
-                pdf.cell(0, 5, edu.get("location", ""), ln=True, align='R')
+                pdf.cell(0, 5, self._sanitize_text(edu.get("location", "")), ln=True, align='R')
                 pdf.ln(4)
 
         # Return as bytes
@@ -125,7 +156,8 @@ class ResumeGenerator:
         pdf.set_text_color(255, 255, 255)
         pdf.set_y(10)
         pdf.set_font(self.font_main, style="B", size=24)
-        pdf.cell(0, 12, data.get("name", "RESUME").upper(), ln=True, align='C')
+        name = self._sanitize_text(data.get("name", "RESUME"))
+        pdf.cell(0, 12, name.upper(), ln=True, align='C')
         
         pdf.set_font(self.font_main, size=10)
         contact = data.get("contact", {})
@@ -134,13 +166,13 @@ class ResumeGenerator:
         if contact.get("phone"): contact_items.append(contact["phone"])
         if contact.get("location"): contact_items.append(contact["location"])
         
-        pdf.cell(0, 6, "  |  ".join(contact_items), ln=True, align='C')
+        pdf.cell(0, 6, self._sanitize_text("  |  ".join(contact_items)), ln=True, align='C')
         
         if contact.get("linkedin") or contact.get("portfolio"):
             links = []
             if contact.get("linkedin"): links.append(contact["linkedin"])
             if contact.get("portfolio"): links.append(contact["portfolio"])
-            pdf.cell(0, 6, "  |  ".join(links), ln=True, align='C')
+            pdf.cell(0, 6, self._sanitize_text("  |  ".join(links)), ln=True, align='C')
             
         pdf.set_text_color(*text_color)
         pdf.set_y(45)
@@ -149,7 +181,7 @@ class ResumeGenerator:
         if data.get("summary"):
             self._add_premium_section_header(pdf, "EXECUTIVE SUMMARY", accent_color)
             pdf.set_font(self.font_main, size=11)
-            pdf.multi_cell(0, 5, data["summary"])
+            pdf.multi_cell(0, 5, self._sanitize_text(data["summary"]))
             pdf.ln(4)
 
         # 3. Skills Matrix
@@ -157,7 +189,7 @@ class ResumeGenerator:
             self._add_premium_section_header(pdf, "CORE COMPETENCIES & TECHNICAL STACK", accent_color)
             pdf.set_font(self.font_main, size=11)
             # Using a pipe '|' instead of a Unicode bullet to ensure compatibility with core fonts like Helvetica
-            skills_text = " | ".join(data["skills"])
+            skills_text = self._sanitize_text(" | ".join(data["skills"]))
             pdf.multi_cell(0, 5, skills_text)
             pdf.ln(4)
 
@@ -168,18 +200,18 @@ class ResumeGenerator:
                 # Title
                 pdf.set_font(self.font_main, style="B", size=12)
                 pdf.set_text_color(*accent_color)
-                pdf.cell(140, 7, exp.get("title", ""), ln=False)
+                pdf.cell(140, 7, self._sanitize_text(exp.get("title", "")), ln=False)
                 # Period
                 pdf.set_font(self.font_main, size=10)
                 pdf.set_text_color(*text_color)
-                pdf.cell(0, 7, exp.get("period", ""), ln=True, align='R')
+                pdf.cell(0, 7, self._sanitize_text(exp.get("period", "")), ln=True, align='R')
                 
                 # Company
                 pdf.set_font(self.font_main, style="B", size=11)
-                pdf.cell(140, 5, exp.get("company", ""), ln=False)
+                pdf.cell(140, 5, self._sanitize_text(exp.get("company", "")), ln=False)
                 # Location
                 pdf.set_font(self.font_main, style="I", size=10)
-                pdf.cell(0, 5, exp.get("location", ""), ln=True, align='R')
+                pdf.cell(0, 5, self._sanitize_text(exp.get("location", "")), ln=True, align='R')
                 
                 pdf.ln(2)
                 
@@ -191,23 +223,23 @@ class ResumeGenerator:
                     pdf.set_font("zapfdingbats", size=8)
                     pdf.cell(5, 5, chr(108), ln=False) # Sleek bullet point
                     pdf.set_font(self.font_main, size=10)
-                    pdf.multi_cell(0, 5, bullet)
+                    pdf.multi_cell(0, 5, self._sanitize_text(bullet))
                 pdf.ln(3)
-
+ 
         # 5. Education
         if data.get("education"):
             self._add_premium_section_header(pdf, "EDUCATION", accent_color)
             pdf.set_text_color(*text_color)
             for edu in data["education"]:
                 pdf.set_font(self.font_main, style="B", size=11)
-                pdf.cell(140, 6, edu.get("degree", ""), ln=False)
+                pdf.cell(140, 6, self._sanitize_text(edu.get("degree", "")), ln=False)
                 pdf.set_font(self.font_main, size=10)
-                pdf.cell(0, 6, edu.get("period", ""), ln=True, align='R')
+                pdf.cell(0, 6, self._sanitize_text(edu.get("period", "")), ln=True, align='R')
                 
                 pdf.set_font(self.font_main, size=10)
-                pdf.cell(140, 5, edu.get("school", ""), ln=False)
+                pdf.cell(140, 5, self._sanitize_text(edu.get("school", "")), ln=False)
                 pdf.set_font(self.font_main, style="I", size=10)
-                pdf.cell(0, 5, edu.get("location", ""), ln=True, align='R')
+                pdf.cell(0, 5, self._sanitize_text(edu.get("location", "")), ln=True, align='R')
                 pdf.ln(2)
 
         return pdf.output()
