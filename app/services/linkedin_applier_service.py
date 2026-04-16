@@ -123,6 +123,99 @@ No preamble or explanation, ONLY the JSON object."""
             # Fallback: construct basic queries from raw data
             return self._fallback_search_terms(skills, experience, location)
 
+    # ── Resume Selection ─────────────────────────────────────────────
+    
+    async def select_best_resume(
+        self,
+        user_id: str,
+        job_description: str,
+    ) -> Dict[str, Any]:
+        """
+        AI-powered resume selection.
+        Analyzes the JD and all user resumes to pick the best match.
+        """
+        db = get_database()
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        
+        if not user or "resumes" not in user or not user["resumes"]:
+            return {
+                "id": None,
+                "content": user.get("resume_content", ""),
+                "name": "Default",
+                "reasoning": "No other resumes found."
+            }
+        
+        resumes = user["resumes"]
+        if len(resumes) == 1:
+            return {
+                "id": resumes[0]["id"],
+                "content": resumes[0]["content"],
+                "name": resumes[0]["name"],
+                "reasoning": "Only one resume available."
+            }
+            
+        client = get_next_client()
+        
+        # Build a summaries list for the AI
+        resume_summaries = []
+        for r in resumes:
+            # We send a truncated version to save tokens but enough to distinguish
+            resume_summaries.append({
+                "id": r["id"],
+                "name": r["name"],
+                "preview": r["content"][:1500] 
+            })
+            
+        system_prompt = """You are an expert recruiter. Your task is to select the BEST resume from a list for a specific job description.
+Return ONLY valid JSON with these fields:
+{
+  "selected_resume_id": "the-id-of-the-best-resume",
+  "reasoning": "1-sentence explanation of why this resume matches best"
+}
+If they are similar, pick the one that highlights more relevant skills found in the JD.
+No preamble, ONLY JSON."""
+
+        user_message = f"""JOB DESCRIPTION:
+{job_description[:3000]}
+
+AVAILABLE RESUMES:
+{json.dumps(resume_summaries, indent=2)}"""
+
+        try:
+            response = await client.chat.completions.create(
+                model="meta/llama-3.1-8b-instruct",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=0.1,
+            )
+            
+            raw = response.choices[0].message.content
+            parsed = await asyncio.to_thread(robust_json_loads, raw)
+            
+            best_id = parsed.get("selected_resume_id")
+            best_resume = next((r for r in resumes if r["id"] == best_id), resumes[0])
+            
+            logger.info(f"[Resume Selection] Picked '{best_resume['name']}' for user {user_id}")
+            
+            return {
+                "id": best_resume["id"],
+                "content": best_resume["content"],
+                "name": best_resume["name"],
+                "reasoning": parsed.get("reasoning", "Best match found.")
+            }
+            
+        except Exception as e:
+            logger.error(f"[Resume Selection] Fallback to default due to error: {e}")
+            default_resume = next((r for r in resumes if r.get("is_default")), resumes[0])
+            return {
+                "id": default_resume["id"],
+                "content": default_resume["content"],
+                "name": default_resume["name"],
+                "reasoning": "Fallback to default due to AI error."
+            }
+
     # ── Question Answering ───────────────────────────────────────────
 
     async def answer_question(
@@ -134,11 +227,12 @@ No preamble or explanation, ONLY the JSON object."""
         job_title: Optional[str] = None,
         company_name: Optional[str] = None,
         job_description: Optional[str] = None,
+        use_smart_selection: bool = False,
     ) -> Dict[str, Any]:
         """
         Attempt to answer a LinkedIn application question using:
         1. Previously saved Q&A from memory (highest priority)
-        2. User's resume/profile data
+        2. User's resume/profile data (Optionally best-matched using AI)
         3. AI generation with the user's context
         Falls back to requesting user input if confidence is low.
         """
@@ -156,7 +250,14 @@ No preamble or explanation, ONLY the JSON object."""
             }
 
         # ── Step 2: Build context from user profile & resume ──
-        user_context = await self._get_user_context(user_id)
+        # If smart selection is enabled and we have a JD, pick the best resume
+        selected_resume_content = None
+        if use_smart_selection and job_description:
+            logger.info(f"[LinkedIn Applier] Using smart resume selection for {job_title}")
+            best = await self.select_best_resume(user_id, job_description)
+            selected_resume_content = best.get("content")
+            
+        user_context = await self._get_user_context(user_id, selected_resume_content)
 
         # ── Step 3: AI-powered answer generation ──
         client = get_next_client()
@@ -462,7 +563,7 @@ Question: {question}{options_text}"""
 
         return similarity >= 0.7
 
-    async def _get_user_context(self, user_id: str) -> str:
+    async def _get_user_context(self, user_id: str, resume_content: Optional[str] = None) -> str:
         """Build user context from database profile + resume data."""
         db = get_database()
 
@@ -496,9 +597,10 @@ Question: {question}{options_text}"""
         if (user.get("portfolio_url")):
             parts.append(f"Portfolio: {user['portfolio_url']}")
         
-        # NEW: Include full resume content for data-rich answering
-        if (user.get("resume_content")):
-            parts.append(f"FULL RESUME TEXT:\n{user['resume_content'][:8000]}")
+        # Use provided resume_content if available, otherwise fallback to user default
+        content = resume_content or user.get("resume_content")
+        if content:
+            parts.append(f"FULL RESUME TEXT:\n{content[:8000]}")
             
         return "\n".join(parts) if parts else "Minimal profile data available."
 

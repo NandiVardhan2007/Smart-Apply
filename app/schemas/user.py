@@ -32,6 +32,13 @@ class UserProfileUpdate(BaseModel):
     state: Optional[str] = None
     country: Optional[str] = None
 
+class ResumeItem(BaseModel):
+    id: str
+    name: str
+    url: str
+    is_default: bool = False
+    created_at: str
+
 class UserOut(UserBase):
     id: str
     role: str = "user"
@@ -44,6 +51,7 @@ class UserOut(UserBase):
     is_profile_completed: bool = False
     profile_pic_url: Optional[str] = None
     resume_url: Optional[str] = None
+    resumes: List[ResumeItem] = []
     portfolio_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None

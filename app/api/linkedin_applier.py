@@ -71,6 +71,7 @@ async def answer_application_question(
             job_title=request.job_title,
             company_name=request.company_name,
             job_description=request.job_description,
+            use_smart_selection=request.use_smart_selection,
         )
         return result
     except Exception as e:

@@ -53,6 +53,7 @@ class AnswerQuestionRequest(BaseModel):
     job_title: Optional[str] = Field(None, description="Title of the job being applied to")
     company_name: Optional[str] = Field(None, description="Company name")
     job_description: Optional[str] = Field(None, description="Snippet of the job description")
+    use_smart_selection: bool = Field(False, description="Enable AI-powered resume selection")
 
 
 class AnswerQuestionResponse(BaseModel):

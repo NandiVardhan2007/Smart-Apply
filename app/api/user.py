@@ -52,6 +52,15 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         presigned_url = await storage_service.generate_presigned_url(key)
         if presigned_url:
             current_user["resume_url"] = presigned_url
+    
+    # Presign all resumes in the list
+    resumes = current_user.get("resumes", [])
+    for resume in resumes:
+        if resume.get("url"):
+            r_key = storage_service.get_key_from_url(resume["url"])
+            r_presigned = await storage_service.generate_presigned_url(r_key)
+            if r_presigned:
+                resume["url"] = r_presigned
             
     return UserOut(**current_user)
 
@@ -97,17 +106,26 @@ async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depen
     return {"url": presigned_url or url}
 
 @router.post("/upload-resume", status_code=status.HTTP_201_CREATED)
-async def upload_resume(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def upload_resume(
+    file: UploadFile = File(...), 
+    resume_name: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
     file_content = await file.read()
     if len(file_content) > settings.MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail=f"File too large. Max size is {settings.MAX_UPLOAD_BYTES // (1024*1024)}MB.")
-    file_name = f"resumes/{current_user['id']}_{file.filename}"
+    
+    # Generate unique ID for this resume version
+    import uuid
+    resume_id = str(uuid.uuid4())
+    
+    file_name = f"resumes/{current_user['id']}_{resume_id}_{file.filename}"
     url = await storage_service.upload_file(file_content, file_name, file.content_type)
     
     if not url:
         raise HTTPException(status_code=500, detail="Error uploading file to storage")
         
-    # Extract and store text content for AI features (like Auto Applier)
+    # Extract and store text content
     text_content = ""
     try:
         text_content = extract_text_from_pdf(file_content)
@@ -115,11 +133,94 @@ async def upload_resume(file: UploadFile = File(...), current_user: dict = Depen
         logger.warning(f"Could not extract text from resume: {e}")
 
     db = get_database()
+    
+    # Prepare the resume object
+    new_resume = {
+        "id": resume_id,
+        "name": resume_name or file.filename,
+        "url": url,
+        "content": text_content,
+        "is_default": False,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    # If this is the first resume, make it default
+    current_resumes = current_user.get("resumes", [])
+    if not current_resumes:
+        new_resume["is_default"] = True
+        # For backward compatibility, also update legacy fields
+        await db.users.update_one(
+            {"_id": ObjectId(current_user["id"])},
+            {"$set": {"resume_url": url, "resume_content": text_content}}
+        )
+
     await db.users.update_one(
         {"_id": ObjectId(current_user["id"])}, 
-        {"$set": {"resume_url": url, "resume_content": text_content}}
+        {"$push": {"resumes": new_resume}}
     )
-    return {"url": url}
+    
+    return {"id": resume_id, "url": url, "name": new_resume["name"]}
+
+@router.delete("/resumes/{resume_id}")
+async def delete_resume(resume_id: str, current_user: dict = Depends(get_current_user)):
+    db = get_database()
+    
+    # Check if we are deleting the default one
+    resumes = current_user.get("resumes", [])
+    resume_to_delete = next((r for r in resumes if r["id"] == resume_id), None)
+    
+    if not resume_to_delete:
+        raise HTTPException(status_code=404, detail="Resume not found")
+        
+    await db.users.update_one(
+        {"_id": ObjectId(current_user["id"])},
+        {"$pull": {"resumes": {"id": resume_id}}}
+    )
+    
+    # If it was default, pick another one as default if available
+    if resume_to_delete.get("is_default") and len(resumes) > 1:
+        new_default = [r for r in resumes if r["id"] != resume_id][0]
+        await db.users.update_one(
+            {"_id": ObjectId(current_user["id"]), "resumes.id": new_default["id"]},
+            {"$set": {
+                "resumes.$.is_default": True,
+                "resume_url": new_default["url"],
+                "resume_content": new_default["content"]
+            }}
+        )
+    elif resume_to_delete.get("is_default"):
+        # Deleted the only resume
+        await db.users.update_one(
+            {"_id": ObjectId(current_user["id"])},
+            {"$set": {"resume_url": None, "resume_content": None}}
+        )
+        
+    return {"message": "Resume deleted successfully"}
+
+@router.patch("/resumes/{resume_id}/set-default")
+async def set_default_resume(resume_id: str, current_user: dict = Depends(get_current_user)):
+    db = get_database()
+    resumes = current_user.get("resumes", [])
+    target = next((r for r in resumes if r["id"] == resume_id), None)
+    
+    if not target:
+        raise HTTPException(status_code=404, detail="Resume not found")
+        
+    # Reset all to false, then set target to true
+    await db.users.update_one(
+        {"_id": ObjectId(current_user["id"])},
+        {"$set": {"resumes.$[].is_default": False}}
+    )
+    await db.users.update_one(
+        {"_id": ObjectId(current_user["id"]), "resumes.id": resume_id},
+        {"$set": {
+            "resumes.$.is_default": True,
+            "resume_url": target["url"],
+            "resume_content": target["content"]
+        }}
+    )
+    
+    return {"message": "Default resume updated"}
 
 @router.get("/applications")
 async def get_user_applications(current_user: dict = Depends(get_current_user)):
