@@ -6,9 +6,12 @@ from app.utils.monitoring import log_resource_usage
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, user, ats, linkedin, memory, linkedin_applier, jarvis
+from app.api import auth, user, ats, linkedin, memory, linkedin_applier, jarvis, admin
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -81,6 +84,26 @@ app.include_router(linkedin.router, prefix="/api/linkedin", tags=["LinkedIn Opti
 app.include_router(memory.router, prefix="/api/memory", tags=["User Memory"])
 app.include_router(linkedin_applier.router, prefix="/api/linkedin-applier", tags=["LinkedIn Auto Applier"])
 app.include_router(jarvis.router, prefix="/api/jarvis", tags=["JARVIS AI"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin Portal"])
+
+# --- Admin Portal Static Files ---
+# Ensure directory exists before mounting
+admin_static_path = os.path.join("app", "static", "admin")
+if not os.path.exists(admin_static_path):
+    os.makedirs(admin_static_path, exist_ok=True)
+
+app.mount("/admin", StaticFiles(directory=admin_static_path, html=True), name="admin")
+
+@app.get("/admin/{path_name:path}")
+async def admin_spa_fallback(path_name: str):
+    """
+    Catch-all for the Admin SPA to ensure direct loads of sub-routes 
+    (like /admin/users) return the index.html.
+    """
+    index_file = os.path.join(admin_static_path, "index.html")
+    if os.path.isfile(index_file):
+        return FileResponse(index_file)
+    return {"error": "Admin portal build not found. Run npm run build in admin_ui."}
 
 @app.get("/")
 async def root():

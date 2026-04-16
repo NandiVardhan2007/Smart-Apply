@@ -34,6 +34,8 @@ class UserProfileUpdate(BaseModel):
 
 class UserOut(UserBase):
     id: str
+    role: str = "user"
+    is_banned: bool = False
     phone: Optional[str] = None
     location: Optional[str] = None
     education: Optional[str] = None
