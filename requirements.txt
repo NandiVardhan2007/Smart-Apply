@@ -14,3 +14,4 @@ email-validator
 pdfminer.six
 openai
 tenacity
+psutil

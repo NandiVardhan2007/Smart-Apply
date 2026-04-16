@@ -6,6 +6,7 @@ and application tracking for the LinkedIn Auto Applier feature.
 
 import json
 import logging
+import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from bson import ObjectId
@@ -14,6 +15,7 @@ from app.services.ai_parser import get_next_client
 from app.services.memory_service import memory_service
 from app.db.mongodb import get_database
 from app.utils.json_repair import robust_json_loads
+from app.utils.monitoring import log_resource_usage
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +92,7 @@ No preamble or explanation, ONLY the JSON object."""
             )
 
             raw = response.choices[0].message.content
-            parsed = robust_json_loads(raw)
+            parsed = await asyncio.to_thread(robust_json_loads, raw)
 
             # Ensure all required fields exist with defaults
             result = {
@@ -195,7 +197,7 @@ Question: {question}{options_text}"""
             )
 
             raw = response.choices[0].message.content
-            parsed = robust_json_loads(raw)
+            parsed = await asyncio.to_thread(robust_json_loads, raw)
 
             answer = parsed.get("answer", "")
             confidence = float(parsed.get("confidence", 0.0))
@@ -477,6 +479,12 @@ Question: {question}{options_text}"""
             parts.append(f"Experience: {user['experience']}")
         if (user.get("skills")):
             parts.append(f"Skills: {user['skills']}")
+        if (user.get("linkedin_url")):
+            parts.append(f"LinkedIn: {user['linkedin_url']}")
+        if (user.get("github_url")):
+            parts.append(f"GitHub: {user['github_url']}")
+        if (user.get("portfolio_url")):
+            parts.append(f"Portfolio: {user['portfolio_url']}")
         
         # NEW: Include full resume content for data-rich answering
         if (user.get("resume_content")):

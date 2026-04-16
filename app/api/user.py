@@ -7,6 +7,7 @@ from app.services.storage import storage_service
 from app.services.pdf_handler import extract_text_from_pdf
 from app.services.ai_parser import parse_resume_with_ai
 from fastapi.security import OAuth2PasswordBearer
+from datetime import datetime
 from bson import ObjectId
 
 router = APIRouter()
@@ -120,15 +121,18 @@ async def get_user_applications(current_user: dict = Depends(get_current_user)):
     """Fetches all job applications for the current user, sorted by date."""
     try:
         db = get_database()
-        cursor = db.applications.find({"user_id": current_user["id"]}).sort("applied_at", -1)
+        user_id = str(current_user["id"])
+        cursor = db.applications.find({"user_id": user_id}).sort("created_at", -1)
         applications = await cursor.to_list(length=100)
         
         # Format for frontend
         for app in applications:
             app["id"] = str(app["_id"])
             del app["_id"]
-            if "applied_at" in app and app["applied_at"]:
-                app["applied_at"] = app["applied_at"].isoformat()
+            # Convert all datetime objects to ISO strings for reliable JSON transport
+            for key, value in app.items():
+                if isinstance(value, datetime):
+                    app[key] = value.isoformat()
                 
         return applications
     except Exception as e:
@@ -158,6 +162,10 @@ async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
         async for app in cursor:
             app["id"] = str(app["_id"])
             del app["_id"]
+            # Ensure recent apps are also serialized
+            for key, value in app.items():
+                if isinstance(value, datetime):
+                    app[key] = value.isoformat()
             recent_apps.append(app)
 
         # Get profile pic URL if exists
