@@ -170,10 +170,12 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         return _validate_and_normalize(result)
         
     except Exception as e:
-        logger.error(f"[ATS Analyzer] Final failure: {e}")
-        try: logger.error(f"[ATS Analyzer] Raw content was: {raw_content[:500]}...")
-        except: pass
-        return _fallback_result(f"Analysis error: {str(e)}")
+        logger.error(f"[ATS Analyzer] Final failure: {e}", exc_info=True)
+        try: 
+            logger.error(f"[ATS Analyzer] Raw content was: {raw_content[:1000]}...")
+        except: 
+            pass
+        return _fallback_result(f"Analysis service temporary delay. Please try again.")
 
 
 def _validate_and_normalize(result: dict) -> dict:
@@ -260,16 +262,17 @@ def _fallback_result(error_msg: str) -> dict:
     return {
         "overall_score": 0,
         "overall_grade": "N/A",
-        "summary": f"Analysis could not be completed: {error_msg}",
+        "summary": f"Our analysts are working to process your resume. {error_msg}",
         "categories": [],
         "milestones": [],
-        "drawbacks": ["Unable to analyze — please try uploading again."],
+        "drawbacks": ["Please ensure you are uploading a clear, text-based PDF resume."],
         "improvement_plan": [
             {
                 "priority": "HIGH",
-                "action": "Re-upload your resume and try again",
+                "action": "Retry Scan",
                 "impact": "Required to get analysis",
-                "details": "The AI analysis encountered an error. Please re-upload your resume PDF."
+                "details": "The AI analysis encountered an intermittent issue. Please re-upload your resume or try again in a few minutes."
             }
-        ]
+        ],
+        "error": True
     }

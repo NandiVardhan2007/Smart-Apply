@@ -94,6 +94,16 @@ No preamble or explanation, ONLY the JSON object."""
             raw = response.choices[0].message.content
             parsed = await asyncio.to_thread(robust_json_loads, raw)
 
+            if not parsed:
+                logger.error(f"[LinkedIn Applier] Search term generation failed to parse: {raw[:500]}")
+                return {
+                    "search_queries": ["Software Engineer", "Frontend Developer", "Backend Developer"],
+                    "keywords": ["React", "Python", "Node.js", "Flutter"],
+                    "job_titles": ["Software Engineer"],
+                    "filters": {"easy_apply": True},
+                    "error": "Using fallback search terms due to processing issue"
+                }
+
             # Ensure all required fields exist with defaults
             result = {
                 "search_queries": parsed.get("search_queries", []),

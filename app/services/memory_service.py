@@ -65,8 +65,8 @@ class MemoryService:
         if category:
             memories = [m for m in memories if m.get("category") == category]
         
-        # Sort by updated_at descending
-        memories.sort(key=lambda x: x.get("updated_at", timestamp), reverse=True)
+        # Sort by updated_at descending, handling missing timestamps safely
+        memories.sort(key=lambda x: x.get("updated_at", datetime.min.replace(tzinfo=None)), reverse=True)
         return memories
 
     async def get_memory_by_id(self, user_id: str, memory_id: str) -> Optional[Dict[str, Any]]:

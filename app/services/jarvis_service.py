@@ -51,11 +51,12 @@ User Context:
 App Stats:
 {app_stats}
 
-Instructions:
+STRICT INSTRUCTIONS:
 1. Ground your answers in the user's data.
 2. If the user suggests an improvement or reports a BUG, acknowledge it and say you'll inform the developer. Then, trigger the "report" intent.
 3. If you detect a new insight about the user (e.g., they prefer remote work), trigger the "memory" intent.
-4. Return ONLY valid JSON with this structure:
+4. Return ONLY valid JSON. NO markdown. NO preamble.
+Structure:
 {{
   "response": "Your conversational reply here",
   "suggestions": ["Suggestion 1", "Suggestion 2"],
@@ -69,10 +70,14 @@ Instructions:
         client = get_next_client()
         messages = [{"role": "system", "content": system_prompt}]
         
-        # Add limited history
+        # Add limited history with role mapping safety
         if history:
             for h in history[-6:]:
-                messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+                role = h.get("role", "user")
+                # Map 'jarvis' or any non-standard role to 'assistant' for LLM compatibility
+                if role.lower() not in ["user", "system", "assistant", "developer"]:
+                    role = "assistant"
+                messages.append({"role": role, "content": h.get("content", "")})
         
         messages.append({"role": "user", "content": message})
 
@@ -81,12 +86,16 @@ Instructions:
                 model="meta/llama-3.1-8b-instruct",
                 messages=messages,
                 temperature=0.7,
-                max_tokens=800,
+                max_tokens=1000,
             )
             
             raw = response.choices[0].message.content
             parsed = await asyncio.to_thread(robust_json_loads, raw)
             
+            if not parsed:
+                logger.warning(f"[JARVIS] Parsing failed for raw content: {raw[:200]}...")
+                return self._get_fallback_response("I encountered a formatting issue while thinking. Could you please rephrase?")
+
             reply = parsed.get("response", "I'm sorry, I'm having trouble processing that.")
             suggestions = parsed.get("suggestions", [])
             intents = parsed.get("intents", {})
@@ -94,7 +103,7 @@ Instructions:
             # 4. Handle Intents
             # A. Update Memory
             memory_updated = False
-            if intents.get("track_memory"):
+            if intents and intents.get("track_memory"):
                 m = intents["track_memory"]
                 if m.get("key") and m.get("content"):
                     await memory_service.create_memory(user_id, MemoryCreate(
@@ -106,23 +115,27 @@ Instructions:
                     memory_updated = True
             
             # B. Report Feedback
-            if intents.get("report_feedback"):
+            if intents and intents.get("report_feedback"):
                 await self._report_to_admin(user_id, message, intents["report_feedback"])
 
             return {
                 "message": reply,
                 "suggestions": suggestions,
                 "memory_updated": memory_updated,
-                "action_taken": "Feedback reported to admin" if intents.get("report_feedback") else None
+                "action_taken": "Feedback reported to admin" if intents and intents.get("report_feedback") else None
             }
 
         except Exception as e:
-            logger.error(f"[JARVIS] Chat Error: {e}")
-            return {
-                "message": "I apologize, but I've encountered a system glitch. Please try again in a moment.",
-                "suggestions": ["Try again", "Go to Dashboard"],
-                "memory_updated": False
-            }
+            logger.error(f"[JARVIS] Chat Critical Error: {e}", exc_info=True)
+            return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay. Please try again in a moment.")
+
+    def _get_fallback_response(self, error_msg: str) -> Dict[str, Any]:
+        return {
+            "message": error_msg,
+            "suggestions": ["Try again", "Go to Dashboard"],
+            "memory_updated": False,
+            "error": True
+        }
 
     async def _get_full_user_context(self, user_id: str) -> str:
         db = get_database()
