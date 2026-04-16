@@ -16,3 +16,4 @@ pdfminer.six
 openai
 tenacity
 psutil
+fpdf2

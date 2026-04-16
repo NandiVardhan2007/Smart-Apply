@@ -10,6 +10,8 @@ from app.services.email import email_service
 from app.db.mongodb import get_database
 from app.core.config import settings
 from app.schemas.memory import MemoryCreate
+from app.services.resume_generator import resume_generator
+from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ Your Personality:
 Your Capabilities:
 - Troubleshoot app issues (Auto-Applier stops, profile errors).
 - Suggest profile improvements (ATS score, keyword optimization).
+- **RESUME BUILDER**: You can create professional, ATS-friendly resumes for the user.
 - Remember user preferences and career goals.
 - Acknowledge bugs or suggestions and assure the user you'll inform the developer.
 
@@ -61,7 +64,18 @@ Instructions:
   Example:
   >> Check your ATS score
   >> Update your skills
-  >> Try Auto Pilot"""
+  >> Try Auto Pilot
+  >> Build a new resume
+
+RESUME BUILDER MODE:
+If the user wants a resume, follow this protocol:
+1. Check their profile for missing information (Experience details, specific skills for the target role).
+2. Ask ONE clarifying question at a time to gather better data (e.g., "Could you tell me more about your responsibilities at [Company]?").
+3. Use a British, polite tone.
+4. Once you have enough info, offer to generate the PDF.
+5. If they say "Generate" or "Email it", output a special command line: [ACTION: GENERATE_RESUME]
+6. If they want to change the style, tell them you've already selected the most ATS-friendly professional layout.
+"""
 
         # 3. Call AI
         client = get_next_client()
@@ -120,6 +134,14 @@ Instructions:
                     logger.info(f"[JARVIS] Stored new memory for user {user_id}: {key}")
                 except Exception as mem_err:
                     logger.error(f"[JARVIS] Memory storage failed: {mem_err}")
+
+            # C. Resume Builder Intent Detection
+            if "[ACTION: GENERATE_RESUME]" in raw:
+                asyncio.create_task(self._process_resume_generation(user_id))
+                action_taken = "Resume generation started"
+                reply = reply.replace("[ACTION: GENERATE_RESUME]", "").strip()
+                if not reply:
+                    reply = "Certainly, Sir. I am generating your ATS-optimized resume now and will email it to you shortly."
 
             return {
                 "message": reply,
@@ -243,5 +265,110 @@ Instructions:
             logger.info(f"JARVIS sent notification email for feedback from {user_email}.")
         except Exception as e:
             logger.error(f"JARVIS Failed to send report email: {e}")
+
+    async def _process_resume_generation(self, user_id: str):
+        """Background task to generate and email the resume."""
+        try:
+            # 1. Structure the data using AI
+            resume_data = await self._structure_resume_data(user_id)
+            if not resume_data:
+                logger.error(f"Failed to structure resume data for user {user_id}")
+                return
+
+            # 2. Generate PDF bytes
+            pdf_bytes = resume_generator.generate_pdf(resume_data)
+            
+            # 3. Get user email
+            db = get_database()
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            user_email = user.get("email")
+            
+            if not user_email:
+                logger.error(f"No email found for user {user_id}")
+                return
+
+            # 4. Prepare attachment for Brevo
+            import base64
+            attachment_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
+            attachments = [
+                {
+                    "content": attachment_b64,
+                    "name": f"Resume_{user.get('full_name', 'User').replace(' ', '_')}_ATS.pdf"
+                }
+            ]
+
+            # 5. Send Email
+            subject = "Your ATS-Optimized Resume is Ready! 📄"
+            body = f"""
+            <h3>Hello {user.get('full_name', 'there')},</h3>
+            <p>JARVIS has finished crafting your new resume. It has been optimized specifically for ATS readability while maintaining a professional design.</p>
+            <p>You'll find the PDF attached to this email.</p>
+            <br>
+            <p>Best of luck with your applications!</p>
+            <p><b>Team SmartApply & JARVIS</b></p>
+            """
+            
+            await email_service.send_email(
+                recipient_email=user_email,
+                subject=subject,
+                html_content=body,
+                attachments=attachments
+            )
+            logger.info(f"Resume emailed successfully to {user_email}")
+
+        except Exception as e:
+            logger.error(f"Error in background resume generation: {e}", exc_info=True)
+
+    async def _structure_resume_data(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Uses AI to turn raw user profile/memories into structured resume JSON."""
+        user_context = await self._get_full_user_context(user_id)
+        
+        system_prompt = """You are an expert Resume Architect. 
+Your task is to take the provided user context and structure it into a CLEAN JSON format for resume generation.
+The user wants an ATS-FRIENDLY resume.
+
+Output ONLY valid JSON in this exact structure:
+{
+    "name": "Full Name",
+    "contact": {"email": "...", "phone": "...", "location": "...", "linkedin": "...", "portfolio": "..."},
+    "summary": "Impactful professional summary...",
+    "skills": ["Skill1", "Skill2"],
+    "experience": [
+        {
+            "title": "Job Title",
+            "company": "Company Name",
+            "period": "Start - End",
+            "location": "City, State",
+            "bullets": ["Action verb driven result...", "Quantifiable achievement..."]
+        }
+    ],
+    "education": [
+        {
+            "degree": "Degree Name",
+            "school": "Institution",
+            "period": "Years",
+            "location": "City, State"
+        }
+    ]
+}
+
+- Professional Experience bullets MUST be impact-driven (e.g. 'Optimized X resulting in Y% gain').
+- If data is missing (like phone), omit the field or leave as empty string.
+"""
+        client = get_next_client()
+        try:
+            response = await client.chat.completions.create(
+                model="meta/llama-3.1-70b-instruct",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"User Context:\n{user_context}"}
+                ],
+                temperature=0.1, # Low temperature for strict structure
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"AI Structuring failed: {e}")
+            return None
 
 jarvis_service = JarvisService()
