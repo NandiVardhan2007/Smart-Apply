@@ -173,6 +173,18 @@ Instructions:
             f"Location: {user.get('current_city', '')}, {user.get('state', '')}, {user.get('country', '')}"
         ]
         
+        # Pull latest ATS scan to answer query about ATS score
+        try:
+            cursor = db.ats_scans.find({"user_id": user_id}).sort("created_at", -1).limit(1)
+            scans = await cursor.to_list(length=1)
+            if scans:
+                s = scans[0]
+                parts.append(f"Latest ATS Scan:\n- Score: {s.get('overall_score', 'N/A')}\n- Grade: {s.get('overall_grade', 'N/A')}\n- Summary Feedback: {s.get('summary', '')}")
+            else:
+                parts.append("Latest ATS Scan: The user hasn't uploaded a resume for ATS scanning yet.")
+        except Exception as e:
+            logger.error(f"[JARVIS] ATS scan fetch error: {e}")
+
         # Pull latest memories
         mems = await memory_service.get_memories(user_id)
         if mems:
