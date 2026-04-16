@@ -110,7 +110,8 @@ async function loadDashboard() {
             { label: 'Total Users', value: metrics.total_users, icon: 'users', color: 'bg-indigo-500' },
             { label: 'Emails Sent', value: metrics.total_emails_sent || 0, icon: 'mail', color: 'bg-emerald-500' },
             { label: 'Failed Mails', value: metrics.failed_emails || 0, icon: 'alert-circle', color: 'bg-rose-500' },
-            { label: 'Total Apps', value: metrics.total_applications, icon: 'briefcase', color: 'bg-amber-500' }
+            { label: 'Total Apps', value: metrics.total_applications, icon: 'briefcase', color: 'bg-amber-500' },
+            { label: 'AI Operations', value: metrics.ai_operations || 0, icon: 'cpu', color: 'bg-purple-500' }
         ];
 
         grid.innerHTML = cards.map(c => `

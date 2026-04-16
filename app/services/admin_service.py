@@ -44,13 +44,19 @@ class AdminService:
         total_emails = await db.email_logs.count_documents({})
         failed_emails = await db.email_logs.count_documents({"status": "failed"})
         
+        # New: AI Usage tracking
+        total_ats_scans = await db.ats_scans.count_documents({})
+        total_jarvis_reports = await db.feedbacks.count_documents({})
+        ai_operations = total_ats_scans + total_jarvis_reports
+
         return {
             "total_users": total_users,
             "active_users": active_users,
             "banned_users": banned_users,
             "total_applications": total_apps,
             "total_emails_sent": total_emails,
-            "failed_emails": failed_emails
+            "failed_emails": failed_emails,
+            "ai_operations": ai_operations
         }
 
     @staticmethod

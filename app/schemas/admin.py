@@ -8,6 +8,9 @@ class AdminMetrics(BaseModel):
     active_users: int
     banned_users: int
     total_applications: int
+    total_emails_sent: int
+    failed_emails: int
+    ai_operations: int
 
 class AuditLog(BaseModel):
     id: str

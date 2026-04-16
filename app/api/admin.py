@@ -103,7 +103,12 @@ async def get_feedbacks(skip: int = 0, limit: int = 50):
     return feedbacks
 
 @router.post("/feedbacks/{feedback_id}/reply")
-async def reply_to_feedback(feedback_id: str, data: dict):
+async def reply_to_feedback(
+    feedback_id: str, 
+    data: dict,
+    background_tasks: BackgroundTasks,
+    current_admin: dict = Depends(get_current_admin_user)
+):
     message = data.get("message")
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
@@ -111,5 +116,14 @@ async def reply_to_feedback(feedback_id: str, data: dict):
     success = await admin_service.reply_to_feedback(feedback_id, message)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to send reply")
+        
+    # Log the administrative action for transparency
+    background_tasks.add_task(
+        admin_service.log_admin_action,
+        admin_id=str(current_admin["_id"]),
+        action="feedback_replied",
+        entity_id=feedback_id,
+        metadata={"target_user": data.get("user_email"), "reply_preview": message[:100]}
+    )
         
     return {"message": "Reply sent successfully"}
