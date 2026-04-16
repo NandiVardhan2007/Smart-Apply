@@ -281,11 +281,11 @@ Rules:
 - Do NOT fabricate or hallucinate information.
 
 Return ONLY valid JSON:
-{
+{{
   "answer": "your answer here or NEEDS_USER_INPUT",
   "confidence": 0.0-1.0,
   "explanation": "brief reasoning"
-}"""
+}}"""
 
         user_message = f"""Applicant Profile:
 {user_context}
