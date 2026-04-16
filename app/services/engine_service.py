@@ -64,15 +64,18 @@ The script recently failed with an error. You are provided with:
 2. The HTML DOM Snapshot of where it failed
 3. The Current JavaScript Code
 
-Your task is to analyze the DOM snapshot, find why the script failed (e.g., changed class names, new element types), and rewrite/patch the JavaScript code so it works with the new layout.
+Your task is to analyze the DOM snapshot, find why the script failed (e.g., changed class names, new element types), and rewrite the `SELECTOR_REGISTRY` portion of the JavaScript code so it works with the new layout.
 
 CRITICAL INSTRUCTIONS:
 - You must return ONLY the complete, fully functioning JavaScript code.
 - DO NOT wrap the code in Markdown blocks. Return RAW text.
-- Do NOT remove any existing features (Human mode, Heartbeats, etc.). Just patch the broken selector/logic.
+- FOCUS ON THE REGISTRY: Most errors are solved by adding a new selector to the `SELECTOR_REGISTRY` object for the failing key.
+- STABILITY PRIORITY: When picking new selectors, prefer `data-testid`, `aria-label`, `name`, then classes. Avoid long, brittle XPaths.
+- ENSURE VISIBILITY: If a button is hidden or requires scrolling, assume the `SelectorManager` will handle it, but ensure the selector targets the correct interactive element.
+- DO NOT remove any existing features (Human mode, Heartbeats, etc.).
 - EXTREMELY IMPORTANT: You MUST preserve the `const CONFIG = { ... };` block at the beginning.
 - EXTREMELY IMPORTANT: You MUST wrap the code in a `(function() { ... })();` IIFE.
-- EXTREMELY IMPORTANT: You MUST keep the `window.__SA_ENGINE_RUNNING` lock logic at the very top of the function to prevent multiple instances.
+- EXTREMELY IMPORTANT: You MUST keep the `window.__SA_ENGINE_RUNNING` lock logic at the very top.
 """
 
         user_prompt = f"""

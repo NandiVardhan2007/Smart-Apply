@@ -37,7 +37,14 @@ async def optimize_linkedin_profile(
 
     # Run AI analysis
     logger.info(f"[LinkedIn Optimizer] Running analysis for user {current_user['id']}")
-    analysis_result = await analyze_linkedin_profile(profile_dict, user_id=current_user["id"])
+    try:
+        analysis_result = await analyze_linkedin_profile(profile_dict, user_id=current_user["id"])
+    except Exception as e:
+        logger.error(f"[LinkedIn Optimizer] Analysis failed for user {current_user['id']}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"LinkedIn Profile Analysis failed: {str(e)}"
+        )
 
     # Persist to MongoDB
     optimization_doc = {

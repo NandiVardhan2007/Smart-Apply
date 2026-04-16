@@ -88,6 +88,12 @@ Your task is to perform a DEEP, comprehensive analysis of the provided LinkedIn 
 - **Be Actionable**: Provide specific and actionable suggestions — generic advice like "improve your profile" is forbidden. Include CONCRETE examples and templates (e.g., "Change your headline to: 'Software Engineering Student | Future-Focused Developer | Active in Coding Society'").
 - **Weighted Scoring**: The overall_score should realistically reflect the content. A profile with only Education and Skills should score between 30-50, not 0 nor 80.
 - **Valid JSON**: Ensure all strings are properly escaped and all items in arrays/objects are separated by commas. Return ONLY the valid JSON object.
+
+**STRICT JSON MODE FORCED:**
+- Your response must begin with '{' and end with '}'.
+- DO NOT provide any preamble, markdown formatting (like ```json), or post-analysis commentary.
+- DO NOT use the characters '**' or '###' outside of JSON string values.
+- If you fail to follow this, the system will crash. Return ONLY RAW PARSEABLE JSON.
 """
 
 
@@ -166,33 +172,54 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
 
     user_content = f"Analyze this LinkedIn profile and provide optimization suggestions{user_context}:\n\n{formatted_profile}"
 
-    raw_content = ""
-    try:
-        response = await client.chat.completions.create(
-            model="meta/llama-3.1-8b-instruct",
-            messages=[
-                {"role": "system", "content": LINKEDIN_ANALYSIS_PROMPT},
-                {"role": "user", "content": user_content}
-            ],
-            temperature=0.1,
-            max_tokens=4096
-        )
+    messages = [
+        {"role": "system", "content": LINKEDIN_ANALYSIS_PROMPT},
+        {"role": "user", "content": user_content}
+    ]
 
-        raw_content = response.choices[0].message.content.strip()
-        result = robust_json_loads(raw_content)
+    max_retries = 2
+    last_error = ""
 
-        if not result:
-            logger.error(f"[LinkedIn Analyzer] Failed to parse AI response: {raw_content[:500]}")
-            # Raise exception instead of returning a fallback 0 score
-            # This allows the API to return 500 and the UI to show an error state
-            raise ValueError("AI produced invalid or unparseable JSON")
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"[LinkedIn Analyzer] Analysis attempt {attempt + 1}")
+            response = await client.chat.completions.create(
+                model="meta/llama-3.1-8b-instruct",
+                messages=messages,
+                temperature=0.1,
+                max_tokens=4096
+            )
 
-        return _validate_and_normalize(result)
+            raw_content = response.choices[0].message.content.strip()
+            result = robust_json_loads(raw_content)
 
-    except Exception as e:
-        logger.error(f"[LinkedIn Analyzer] Final failure: {e}")
-        # Re-raise so the API handler can return a proper status code
-        raise e
+            if result and result.get("overall_score") is not None:
+                # Success!
+                return _validate_and_normalize(result)
+            
+            # If we're here, parsing failed or was incomplete
+            logger.warning(f"[LinkedIn Analyzer] Attempt {attempt + 1} produced unparseable JSON.")
+            if attempt == 0:
+                # Add a retry message to the conversation
+                messages.append({"role": "assistant", "content": raw_content})
+                messages.append({
+                    "role": "user", 
+                    "content": "ERROR: Your previous response was NOT valid JSON. It contained extra text or markdown. "
+                               "Return ONLY the raw JSON object starting with '{' and ending with '}'. No formatting tags."
+                })
+            last_error = "Malformed AI response"
+
+        except Exception as e:
+            logger.error(f"[LinkedIn Analyzer] Attempt {attempt + 1} failed: {e}")
+            last_error = str(e)
+
+    # FINAL FAILURE
+    logger.error(f"[LinkedIn Analyzer] All {max_retries} attempts failed. Last error: {last_error}")
+    # Log raw content only on final failure for debugging
+    if raw_content:
+        logger.error(f"[LinkedIn Analyzer] RAW FAILED CONTENT: {raw_content[:2000]}")
+    
+    raise ValueError(f"LinkedIn analysis failed after {max_retries} attempts: {last_error}")
 
 
 def _validate_and_normalize(result: dict) -> dict:

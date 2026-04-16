@@ -144,23 +144,32 @@ def robust_json_loads(content: str) -> dict:
         return {}
         
     try:
-        # First attempt: Clean up markdown blocks if present
-        cleaned = content.strip()
+        # Step 1: Aggressive Extraction
+        # Find the first '{' and last '}'
+        start_idx = content.find('{')
+        end_idx = content.rfind('}')
+        
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            cleaned = content[start_idx:end_idx + 1].strip()
+        else:
+            cleaned = content.strip()
+
+        # Step 2: Markdown block cleaning (just in case)
         if "```json" in cleaned:
             cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
         elif "```" in cleaned:
             cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
             
-        return json.loads(cleaned)
-    except Exception:
         try:
-            # Second attempt: Repair the string
-            repaired = repair_json(content)
+            return json.loads(cleaned)
+        except Exception:
+            # Step 3: Repair the string
+            repaired = repair_json(cleaned)
             return json.loads(repaired)
-        except Exception as e:
-            # Be noisy about the failure and show the content for debugging
-            # We use warning so it's visible in most logs
-            logger.warning(f"[JSON Repair] Failed to parse/repair. Error: {e}")
-            # Only log a slice to keep logs manageable but useful
-            logger.warning(f"[JSON Repair] Snippet of failed content: {content[:1000]}")
-            return {}
+            
+    except Exception as e:
+        # Be noisy about the failure and show the content for debugging
+        logger.warning(f"[JSON Repair] Failed to parse/repair. Error: {e}")
+        # Only log a slice to keep logs manageable but useful
+        logger.warning(f"[JSON Repair] Snippet of failed content: {content[:1000]}")
+        return {}
