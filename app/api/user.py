@@ -117,57 +117,64 @@ async def upload_resume(file: UploadFile = File(...), current_user: dict = Depen
 
 @router.get("/dashboard")
 async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
-    db = get_database()
-    user_id = str(current_user["id"])
-    
-    # 1. Get Application Stats
-    total_apps = await db.applications.count_documents({"user_id": user_id})
-    pending_apps = await db.applications.count_documents({"user_id": user_id, "status": "Pending"})
-    completed_apps = await db.applications.count_documents({"user_id": user_id, "status": "Completed"})
-    
-    # Calculate response rate (mock logic for now if no data)
-    response_rate = "0%"
-    if total_apps > 0:
-        responses = await db.applications.count_documents({"user_id": user_id, "status": {"$in": ["Interviewing", "Offer", "Rejected"]}})
-        response_rate = f"{int((responses / total_apps) * 100)}%"
+    try:
+        db = get_database()
+        user_id = str(current_user["id"])
+        
+        # 1. Get Application Stats
+        total_apps = await db.applications.count_documents({"user_id": user_id})
+        pending_apps = await db.applications.count_documents({"user_id": user_id, "status": "Pending"})
+        completed_apps = await db.applications.count_documents({"user_id": user_id, "status": "Completed"})
+        
+        # Calculate response rate (mock logic for now if no data)
+        response_rate = "0%"
+        if total_apps > 0:
+            responses = await db.applications.count_documents({"user_id": user_id, "status": {"$in": ["Interviewing", "Offer", "Rejected"]}})
+            response_rate = f"{int((responses / total_apps) * 100)}%"
 
-    # 2. Get Recent Applications
-    cursor = db.applications.find({"user_id": user_id}).sort("created_at", -1).limit(5)
-    recent_apps = []
-    async for app in cursor:
-        app["id"] = str(app["_id"])
-        del app["_id"]
-        recent_apps.append(app)
+        # 2. Get Recent Applications
+        cursor = db.applications.find({"user_id": user_id}).sort("created_at", -1).limit(5)
+        recent_apps = []
+        async for app in cursor:
+            app["id"] = str(app["_id"])
+            del app["_id"]
+            recent_apps.append(app)
 
-    # Get profile pic URL if exists
-    profile_pic_url = current_user.get("profile_pic_url")
-    if profile_pic_url:
-        key = storage_service.get_key_from_url(profile_pic_url)
-        presigned_pic_url = await storage_service.generate_presigned_url(key)
-        if presigned_pic_url:
-            profile_pic_url = presigned_pic_url
+        # Get profile pic URL if exists
+        profile_pic_url = current_user.get("profile_pic_url")
+        if profile_pic_url:
+            key = storage_service.get_key_from_url(profile_pic_url)
+            presigned_pic_url = await storage_service.generate_presigned_url(key)
+            if presigned_pic_url:
+                profile_pic_url = presigned_pic_url
 
-    # Calculate ATS Score (from latest real scan)
-    latest_scan = await db.ats_scans.find_one({"user_id": user_id}, sort=[("created_at", -1)])
-    ats_score = latest_scan["overall_score"] if latest_scan else 0
-    ats_grade = latest_scan["overall_grade"] if latest_scan else "N/A"
+        # Calculate ATS Score (from latest real scan)
+        latest_scan = await db.ats_scans.find_one({"user_id": user_id}, sort=[("created_at", -1)])
+        ats_score = latest_scan["overall_score"] if latest_scan else 0
+        ats_grade = latest_scan["overall_grade"] if latest_scan else "N/A"
 
-    return {
-        "user": {
-            "full_name": current_user.get("full_name") or current_user.get("first_name", "User"),
-            "resume_url": current_user.get("resume_url"),
-            "profile_pic_url": profile_pic_url,
-            "ats_score": ats_score,
-            "ats_grade": ats_grade
-        },
-        "stats": {
-            "total_applications": total_apps,
-            "pending_responses": pending_apps,
-            "completed": completed_apps,
-            "response_rate": response_rate
-        },
-        "recent_applications": recent_apps
-    }
+        return {
+            "user": {
+                "full_name": current_user.get("full_name") or current_user.get("first_name", "User"),
+                "resume_url": current_user.get("resume_url"),
+                "profile_pic_url": profile_pic_url,
+                "ats_score": ats_score,
+                "ats_grade": ats_grade
+            },
+            "stats": {
+                "total_applications": total_apps,
+                "pending_responses": pending_apps,
+                "completed": completed_apps,
+                "response_rate": response_rate
+            },
+            "recent_applications": recent_apps
+        }
+    except Exception as e:
+        logger.error(f"Error fetching dashboard data for user {current_user.get('id')}: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Dashboard Sync Error: {str(e)}"
+        )
 
 
 @router.post("/parse-resume")
