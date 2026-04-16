@@ -72,6 +72,16 @@ async def scan_resume(
     result = await db.ats_scans.insert_one(scan_doc)
     scan_doc["id"] = str(result.inserted_id)
     
+    # 6. Retention Policy: Keep only the most recent 3 scans per user
+    user_id = scan_doc["user_id"]
+    cursor = db.ats_scans.find({"user_id": user_id}).sort("created_at", -1)
+    all_scans = await cursor.to_list(length=100)
+    
+    if len(all_scans) > 3:
+        # Identify IDs to delete (everything beyond the first 3)
+        ids_to_delete = [s["_id"] for s in all_scans[3:]]
+        await db.ats_scans.delete_many({"_id": {"$in": ids_to_delete}})
+    
     # Remove MongoDB _id for JSON serialization
     scan_doc.pop("_id", None)
     
@@ -81,7 +91,7 @@ async def scan_resume(
 @router.get("/history")
 async def get_scan_history(current_user: dict = Depends(get_current_user)):
     """
-    Returns the last 10 ATS scan results for the current user.
+    Returns the last 3 ATS scan results for the current user.
     Only returns summary-level data (not full category details) for performance.
     """
     db = get_database()
@@ -97,7 +107,7 @@ async def get_scan_history(current_user: dict = Depends(get_current_user)):
             "job_description_provided": 1,
             "created_at": 1,
         }
-    ).sort("created_at", -1).limit(10)
+    ).sort("created_at", -1).limit(3)
     
     history = []
     async for scan in cursor:

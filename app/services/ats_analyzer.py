@@ -54,40 +54,74 @@ def is_resume(text: str) -> bool:
     return is_valid
 
 
-ANALYSIS_SYSTEM_PROMPT = """You are an elite ATS analyst. Evaluate the resume across exactly 8 categories and return ONLY raw JSON.
+ANALYSIS_SYSTEM_PROMPT = """You are a world-class ATS (Applicant Tracking System) Specialist and Executive Resume Reviewer. 
+Your goal is to perform a BRUTALLY HONEST, STRICT, and COMPREHENSIVE analysis of the provided resume. 
 
-**JSON SCHEMA:**
+Evaluate across exactly 8 categories and return ONLY raw JSON matching the schema below.
+
+### EVALUATION CRITERIA:
+1. **Keyword Relevance**: Identify specific industry-standard keywords. Compare JD keywords (if provided) with resume keywords. Check for frequency, variety, and appropriate placement.
+2. **Formatting & Structure**: DETECT: 
+    - Columns or tables (which often break enterprise parsers)
+    - Non-standard fonts or icons
+    - Charts, images, or graphics
+    - Complex headers/footers
+    - Section header clarity (e.g., is "Work History" recognized?)
+3. **Section Completeness**: Verify existence of:
+    - Professional Summary/Objective
+    - Detailed Work Experience (with dates)
+    - Education (degree, institution)
+    - Clean Skills list
+    - Contact Information (email, phone, LinkedIn/GitHub)
+4. **Quantified Achievements**: Look for specific metrics (%, $, #, time, scale). Deduct points for generic "responsible for" bullets without evidence of impact. Every bullet should ideally follow the "Result + Action + Context" formula.
+5. **Strong Action Verbs**: Identify repetitive, weak, or passive verbs (e.g., "managed", "helped", "worked on"). Recommend high-impact alternatives (e.g., "orchestrated", "transformed", "navigated").
+6. **Readability & Clarity**: Assess the "one-minute scan" quality. Check for density of text, excessive jargon, passive voice, and document length (1-2 pages ideally). 
+7. **Common ATS Traps**: Specifically identify:
+    - Tables/Columns in headers
+    - Text inside images
+    - Unusual divider symbols or bullet points
+    - Hidden white text (if detectable)
+    - Incorrect date formats (e.g., Jan 22 vs 01/2022)
+8. **Job Description Match**: Evaluate how well the candidate's trajectory aligns with the target role and JD. If no JD is provided, evaluate for general professional marketability in their target field.
+
+### JSON SCHEMA:
 {
   "overall_score": <0-100>,
   "overall_grade": "<A+ to F>",
-  "summary": "<2-sentence summary>",
+  "summary": "<Punchy 2-sentence summary of overall findings>",
   "categories": [
     {
-      "name": "<Category>",
+      "name": "<Category Name>",
       "score": <0-100>,
       "grade": "<A-F>",
       "icon": "<search|format_list_bulleted|checklist|trending_up|edit_note|visibility|warning|target>",
-      "findings": ["Short finding 1", "Short finding 2"],
-      "suggestions": ["Short action 1", "Short action 2"]
+      "findings": ["Direct specific issue or finding 1", "Direct specific issue or finding 2"],
+      "suggestions": ["Actionable correction 1", "Actionable correction 2"]
     }
   ],
-  "milestones": ["Strength 1", "Strength 2", "Strength 3"],
-  "drawbacks": ["Weakness 1", "Weakness 2", "Weakness 3"],
+  "milestones": ["Key Strength 1", "Key Strength 2", "Key Strength 3"],
+  "drawbacks": ["Specific Weakness 1", "Specific Weakness 2", "Specific Weakness 3"],
   "improvement_plan": [
     {
-      "priority": "<HIGH|MEDIUM|LOW>", "action": "<Direct action>",
-      "impact": "<Predicted lift>", "details": "<Instruction>"
+      "priority": "<HIGH|MEDIUM|LOW>", 
+      "action": "<Direct, imperative action step>",
+      "impact": "<Predicted score/ranking lift>",
+      "details": "<Step-by-step instruction on HOW to fix it>"
     }
   ]
 }
 
-**CATEGORIES:** 1. Keyword Relevance, 2. Formatting, 3. Completeness, 4. Metrics, 5. Action Verbs, 6. Clarity, 7. ATS-Hostile, 8. Market Match.
-
-**RULES:** NO preamble. NO markdown. ONLY raw JSON. Max 2 concise findings per category. Exactly 3 milestones/drawbacks. Exactly 4 improvements.
+### RULES:
+- NO preamble or conversational filler.
+- NO markdown. ONLY raw JSON.
+- Findings must be SPECIFIC to the resume content (don't say "improve verbs", say "replace 'led' in the first bullet with 'orchestrated'").
+- Suggestions must be IMMEDIATELY ACTIONABLE.
+- Score strictly: An "average" resume should score 60-70. Only truly elite, ATS-optimized resumes should score 90+.
+- Exactly 8 categories. Exactly 3 milestones. Exactly 3 drawbacks. Exactly 4 improvement steps.
 """
 
 JD_CONTEXT_TEMPLATE = """
---- JOB DESCRIPTION (use this for the "Job Description Match" category) ---
+--- JOB DESCRIPTION (Target alignment evaluation) ---
 {job_description}
 --- END JOB DESCRIPTION ---
 """
@@ -106,12 +140,12 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
     # Truncate text to avoid huge context windows and speed up processing
     resume_text = resume_text[:8000]
     
-    user_content = f"Analyze this resume for ATS compatibility:\n\n{resume_text}"
+    user_content = f"Analyze this resume content for strict ATS compatibility and professional impact:\n\n{resume_text}"
     
     if job_description and job_description.strip():
         user_content += "\n\n" + JD_CONTEXT_TEMPLATE.format(job_description=job_description)
     else:
-        user_content += "\n\n(No job description provided — evaluate for general market alignment based on the candidate's apparent target role.)"
+        user_content += "\n\n(No job description provided — analyze for general market alignment based on inferred target role.)"
 
     raw_content = ""
     try:
@@ -122,8 +156,8 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
                 {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
                 {"role": "user", "content": user_content}
             ],
-            temperature=0.1, # Lower temperature for better formatting
-            max_tokens=4096 # Increased from 2048 to handle more detailed analysis without truncation
+            temperature=0.1, 
+            max_tokens=4096 
         )
         
         raw_content = response.choices[0].message.content.strip()
@@ -137,25 +171,18 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         
     except Exception as e:
         logger.error(f"[ATS Analyzer] Final failure: {e}")
-        # Log the first 500 chars of raw_content if possible for debugging
         try: logger.error(f"[ATS Analyzer] Raw content was: {raw_content[:500]}...")
         except: pass
         return _fallback_result(f"Analysis error: {str(e)}")
 
 
 def _validate_and_normalize(result: dict) -> dict:
-    """Ensures all required fields exist with proper types."""
-    # Ensure overall score
+    """Ensures all required fields exist with proper types and matching icons."""
     result.setdefault("overall_score", 50)
     result["overall_score"] = max(0, min(100, int(result["overall_score"])))
-    
-    # Ensure grade
     result.setdefault("overall_grade", _score_to_grade(result["overall_score"]))
-    
-    # Ensure summary
     result.setdefault("summary", "Analysis complete.")
     
-    # Ensure categories have proper structure
     categories = result.get("categories", [])
     icon_map = {
         "Keyword Relevance": "search",
@@ -168,23 +195,40 @@ def _validate_and_normalize(result: dict) -> dict:
         "Job Description Match": "target",
     }
     
-    for cat in categories:
-        cat.setdefault("score", 50)
-        cat["score"] = max(0, min(100, int(cat["score"])))
-        cat.setdefault("grade", _score_to_grade(cat["score"]))
-        cat.setdefault("findings", ["No specific findings"])
-        cat.setdefault("suggestions", ["No specific suggestions"])
-        # Map icon if missing
-        if "icon" not in cat or not cat["icon"]:
-            cat["icon"] = icon_map.get(cat.get("name", ""), "info")
+    # Normalize mapping (sometimes AI slightly changes names)
+    normalized_cats = []
+    seen_names = set()
     
-    result["categories"] = categories
+    # Search for our 8 intended categories in what the AI returned
+    target_names = list(icon_map.keys())
     
-    # Ensure milestones and drawbacks
+    for target in target_names:
+        # Try to find a match in the returned categories
+        match = next((c for c in categories if target.lower() in c.get("name", "").lower()), None)
+        
+        if match:
+            match["name"] = target # Standardize name
+            match["icon"] = icon_map[target]
+            match.setdefault("score", 50)
+            match["score"] = max(0, min(100, int(match["score"])))
+            match.setdefault("grade", _score_to_grade(match["score"]))
+            normalized_cats.append(match)
+        else:
+            # Create a shell if AI missed it
+            normalized_cats.append({
+                "name": target,
+                "score": 0,
+                "grade": "F",
+                "icon": icon_map[target],
+                "findings": ["Category was not specifically evaluated by AI."],
+                "suggestions": ["Ensure your resume includes data for this category."]
+            })
+
+    result["categories"] = normalized_cats[:8]
+    
     result.setdefault("milestones", [])
     result.setdefault("drawbacks", [])
     
-    # Ensure improvement plan
     improvement_plan = result.get("improvement_plan", [])
     for item in improvement_plan:
         item.setdefault("priority", "MEDIUM")

@@ -295,9 +295,9 @@ Question: {question}{options_text}"""
         # Also update the applications collection used by the dashboard
         dashboard_doc = {
             "user_id": user_id,
-            "title": job_title,
-            "company": company_name,
-            "url": job_url,
+            "job_title": job_title,
+            "company_name": company_name,
+            "job_url": job_url,
             "status": "Pending" if status == "applied" else status.capitalize(),
             "source": "linkedin_auto_applier",
             "created_at": datetime.now(timezone.utc),
