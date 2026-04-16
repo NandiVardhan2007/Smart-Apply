@@ -80,9 +80,9 @@ class ResumeGenerator:
                 # Bullet points
                 pdf.set_font(self.font_main, size=10)
                 for bullet in exp.get("bullets", []):
-                    # Using a simple bullet point character
+                    # Using a simple hyphen for 100% ATS safety and encoding compatibility
                     pdf.set_x(15)
-                    pdf.cell(5, 5, chr(149), ln=False)
+                    pdf.cell(5, 5, "-", ln=False)
                     pdf.multi_cell(0, 5, bullet)
                 pdf.ln(3)
 
@@ -156,8 +156,8 @@ class ResumeGenerator:
         if data.get("skills"):
             self._add_premium_section_header(pdf, "CORE COMPETENCIES & TECHNICAL STACK", accent_color)
             pdf.set_font(self.font_main, size=11)
-            # Grouping skills can be done by AI, here we just list them cleanly
-            skills_text = " • ".join(data["skills"])
+            # Using a pipe '|' instead of a Unicode bullet to ensure compatibility with core fonts like Helvetica
+            skills_text = " | ".join(data["skills"])
             pdf.multi_cell(0, 5, skills_text)
             pdf.ln(4)
 
