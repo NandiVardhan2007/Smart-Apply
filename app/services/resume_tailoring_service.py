@@ -22,10 +22,11 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# LaTeX template skeleton — proven ATS-friendly, single-column, no graphics
+# LaTeX Template Library
 # ---------------------------------------------------------------------------
-LATEX_TEMPLATE_HINT = r"""
-% ATS-Friendly Resume Template — Single Column, No Graphics
+
+RESUME_TEMPLATES = {
+    "classic": r"""
 \documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -35,62 +36,87 @@ LATEX_TEMPLATE_HINT = r"""
 \usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
 
-% Clean section formatting
 \titleformat{\section}{\large\bfseries\uppercase}{}{0em}{}[\titlerule]
 \titlespacing*{\section}{0pt}{12pt}{6pt}
-
-% Remove page numbers for single-page resumes
 \pagestyle{empty}
-
-% Tight lists
 \setlist[itemize]{nosep, left=0pt .. 1.5em}
 
 \begin{document}
-
-% === HEADER ===
 \begin{center}
   {\LARGE\textbf{FULL NAME}} \\[4pt]
   Phone $\mid$ Email $\mid$ Location \\
-  \href{https://linkedin.com/in/handle}{LinkedIn} $\mid$
-  \href{https://github.com/handle}{GitHub}
+  \href{https://linkedin.com/in/handle}{LinkedIn} $\mid$ \href{https://github.com/handle}{GitHub}
 \end{center}
-
-% === PROFESSIONAL SUMMARY ===
 \section{Professional Summary}
-2-3 sentence summary tailored to the target role...
-
-% === SKILLS ===
 \section{Skills}
-\textbf{Languages:} Python, JavaScript, ... \\
-\textbf{Frameworks:} React, FastAPI, ... \\
-\textbf{Tools:} Docker, Git, AWS, ...
-
-% === EXPERIENCE ===
 \section{Experience}
-\textbf{Job Title} \hfill Start -- End \\
-\textit{Company Name} \hfill Location
-\begin{itemize}
-  \item Accomplished X by doing Y, resulting in Z
-\end{itemize}
-
-% === PROJECTS ===
 \section{Projects}
-\textbf{Project Name} $\mid$ \textit{Tech Stack} \hfill Date
-\begin{itemize}
-  \item Description of impact and outcome
-\end{itemize}
-
-% === EDUCATION ===
 \section{Education}
-\textbf{Degree} \hfill Graduation Date \\
-\textit{Institution Name} \hfill Location
+\end{document}
+""",
+    "modern": r"""
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.6in]{geometry}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
 
-% === CERTIFICATIONS (optional) ===
-\section{Certifications}
-Certification Name -- Issuing Org (Year)
+\definecolor{primary}{RGB}{0, 80, 158}
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\color{lightgray}\titlerule]
+\titlespacing*{\section}{0pt}{10pt}{4pt}
+\pagestyle{empty}
+\setlist[itemize]{nosep, left=0pt .. 1.2em}
 
+\begin{document}
+\begin{flushleft}
+  {\Huge\textbf{\color{primary}FULL NAME}} \\
+  \vspace{2pt}
+  \small Phone $\cdot$ Email $\cdot$ Location $\cdot$ \href{https://linkedin.com/in/handle}{LinkedIn} $\cdot$ \href{https://github.com/handle}{GitHub}
+\end{flushleft}
+\section{SUMMARY}
+\section{TECHNICAL SKILLS}
+\section{EXPERIENCE}
+\section{KEY PROJECTS}
+\section{EDUCATION}
+\end{document}
+""",
+    "elegant": r"""
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{charter}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+
+\titleformat{\section}{\Large\scshape\centering}{}{0em}{}[\titlerule]
+\titlespacing*{\section}{0pt}{14pt}{8pt}
+\pagestyle{empty}
+\setlist[itemize]{nosep, left=0pt .. 1.5em}
+
+\begin{document}
+\begin{center}
+  {\Huge\scshape FULL NAME} \\
+  \vspace{4pt}
+  \small Phone --- Email --- Location \\
+  \href{https://linkedin.com/in/handle}{LinkedIn} --- \href{https://github.com/handle}{GitHub}
+\end{center}
+\section{Profile}
+\section{Core Competencies}
+\section{Professional Experience}
+\section{Selected Projects}
+\section{Academic Background}
 \end{document}
 """
+}
+
 
 # ---------------------------------------------------------------------------
 # System prompts
@@ -129,17 +155,18 @@ STRICT TRUTH & MATCHING RULES:
 5. ATS OPTIMIZATION: Use keywords from the JD ONLY if they describe the user's verified skills or projects.
 
 LATEX STRUCTURE (in this order):
-1. Document class and packages (article, geometry, enumitem, hyperref, titlesec)
-2. Header: Name, phone, email, location, LinkedIn, GitHub/portfolio
-3. Professional Summary: 2-3 sentences aligned with the target role, highlighting "willingness to learn" for missing technical skills.
-4. Skills: ONLY verified skills from user data, categorized for readability.
-5. Experience: REAL experience only. If missing, emphasize Projects more.
+1. Document class and packages
+2. Header: Name, credentials, contact info, links
+3. Professional Summary: 2-3 sentences aligned with the target role
+4. Skills: Grouped by category (Languages, Frameworks, Tools, etc.)
+5. Experience: REAL experience only.
 6. Projects: The core of the resume. Describe them in terms of the job requirements.
 7. Education: Degree, institution, dates.
 8. Certifications: REAL data only.
 
-TEMPLATE REFERENCE:
-""" + LATEX_TEMPLATE_HINT
+You must strictly follow the visual style and structure guidelines provided in the TEMPLATE REFERENCE below.
+"""
+
 
 
 class ResumeTailoringService:
@@ -213,13 +240,17 @@ class ResumeTailoringService:
             style_hint=style_hint
         )
 
+        # Build dynamic system prompt based on style
+        template_hint = RESUME_TEMPLATES.get(style_hint, RESUME_TEMPLATES["classic"])
+        full_system_prompt = TAILORING_SYSTEM_PROMPT + "\n\nTEMPLATE REFERENCE:\n" + template_hint
+
         # 4. Generate LaTeX
         latex_code = await self._call_ai(
-            TAILORING_SYSTEM_PROMPT,
+            full_system_prompt,
             user_prompt,
             temperature=0.3,
             max_tokens=6000,
-            prefer_pro=True  # Use the strongest model for LaTeX generation
+            prefer_pro=True
         )
 
         # 5. Clean up the LaTeX output
