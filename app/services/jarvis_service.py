@@ -29,6 +29,29 @@ class JarvisService:
     def __init__(self):
         self._setup_gemini()
         self._context_cache = {}
+        self._gemini_cooldown_until: Optional[datetime] = None
+
+    def _is_gemini_on_cooldown(self) -> bool:
+        """Checks if Gemini is currently in a rate-limit cooldown period."""
+        if not self._gemini_cooldown_until:
+            return False
+            
+        now = datetime.now(timezone.utc)
+        if now < self._gemini_cooldown_until:
+            logger.debug(f"[JARVIS] Gemini is currently on cooldown until {self._gemini_cooldown_until}")
+            return True
+            
+        # Cooldown has expired
+        self._gemini_cooldown_until = None
+        return False
+
+    def _trigger_gemini_cooldown(self, minutes: int = 60):
+        """Triggers a Gemini cooldown period (default 1 hour)."""
+        now = datetime.now(timezone.utc)
+        from datetime import timedelta
+        self._gemini_cooldown_until = now + timedelta(minutes=minutes)
+        logger.warning(f"[JARVIS] Gemini Circuit Breaker TRIGGERED. Pausing Gemini for {minutes} minutes (until {self._gemini_cooldown_until})")
+
 
     def _setup_gemini(self):
         if settings.GOOGLE_API_KEY:
@@ -105,13 +128,14 @@ MANDATORY BEHAVIOR:
 Keep your responses punchy and varied."""
 
         # 3. Call AI with Automatic Failover
-        if self.gemini_available:
+        if self.gemini_available and not self._is_gemini_on_cooldown():
             try:
                 return await self._chat_gemini(user_id, message, system_prompt, history, preferred_model, image_data)
             except Exception as e:
                 err_msg = str(e)
                 if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
-                    logger.warning("[JARVIS] primary neural link at capacity. PIVOTING to NVIDIA NIM.")
+                    logger.warning("[JARVIS] primary neural link at capacity. TRIGGERING circuit breaker.")
+                    self._trigger_gemini_cooldown()
                 else:
                     # For non-429 errors, we still try the fallback just in case
                     logger.error(f"[JARVIS] Primary link error: {e}. Attempting recovery via backup.")
@@ -187,7 +211,8 @@ Keep your responses punchy and varied."""
         except Exception as e:
             err_msg = str(e)
             if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
-                logger.warning(f"[JARVIS] Gemini Rate Limit reached in _chat_gemini. PIVOTING.")
+                logger.warning(f"[JARVIS] Gemini Rate Limit reached in _chat_gemini. TRIGGERING circuit breaker.")
+                self._trigger_gemini_cooldown()
                 return await self._chat_nvidia(user_id, message, system_prompt, history, model_id)
             
             logger.error(f"[JARVIS] Gemini Chat Error: {e}")
@@ -208,7 +233,7 @@ Keep your responses punchy and varied."""
         
         system_prompt = self._build_system_prompt(model_id, user_context, app_stats)
         
-        if self.gemini_available:
+        if self.gemini_available and not self._is_gemini_on_cooldown():
             # Build valid history (must alternate user/model and contain non-empty parts)
             valid_history = []
             if history:
@@ -344,14 +369,17 @@ Keep your responses punchy and varied."""
             except Exception as e:
                 err_msg = str(e)
                 if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
-                    logger.warning(f"[JARVIS] Gemini Streaming Rate Limit. PIVOTING to NVIDIA.")
-                    yield "I apologize, Sir. My primary neural link is currently at capacity. Pivoting to secondary processors now...\n\n"
+                    logger.warning(f"[JARVIS] Gemini Streaming Rate Limit. TRIGGERING circuit breaker.")
+                    self._trigger_gemini_cooldown()
                     
-                    # Call NVIDIA NIM in STREAMING mode
+                    # Call NVIDIA NIM in STREAMING mode — seamless pivot, no user-facing apology
                     try:
                         client = get_next_client()
                         # Strictly enforce alternating roles for Llama 3.1 compatibility
                         nv_messages = [{"role": "system", "content": f"{system_prompt}\n\nNOTE: You are on a backup link. Be concise and professional, Sir."}]
+                        
+                        # Clean apology prefix from previous responses in history
+                        apology_prefix = "I apologize, Sir. My primary neural link is currently at capacity. Pivoting to secondary processors now..."
                         
                         last_role = "system"
                         if history:
@@ -359,6 +387,9 @@ Keep your responses punchy and varied."""
                             for h in history[-6:]:
                                 role = "user" if h.get("role") == "user" else "assistant"
                                 content = h.get("content", "").strip()
+                                # Strip apology prefix from previous NVIDIA responses
+                                if content.startswith(apology_prefix):
+                                    content = content[len(apology_prefix):].strip()
                                 # Clean content and ensure role alternation
                                 if content and content != "..." and role != last_role:
                                     nv_messages.append({"role": role, "content": content})
@@ -396,7 +427,7 @@ Keep your responses punchy and varied."""
                             
                     except Exception as nv_err:
                         logger.error(f"[JARVIS] NVIDIA Streaming Pivot Failed: {nv_err}")
-                        yield "I apologize, Sir. My secondary neural links are also struggling. Please allow me a moment to recalibrate."
+                        yield "I apologize, Sir. I'm experiencing a brief connection delay. Please try again in a moment."
                 else:
                     logger.error(f"[JARVIS] Gemini Streaming Error: {err_msg}")
                     yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
