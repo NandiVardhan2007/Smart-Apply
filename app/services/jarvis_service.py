@@ -343,11 +343,30 @@ Keep your responses punchy and varied."""
                 err_msg = str(e)
                 if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
                     logger.warning(f"[JARVIS] Gemini Streaming Rate Limit. PIVOTING to NVIDIA.")
-                    # In a streaming failover, we yield a pivot message then fallout to NVIDIA sync chat 
-                    # as real-time streaming failover across providers is complex.
-                    yield "I apologize, Sir. My primary neural link is currently at capacity. Pivoting to secondary processors now..."
-                    res = await self._chat_nvidia(user_id, message, system_prompt, history, model_id)
-                    yield res["message"]
+                    yield "I apologize, Sir. My primary neural link is currently at capacity. Pivoting to secondary processors now...\n\n"
+                    
+                    # Call NVIDIA NIM in STREAMING mode
+                    try:
+                        client = get_next_client()
+                        pivot_prompt = system_prompt + "\n\nNOTE: You are currently running on a backup neural link. Vision is limited. Focus on professional textual intelligence, Sir."
+                        messages = [{"role": "system", "content": pivot_prompt}]
+                        if history:
+                            for h in history[-6:]:
+                                messages.append({"role": "user" if h.get("role") == "user" else "assistant", "content": h.get("content", "").strip()})
+                        messages.append({"role": "user", "content": message})
+
+                        nv_stream = await client.chat.completions.create(
+                            model="meta/llama-3.1-8b-instruct",
+                            messages=messages,
+                            temperature=0.7,
+                            stream=True
+                        )
+                        async for nv_chunk in nv_stream:
+                            if nv_chunk.choices[0].delta.content:
+                                yield nv_chunk.choices[0].delta.content
+                    except Exception as nv_err:
+                        logger.error(f"[JARVIS] NVIDIA Streaming Pivot Failed: {nv_err}")
+                        yield "I apologize, Sir. Both neural links are currently unresponsive. Please check my status again in a moment."
                 else:
                     logger.error(f"[JARVIS] Gemini Streaming Error: {err_msg}")
                     yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
