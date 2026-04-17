@@ -6,7 +6,7 @@ from app.utils.monitoring import log_resource_usage
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, user, ats, linkedin, memory, linkedin_applier, jarvis, admin
+from app.api import auth, user, ats, linkedin, memory, linkedin_applier, jarvis, admin, resume_tailoring
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
 from fastapi.staticfiles import StaticFiles
@@ -85,6 +85,7 @@ app.include_router(memory.router, prefix="/api/memory", tags=["User Memory"])
 app.include_router(linkedin_applier.router, prefix="/api/linkedin-applier", tags=["LinkedIn Auto Applier"])
 app.include_router(jarvis.router, prefix="/api/jarvis", tags=["JARVIS AI"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin Portal"])
+app.include_router(resume_tailoring.router, prefix="/api/resume-tailor", tags=["Resume Tailoring"])
 
 # --- Admin Portal Static Files ---
 # Ensure directory exists before mounting
