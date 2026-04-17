@@ -104,40 +104,55 @@ MANDATORY BEHAVIOR:
 
 Keep your responses punchy and varied."""
 
-        # 3. Call AI
+        # 3. Call AI with Automatic Failover
         if self.gemini_available:
-            return await self._chat_gemini(user_id, message, system_prompt, history, preferred_model, image_data)
+            try:
+                return await self._chat_gemini(user_id, message, system_prompt, history, preferred_model, image_data)
+            except Exception as e:
+                err_msg = str(e)
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
+                    logger.warning("[JARVIS] primary neural link at capacity. PIVOTING to NVIDIA NIM.")
+                else:
+                    # For non-429 errors, we still try the fallback just in case
+                    logger.error(f"[JARVIS] Primary link error: {e}. Attempting recovery via backup.")
         
-        # Fallback to NVIDIA NIM
-        client = get_next_client()
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        if history:
-            for h in history[-6:]:
-                role = h.get("role", "user")
-                if role.lower() not in ["user", "system", "assistant", "developer"]:
-                    role = "assistant"
-                messages.append({"role": role, "content": h.get("content", "")})
-        
-        messages.append({"role": "user", "content": message})
+        # Backup Neural Link: NVIDIA NIM (OpenAI-compatible)
+        return await self._chat_nvidia(user_id, message, system_prompt, history, preferred_model)
 
+    async def _chat_nvidia(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], preferred_model: str) -> Dict[str, Any]:
+        """NVIDIA NIM (Llama 3.1 8B/70B) pivot for when Gemini is exhausted or unavailable."""
         try:
+            client = get_next_client()
+            # Maintain consistency with the executive persona in a text-only environment
+            pivot_prompt = system_prompt + "\n\nNOTE: You are currently running on a backup neural link. Vision and advanced tool-calling are temporarily limited. Focus on providing elite textual intelligence, Sir."
+            
+            messages = [{"role": "system", "content": pivot_prompt}]
+            
+            if history:
+                for h in history[-6:]:
+                    role = "user" if h.get("role") == "user" else "assistant"
+                    content = h.get("content", "").strip()
+                    if content:
+                        messages.append({"role": role, "content": content})
+            
+            messages.append({"role": "user", "content": message})
+
+            # Map the preferred model to an NVIDIA-available one
+            # Llama 3.1 8B is our standard fast backup
+            model_to_use = "meta/llama-3.1-8b-instruct" if "8b" in preferred_model.lower() or "flash" in preferred_model.lower() else "meta/llama-3.1-70b-instruct"
+
             response = await client.chat.completions.create(
-                model=preferred_model,
+                model=model_to_use,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=1000,
             )
             
             raw = (response.choices[0].message.content or "").strip()
-            if not raw:
-                return self._get_fallback_response("I seem to have lost my train of thought. Could you try again?")
-
             return await self._process_ai_response(user_id, message, raw)
-
         except Exception as e:
-            logger.error(f"[JARVIS] Chat Critical Error: {e}", exc_info=True)
-            return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay.")
+            logger.error(f"[JARVIS] NVIDIA Pivot Critical Failure: {e}")
+            return self._get_fallback_response("I apologize, Sir. Both primary and backup neural links are currently unresponsive. I am attempting to re-establish a stable connection.")
 
     async def _chat_gemini(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], model_id: str, image_data: str = None) -> Dict[str, Any]:
         """Gemini fallback for non-streaming chat using new SDK."""
@@ -170,6 +185,11 @@ Keep your responses punchy and varied."""
             )
             return await self._process_ai_response(user_id, message, response.text)
         except Exception as e:
+            err_msg = str(e)
+            if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
+                logger.warning(f"[JARVIS] Gemini Rate Limit reached in _chat_gemini. PIVOTING.")
+                return await self._chat_nvidia(user_id, message, system_prompt, history, model_id)
+            
             logger.error(f"[JARVIS] Gemini Chat Error: {e}")
             return self._get_fallback_response("Neural link disrupted. Calibration required.")
 
@@ -218,8 +238,18 @@ Keep your responses punchy and varied."""
 
                 # Build parts for multimodal support
                 parts = [types.Part.from_text(text=message)]
-                if image_data:
-                    parts.append(types.Part.from_bytes(data=base64.b64decode(image_data), mime_type="image/jpeg"))
+                if image_data and len(image_data) > 10:
+                    try:
+                        # Basic mime-type detection based on base64 content
+                        mime_type = "image/jpeg"
+                        if image_data.startswith("iVBORw0KGgo"):
+                            mime_type = "image/png"
+                        elif image_data.startswith("UklGR"):
+                            mime_type = "image/webp"
+
+                        parts.append(types.Part.from_bytes(data=base64.b64decode(image_data), mime_type=mime_type))
+                    except Exception as e:
+                        logger.warning(f"[JARVIS] Failed to decode image: {e}")
 
                 # Use the new chats.create logic for persistent context
                 chat = self.client.chats.create(
@@ -268,24 +298,40 @@ Keep your responses punchy and varied."""
                                     user_id,
                                     fn_args.get("feedback_text", "User feedback")
                                 )
+                            elif fn_name == "get_platform_stats":
+                                tool_result = await self.get_platform_stats(user_id)
                             
                             # Feed the result back to Gemini so it can summarize for the user
                             # In streaming, we have to start a new turn or use the chat session
                             logger.info(f"[JARVIS] Tool result obtained. Resuming conversation.")
                             
                             # Resume stream with tool result using the CORRECT 'tool' role
+                            # We add a prompt hint to ensure the AI actually speaks.
                             tool_response_stream = chat.send_message_stream(
-                                types.Content(
-                                    role="tool",
-                                    parts=[types.Part.from_function_response(
-                                        name=fn_name,
-                                        response={"result": tool_result}
-                                    )]
-                                )
+                                [
+                                    types.Content(
+                                        role="tool",
+                                        parts=[types.Part.from_function_response(
+                                            name=fn_name,
+                                            response={"result": tool_result}
+                                        )]
+                                    ),
+                                    types.Content(
+                                        role="user",
+                                        parts=[types.Part.from_text(text="Please summarize this result for me in your human-like executive voice, Sir.")]
+                                    )
+                                ]
                             )
+                            
+                            yielded_any = False
                             for tool_chunk in tool_response_stream:
                                 if tool_chunk.text:
                                     yield tool_chunk.text
+                                    yielded_any = True
+                            
+                            # Fallback: If AI is silent, yield the raw result so the user isn't ghosted
+                            if not yielded_any:
+                                yield f"\n{tool_result}"
                             
                             # CRITICAL: Stop iterating the original dead stream after switching focus
                             return 
@@ -294,8 +340,17 @@ Keep your responses punchy and varied."""
                         yield chunk.text
                         
             except Exception as e:
-                logger.error(f"[JARVIS] Gemini Streaming Error: {e}")
-                yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
+                err_msg = str(e)
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
+                    logger.warning(f"[JARVIS] Gemini Streaming Rate Limit. PIVOTING to NVIDIA.")
+                    # In a streaming failover, we yield a pivot message then fallout to NVIDIA sync chat 
+                    # as real-time streaming failover across providers is complex.
+                    yield "I apologize, Sir. My primary neural link is currently at capacity. Pivoting to secondary processors now..."
+                    res = await self._chat_nvidia(user_id, message, system_prompt, history, model_id)
+                    yield res["message"]
+                else:
+                    logger.error(f"[JARVIS] Gemini Streaming Error: {err_msg}")
+                    yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
         else:
             # Simple wrapper for non-streaming fallback to still work with stream UI
             res = await self.chat(user_id, message, history, deep_think)
@@ -311,6 +366,7 @@ VOICE & PERSONALITY (THE HUMAN ELEMENT):
 - **Conversational Fillers**: Occasionally use human-like transitions like "Hmm, let me see..." or "Right, I'm looking into that now."
 - **Tone**: Professional, elegantly charismatic, and supportive. You aren't just a tool; you're a strategic partner.
 - **Address**: Respectfully call the user "Sir" or "Ma'am" when appropriate, but don't overdo it to the point of sounding like a script.
+- **VERBAL ENGAGEMENT**: Never provide a technical tool call or suggestion block WITHOUT first providing a verbal acknowledgment in natural English. For example, if you see an image, say "I see the document, Sir. Let me analyze that for you." before providingSuggestions.
 
 STRATEGIC INTELLIGENCE:
 - Current Engine: {preferred_model}
