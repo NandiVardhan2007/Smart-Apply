@@ -69,21 +69,22 @@ Return structured JSON only. NO MARKDOWN:
             scopes=creds_data.get("scopes")
         )
 
-    def _fetch_real_emails(self, creds: Credentials) -> str:
-        """Fetches the latest unread or recent emails using Gmail API natively."""
+    def _fetch_real_emails(self, creds: Credentials) -> Dict[str, Any]:
+        """Fetches the latest emails using Gmail API natively."""
         try:
             service = build('gmail', 'v1', credentials=creds)
-            # Fetch last 20 recent emails, excluding social and promotional noise
-            query = "-category:social -category:promotions"
+            # Remove ALL filters to ensure we see the test email
+            query = ""
             results = service.users().messages().list(userId='me', q=query, maxResults=20).execute()
             messages = results.get('messages', [])
             
             if not messages:
-                logger.info("[EMAIL AGENT] No messages matched query.")
-                return "No new unread emails found in inbox."
+                logger.info("[EMAIL AGENT] No messages found at all.")
+                return {"ai_data": "No emails found.", "subjects": []}
                 
-            logger.info(f"[EMAIL AGENT] Fetching content for {len(messages)} messages...")
+            logger.info(f"[EMAIL AGENT] Fetching {len(messages)} messages...")
             email_texts = []
+            subjects = []
             for msg in messages:
                 msg_data = service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
                 payload = msg_data.get('payload', {})
@@ -91,7 +92,8 @@ Return structured JSON only. NO MARKDOWN:
                 
                 subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
                 sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
-                
+                subjects.append(subject)
+
                 # Robust body extraction covering nested parts
                 def get_body(payload_data):
                     if 'data' in payload_data.get('body', {}):
@@ -114,25 +116,29 @@ Return structured JSON only. NO MARKDOWN:
                     return ""
 
                 body = get_body(payload)
-                email_texts.append(f"From: {sender}\nSubject: {subject}\nBody: {body[:1500]}") # Increased snippet size
+                email_texts.append(f"From: {sender}\nSubject: {subject}\nBody: {body[:1500]}")
                 
-            return "\\n\\n--- NEXT EMAIL ---\\n\\n".join(email_texts)
+            return {
+                "ai_data": "\n\n--- NEXT EMAIL ---\n\n".join(email_texts),
+                "subjects": subjects
+            }
         except Exception as e:
             logger.error(f"[EMAIL AGENT] Gmail API fetch failed: {e}")
-            return f"Error fetching from Gmail: {str(e)}"
+            return {"ai_data": f"Error: {e}", "subjects": []}
 
     async def scan_emails(self, user_id: str, manual_payload: str = None) -> Dict[str, Any]:
         creds = await self.get_user_credentials(user_id)
         
-        # If payload is provided artificially from Frontend for testing, use it.
-        # Otherwise, fetch organically.
+        fetched_subjects = []
         if manual_payload and len(manual_payload) > 15:
             email_data = manual_payload
         elif creds:
              loop = asyncio.get_event_loop()
-             email_data = await loop.run_in_executor(None, self._fetch_real_emails, creds)
+             result = await loop.run_in_executor(None, self._fetch_real_emails, creds)
+             email_data = result["ai_data"]
+             fetched_subjects = result["subjects"]
         else:
-             return {"error": "No Google OAuth credentials found and no mock payload provided. Please Connect Gmail."}
+             return {"error": "No Google OAuth credentials found. Please Connect Gmail."}
                 
         try:
             client = get_next_client()
@@ -153,7 +159,9 @@ Return structured JSON only. NO MARKDOWN:
             elif "```" in raw_content:
                 raw_content = raw_content.split("```")[1].split("```")[0].strip()
                 
-            return json.loads(raw_content)
+            result = json.loads(raw_content)
+            result["fetched_subjects"] = fetched_subjects
+            return result
             
         except Exception as e:
             logger.error(f"[EMAIL AGENT] AI Parsing Error: {e}")
