@@ -194,7 +194,9 @@ Keep your responses punchy and varied."""
             return self._get_fallback_response("Neural link disrupted. Calibration required.")
 
     async def chat_stream(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False, image_data: str = None):
-        """Streaming version of JARVIS chat for real-time interaction."""
+        # Yield an immediate handshake to the UI to prevent empty bubbles
+        yield "..." 
+        
         db = get_database()
         user_doc, user_context, app_stats = await asyncio.gather(
             db.users.find_one({"_id": ObjectId(user_id)}),
