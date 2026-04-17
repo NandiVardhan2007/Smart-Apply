@@ -69,6 +69,9 @@ Return structured JSON only. NO MARKDOWN:
             scopes=creds_data.get("scopes")
         )
 
+    def _fetch_real_emails(self, creds: Credentials) -> Dict[str, Any]:
+        """Fetches the latest emails using Gmail API natively."""
+        try:
             service = build('gmail', 'v1', credentials=creds)
             
             # IDENTITY CHECK
