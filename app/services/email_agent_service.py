@@ -69,30 +69,23 @@ Return structured JSON only. NO MARKDOWN:
             scopes=creds_data.get("scopes")
         )
 
-    def _fetch_real_emails(self, creds: Credentials) -> Dict[str, Any]:
-        """Fetches the latest emails using Gmail API natively."""
-        try:
             service = build('gmail', 'v1', credentials=creds)
             
-            # SUPER-DIAGNOSTIC: Identify the account being scanned
+            # IDENTITY CHECK
             try:
                 profile = service.users().getProfile(userId='me').execute()
-                print(f"[SUPER-DIAG] Connected Email: {profile.get('emailAddress')}")
-                print(f"[SUPER-DIAG] Total Messages in Gmail: {profile.get('messagesTotal')}")
+                logger.info(f"[EMAIL AGENT] Connected to {profile.get('emailAddress')}")
             except Exception as profile_err:
-                print(f"[SUPER-DIAG] Profile fetch failed: {profile_err}")
+                logger.warning(f"[EMAIL AGENT] Profile fetch failed: {profile_err}")
 
             # Remove ALL filters to ensure we see the test email
             query = ""
-            print(f"[DEBUG] Fetching emails for query: '{query}'")
             results = service.users().messages().list(userId='me', q=query, maxResults=50).execute()
             messages = results.get('messages', [])
             
             if not messages:
-                print("[DEBUG] No messages found at all in Gmail.")
                 return {"ai_data": "No emails found.", "recent_emails": []}
                 
-            print(f"[DEBUG] Found {len(messages)} messages. Processing...")
             email_texts = []
             recent_emails = []
             for msg in messages:
@@ -102,7 +95,6 @@ Return structured JSON only. NO MARKDOWN:
                 
                 subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
                 sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
-                print(f"[DEBUG] Processing Subject: {subject}")
                 
                 recent_emails.append({
                     "id": msg['id'],
