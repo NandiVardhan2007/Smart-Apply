@@ -183,40 +183,45 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
     max_retries = 2
     last_error = ""
 
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"[LinkedIn Analyzer] Analysis attempt {attempt + 1}")
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
-                messages=messages,
-                temperature=0.1,
-                max_tokens=4096
-            )
+    try:
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"[LinkedIn Analyzer] Analysis attempt {attempt + 1}")
+                response = await client.chat.completions.create(
+                    model="meta/llama-3.1-8b-instruct",
+                    messages=messages,
+                    temperature=0.1,
+                    max_tokens=4096
+                )
 
-            raw_content = response.choices[0].message.content.strip()
-            result = robust_json_loads(raw_content)
+                raw_content = response.choices[0].message.content.strip()
+                result = robust_json_loads(raw_content)
 
-            if result and result.get("overall_score") is not None:
-                # Success!
-                return _validate_and_normalize(result)
-            
-            # If we're here, parsing failed or was incomplete
-            logger.warning(f"[LinkedIn Analyzer] Attempt {attempt + 1} produced unparseable JSON.")
-            if attempt == 0:
-                # Add a retry message to the conversation
-                messages.append({"role": "assistant", "content": raw_content})
-                messages.append({
-                    "role": "user", 
-                    "content": "ERROR: Your previous response was NOT valid JSON. It contained extra text or markdown. "
-                               "Return ONLY the raw JSON object starting with '{' and ending with '}'. No formatting tags."
-                })
-            last_error = "Malformed AI response"
+                if result and result.get("overall_score") is not None:
+                    # Success!
+                    return _validate_and_normalize(result)
+                
+                # If we're here, parsing failed or was incomplete
+                logger.warning(f"[LinkedIn Analyzer] Attempt {attempt + 1} produced unparseable JSON.")
+                if attempt == 0:
+                    # Add a retry message to the conversation
+                    messages.append({"role": "assistant", "content": raw_content})
+                    messages.append({
+                        "role": "user", 
+                        "content": "ERROR: Your previous response was NOT valid JSON. It contained extra text or markdown. "
+                                   "Return ONLY the raw JSON object starting with '{' and ending with '}'. No formatting tags."
+                    })
+                last_error = "Malformed AI response"
 
-        except Exception as e:
-            logger.error(f"[LinkedIn Analyzer] Attempt {attempt + 1} failed: {e}")
-            last_error = str(e)
+            except Exception as e:
+                logger.error(f"[LinkedIn Analyzer] Attempt {attempt + 1} failed: {e}")
+                last_error = str(e)
+        
+        # If loop finishes without returning, we hit the general except block below
+        raise ValueError(f"NVIDIA Exhausted: {last_error}")
 
     except Exception as e:
+
         logger.warning(f"[LinkedIn Analyzer] Primary Engine (NVIDIA) failed: {e}. Attempting Gemini Fallback.")
         
         # --- FALLBACK: GOOGLE GEMINI ---
