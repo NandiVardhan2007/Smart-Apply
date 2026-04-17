@@ -2,6 +2,8 @@ import os
 import json
 import logging
 from openai import AsyncOpenAI
+from google import genai
+from google.genai import types
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -66,7 +68,34 @@ async def parse_resume_with_ai(resume_text: str) -> dict:
             
         return json.loads(raw_content)
     except Exception as e:
-        logger.error(f"AI Parsing Error: {e}")
+        logger.warning(f"Primary AI Parsing (NVIDIA) failed: {e}. Attempting Gemini Fallback.")
+        
+        # --- FALLBACK: GOOGLE GEMINI ---
+        if settings.GOOGLE_API_KEY:
+            try:
+                gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                
+                response = gemini_client.models.generate_content(
+                    model="gemini-flash-latest",
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=f"Resume Text:\n{resume_text}")])],
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.1,
+                        candidate_count=1
+                    )
+                )
+                
+                raw_content = response.text.strip()
+                if "```json" in raw_content:
+                    raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_content:
+                    raw_content = raw_content.split("```")[1].split("```")[0].strip()
+                
+                return json.loads(raw_content)
+            except Exception as gemini_err:
+                logger.error(f"Gemini Parsing Fallback failed: {gemini_err}")
+
+        logger.error(f"AI Parsing CRITICAL FAILURE: Both engines exhausted.")
         return {
             "firstName": "", "lastName": "", "email": "", "phone": "",
             "location": "", "education": "", "experience": "", "skills": "",

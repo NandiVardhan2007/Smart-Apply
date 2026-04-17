@@ -8,6 +8,9 @@ import json
 import logging
 from app.services.ai_parser import get_next_client
 from app.utils.json_repair import robust_json_loads
+from app.core.config import settings
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -170,12 +173,44 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
         return _validate_and_normalize(result)
         
     except Exception as e:
-        logger.error(f"[ATS Analyzer] Final failure: {e}", exc_info=True)
-        try: 
-            logger.error(f"[ATS Analyzer] Raw content was: {raw_content[:1000]}...")
-        except: 
-            pass
-        return _fallback_result(f"Analysis service temporary delay. Please try again.")
+        logger.warning(f"[ATS Analyzer] Primary Engine (NVIDIA) failed: {e}. Pivoting to Gemini Fallback.")
+        
+        # --- FALLBACK: GOOGLE GEMINI ---
+        if settings.GOOGLE_API_KEY:
+            try:
+                gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                
+                # Gemini doesn't use the same exact prompt structure, so we adapt slightly
+                gemini_system = ANALYSIS_SYSTEM_PROMPT + "\n\nCRITICAL: Return ONLY raw JSON. No conversational filler."
+                
+                response = gemini_client.models.generate_content(
+                    model="gemini-flash-latest",
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=user_content)])],
+                    config=types.GenerateContentConfig(
+                        system_instruction=gemini_system,
+                        temperature=0.1,
+                        candidate_count=1
+                    )
+                )
+                
+                raw_content = response.text.strip()
+                # Clean up markdown if Gemini adds it
+                if "```json" in raw_content:
+                    raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_content:
+                    raw_content = raw_content.split("```")[1].split("```")[0].strip()
+                
+                result = robust_json_loads(raw_content)
+                if result:
+                    logger.info("[ATS Analyzer] Gemini Fallback SUCCEEDED.")
+                    return _validate_and_normalize(result)
+                else:
+                    logger.error(f"[ATS Analyzer] Gemini Fallback failed to produce valid JSON: {raw_content[:500]}")
+            except Exception as gemini_err:
+                logger.error(f"[ATS Analyzer] Gemini Fallback CRITICAL FAILURE: {gemini_err}")
+        
+        logger.error(f"[ATS Analyzer] Both Engines Failed. Final error: {e}", exc_info=True)
+        return _fallback_result(f"Analysis service temporary delay (AI Congestion). Please try again.")
 
 
 def _validate_and_normalize(result: dict) -> dict:
