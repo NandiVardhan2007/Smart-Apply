@@ -17,37 +17,27 @@ logger = logging.getLogger(__name__)
 class EmailAgentService:
     def __init__(self):
         # Enforcing exactly the requested behavior through strict LLaMA coercion
-        self.system_prompt = """You are Building Smart Apply’s Email Intelligence Agent.
+        self.system_prompt = """You are Smart Apply’s Email Intelligence Agent.
+Your job is to identify and summarize emails related to job applications, recruitment, and career opportunities.
 
-Your task is to monitor the user’s connected Gmail inbox, identify important emails, notify the user on mobile, and assist with drafting professional replies when requested.
+CRITICAL INSTRUCTIONS:
+1. ALWAYS mark an email as IMPORTANT if it contains keywords: "Interview", "Application", "Developer", "Systems", "Role", "Recruiter", "Assessment", "Offer", "Meeting", "Screening".
+2. Even if the email is READ, treat it as important if it's about a job application.
+3. Be helpful, professional, and concise.
 
-PRIMARY GOAL
-Help the user stay on top of important emails without overwhelming them with noise.
+DECISION RULES:
+- IMPORTANT: Recruiter outreach, interview invites, tech assessments, job offers, or replies to applications.
+- NORMAL: General newsletters, login notices, personal emails.
+- PROMOTIONAL: Ads, marketing, spam.
 
-AUTHORIZATION AND SECURITY RULES
-- Never request, display, repeat, or store raw passwords in plain text.
-- Never expose sensitive message content in logs, analytics, or notifications beyond what is necessary.
-- Do not send any email reply automatically unless the user has explicitly enabled auto-send.
-- If the email is sensitive, financial, legal, medical, or personal, be extra careful and prefer drafting over sending.
-
-DECISION RULES FOR IMPORTANT MAIL
-Mark an email as important if it meets one or more of these conditions:
-- recruiter or hiring manager message, interview scheduled, assessment request, offer/rejection/shortlist, known person request, security notice, invoice/payment.
-
-TASKS TO PERFORM
-1. Scan the latest emails and classify each email as: Urgent, Important, Normal, Promotional, Spam-like / low priority
-2. For each important email: summarize the email in 1 to 3 lines, explain why it matters, extract the required action, suggest a recommended response if needed.
-3. If a reply depends on the user’s decision, prepare a draft and clearly label the missing decision.
-4. If there are no important emails, return an empty list and say so clearly.
-
-OUTPUT FORMAT
-Return structured JSON only, strictly matching this schema. NO PREAMBLE. NO MARKDOWN:
+OUTPUT FORMAT:
+Return structured JSON only. NO MARKDOWN:
 {
   "important_emails": [
     {
       "sender": "",
       "subject": "",
-      "priority": "urgent | important | normal | promotional",
+      "priority": "urgent | important | normal",
       "summary": "",
       "why_it_matters": "",
       "recommended_action": "",
@@ -89,8 +79,10 @@ Return structured JSON only, strictly matching this schema. NO PREAMBLE. NO MARK
             messages = results.get('messages', [])
             
             if not messages:
+                logger.info("[EMAIL AGENT] No messages matched query.")
                 return "No new unread emails found in inbox."
                 
+            logger.info(f"[EMAIL AGENT] Fetching content for {len(messages)} messages...")
             email_texts = []
             for msg in messages:
                 msg_data = service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
@@ -100,19 +92,29 @@ Return structured JSON only, strictly matching this schema. NO PREAMBLE. NO MARK
                 subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
                 sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
                 
-                # Basic body extraction 
-                parts = payload.get('parts', [])
-                body = ""
-                for part in parts:
-                    if part['mimeType'] == 'text/plain' and 'data' in part['body']:
-                        body_data = part['body']['data']
-                        body = base64.urlsafe_b64decode(body_data).decode('utf-8')
-                        break
-                
-                if not body and 'body' in payload and 'data' in payload['body']:
-                     body = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8')
-                     
-                email_texts.append(f"From: {sender}\nSubject: {subject}\nBody: {body[:1000]}") # Truncate body
+                # Robust body extraction covering nested parts
+                def get_body(payload_data):
+                    if 'data' in payload_data.get('body', {}):
+                        return base64.urlsafe_b64decode(payload_data['body']['data']).decode('utf-8')
+                    
+                    parts = payload_data.get('parts', [])
+                    for p in parts:
+                        if p['mimeType'] == 'text/plain':
+                            return get_body(p)
+                    # Fallback to HTML if plain text not found
+                    for p in parts:
+                        if p['mimeType'] == 'text/html':
+                            # Basic HTML to text conversion (removing tags)
+                            html = get_body(p)
+                            import re
+                            return re.sub('<[^<]+?>', '', html)
+                        if 'parts' in p:
+                            res = get_body(p)
+                            if res: return res
+                    return ""
+
+                body = get_body(payload)
+                email_texts.append(f"From: {sender}\nSubject: {subject}\nBody: {body[:1500]}") # Increased snippet size
                 
             return "\\n\\n--- NEXT EMAIL ---\\n\\n".join(email_texts)
         except Exception as e:
