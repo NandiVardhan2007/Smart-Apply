@@ -72,6 +72,9 @@ Return structured JSON only. NO MARKDOWN:
     def _fetch_real_emails(self, creds: Credentials) -> Dict[str, Any]:
         """Fetches the latest emails using Gmail API natively."""
         try:
+    def _fetch_real_emails(self, creds: Credentials) -> Dict[str, Any]:
+        """Fetches the latest emails using Gmail API natively."""
+        try:
             service = build('gmail', 'v1', credentials=creds)
             
             # SUPER-DIAGNOSTIC: Identify the account being scanned
@@ -85,16 +88,16 @@ Return structured JSON only. NO MARKDOWN:
             # Remove ALL filters to ensure we see the test email
             query = ""
             print(f"[DEBUG] Fetching emails for query: '{query}'")
-            results = service.users().messages().list(userId='me', q=query, maxResults=20).execute()
+            results = service.users().messages().list(userId='me', q=query, maxResults=50).execute()
             messages = results.get('messages', [])
             
             if not messages:
                 print("[DEBUG] No messages found at all in Gmail.")
-                return {"ai_data": "No emails found.", "subjects": []}
+                return {"ai_data": "No emails found.", "recent_emails": []}
                 
             print(f"[DEBUG] Found {len(messages)} messages. Processing...")
             email_texts = []
-            subjects = []
+            recent_emails = []
             for msg in messages:
                 msg_data = service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
                 payload = msg_data.get('payload', {})
@@ -103,7 +106,15 @@ Return structured JSON only. NO MARKDOWN:
                 subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
                 sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
                 print(f"[DEBUG] Processing Subject: {subject}")
-                subjects.append(subject)
+                
+                recent_emails.append({
+                    "id": msg['id'],
+                    "threadId": msg.get('threadId'),
+                    "subject": subject,
+                    "sender": sender,
+                    "snippet": msg_data.get('snippet', ''),
+                    "date": next((h['value'] for h in headers if h['name'] == 'Date'), '')
+                })
 
                 # Robust body extraction covering nested parts
                 def get_body(payload_data):
@@ -131,23 +142,23 @@ Return structured JSON only. NO MARKDOWN:
                 
             return {
                 "ai_data": "\n\n--- NEXT EMAIL ---\n\n".join(email_texts),
-                "subjects": subjects
+                "recent_emails": recent_emails
             }
         except Exception as e:
             logger.error(f"[EMAIL AGENT] Gmail API fetch failed: {e}")
-            return {"ai_data": f"Error: {e}", "subjects": []}
+            return {"ai_data": f"Error: {e}", "recent_emails": []}
 
     async def scan_emails(self, user_id: str, manual_payload: str = None) -> Dict[str, Any]:
         creds = await self.get_user_credentials(user_id)
         
-        fetched_subjects = []
+        recent_emails = []
         if manual_payload and len(manual_payload) > 15:
             email_data = manual_payload
         elif creds:
              loop = asyncio.get_event_loop()
              result = await loop.run_in_executor(None, self._fetch_real_emails, creds)
              email_data = result["ai_data"]
-             fetched_subjects = result["subjects"]
+             recent_emails = result["recent_emails"]
         else:
              return {"error": "No Google OAuth credentials found. Please Connect Gmail."}
                 
@@ -157,7 +168,7 @@ Return structured JSON only. NO MARKDOWN:
                 model="meta/llama-3.1-70b-instruct",
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": f"INPUT MAILBOX DATA:\\n{email_data}\\n\\nNOW ANALYZE THE CONNECTED MAILBOX AND RESPOND ACCORDINGLY. RETURN PURE JSON."}
+                    {"role": "user", "content": f"INPUT MAILBOX DATA:\n{email_data}\n\nNOW ANALYZE THE CONNECTED MAILBOX AND RESPOND ACCORDINGLY. RETURN PURE JSON."}
                 ],
                 temperature=0.1,
                 max_tokens=2000
@@ -171,8 +182,8 @@ Return structured JSON only. NO MARKDOWN:
                 raw_content = raw_content.split("```")[1].split("```")[0].strip()
                 
             result = json.loads(raw_content)
-            result["fetched_subjects"] = fetched_subjects
-            result["version"] = "v1.2-Subjects-Fix"
+            result["recent_emails"] = recent_emails
+            result["version"] = "v1.3-Hybrid-Inbox"
             return result
             
         except Exception as e:
