@@ -27,7 +27,8 @@ async def chat_with_jarvis(
             user_id=current_user["id"],
             message=request.message,
             history=history_dicts,
-            deep_think=request.deep_think
+            deep_think=request.deep_think,
+            image_data=request.image_data
         )
         return result
     except Exception as e:
@@ -50,7 +51,8 @@ async def chat_with_jarvis_stream(
                 user_id=current_user["id"],
                 message=request.message,
                 history=history_dicts,
-                deep_think=request.deep_think
+                deep_think=request.deep_think,
+                image_data=request.image_data
             ):
                 yield token
 

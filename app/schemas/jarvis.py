@@ -11,6 +11,7 @@ class JarvisChatRequest(BaseModel):
     message: str
     history: Optional[List[JarvisMessage]] = []
     deep_think: bool = False
+    image_data: Optional[str] = None
 
 class JarvisChatResponse(BaseModel):
     message: str

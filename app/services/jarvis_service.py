@@ -9,6 +9,8 @@ from datetime import timezone, datetime
 from app.services.ai_parser import get_next_client
 from app.services.memory_service import memory_service
 from app.services.email import email_service
+from app.services.ats_analyzer import analyze_resume_ats
+from app.services.linkedin_applier_service import LinkedInApplierService
 from app.db.mongodb import get_database
 from app.core.config import settings
 from app.schemas.memory import MemoryCreate
@@ -33,8 +35,17 @@ class JarvisService:
             try:
                 # Reverting to default (v1beta) as it's more compatible with the account's advanced models
                 self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                
+                # Define Agentic Tools
+                self.tools = [
+                    self.scan_resume,
+                    self.draft_outreach,
+                    self.get_platform_stats,
+                    self.report_to_admin
+                ]
+                
                 self.gemini_available = True
-                logger.info("[JARVIS] Gemini (Adaptive Engine) Client initialized.")
+                logger.info("[JARVIS] Gemini (Adaptive Engine) Client initialized with Tooling.")
             except Exception as e:
                 logger.error(f"[JARVIS] Gemini Init Failed: {e}")
                 self.gemini_available = False
@@ -42,7 +53,7 @@ class JarvisService:
             self.gemini_available = False
             logger.warning("[JARVIS] GOOGLE_API_KEY missing. Falling back to NVIDIA NIM (Llama).")
 
-    async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False) -> Dict[str, Any]:
+    async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False, image_data: str = None) -> Dict[str, Any]:
         """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
         
         # 1. Gather context & preferred model in parallel
@@ -95,7 +106,7 @@ Keep your responses punchy and varied."""
 
         # 3. Call AI
         if self.gemini_available:
-            return await self._chat_gemini(user_id, message, system_prompt, history, preferred_model)
+            return await self._chat_gemini(user_id, message, system_prompt, history, preferred_model, image_data)
         
         # Fallback to NVIDIA NIM
         client = get_next_client()
@@ -128,7 +139,7 @@ Keep your responses punchy and varied."""
             logger.error(f"[JARVIS] Chat Critical Error: {e}", exc_info=True)
             return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay.")
 
-    async def _chat_gemini(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], model_id: str) -> Dict[str, Any]:
+    async def _chat_gemini(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], model_id: str, image_data: str = None) -> Dict[str, Any]:
         """Gemini fallback for non-streaming chat using new SDK."""
         # Use available models for this specific API key
         gemini_model = "gemini-flash-latest" if "flash" in model_id.lower() or "8b" in model_id.lower() else "gemini-2.5-pro"
@@ -143,9 +154,14 @@ Keep your responses punchy and varied."""
                     valid_history.append(types.Content(role=role, parts=[types.Part.from_text(text=content)]))
 
         try:
+            # Build parts for multimodal support
+            parts = [types.Part.from_text(text=message)]
+            if image_data:
+                parts.append(types.Part.from_bytes(data=base64.b64decode(image_data), mime_type="image/jpeg"))
+
             response = self.client.models.generate_content(
                 model=gemini_model,
-                contents=[types.Content(role="user", parts=[types.Part.from_text(text=message)])],
+                contents=[types.Content(role="user", parts=parts)],
                 config=types.GenerateContentConfig(
                     system_instruction=system_prompt,
                     temperature=0.7,
@@ -157,7 +173,7 @@ Keep your responses punchy and varied."""
             logger.error(f"[JARVIS] Gemini Chat Error: {e}")
             return self._get_fallback_response("Neural link disrupted. Calibration required.")
 
-    async def chat_stream(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False):
+    async def chat_stream(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False, image_data: str = None):
         """Streaming version of JARVIS chat for real-time interaction."""
         db = get_database()
         user_doc, user_context, app_stats = await asyncio.gather(
@@ -183,18 +199,87 @@ Keep your responses punchy and varied."""
                         valid_history.append(types.Content(role=role, parts=[types.Part.from_text(text=content)]))
 
             try:
+                # Setup session-specific tools (binding user_id)
+                def scan_my_resume(job_description: Optional[str] = None) -> str:
+                    """Scans the user's current resume for ATS compatibility and overall score."""
+                    # Use a trick to call the async method from this sync-lookalike for the SDK
+                    # Or we just return a description and handle it manually in the loop
+                    return "__TOOL_CALL:scan_resume__"
+
+                def draft_linkedin_outreach(job_title: str, company: str, recruiter_name: Optional[str] = None) -> str:
+                    """Drafts a professional recruitment outreach message."""
+                    return "__TOOL_CALL:draft_outreach__"
+
+                # Build parts for multimodal support
+                parts = [types.Part.from_text(text=message)]
+                if image_data:
+                    parts.append(types.Part.from_bytes(data=base64.b64decode(image_data), mime_type="image/jpeg"))
+
                 # Use the new chats.create logic for persistent context
+                # We'll handle tool calls manually to maintain streaming UI status
                 chat = self.client.chats.create(
                     model=model_id,
                     config=types.GenerateContentConfig(
                         system_instruction=system_prompt,
-                        temperature=0.7
+                        temperature=0.7,
+                        tools=self.tools
                     ),
                     history=valid_history
                 )
                 
-                # Stream the response
-                for chunk in chat.send_message_stream(message):
+                # Stream the response with tool-call handling
+                # Note: Automated Function Calling (AFC) doesn't perfectly support SSE yield
+                # so we handle the tool-call response cycle manually
+                response_iter = chat.send_message_stream(parts)
+                
+                for chunk in response_iter:
+                    # Check for tool calls first
+                    if chunk.candidates[0].content.parts:
+                        for part in chunk.candidates[0].content.parts:
+                            if part.function_call:
+                                fn_name = part.function_call.name
+                                fn_args = part.function_call.args
+                                
+                                # Send signal to UI that we are executing a task
+                                yield f"[ACTION: EXECUTING] JARVIS is working: {fn_name.replace('_', ' ').title()}..."
+                                logger.info(f"[JARVIS] Executing tool: {fn_name} with args {fn_args}")
+                                
+                                # Execute the real tool logic
+                                tool_result = ""
+                                if fn_name == "scan_my_resume":
+                                    tool_result = await self.scan_resume(user_id, fn_args.get("job_description"))
+                                elif fn_name == "draft_linkedin_outreach":
+                                    tool_result = await self.draft_outreach(
+                                        user_id, 
+                                        fn_args.get("job_title", "target role"), 
+                                        fn_args.get("company", "target company"),
+                                        fn_args.get("recruiter_name")
+                                    )
+                                elif fn_name == "report_to_admin":
+                                    tool_result = await self.report_to_admin(
+                                        user_id,
+                                        fn_args.get("feedback_text", "User feedback")
+                                    )
+                                
+                                # Feed the result back to Gemini so it can summarize for the user
+                                # In streaming, we have to start a new turn or use the chat session
+                                logger.info(f"[JARVIS] Tool result obtained. Resuming conversation.")
+                                
+                                # Resume stream with tool result using the CORRECT 'tool' role
+                                tool_response_stream = chat.send_message_stream(
+                                    types.Content(
+                                        role="tool",
+                                        parts=[types.Part.from_function_response(
+                                            name=fn_name,
+                                            response={"result": tool_result}
+                                        )]
+                                    )
+                                )
+                                for tool_chunk in tool_response_stream:
+                                    if tool_chunk.text:
+                                        yield tool_chunk.text
+                                continue # Skip the rest of the original chunk as we've resumed
+
                     if chunk.text:
                         yield chunk.text
                         
@@ -379,5 +464,56 @@ Keep your responses punchy and varied. No two acknowledgments should sound the s
             await email_service.send_email(recipient_email=settings.ADMIN_EMAIL, subject=subject, html_content=body)
         except Exception as e:
             logger.error(f"JARVIS Failed to send report email: {e}")
+
+    # --- AGENTIC TOOLS ---
+
+    async def scan_resume(self, user_id: str, job_description: Optional[str] = None) -> str:
+        """
+        Scans the user's current resume for ATS compatibility. 
+        Optionally takes a job_description to provide targeted matching feedback.
+        """
+        logger.info(f"[JARVIS TOOL] Scanning resume for user {user_id}")
+        db = get_database()
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        
+        if not user or not user.get("cv_text"):
+            return "Error: No resume text found in your profile. Please upload a resume first, Sir."
+            
+        result = await analyze_resume_ats(user.get("cv_text"), job_description)
+        
+        # Format the result into a human-readable summary for the AI to digest
+        summary = f"Resume Scan Complete. Score: {result.get('overall_score')}/100. "
+        summary += f"Key Strengths: {', '.join(result.get('milestones', []))}. "
+        summary += f"Priority Fix: {result.get('improvement_plan', [{}])[0].get('action', 'None')}."
+        
+        return summary
+
+    async def draft_outreach(self, user_id: str, job_title: str, company: str, recruiter_name: Optional[str] = None) -> str:
+        """
+        Drafts a professional LinkedIn outreach message or connection request.
+        """
+        logger.info(f"[JARVIS TOOL] Drafting outreach for {job_title} at {company}")
+        # Simple dynamic template for outreach
+        name_part = f"Hi {recruiter_name}," if recruiter_name else "Hi there,"
+        draft = f"{name_part} I recently applied for the {job_title} role at {company}. "
+        draft += "I'm very impressed with your team's work and would love to connect to discuss how my background aligns."
+        
+        return f"Outreach Draft:\n\n{draft}"
+
+    async def get_platform_stats(self, user_id: str) -> str:
+        """
+        Fetches the user's current application and profile statistics.
+        """
+        stats = await self._get_app_stats(user_id)
+        return f"Current Platform Stats: {stats}"
+
+    async def report_to_admin(self, user_id: str, feedback_text: str) -> str:
+        """
+        Submits feedback, bugs, or feature requests to the development team on behalf of the user.
+        """
+        logger.info(f"[JARVIS TOOL] Reporting feedback for {user_id}: {feedback_text}")
+        # Call the existing feedback logic
+        await self._report_to_admin(user_id, feedback_text, feedback_text)
+        return "Directive Processed. I have successfully transmitted your feedback to my creators, Sir."
 
 jarvis_service = JarvisService()
