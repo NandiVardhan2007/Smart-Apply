@@ -1,6 +1,6 @@
 import json
 import logging
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from fastapi.responses import RedirectResponse
 import google_auth_oauthlib.flow
 from bson import ObjectId
@@ -63,7 +63,7 @@ async def get_auth_url(user_id: str = Query(..., description="The ID of the user
         raise HTTPException(status_code=500, detail="Auth setup error.")
 
 @router.get("/callback")
-async def auth_callback(state: str, code: str):
+async def auth_callback(request: Request, state: str, code: str):
     """
     Handles the Google OAuth redirect.
     Exchanges the auth code for access/refresh tokens and saves them in the user record.
@@ -71,7 +71,8 @@ async def auth_callback(state: str, code: str):
     user_id = state
     try:
         flow = get_google_flow()
-        flow.fetch_token(code=code)
+        # Using authorization_response with the full URL is more robust than just code
+        flow.fetch_token(authorization_response=str(request.url))
         credentials = flow.credentials
         
         creds_data = {
