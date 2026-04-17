@@ -31,9 +31,12 @@ class JarvisService:
     def _setup_gemini(self):
         if settings.GOOGLE_API_KEY:
             try:
-                self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                self.client = genai.Client(
+                    api_key=settings.GOOGLE_API_KEY,
+                    http_options={'api_version': 'v1'}
+                )
                 self.gemini_available = True
-                logger.info("[JARVIS] Gemini (v1 SDK) Client initialized.")
+                logger.info("[JARVIS] Gemini (v1 Stable) Client initialized.")
             except Exception as e:
                 logger.error(f"[JARVIS] Gemini Init Failed: {e}")
                 self.gemini_available = False
