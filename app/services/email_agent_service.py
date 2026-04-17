@@ -73,6 +73,15 @@ Return structured JSON only. NO MARKDOWN:
         """Fetches the latest emails using Gmail API natively."""
         try:
             service = build('gmail', 'v1', credentials=creds)
+            
+            # SUPER-DIAGNOSTIC: Identify the account being scanned
+            try:
+                profile = service.users().getProfile(userId='me').execute()
+                print(f"[SUPER-DIAG] Connected Email: {profile.get('emailAddress')}")
+                print(f"[SUPER-DIAG] Total Messages in Gmail: {profile.get('messagesTotal')}")
+            except Exception as profile_err:
+                print(f"[SUPER-DIAG] Profile fetch failed: {profile_err}")
+
             # Remove ALL filters to ensure we see the test email
             query = ""
             print(f"[DEBUG] Fetching emails for query: '{query}'")
