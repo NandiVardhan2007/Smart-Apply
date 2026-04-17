@@ -163,6 +163,7 @@ Return structured JSON only. NO MARKDOWN:
                 
             result = json.loads(raw_content)
             result["fetched_subjects"] = fetched_subjects
+            result["version"] = "v1.2-Subjects-Fix"
             return result
             
         except Exception as e:
