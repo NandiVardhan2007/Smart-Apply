@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     NVIDIA_NIM_KEY_1: Optional[str] = None
     NVIDIA_NIM_KEY_2: Optional[str] = None
     NVIDIA_NIM_KEY_3: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = None
     
     RENDER_EXTERNAL_URL: str = "https://smart-apply-tn6h.onrender.com"
     PING_INTERVAL: int = 180 # 3 minutes

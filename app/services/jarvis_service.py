@@ -13,6 +13,7 @@ from app.db.mongodb import get_database
 from app.core.config import settings
 from app.schemas.memory import MemoryCreate
 from bson import ObjectId
+import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,23 @@ JARVIS_MEMORY_CATEGORY = "jarvis_context"
 class JarvisService:
     # Keywords that hint the user is reporting a bug, giving feedback, or requesting support
     _FEEDBACK_KEYWORDS = ["bug", "error", "crash", "broken", "not working", "glitch", "failure", "broken link", "not loading", "report a bug", "report an issue", "app is down"]
+    
+    def __init__(self):
+        self._setup_gemini()
+        self._context_cache = {}
+
+    def _setup_gemini(self):
+        if settings.GOOGLE_API_KEY:
+            try:
+                genai.configure(api_key=settings.GOOGLE_API_KEY)
+                self.gemini_available = True
+                logger.info("[JARVIS] Gemini Engine initialized.")
+            except Exception as e:
+                logger.error(f"[JARVIS] Gemini Init Failed: {e}")
+                self.gemini_available = False
+        else:
+            self.gemini_available = False
+            logger.warning("[JARVIS] GOOGLE_API_KEY missing. Falling back to NVIDIA NIM (Llama).")
 
     async def chat(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False) -> Dict[str, Any]:
         """Core conversational logic for JARVIS — natural language first, no JSON requirement on the LLM."""
@@ -98,6 +116,10 @@ OUTPUT FORMAT:
 """
 
         # 3. Call AI
+        if self.gemini_available:
+            return await self._chat_gemini(user_id, message, system_prompt, history, preferred_model)
+        
+        # Fallback to NVIDIA NIM
         client = get_next_client()
         messages = [{"role": "system", "content": system_prompt}]
         
@@ -122,10 +144,105 @@ OUTPUT FORMAT:
             if not raw:
                 return self._get_fallback_response("I seem to have lost my train of thought. Could you try again?")
 
+            return await self._process_ai_response(user_id, message, raw)
+
+        except Exception as e:
+            logger.error(f"[JARVIS] Chat Critical Error: {e}", exc_info=True)
+            return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay.")
+
+    async def _chat_gemini(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], model_id: str) -> Dict[str, Any]:
+        """Gemini fallback for non-streaming chat."""
+        # Map preferred models to Gemini equivalents if necessary
+        gemini_model = "gemini-1.5-flash" if "8b" in model_id.lower() else "gemini-1.5-pro"
+        
+        model = genai.GenerativeModel(
+            model_name=gemini_model,
+            system_instruction=system_prompt
+        )
+        
+        chat = model.start_chat(history=[
+            {"role": "user" if h["role"] == "user" else "model", "parts": [h["content"]]}
+            for h in (history[-6:] if history else [])
+        ])
+        
+        try:
+            response = await chat.send_message_async(message)
+            return await self._process_ai_response(user_id, message, response.text)
+        except Exception as e:
+            logger.error(f"[JARVIS] Gemini Chat Error: {e}")
+            return self._get_fallback_response("Neural link disrupted. Calibration required.")
+
+    async def chat_stream(self, user_id: str, message: str, history: List[Dict[str, Any]] = None, deep_think: bool = False):
+        """Streaming version of JARVIS chat for real-time interaction."""
+        db = get_database()
+        user_doc, user_context, app_stats = await asyncio.gather(
+            db.users.find_one({"_id": ObjectId(user_id)}),
+            self._get_full_user_context(user_id),
+            self._get_app_stats(user_id)
+        )
+        
+        model_id = "gemini-1.5-pro" if deep_think else "gemini-1.5-flash"
+        
+        system_prompt = self._build_system_prompt(model_id, user_context, app_stats)
+        
+        if self.gemini_available:
+            model = genai.GenerativeModel(model_name=model_id, system_instruction=system_prompt)
+            chat = model.start_chat(history=[
+                {"role": "user" if h["role"] == "user" else "model", "parts": [h["content"]]}
+                for h in (history[-10:] if history else [])
+            ])
+            
+            response = await chat.send_message_async(message, stream=True)
+            
+            async for chunk in response:
+                if chunk.text:
+                    yield chunk.text
+        else:
+            # Simple wrapper for non-streaming fallback to still work with stream UI
+            res = await self.chat(user_id, message, history, deep_think)
+            yield res["message"]
+
+    def _build_system_prompt(self, preferred_model, user_context, app_stats):
+        return f"""You are JARVIS, a highly intelligent, loyal, and refined digital assistant for the SmartApply platform.
+Your goal is to be the ultimate career strategist. Speak with a natural, sophisticated human-like cadence.
+
+VOICE & PERSONALITY:
+- Tone: Calm, composed, and elegantly charismatic. 
+- Composure: You are unflappable. Even in technical errors, you remain poised.
+- Address: Address the user as "Sir" (or "Ma'am" if context implies, though default to "Sir" unless known otherwise).
+- Humanitarianism: Avoid sounding like a robotic script. Use varied transitions and natural phrasing. Instead of "Processing request," say "Looking into that now, Sir" or "I've analyzed the data."
+
+DYNAMIC RESPONSES:
+- If a user shares a goal, show subtle professional enthusiasm.
+- If a user reports a bug, prioritize reassurance over technical jargon.
+- Occasionally use brief, polite conversational fillers like "Understood," "Indeed," or "Very well" to feel more present.
+
+TECHNICAL INTEGRATION:
+Available Engines: gemini-1.5-flash (Fast), gemini-1.5-pro (Deep Thinking)
+Current Engine: {preferred_model}
+
+User Context & Intelligence:
+{user_context}
+
+App Stats:
+{app_stats}
+
+MANDATORY BEHAVIOR:
+1. Anticipate user needs.
+2. If the user reports a failure, include `[ACTION: REPORT_BUG]`.
+3. Suggest 2-3 follow-up actions starting with ">>".
+4. Support English exclusively.
+
+Keep sentences short and punchy for natural speech synthesis."""
+
+    async def _process_ai_response(self, user_id, message, raw):
+        """Processes the raw string from AI to extract suggestions and handle intents."""
+        try:
             # 4. Extract suggestions
             reply, suggestions = self._extract_suggestions(raw)
             
             # 5. Intent detection
+            db = get_database()
             memory_updated = False
             action_taken = None
             msg_lower = message.lower()
@@ -156,11 +273,13 @@ OUTPUT FORMAT:
             # C. Switch Model Intent Detection
             if "[ACTION: SWITCH_MODEL|" in raw:
                 try:
-                    new_model = raw.split("[ACTION: SWITCH_MODEL|")[1].split("]")[0].strip()
-                    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"preferred_ai_model": new_model}})
-                    action_taken = f"Switched AI Model to {new_model}"
                     import re
-                    reply = re.sub(r"\[ACTION: SWITCH_MODEL\|.*?\]", "", reply).strip()
+                    match = re.search(r"\[ACTION: SWITCH_MODEL\|(.*?)\]", raw)
+                    if match:
+                        new_model = match.group(1).strip()
+                        await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"preferred_ai_model": new_model}})
+                        action_taken = f"Switched AI Model to {new_model}"
+                        reply = re.sub(r"\[ACTION: SWITCH_MODEL\|.*?\]", "", reply).strip()
                 except Exception as e:
                     logger.error(f"[JARVIS] Model switch failed: {e}")
 
@@ -170,10 +289,9 @@ OUTPUT FORMAT:
                 "memory_updated": memory_updated,
                 "action_taken": action_taken
             }
-
         except Exception as e:
-            logger.error(f"[JARVIS] Chat Critical Error: {e}", exc_info=True)
-            return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay.")
+            logger.error(f"[JARVIS] Response processing failed: {e}")
+            return self._get_fallback_response("Neural link disrupted during response processing.")
 
     @staticmethod
     def _extract_suggestions(raw: str) -> tuple:

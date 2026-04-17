@@ -20,3 +20,5 @@ fpdf2
 docxtpl
 python-docx
 Pillow
+google-generativeai
+sse-starlette
