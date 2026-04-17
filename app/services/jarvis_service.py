@@ -186,17 +186,28 @@ OUTPUT FORMAT:
         system_prompt = self._build_system_prompt(model_id, user_context, app_stats)
         
         if self.gemini_available:
+            # Build valid history (must alternate user/model and contain non-empty parts)
+            valid_history = []
+            if history:
+                # Exclude the very last message if it matches the current input (to prevent duplicate error)
+                relevant_history = history[:-1] if history[-1].get("content") == message else history
+                for h in relevant_history[-10:]:
+                    role = "user" if h.get("role") == "user" else "model"
+                    content = h.get("content", "").strip()
+                    if content:
+                        valid_history.append({"role": role, "parts": [content]})
+
             model = genai.GenerativeModel(model_name=model_id, system_instruction=system_prompt)
-            chat = model.start_chat(history=[
-                {"role": "user" if h["role"] == "user" else "model", "parts": [h["content"]]}
-                for h in (history[-10:] if history else [])
-            ])
+            chat = model.start_chat(history=valid_history)
             
-            response = await chat.send_message_async(message, stream=True)
-            
-            async for chunk in response:
-                if chunk.text:
-                    yield chunk.text
+            try:
+                response = await chat.send_message_async(message, stream=True)
+                async for chunk in response:
+                    if hasattr(chunk, 'text') and chunk.text:
+                        yield chunk.text
+            except Exception as e:
+                logger.error(f"[JARVIS] Gemini Streaming Error: {e}")
+                yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
         else:
             # Simple wrapper for non-streaming fallback to still work with stream UI
             res = await self.chat(user_id, message, history, deep_think)
