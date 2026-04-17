@@ -2,6 +2,27 @@ import bcrypt
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from app.core.config import settings
+from cryptography.fernet import Fernet
+
+def get_fernet():
+    if not settings.FERNET_KEY:
+        return None
+    return Fernet(settings.FERNET_KEY.encode())
+
+def encrypt_token(token: str) -> str:
+    if not token: return ""
+    f = get_fernet()
+    if not f: return token # Fallback if key missing (though shouldn't happen)
+    return f.encrypt(token.encode()).decode()
+
+def decrypt_token(encrypted_token: str) -> str:
+    if not encrypted_token: return ""
+    f = get_fernet()
+    if not f: return encrypted_token
+    try:
+        return f.decrypt(encrypted_token.encode()).decode()
+    except Exception:
+        return encrypted_token # Fallback if decryption fails (e.g. was stored plain)
 
 def verify_password(plain_password: str, hashed_password: str):
     return bcrypt.checkpw(

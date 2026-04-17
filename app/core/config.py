@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     NVIDIA_NIM_KEY_2: Optional[str] = None
     NVIDIA_NIM_KEY_3: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    FERNET_KEY: Optional[str] = None
     
     RENDER_EXTERNAL_URL: str = "https://smart-apply-ai-by6m.onrender.com"
     PING_INTERVAL: int = 180 # 3 minutes
