@@ -199,16 +199,22 @@ Keep your responses punchy and varied."""
                         valid_history.append(types.Content(role=role, parts=[types.Part.from_text(text=content)]))
 
             try:
-                # Setup session-specific tools (binding user_id)
+                # Define synchronous stubs for the Gemini SDK to prevent AFC coroutine errors
                 def scan_my_resume(job_description: Optional[str] = None) -> str:
                     """Scans the user's current resume for ATS compatibility and overall score."""
-                    # Use a trick to call the async method from this sync-lookalike for the SDK
-                    # Or we just return a description and handle it manually in the loop
-                    return "__TOOL_CALL:scan_resume__"
+                    return "triggering_scan"
 
                 def draft_linkedin_outreach(job_title: str, company: str, recruiter_name: Optional[str] = None) -> str:
                     """Drafts a professional recruitment outreach message."""
-                    return "__TOOL_CALL:draft_outreach__"
+                    return "triggering_outreach"
+
+                def get_platform_stats() -> str:
+                    """Fetches the user's current application and profile statistics."""
+                    return "triggering_stats"
+
+                def report_to_admin(feedback_text: str) -> str:
+                    """Submits feedback, bugs, or feature requests to the development team."""
+                    return "triggering_report"
 
                 # Build parts for multimodal support
                 parts = [types.Part.from_text(text=message)]
@@ -216,13 +222,12 @@ Keep your responses punchy and varied."""
                     parts.append(types.Part.from_bytes(data=base64.b64decode(image_data), mime_type="image/jpeg"))
 
                 # Use the new chats.create logic for persistent context
-                # We'll handle tool calls manually to maintain streaming UI status
                 chat = self.client.chats.create(
                     model=model_id,
                     config=types.GenerateContentConfig(
                         system_instruction=system_prompt,
                         temperature=0.7,
-                        tools=self.tools
+                        tools=[scan_my_resume, draft_linkedin_outreach, get_platform_stats, report_to_admin]
                     ),
                     history=valid_history
                 )
@@ -233,52 +238,57 @@ Keep your responses punchy and varied."""
                 response_iter = chat.send_message_stream(parts)
                 
                 for chunk in response_iter:
+                    # Safety check for candidates
+                    if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
+                        continue
+
                     # Check for tool calls first
-                    if chunk.candidates[0].content.parts:
-                        for part in chunk.candidates[0].content.parts:
-                            if part.function_call:
-                                fn_name = part.function_call.name
-                                fn_args = part.function_call.args
+                    for part in chunk.candidates[0].content.parts:
+                        if part.function_call:
+                            fn_name = part.function_call.name
+                            fn_args = part.function_call.args
                                 
-                                # Send signal to UI that we are executing a task
-                                yield f"[ACTION: EXECUTING] JARVIS is working: {fn_name.replace('_', ' ').title()}..."
-                                logger.info(f"[JARVIS] Executing tool: {fn_name} with args {fn_args}")
-                                
-                                # Execute the real tool logic
-                                tool_result = ""
-                                if fn_name == "scan_my_resume":
-                                    tool_result = await self.scan_resume(user_id, fn_args.get("job_description"))
-                                elif fn_name == "draft_linkedin_outreach":
-                                    tool_result = await self.draft_outreach(
-                                        user_id, 
-                                        fn_args.get("job_title", "target role"), 
-                                        fn_args.get("company", "target company"),
-                                        fn_args.get("recruiter_name")
-                                    )
-                                elif fn_name == "report_to_admin":
-                                    tool_result = await self.report_to_admin(
-                                        user_id,
-                                        fn_args.get("feedback_text", "User feedback")
-                                    )
-                                
-                                # Feed the result back to Gemini so it can summarize for the user
-                                # In streaming, we have to start a new turn or use the chat session
-                                logger.info(f"[JARVIS] Tool result obtained. Resuming conversation.")
-                                
-                                # Resume stream with tool result using the CORRECT 'tool' role
-                                tool_response_stream = chat.send_message_stream(
-                                    types.Content(
-                                        role="tool",
-                                        parts=[types.Part.from_function_response(
-                                            name=fn_name,
-                                            response={"result": tool_result}
-                                        )]
-                                    )
+                            # Send signal to UI that we are executing a task
+                            yield f"[ACTION: EXECUTING] JARVIS is working: {fn_name.replace('_', ' ').title()}..."
+                            logger.info(f"[JARVIS] Executing tool: {fn_name} with args {fn_args}")
+                            
+                            # Execute the real tool logic
+                            tool_result = ""
+                            if fn_name == "scan_my_resume":
+                                tool_result = await self.scan_resume(user_id, fn_args.get("job_description"))
+                            elif fn_name == "draft_linkedin_outreach":
+                                tool_result = await self.draft_outreach(
+                                    user_id, 
+                                    fn_args.get("job_title", "target role"), 
+                                    fn_args.get("company", "target company"),
+                                    fn_args.get("recruiter_name")
                                 )
-                                for tool_chunk in tool_response_stream:
-                                    if tool_chunk.text:
-                                        yield tool_chunk.text
-                                continue # Skip the rest of the original chunk as we've resumed
+                            elif fn_name == "report_to_admin":
+                                tool_result = await self.report_to_admin(
+                                    user_id,
+                                    fn_args.get("feedback_text", "User feedback")
+                                )
+                            
+                            # Feed the result back to Gemini so it can summarize for the user
+                            # In streaming, we have to start a new turn or use the chat session
+                            logger.info(f"[JARVIS] Tool result obtained. Resuming conversation.")
+                            
+                            # Resume stream with tool result using the CORRECT 'tool' role
+                            tool_response_stream = chat.send_message_stream(
+                                types.Content(
+                                    role="tool",
+                                    parts=[types.Part.from_function_response(
+                                        name=fn_name,
+                                        response={"result": tool_result}
+                                    )]
+                                )
+                            )
+                            for tool_chunk in tool_response_stream:
+                                if tool_chunk.text:
+                                    yield tool_chunk.text
+                            
+                            # CRITICAL: Stop iterating the original dead stream after switching focus
+                            return 
 
                     if chunk.text:
                         yield chunk.text
