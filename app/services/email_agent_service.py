@@ -83,8 +83,9 @@ Return structured JSON only, strictly matching this schema. NO PREAMBLE. NO MARK
         """Fetches the latest unread or recent emails using Gmail API natively."""
         try:
             service = build('gmail', 'v1', credentials=creds)
-            # Fetch last 5 unread messages as an example
-            results = service.users().messages().list(userId='me', q="is:unread", maxResults=5).execute()
+            # Fetch last 20 recent emails, excluding social and promotional noise
+            query = "-category:social -category:promotions"
+            results = service.users().messages().list(userId='me', q=query, maxResults=20).execute()
             messages = results.get('messages', [])
             
             if not messages:
