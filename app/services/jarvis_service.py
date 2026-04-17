@@ -31,12 +31,10 @@ class JarvisService:
     def _setup_gemini(self):
         if settings.GOOGLE_API_KEY:
             try:
-                self.client = genai.Client(
-                    api_key=settings.GOOGLE_API_KEY,
-                    http_options={'api_version': 'v1'}
-                )
+                # Reverting to default (v1beta) as it's more compatible with the account's advanced models
+                self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
                 self.gemini_available = True
-                logger.info("[JARVIS] Gemini (v1 Stable) Client initialized.")
+                logger.info("[JARVIS] Gemini (Adaptive Engine) Client initialized.")
             except Exception as e:
                 logger.error(f"[JARVIS] Gemini Init Failed: {e}")
                 self.gemini_available = False
@@ -156,8 +154,8 @@ OUTPUT FORMAT:
 
     async def _chat_gemini(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], model_id: str) -> Dict[str, Any]:
         """Gemini fallback for non-streaming chat using new SDK."""
-        # Use standardized Gemini model names
-        gemini_model = "gemini-1.5-flash" if "flash" in model_id.lower() or "8b" in model_id.lower() else "gemini-1.5-pro"
+        # Use available models for this specific API key
+        gemini_model = "gemini-flash-latest" if "flash" in model_id.lower() or "8b" in model_id.lower() else "gemini-2.5-pro"
         
         # Build history using new SDK types
         valid_history = []
@@ -192,7 +190,7 @@ OUTPUT FORMAT:
             self._get_app_stats(user_id)
         )
         
-        model_id = "gemini-1.5-pro" if deep_think else "gemini-1.5-flash"
+        model_id = "gemini-2.5-pro" if deep_think else "gemini-flash-latest"
         
         system_prompt = self._build_system_prompt(model_id, user_context, app_stats)
         
