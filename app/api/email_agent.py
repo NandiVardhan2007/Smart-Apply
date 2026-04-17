@@ -18,7 +18,7 @@ async def scan_mailbox(
     # In a full flow, this would call an IMAP or Google API wrapper to pull the last hours of emails.
     # Because we don't have OAuth tokens configured, we accept a mock payload in the request.
     
-    input_data = mock_payload or "No raw emails provided for testing. Returning default state."
+    input_data = mock_payload
     
     result = await email_agent_service.scan_emails(str(current_user["_id"]), input_data)
     if "error" in result:
