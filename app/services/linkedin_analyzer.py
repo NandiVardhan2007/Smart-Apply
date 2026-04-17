@@ -11,6 +11,9 @@ from app.services.memory_service import memory_service
 from app.schemas.memory import MemoryCreate
 
 from app.utils.json_repair import robust_json_loads
+from app.core.config import settings
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -213,13 +216,45 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
             logger.error(f"[LinkedIn Analyzer] Attempt {attempt + 1} failed: {e}")
             last_error = str(e)
 
-    # FINAL FAILURE
-    logger.error(f"[LinkedIn Analyzer] All {max_retries} attempts failed. Last error: {last_error}")
-    # Log raw content only on final failure for debugging
-    if raw_content:
-        logger.error(f"[LinkedIn Analyzer] RAW FAILED CONTENT: {raw_content[:2000]}")
-    
-    raise ValueError(f"LinkedIn analysis failed after {max_retries} attempts: {last_error}")
+    except Exception as e:
+        logger.warning(f"[LinkedIn Analyzer] Primary Engine (NVIDIA) failed: {e}. Attempting Gemini Fallback.")
+        
+        # --- FALLBACK: GOOGLE GEMINI ---
+        if settings.GOOGLE_API_KEY:
+            try:
+                gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                
+                # Adapt prompt for Gemini
+                gemini_system = LINKEDIN_ANALYSIS_PROMPT + "\n\nCRITICAL: Return ONLY raw JSON. No preamble or markdown tags."
+                
+                response = gemini_client.models.generate_content(
+                    model="gemini-flash-latest",
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=user_content)])],
+                    config=types.GenerateContentConfig(
+                        system_instruction=gemini_system,
+                        temperature=0.1,
+                        candidate_count=1
+                    )
+                )
+                
+                raw_content = response.text.strip()
+                # Clean up markdown if Gemini adds it
+                if "```json" in raw_content:
+                    raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_content:
+                    raw_content = raw_content.split("```")[1].split("```")[0].strip()
+                
+                result = robust_json_loads(raw_content)
+                if result:
+                    logger.info("[LinkedIn Analyzer] Gemini Fallback SUCCEEDED.")
+                    return _validate_and_normalize(result)
+                else:
+                    logger.error(f"[LinkedIn Analyzer] Gemini Fallback failed to produce valid JSON: {raw_content[:500]}")
+            except Exception as gemini_err:
+                logger.error(f"[LinkedIn Analyzer] Gemini Fallback CRITICAL FAILURE: {gemini_err}")
+
+        logger.error(f"[LinkedIn Analyzer] All engines exhausted. Last NVIDIA error: {last_error}")
+        return _fallback_result("Our AI engines are currently congested. Please try again in a few minutes.")
 
 
 def _validate_and_normalize(result: dict) -> dict:
