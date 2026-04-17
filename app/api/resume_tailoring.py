@@ -4,8 +4,10 @@ Endpoints for AI-powered resume tailoring, job scraping, and history retrieval.
 """
 
 import logging
+import io
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi.responses import StreamingResponse
 from typing import Optional
 
 from app.api.user import get_current_user
@@ -17,6 +19,7 @@ from app.schemas.resume_tailoring import (
 )
 from app.services.resume_tailoring_service import resume_tailoring_service
 from app.utils.job_scraper import scrape_job_url
+from app.utils.latex_compiler import compile_latex_to_pdf, LaTeXCompilationError
 from bson import ObjectId
 
 router = APIRouter()
@@ -161,3 +164,62 @@ async def get_tailored_resume(tailor_id: str, current_user: dict = Depends(get_c
     doc.pop("job_description", None)
 
     return doc
+
+
+@router.get("/{tailor_id}/pdf")
+async def get_tailored_pdf(
+    tailor_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Compiles the tailored resume's LaTeX code into a PDF and returns the binary stream.
+    """
+    db = get_database()
+
+    try:
+        doc = await db.tailored_resumes.find_one({"_id": ObjectId(tailor_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format.")
+
+    if not doc:
+        raise HTTPException(status_code=404, detail="Tailored resume not found.")
+
+    # Security: ensure ownership
+    if doc.get("user_id") != str(current_user["id"]):
+        raise HTTPException(status_code=403, detail="Access denied.")
+
+    latex_code = doc.get("latex_code")
+    if not latex_code:
+        raise HTTPException(status_code=404, detail="LaTeX code not found for this resume.")
+
+    try:
+        # Compile LaTeX to PDF bytes
+        pdf_bytes = compile_latex_to_pdf(latex_code)
+        
+        # Stream the PDF
+        buffer = io.BytesIO(pdf_bytes)
+        
+        filename = f"Resume_{doc.get('company', 'Tailored')}_{doc.get('job_title', 'Role')}.pdf"
+        # Sanitize filename
+        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_', '-')).strip()
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+
+    except LaTeXCompilationError as e:
+        logger.error(f"[ResumeTailor] PDF compilation failed for {tailor_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to compile PDF. Technical log: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"[ResumeTailor] Unexpected error during PDF generation: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during PDF generation."
+        )
