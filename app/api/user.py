@@ -289,6 +289,7 @@ async def get_dashboard_data(current_user: dict = Depends(get_current_user)):
 
         return {
             "user": {
+                "id": user_id,
                 "full_name": current_user.get("full_name") or current_user.get("first_name", "User"),
                 "resume_url": current_user.get("resume_url"),
                 "profile_pic_url": profile_pic_url,
