@@ -41,3 +41,23 @@ async def draft_reply(
         raise HTTPException(status_code=500, detail=result["error"])
         
     return result
+@router.post("/send-reply")
+async def send_reply(
+    thread_id: str = Body(...),
+    reply_body: str = Body(...),
+    subject: str = Body(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Sends a reply to a specific email thread.
+    """
+    result = await email_agent_service.send_reply(
+        str(current_user["_id"]), 
+        thread_id, 
+        reply_body, 
+        subject
+    )
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+        
+    return result

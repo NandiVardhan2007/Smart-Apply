@@ -41,7 +41,8 @@ Return structured JSON only. NO MARKDOWN:
       "summary": "",
       "why_it_matters": "",
       "recommended_action": "",
-      "notification_text": ""
+      "notification_text": "",
+      "thread_id": "The thread ID from the source data"
     }
   ],
   "reply_needed": true,
@@ -130,7 +131,7 @@ Return structured JSON only. NO MARKDOWN:
                     return ""
 
                 body = get_body(payload)
-                email_texts.append(f"From: {sender}\nSubject: {subject}\nBody: {body[:1500]}")
+                email_texts.append(f"THREAD ID: {msg.get('threadId')}\nFrom: {sender}\nSubject: {subject}\nBody: {body[:1500]}")
                 
             return {
                 "ai_data": "\n\n--- NEXT EMAIL ---\n\n".join(email_texts),
@@ -184,7 +185,7 @@ Return structured JSON only. NO MARKDOWN:
 
     async def generate_draft_reply(self, user_id: str, thread_context: str, user_instruction: str) -> Dict[str, Any]:
         client = get_next_client()
-        input_data = f"THREAD CONTEXT: {thread_context}\\nUSER INSTRUCTION: {user_instruction}\\n\\nDraft a reply adhering to the Agent Rules. Return PURE JSON."
+        input_data = f"THREAD CONTEXT: {thread_context}\nUSER INSTRUCTION: {user_instruction}\n\nDraft a reply adhering to the Agent Rules. Return PURE JSON."
         
         try:
             response = await client.chat.completions.create(
@@ -205,5 +206,61 @@ Return structured JSON only. NO MARKDOWN:
             return json.loads(raw_content)
         except Exception as e:
              return {"error": str(e)}
+
+    def _send_real_reply(self, creds: Credentials, thread_id: str, reply_body: str, subject: str) -> Dict[str, Any]:
+        """Sends a reply to a thread via Gmail API."""
+        try:
+            service = build('gmail', 'v1', credentials=creds)
+            
+            # 1. Fetch the thread to get the latest message details (for headers)
+            thread = service.users().threads().get(userId='me', id=thread_id).execute()
+            messages = thread.get('messages', [])
+            if not messages:
+                return {"error": "Thread not found or empty."}
+            
+            last_msg = messages[-1]
+            headers = last_msg.get('payload', {}).get('headers', [])
+            
+            # Get necessary headers for a proper reply
+            msg_id = next((h['value'] for h in headers if h['name'].lower() == 'message-id'), None)
+            orig_subject = next((h['value'] for h in headers if h['name'].lower() == 'subject'), 'No Subject')
+            
+            final_subject = subject or orig_subject
+            if not final_subject.lower().startswith('re:'):
+                final_subject = f"Re: {final_subject}"
+            
+            # Determine "To" (usually the sender of the last message)
+            reply_to = next((h['value'] for h in headers if h['name'].lower() == 'from'), None)
+            
+            # Construct the email
+            from email.mime.text import MIMEText
+            message = MIMEText(reply_body)
+            message['to'] = reply_to
+            message['subject'] = final_subject
+            if msg_id:
+                message['In-Reply-To'] = msg_id
+                message['References'] = msg_id
+
+            raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
+            
+            # Send as a reply to the thread
+            sent_message = service.users().messages().send(
+                userId='me',
+                body={'raw': raw, 'threadId': thread_id}
+            ).execute()
+            
+            return {"success": True, "message_id": sent_message['id'], "thread_id": sent_message['threadId']}
+            
+        except Exception as e:
+            logger.error(f"[EMAIL AGENT] Gmail API send failed: {e}")
+            return {"error": str(e)}
+
+    async def send_reply(self, user_id: str, thread_id: str, reply_body: str, subject: str = None) -> Dict[str, Any]:
+        creds = await self.get_user_credentials(user_id)
+        if not creds:
+            return {"error": "No Google OAuth credentials found."}
+            
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._send_real_reply, creds, thread_id, reply_body, subject)
 
 email_agent_service = EmailAgentService()
