@@ -350,25 +350,53 @@ Keep your responses punchy and varied."""
                     # Call NVIDIA NIM in STREAMING mode
                     try:
                         client = get_next_client()
-                        pivot_prompt = system_prompt + "\n\nNOTE: You are currently running on a backup neural link. Vision is limited. Focus on professional textual intelligence, Sir."
-                        messages = [{"role": "system", "content": pivot_prompt}]
+                        # Strictly enforce alternating roles for Llama 3.1 compatibility
+                        nv_messages = [{"role": "system", "content": f"{system_prompt}\n\nNOTE: You are on a backup link. Be concise and professional, Sir."}]
+                        
+                        last_role = "system"
                         if history:
+                            # Filter and alternate
                             for h in history[-6:]:
-                                messages.append({"role": "user" if h.get("role") == "user" else "assistant", "content": h.get("content", "").strip()})
-                        messages.append({"role": "user", "content": message})
+                                role = "user" if h.get("role") == "user" else "assistant"
+                                content = h.get("content", "").strip()
+                                # Clean content and ensure role alternation
+                                if content and content != "..." and role != last_role:
+                                    nv_messages.append({"role": role, "content": content})
+                                    last_role = role
+                        
+                        # Ensure the last message before the new one is 'assistant' if possible, or start fresh
+                        if last_role != "user":
+                            nv_messages.append({"role": "user", "content": message})
+                        else:
+                            # If history ended with a user msg, replace/append carefully
+                             nv_messages.append({"role": "assistant", "content": "Understood, Sir. Let me process that for you."})
+                             nv_messages.append({"role": "user", "content": message})
 
+                        logger.info(f"[JARVIS] Initiating Polished NVIDIA Stream for user {user_id}")
                         nv_stream = await client.chat.completions.create(
                             model="meta/llama-3.1-8b-instruct",
-                            messages=messages,
+                            messages=nv_messages,
                             temperature=0.7,
-                            stream=True
+                            stream=True,
+                            max_tokens=1024
                         )
+                        
+                        content_yielded = False
                         async for nv_chunk in nv_stream:
-                            if nv_chunk.choices[0].delta.content:
-                                yield nv_chunk.choices[0].delta.content
+                            token = nv_chunk.choices[0].delta.content
+                            if token:
+                                yield token
+                                content_yielded = True
+                        
+                        if not content_yielded:
+                            # If the stream was empty, fallout to high-reliability sync call
+                            logger.warning("[JARVIS] NVIDIA Stream was empty. Falling back to sync call.")
+                            res = await self._chat_nvidia(user_id, message, system_prompt, history, model_id)
+                            yield res["message"]
+                            
                     except Exception as nv_err:
                         logger.error(f"[JARVIS] NVIDIA Streaming Pivot Failed: {nv_err}")
-                        yield "I apologize, Sir. Both neural links are currently unresponsive. Please check my status again in a moment."
+                        yield "I apologize, Sir. My secondary neural links are also struggling. Please allow me a moment to recalibrate."
                 else:
                     logger.error(f"[JARVIS] Gemini Streaming Error: {err_msg}")
                     yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
