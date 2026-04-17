@@ -13,7 +13,8 @@ from app.db.mongodb import get_database
 from app.core.config import settings
 from app.schemas.memory import MemoryCreate
 from bson import ObjectId
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,9 @@ class JarvisService:
     def _setup_gemini(self):
         if settings.GOOGLE_API_KEY:
             try:
-                genai.configure(api_key=settings.GOOGLE_API_KEY)
+                self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
                 self.gemini_available = True
-                logger.info("[JARVIS] Gemini Engine initialized.")
+                logger.info("[JARVIS] Gemini (v1 SDK) Client initialized.")
             except Exception as e:
                 logger.error(f"[JARVIS] Gemini Init Failed: {e}")
                 self.gemini_available = False
@@ -151,22 +152,29 @@ OUTPUT FORMAT:
             return self._get_fallback_response("I apologize, but I am currently experiencing a connection delay.")
 
     async def _chat_gemini(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], model_id: str) -> Dict[str, Any]:
-        """Gemini fallback for non-streaming chat."""
-        # Map preferred models to Gemini equivalents if necessary
-        gemini_model = "gemini-1.5-flash" if "8b" in model_id.lower() else "gemini-1.5-pro"
+        """Gemini fallback for non-streaming chat using new SDK."""
+        # Use standardized Gemini model names
+        gemini_model = "gemini-1.5-flash" if "flash" in model_id.lower() or "8b" in model_id.lower() else "gemini-1.5-pro"
         
-        model = genai.GenerativeModel(
-            model_name=gemini_model,
-            system_instruction=system_prompt
-        )
-        
-        chat = model.start_chat(history=[
-            {"role": "user" if h["role"] == "user" else "model", "parts": [h["content"]]}
-            for h in (history[-6:] if history else [])
-        ])
-        
+        # Build history using new SDK types
+        valid_history = []
+        if history:
+            for h in history[-6:]:
+                role = "user" if h.get("role") == "user" else "model"
+                content = h.get("content", "").strip()
+                if content:
+                    valid_history.append(types.Content(role=role, parts=[types.Part.from_text(text=content)]))
+
         try:
-            response = await chat.send_message_async(message)
+            response = self.client.models.generate_content(
+                model=gemini_model,
+                contents=[types.Content(role="user", parts=[types.Part.from_text(text=message)])],
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    temperature=0.7,
+                    candidate_count=1
+                )
+            )
             return await self._process_ai_response(user_id, message, response.text)
         except Exception as e:
             logger.error(f"[JARVIS] Gemini Chat Error: {e}")
@@ -195,16 +203,24 @@ OUTPUT FORMAT:
                     role = "user" if h.get("role") == "user" else "model"
                     content = h.get("content", "").strip()
                     if content:
-                        valid_history.append({"role": role, "parts": [content]})
+                        valid_history.append(types.Content(role=role, parts=[types.Part.from_text(text=content)]))
 
-            model = genai.GenerativeModel(model_name=model_id, system_instruction=system_prompt)
-            chat = model.start_chat(history=valid_history)
-            
             try:
-                response = await chat.send_message_async(message, stream=True)
-                async for chunk in response:
-                    if hasattr(chunk, 'text') and chunk.text:
+                # Use the new chats.create logic for persistent context
+                chat = self.client.chats.create(
+                    model=model_id,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.7
+                    ),
+                    history=valid_history
+                )
+                
+                # Stream the response
+                for chunk in chat.send_message_stream(message):
+                    if chunk.text:
                         yield chunk.text
+                        
             except Exception as e:
                 logger.error(f"[JARVIS] Gemini Streaming Error: {e}")
                 yield "I apologize, Sir. I'm experiencing a neural link disruption. Attempting to recalibrate..."
