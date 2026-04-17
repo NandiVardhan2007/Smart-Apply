@@ -75,14 +75,15 @@ Return structured JSON only. NO MARKDOWN:
             service = build('gmail', 'v1', credentials=creds)
             # Remove ALL filters to ensure we see the test email
             query = ""
+            print(f"[DEBUG] Fetching emails for query: '{query}'")
             results = service.users().messages().list(userId='me', q=query, maxResults=20).execute()
             messages = results.get('messages', [])
             
             if not messages:
-                logger.info("[EMAIL AGENT] No messages found at all.")
+                print("[DEBUG] No messages found at all in Gmail.")
                 return {"ai_data": "No emails found.", "subjects": []}
                 
-            logger.info(f"[EMAIL AGENT] Fetching {len(messages)} messages...")
+            print(f"[DEBUG] Found {len(messages)} messages. Processing...")
             email_texts = []
             subjects = []
             for msg in messages:
@@ -92,6 +93,7 @@ Return structured JSON only. NO MARKDOWN:
                 
                 subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
                 sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
+                print(f"[DEBUG] Processing Subject: {subject}")
                 subjects.append(subject)
 
                 # Robust body extraction covering nested parts
