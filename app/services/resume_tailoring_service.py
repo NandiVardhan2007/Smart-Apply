@@ -4,7 +4,7 @@ Resume Tailoring & LaTeX Generation Service
 Core AI engine that transforms a job description + user profile into a
 fully tailored, ATS-friendly resume in compile-ready LaTeX format.
 
-Uses Gemini 2.5 Pro as primary, NVIDIA NIM Llama 3.1 70B as fallback.
+Uses NVIDIA NIM Llama 3.1 70B as the exclusive engine for reliability and quota management.
 """
 
 import logging
@@ -285,16 +285,8 @@ class ResumeTailoringService:
         max_tokens: int = 4000,
         prefer_pro: bool = False
     ) -> str:
-        """Call AI with automatic Gemini → NVIDIA failover."""
-
-        # Try Gemini first
-        if self.gemini_available:
-            try:
-                return await self._call_gemini(system_prompt, user_prompt, temperature, max_tokens, prefer_pro)
-            except Exception as e:
-                logger.warning(f"[ResumeTailor] Gemini call failed, pivoting to NVIDIA: {e}")
-
-        # Fallback to NVIDIA NIM
+        """Call NVIDIA NIM (Llama) directly for resume tasks to save Gemini quota."""
+        # Per user request: use NVIDIA exclusively for resume tasks
         return await self._call_nvidia(system_prompt, user_prompt, temperature, max_tokens, prefer_pro)
 
     async def _call_gemini(
