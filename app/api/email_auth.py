@@ -51,12 +51,22 @@ async def get_auth_url(user_id: str = Query(..., description="The ID of the user
     """
     try:
         flow = get_google_flow()
-        auth_url, state = flow.authorization_url(
+        auth_url, _ = flow.authorization_url(
             access_type='offline',
             include_granted_scopes='true',
             prompt='consent',
             state=user_id # Using state to pass the user ID safely
         )
+        
+        # Capture the PKCE code verifier to persist it across redirects
+        code_verifier = getattr(flow, 'code_verifier', None)
+        if code_verifier:
+            db = get_database()
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"oauth_code_verifier": code_verifier}}
+            )
+            
         return {"url": auth_url}
     except Exception as e:
         logger.error(f"[EMAIL AUTH] Failed to generate auth URL: {e}")
@@ -70,7 +80,19 @@ async def auth_callback(request: Request, state: str, code: str):
     """
     user_id = state
     try:
+        db = get_database()
+        # Retrieve the stored code verifier for PKCE
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found for this auth session.")
+            
+        stored_verifier = user.get("oauth_code_verifier")
+        
         flow = get_google_flow()
+        if stored_verifier:
+            # Manually Restore PKCE state
+            flow.code_verifier = stored_verifier
+            
         # Using authorization_response with the full URL is more robust than just code
         flow.fetch_token(authorization_response=str(request.url))
         credentials = flow.credentials
@@ -87,7 +109,10 @@ async def auth_callback(request: Request, state: str, code: str):
         db = get_database()
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"google_credentials": creds_data}}
+            {
+                "$set": {"google_credentials": creds_data},
+                "$unset": {"oauth_code_verifier": ""} # Clean up temporary verifier
+            }
         )
         
         logger.info(f"[EMAIL AUTH] Target acquired. Tokens stored for user {user_id}")
