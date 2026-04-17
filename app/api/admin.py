@@ -22,6 +22,7 @@ async def get_all_users(skip: int = 0, limit: int = 50):
     
     for u in users:
         u["id"] = str(u["_id"])
+        del u["_id"]
         
     return [UserOut(**u) for u in users]
 
@@ -38,6 +39,7 @@ async def get_user_details(user_id: str):
         raise HTTPException(status_code=404, detail="User not found")
         
     user["id"] = str(user["_id"])
+    del user["_id"]
     return UserOut(**user)
 
 @router.post("/users/{user_id}/ban")
@@ -89,6 +91,7 @@ async def get_audit_logs(skip: int = 0, limit: int = 100):
     
     for log in logs:
         log["id"] = str(log["_id"])
+        del log["_id"]
         
     return logs
 
