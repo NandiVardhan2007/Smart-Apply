@@ -45,6 +45,10 @@ class UserProfileUpdate(BaseModel):
     willing_to_relocate: Optional[bool] = True
     highest_degree: Optional[str] = "Bachelor's"
     work_experience_years: Optional[float] = None
+    
+    # Automation Search Config
+    search_terms: Optional[str] = None # Comma separated
+    bad_words: Optional[str] = None # Comma separated
 
 class ResumeItem(BaseModel):
     id: str
@@ -86,6 +90,10 @@ class UserOut(UserBase):
     willing_to_relocate: Optional[bool] = True
     highest_degree: Optional[str] = None
     work_experience_years: Optional[float] = None
+    
+    # Automation Search Config
+    search_terms: Optional[str] = None
+    bad_words: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

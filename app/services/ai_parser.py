@@ -124,3 +124,56 @@ async def parse_resume_with_ai(resume_text: str) -> dict:
             "location": "", "education": "", "experience": "", "skills": "",
             "portfolioUrl": "", "linkedinUrl": "", "githubUrl": ""
         }
+
+async def generate_automation_terms_with_ai(experience: str, skills: str, job_title: str) -> dict:
+    """Uses AI to generate LinkedIn search terms and bad words based on user profile."""
+    system_prompt = """Based on the user's experience and skills, generate:
+    1. Search Terms: 5-8 highly relevant job titles or keywords for LinkedIn job search (comma-separated).
+    2. Bad Words: 5-8 keywords to EXCLUDE (e.g., seniority levels, industries, or roles that don't fit).
+    Return ONLY JSON with keys: 'search_terms' and 'bad_words'. No preamble."""
+
+    user_input = f"Experience: {experience}\nSkills: {skills}\nTarget Job Title: {job_title}"
+
+    # Try NVIDIA first
+    try:
+        client = get_next_client()
+        response = await client.chat.completions.create(
+            model="meta/llama-3.1-8b-instruct",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_input}
+            ],
+            temperature=0.4,
+            max_tokens=300
+        )
+        raw_content = response.choices[0].message.content
+    except Exception as e:
+        logger.warning(f"NVIDIA generation failed: {e}. Trying Gemini.")
+        # Fallback to Gemini
+        if settings.GOOGLE_API_KEY:
+            try:
+                gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                response = gemini_client.models.generate_content(
+                    model="gemini-flash-latest",
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=user_input)])],
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.4
+                    )
+                )
+                raw_content = response.text.strip()
+            except Exception as gemini_err:
+                logger.error(f"Gemini generation failed: {gemini_err}")
+                return {"search_terms": "", "bad_words": ""}
+        else:
+            return {"search_terms": "", "bad_words": ""}
+
+    try:
+        if "```json" in raw_content:
+            raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_content:
+            raw_content = raw_content.split("```")[1].split("```")[0].strip()
+        return json.loads(raw_content)
+    except Exception as e:
+        logger.error(f"Failed to parse AI response for automation terms: {e}")
+        return {"search_terms": "", "bad_words": ""}

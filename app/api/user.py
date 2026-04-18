@@ -6,7 +6,7 @@ from app.core.security import decode_access_token
 from app.core.config import settings
 from app.services.storage import storage_service
 from app.services.pdf_handler import extract_text_from_pdf
-from app.services.ai_parser import parse_resume_with_ai
+from app.services.ai_parser import parse_resume_with_ai, generate_automation_terms_with_ai
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime
 from bson import ObjectId
@@ -333,3 +333,15 @@ async def parse_resume(file: UploadFile = File(...), current_user: dict = Depend
         )
     
     return parsed_data
+
+@router.post("/generate-automation-terms")
+async def generate_automation_terms(current_user: dict = Depends(get_current_user)):
+    experience = current_user.get("experience", "")
+    skills = current_user.get("skills", "")
+    job_title = current_user.get("full_name", "") # Fallback to name if no target title
+    
+    if not experience and not skills:
+        raise HTTPException(status_code=400, detail="Profile is empty. Please complete your profile first.")
+        
+    terms = await generate_automation_terms_with_ai(experience, skills, job_title)
+    return terms
