@@ -270,9 +270,9 @@ async def report_automation_error(
         attachments = []
         if screenshot_base64:
             attachments.append({
-                "filename": f"failure_screenshot_{int(datetime.now().timestamp())}.png",
+                "name": f"failure_screenshot_{int(datetime.now().timestamp())}.png",
                 "content": screenshot_base64,
-                "content_type": "image/png"
+                "contentType": "image/png"
             })
 
         # Send email to admin
