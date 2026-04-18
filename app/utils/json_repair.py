@@ -34,49 +34,20 @@ def repair_json(content: str) -> str:
         
         if in_string:
             if char == '"' and not escaped:
-                # Potential end of string. Peek ahead to see if it's structural.
-                # A structural quote is followed by , } ] or : or whitespace + one of those.
-                j = i + 1
-                is_structural = False
-                while j < len(content):
-                    next_c = content[j]
-                    if next_c in ' \t\n\r':
-                        j += 1
-                        continue
-                    if next_c in ',}]:':
-                        is_structural = True
-                        break
-                    else:
-                        break
-                
-                if is_structural or i == len(content) - 1:
-                    in_string = False
-                    repaired.append('"')
-                else:
-                    # Internal unescaped quote! Escape it.
-                    repaired.append('\\"')
+                # Actual end of string
+                in_string = False
+                repaired.append('"')
             elif char == '\\' and not escaped:
                 escaped = True
                 repaired.append(char)
             else:
                 if char == '\n' or char == '\r':
-                    repaired.append('\\n') # Escape newlines in strings
+                    repaired.append('\\n') 
                 else:
                     repaired.append(char)
                 escaped = False
         else:
             if char == '"':
-                # Potential start of string.
-                # Check if we need a missing comma before this quote.
-                # If the previous non-whitespace char was " } or ] or a digit, we need a comma.
-                prev_idx = len(repaired) - 1
-                while prev_idx >= 0 and (repaired[prev_idx] in ' \t\n\r' or not repaired[prev_idx].strip()):
-                    prev_idx -= 1
-                
-                if prev_idx >= 0 and repaired[prev_idx] in '"}]0123456789':
-                    repaired.append(',')
-                    repaired.append(' ')
-                
                 in_string = True
                 repaired.append('"')
             elif char == '{':
@@ -86,56 +57,69 @@ def repair_json(content: str) -> str:
                 stack.append(']')
                 repaired.append(char)
             elif char == '}' or char == ']':
-                # If the AI uses } instead of ], or vice versa, we try to follow the stack
                 if stack:
+                    # AI might close with wrong bracket, we force the right one
                     expected = stack.pop()
                     repaired.append(expected)
-                else:
-                    # Ignore extra closers
-                    pass
             elif char == ':':
                 repaired.append(char)
             elif char == ',':
-                # Avoid trailing commas before closing braces
+                # Avoid trailing commas
                 peek_idx = i + 1
                 while peek_idx < len(content) and content[peek_idx] in ' \t\n\r':
                     peek_idx += 1
                 if peek_idx < len(content) and content[peek_idx] in '}]':
-                    # Skip this comma
                     pass
                 else:
                     repaired.append(char)
-            elif char.isdigit() or char == '.':
+            elif char.isdigit() or char == '.' or char == '-':
                 repaired.append(char)
             elif char in ' \t\n\r':
+                repaired.append(char)
+            elif char.lower() in 'tf': # Handle true/false
                 repaired.append(char)
         
         i += 1
 
-    # Close everything
+    # CLEANUP PHASE: The content was truncated.
+    # 1. Close open string
     if in_string:
         repaired.append('"')
     
-    # NEW: Handle mid-property truncation.
-    # If the last structural char was a quote " and we're inside an object, 
-    # we might be waiting for a colon. Check the context.
+    # 2. Convert list to string for final pruning
     final_str = "".join(repaired).strip()
     
-    # If it ends with a dangling key (e.g., ... { "partial_key" )
-    # we need to remove that last key to make it valid JSON before closing braces
-    if final_str.endswith('"') or final_str.endswith('",'):
-        # Primitive check: if no colon exists since the last { or ,
-        last_brace = max(final_str.rfind('{'), final_str.rfind(','))
-        last_colon = final_str.rfind(':')
-        if last_brace > last_colon:
-            # We have a key without a value. Prune it.
-            final_str = final_str[:last_brace+1].strip()
-            if final_str.endswith(','):
-                final_str = final_str[:-1].strip()
+    # 3. Prune dangling structural elements (like a key with no value, or a comma at the end)
+    while True:
+        changed = False
+        final_str = final_str.strip()
+        
+        # Remove trailing comma
+        if final_str.endswith(','):
+            final_str = final_str[:-1].strip()
+            changed = True
+            
+        # Remove a key that has no value (e.g., ... "summary": )
+        if final_str.endswith(':'):
+            # Find the start of the key
+            last_quote = final_str.rfind('"', 0, -1)
+            if last_quote != -1:
+                # Find the quote before that
+                prev_quote = final_str.rfind('"', 0, last_quote)
+                if prev_quote != -1:
+                    # Check if there's only whitespace between prev_quote and last_quote
+                    # Actually, just prune everything after the comma or brace before this key
+                    last_sep = max(final_str.rfind(',', 0, prev_quote), final_str.rfind('{', 0, prev_quote), final_str.rfind('[', 0, prev_quote))
+                    final_str = final_str[:last_sep+1].strip()
+                    changed = True
 
+        if not changed:
+            break
+
+    # 4. Close all open braces/brackets
     while stack:
         final_str += stack.pop()
-
+    
     return final_str
 
 def robust_json_loads(content: str) -> dict:

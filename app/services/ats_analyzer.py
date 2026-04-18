@@ -119,7 +119,7 @@ Evaluate across exactly 8 categories and return ONLY raw JSON matching the schem
 - NO markdown. ONLY raw JSON.
 - Findings must be SPECIFIC to the resume content (don't say "improve verbs", say "replace 'led' in the first bullet with 'orchestrated'").
 - Suggestions must be IMMEDIATELY ACTIONABLE.
-- Score purely on merit: Only truly elite, ATS-optimized resumes should score 90+. Average resumes should be scored realistically based on their gaps.
+- SCORE GRANULARITY: Evaluate every bullet point. Use the full 0-100 scale. DO NOT default to common numbers (like 72 or 82). A slight change in the resume MUST result in a different score.
 - Exactly 8 categories. Exactly 3 milestones. Exactly 3 drawbacks. Exactly 4 improvement steps.
 """
 
@@ -152,18 +152,29 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
 
     raw_content = ""
     try:
-        # Using a more powerful model for better nuances
-        response = await client.chat.completions.create(
-            model="meta/llama-3.1-70b-instruct",
-            messages=[
-                {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
-                {"role": "user", "content": user_content}
-            ],
-            temperature=0.3, 
-            max_tokens=4096 
-        )
+        # Step 1: Try Gemini as Primary (Higher token limits, better JSON stability)
+        try:
+            from app.services.ai_parser import gemini_model
+            response = await gemini_model.generate_content_async(
+                f"{ANALYSIS_SYSTEM_PROMPT}\n\nUSER RESUME:\n{user_content}",
+                generation_config={"response_mime_type": "application/json"}
+            )
+            raw_content = response.text
+        except Exception as gemini_err:
+            logger.warning(f"[ATS Analyzer] Gemini failed, falling back to NVIDIA: {gemini_err}")
+            # Step 2: Fallback to NVIDIA NIM
+            response = await client.chat.completions.create(
+                model="meta/llama-3.1-70b-instruct",
+                messages=[
+                    {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_content}
+                ],
+                temperature=0.7, 
+                max_tokens=4096 
+            )
+            raw_content = response.choices[0].message.content
         
-        raw_content = response.choices[0].message.content.strip()
+        # Step 3: Parse and Repair
         result = robust_json_loads(raw_content)
 
         if not result:
