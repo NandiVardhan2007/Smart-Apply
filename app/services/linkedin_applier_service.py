@@ -280,14 +280,12 @@ Rules:
 - For text questions, keep answers to 1-3 sentences unless the question asks for detail.
 - For number questions, return only a number.
 - For "years of experience" questions: Calculate based on the resume dates. If not found, use the profile 'work_experience_years'.
-- For "Graduation completed" or "Degree completed" questions:
-  - Use the 'Graduation Completed' status from the profile.
-- For "Engineering completed" or "B.Tech completed" questions: 
-  - If the profile 'Graduation Completed' is true AND the user's education/resume indicates an Engineering degree, answer Yes.
-  - If they have a different degree (like BBA/MBA), answer No to "Engineering" specifically, but Yes to "Degree" generally.
+- For "Graduation completed", "Degree completed", "Engineering completed", or "B.Tech completed" questions:
+  - If the profile 'Graduation/Degree Completed' is False or 'NOT COMPLETED', you MUST answer NO.
+  - NEVER assume completion based on resume text if the profile status explicitly says NOT COMPLETED.
 - STRICT GROUNDING: Answer ONLY based on the provided Applicant Profile and Resume.
 - If you genuinely cannot determine the answer from the data, return EXACTLY: "NEEDS_USER_INPUT"
-- Do NOT fabricate or hallucinate information.
+- Do NOT fabricate, hallucinate, or "assume" information to help the candidate. Honesty is mandatory.
 
 Return ONLY valid JSON:
 {{
@@ -383,6 +381,41 @@ Question: {question}{options_text}"""
         result = await memory_service.create_memory(user_id, memory_data)
         logger.info(f"[LinkedIn Applier] Saved Q&A to memory for user {user_id}: {question[:50]}...")
         return result
+
+    async def collect_question(
+        self,
+        user_id: str,
+        question: str,
+        question_type: str = "text",
+        options: Optional[List[str]] = None,
+        job_title: Optional[str] = None,
+        company_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Collect any question seen during an application for later analysis and AI improvement.
+        Saves to a global 'question_bank' for all users.
+        """
+        db = get_database()
+        
+        doc = {
+            "user_id": user_id,
+            "question": question,
+            "question_type": question_type,
+            "options": options,
+            "job_title": job_title,
+            "company_name": company_name,
+            "detected_at": datetime.now(timezone.utc),
+        }
+        
+        # We use an upsert to avoid duplicate questions from the same user
+        key = f"{user_id}_{question[:100]}"
+        await db.linkedin_question_bank.update_one(
+            {"collection_key": key},
+            {"$set": doc},
+            upsert=True
+        )
+        logger.info(f"[Question Collector] Harvested: {question[:50]}...")
+        return {"status": "success"}
 
     # ── Application Tracking ─────────────────────────────────────────
 
@@ -597,7 +630,8 @@ Question: {question}{options_text}"""
         if (user.get("skills")): parts.append(f"Skills: {user['skills']}")
         
         # Structured Fields (The "Source of Truth")
-        parts.append(f"Graduation/Degree Completed: {user.get('is_engineering_completed', 'Unknown')}")
+        status_val = "COMPLETED" if user.get('is_engineering_completed') is True else "NOT COMPLETED (STRICT: ANSWER NO TO COMPLETION QUESTIONS)"
+        parts.append(f"EDUCATION STATUS: {status_val}")
         if user.get("graduation_year"): parts.append(f"Graduation Year: {user['graduation_year']}")
         if user.get("notice_period_days") is not None: parts.append(f"Notice Period: {user['notice_period_days']} days")
         if user.get("current_ctc"): parts.append(f"Current CTC: {user['current_ctc']}")

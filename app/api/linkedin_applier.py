@@ -150,6 +150,29 @@ async def log_application(
         raise HTTPException(status_code=500, detail=f"Failed to log application: {str(e)}")
 
 
+@router.post("/collect-question")
+async def collect_question(
+    request: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Save a question encountered in the UI for later analysis.
+    """
+    try:
+        result = await linkedin_applier_service.collect_question(
+            user_id=current_user["id"],
+            question=request.get("question", ""),
+            question_type=request.get("question_type", "text"),
+            options=request.get("options"),
+            job_title=request.get("job_title"),
+            company_name=request.get("company_name"),
+        )
+        return result
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Question collection error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to collect question: {str(e)}")
+
+
 @router.get("/history")
 async def get_application_history(
     limit: int = 50,
