@@ -46,9 +46,7 @@ class LinkedInApplierService:
         from the user's profile data and preferences.
         """
         # Build a rich context from all available user data
-        profile_context = self._build_profile_context(
-            resume_text, skills, experience, education, location, job_preferences
-        )
+        profile_context = await self._get_user_context(user_id, resume_text)
 
         # Also pull any saved preferences from memory
         saved_prefs = await memory_service.get_memories(user_id, LINKEDIN_PREFS_CATEGORY)
@@ -60,8 +58,11 @@ class LinkedInApplierService:
 
         client = get_next_client()
 
+        # STRICTOR PROMPT: Focus on Job Type and Search Accuracy
         system_prompt = """You are a career expert AI. Generate optimized LinkedIn job search terms.
 STRICT REQUIREMENT: Only target jobs with the "Easy Apply" feature.
+STRICT REQUIREMENT: Strictly follow the user's Job Type (Internship, Full-time, etc.). Do NOT mix them.
+
 Return ONLY valid JSON with these fields:
 {
   "search_queries": ["query1", "query2", ...],  // 5-8 ranked LinkedIn search queries
@@ -77,7 +78,8 @@ Return ONLY valid JSON with these fields:
   "linkedin_search_urls": ["url1", "url2", ...]  // 3-5 pre-built LinkedIn job search URLs
 }
 Make queries specific and targeted. LinkedIn search URLs MUST include the Easy Apply filter (f_AL=true).
-Format: https://www.linkedin.com/jobs/search/?keywords=ENCODED_QUERY&location=LOCATION&f_AL=true
+For Internships, ensure the URL includes (f_JT=I) and for Full-time (f_JT=F).
+Example URL for Internship: https://www.linkedin.com/jobs/search/?keywords=Software%20Engineer%20Intern&location=Remote&f_AL=true&f_JT=I
 No preamble or explanation, ONLY the JSON object."""
 
         try:
@@ -85,9 +87,9 @@ No preamble or explanation, ONLY the JSON object."""
                 model="meta/llama-3.1-8b-instruct",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"User Profile:\n{profile_context}"},
+                    {"role": "user", "content": f"User Profile & Preferences:\n{profile_context}\n\nRequested Job Preferences: {json.dumps(job_preferences or {})}"},
                 ],
-                temperature=0.3,
+                temperature=0.2,
                 max_tokens=1200,
             )
 
@@ -202,6 +204,7 @@ AVAILABLE RESUMES:
             return {
                 "id": best_resume["id"],
                 "content": best_resume["content"],
+                "url": best_resume.get("url"),
                 "name": best_resume["name"],
                 "reasoning": parsed.get("reasoning", "Best match found.")
             }
@@ -212,6 +215,7 @@ AVAILABLE RESUMES:
             return {
                 "id": default_resume["id"],
                 "content": default_resume["content"],
+                "url": default_resume.get("url"),
                 "name": default_resume["name"],
                 "reasoning": "Fallback to default due to AI error."
             }
@@ -275,7 +279,12 @@ Rules:
 - For checkbox questions, select ALL relevant options.
 - For text questions, keep answers to 1-3 sentences unless the question asks for detail.
 - For number questions, return only a number.
-- For "years of experience" questions: Calculate based on the resume dates. If not found, return 0 or NEEDS_USER_INPUT. Do NOT guess.
+- For "years of experience" questions: Calculate based on the resume dates. If not found, use the profile 'work_experience_years'.
+- For "Graduation completed" or "Degree completed" questions:
+  - Use the 'Graduation Completed' status from the profile.
+- For "Engineering completed" or "B.Tech completed" questions: 
+  - If the profile 'Graduation Completed' is true AND the user's education/resume indicates an Engineering degree, answer Yes.
+  - If they have a different degree (like BBA/MBA), answer No to "Engineering" specifically, but Yes to "Degree" generally.
 - STRICT GROUNDING: Answer ONLY based on the provided Applicant Profile and Resume.
 - If you genuinely cannot determine the answer from the data, return EXACTLY: "NEEDS_USER_INPUT"
 - Do NOT fabricate or hallucinate information.
@@ -576,37 +585,38 @@ Question: {question}{options_text}"""
             return "No profile data available."
 
         parts = []
-        if (user.get("full_name")):
-            parts.append(f"Name: {user['full_name']}")
-        if (user.get("email")):
-            parts.append(f"Email: {user['email']}")
-        if (user.get("phone")):
-            parts.append(f"Phone: {user['phone']}")
-        if (user.get("location")):
-            parts.append(f"Location: {user['location']}")
-        if (user.get("current_city")):
-            parts.append(f"City: {user['current_city']}")
-        if (user.get("state")):
-            parts.append(f"State: {user['state']}")
-        if (user.get("country")):
-            parts.append(f"Country: {user['country']}")
-        if (user.get("education")):
-            parts.append(f"Education: {user['education']}")
-        if (user.get("experience")):
-            parts.append(f"Experience: {user['experience']}")
-        if (user.get("skills")):
-            parts.append(f"Skills: {user['skills']}")
-        if (user.get("linkedin_url")):
-            parts.append(f"LinkedIn: {user['linkedin_url']}")
-        if (user.get("github_url")):
-            parts.append(f"GitHub: {user['github_url']}")
-        if (user.get("portfolio_url")):
-            parts.append(f"Portfolio: {user['portfolio_url']}")
+        # Basic Info
+        if (user.get("full_name")): parts.append(f"Name: {user['full_name']}")
+        if (user.get("email")): parts.append(f"Email: {user['email']}")
+        if (user.get("phone")): parts.append(f"Phone: {user['phone']}")
+        if (user.get("location")): parts.append(f"Location: {user['location']}")
+        
+        # Education & Experience
+        if (user.get("education")): parts.append(f"Education: {user['education']}")
+        if (user.get("experience")): parts.append(f"Experience: {user['experience']}")
+        if (user.get("skills")): parts.append(f"Skills: {user['skills']}")
+        
+        # Structured Fields (The "Source of Truth")
+        parts.append(f"Graduation/Degree Completed: {user.get('is_engineering_completed', 'Unknown')}")
+        if user.get("graduation_year"): parts.append(f"Graduation Year: {user['graduation_year']}")
+        if user.get("notice_period_days") is not None: parts.append(f"Notice Period: {user['notice_period_days']} days")
+        if user.get("current_ctc"): parts.append(f"Current CTC: {user['current_ctc']}")
+        if user.get("expected_ctc"): parts.append(f"Expected CTC: {user['expected_ctc']}")
+        if user.get("gender"): parts.append(f"Gender: {user['gender']}")
+        parts.append(f"Authorized to work: {user.get('is_authorized_to_work', True)}")
+        parts.append(f"Requires Sponsorship: {user.get('requires_sponsorship', False)}")
+        parts.append(f"Willing to Relocate: {user.get('willing_to_relocate', True)}")
+        if user.get("highest_degree"): parts.append(f"Highest Degree: {user['highest_degree']}")
+        if user.get("work_experience_years") is not None: parts.append(f"Years of Experience: {user['work_experience_years']}")
+
+        # Socials
+        if (user.get("linkedin_url")): parts.append(f"LinkedIn: {user['linkedin_url']}")
+        if (user.get("github_url")): parts.append(f"GitHub: {user['github_url']}")
         
         # Use provided resume_content if available, otherwise fallback to user default
         content = resume_content or user.get("resume_content")
         if content:
-            parts.append(f"FULL RESUME TEXT:\n{content[:8000]}")
+            parts.append(f"\nFULL RESUME TEXT:\n{content[:8000]}")
             
         return "\n".join(parts) if parts else "Minimal profile data available."
 

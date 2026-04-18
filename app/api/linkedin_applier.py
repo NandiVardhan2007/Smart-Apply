@@ -52,6 +52,29 @@ async def generate_search_terms(
         raise HTTPException(status_code=500, detail=f"Failed to generate search terms: {str(e)}")
 
 
+@router.post("/select-resume")
+async def select_best_resume(
+    request: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Pick the best resume for a specific job description.
+    """
+    try:
+        job_description = request.get("job_description", "")
+        if not job_description:
+             raise HTTPException(status_code=400, detail="Job description is required")
+             
+        result = await linkedin_applier_service.select_best_resume(
+            user_id=current_user["id"],
+            job_description=job_description,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"[LinkedIn Applier API] Resume selection error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to select resume: {str(e)}")
+
+
 @router.post("/answer-question", response_model=AnswerQuestionResponse)
 async def answer_application_question(
     request: AnswerQuestionRequest,

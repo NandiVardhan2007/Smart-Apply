@@ -31,6 +31,20 @@ class UserProfileUpdate(BaseModel):
     current_city: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
+    
+    # Advanced Job Profile Fields
+    primary_field: Optional[str] = "Engineering" # Engineering, Management, Others
+    is_engineering_completed: Optional[bool] = None
+    graduation_year: Optional[int] = None
+    notice_period_days: Optional[int] = None
+    current_ctc: Optional[float] = None
+    expected_ctc: Optional[float] = None
+    gender: Optional[str] = None
+    is_authorized_to_work: Optional[bool] = True
+    requires_sponsorship: Optional[bool] = False
+    willing_to_relocate: Optional[bool] = True
+    highest_degree: Optional[str] = "Bachelor's"
+    work_experience_years: Optional[float] = None
 
 class ResumeItem(BaseModel):
     id: str
@@ -58,6 +72,20 @@ class UserOut(UserBase):
     current_city: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
+    
+    # Advanced Job Profile Fields
+    primary_field: Optional[str] = "Engineering"
+    is_engineering_completed: Optional[bool] = None
+    graduation_year: Optional[int] = None
+    notice_period_days: Optional[int] = None
+    current_ctc: Optional[float] = None
+    expected_ctc: Optional[float] = None
+    gender: Optional[str] = None
+    is_authorized_to_work: Optional[bool] = True
+    requires_sponsorship: Optional[bool] = False
+    willing_to_relocate: Optional[bool] = True
+    highest_degree: Optional[str] = None
+    work_experience_years: Optional[float] = None
 
 class Token(BaseModel):
     access_token: str
