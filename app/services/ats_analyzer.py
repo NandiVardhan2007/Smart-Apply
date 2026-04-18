@@ -152,27 +152,32 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
 
     raw_content = ""
     try:
-        # Step 1: Try Gemini as Primary (Higher token limits, better JSON stability)
-        try:
-            from app.services.ai_parser import gemini_model
-            response = await gemini_model.generate_content_async(
-                f"{ANALYSIS_SYSTEM_PROMPT}\n\nUSER RESUME:\n{user_content}",
-                generation_config={"response_mime_type": "application/json"}
-            )
-            raw_content = response.text
-        except Exception as gemini_err:
-            logger.warning(f"[ATS Analyzer] Gemini failed, falling back to NVIDIA: {gemini_err}")
-            # Step 2: Fallback to NVIDIA NIM
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
-                messages=[
-                    {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_content}
-                ],
-                temperature=0.7, 
-                max_tokens=4096 
-            )
-            raw_content = response.choices[0].message.content
+        # PRIMARY: NVIDIA Fleet with rotation and retry
+        from app.services.ai_parser import get_next_client, _clients
+        
+        max_retries = min(3, len(_clients) if _clients else 3)
+        last_err = None
+        
+        for attempt in range(max_retries):
+            try:
+                client = get_next_client()
+                response = await client.chat.completions.create(
+                    model="meta/llama-3.1-70b-instruct",
+                    messages=[
+                        {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
+                        {"role": "user", "content": user_content}
+                    ],
+                    temperature=0.7, 
+                    max_tokens=4096 
+                )
+                raw_content = response.choices[0].message.content
+                break # Success!
+            except Exception as e:
+                last_err = e
+                logger.info(f"[ATS Analyzer] NVIDIA Fleet retry {attempt+1} failed, rotating...")
+        
+        if not raw_content:
+            raise last_err or Exception("NVIDIA NIM fleet failed to respond")
         
         # Step 3: Parse and Repair
         result = robust_json_loads(raw_content)
