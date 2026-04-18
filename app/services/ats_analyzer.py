@@ -119,7 +119,7 @@ Evaluate across exactly 8 categories and return ONLY raw JSON matching the schem
 - NO markdown. ONLY raw JSON.
 - Findings must be SPECIFIC to the resume content (don't say "improve verbs", say "replace 'led' in the first bullet with 'orchestrated'").
 - Suggestions must be IMMEDIATELY ACTIONABLE.
-- Score strictly: An "average" resume should score 60-70. Only truly elite, ATS-optimized resumes should score 90+.
+- Score purely on merit: Only truly elite, ATS-optimized resumes should score 90+. Average resumes should be scored realistically based on their gaps.
 - Exactly 8 categories. Exactly 3 milestones. Exactly 3 drawbacks. Exactly 4 improvement steps.
 """
 
@@ -152,14 +152,14 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
 
     raw_content = ""
     try:
-        # Use await because get_next_client now returns AsyncOpenAI
+        # Using a more powerful model for better nuances
         response = await client.chat.completions.create(
-            model="meta/llama-3.1-8b-instruct",
+            model="meta/llama-3.1-70b-instruct",
             messages=[
                 {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
                 {"role": "user", "content": user_content}
             ],
-            temperature=0.1, 
+            temperature=0.3, 
             max_tokens=4096 
         )
         
