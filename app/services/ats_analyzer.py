@@ -156,26 +156,38 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None, file
     if file_bytes and settings.GOOGLE_API_KEY:
         try:
             gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            gemini_system = ANALYSIS_SYSTEM_PROMPT + "\n\nCRITICAL: Analyze the visual layout of the attached PDF as well. Return ONLY raw JSON."
+            gemini_system = ANALYSIS_SYSTEM_PROMPT + "\n\nCRITICAL: Analyze the visual layout of the attached PDF as well. Detect columns, tables, and non-standard fonts. Return ONLY raw JSON."
             
-            response = gemini_client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=[
-                    types.Content(
-                        role="user", 
-                        parts=[
-                            types.Part.from_text(text=user_content),
-                            types.Part.from_bytes(data=file_bytes, mime_type="application/pdf")
-                        ]
+            # Try a few common model names in case of regional/SDK naming differences
+            for model_name in ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"]:
+                try:
+                    response = gemini_client.models.generate_content(
+                        model=model_name,
+                        contents=[
+                            types.Content(
+                                role="user", 
+                                parts=[
+                                    types.Part.from_text(text=user_content),
+                                    types.Part.from_bytes(data=file_bytes, mime_type="application/pdf")
+                                ]
+                            )
+                        ],
+                        config=types.GenerateContentConfig(
+                            system_instruction=gemini_system,
+                            temperature=0.1,
+                        )
                     )
-                ],
-                config=types.GenerateContentConfig(
-                    system_instruction=gemini_system,
-                    temperature=0.1,
-                )
-            )
-            
-            raw_content = response.text.strip()
+                    raw_content = response.text.strip()
+                    if raw_content:
+                        break # Found a working model
+                except Exception as model_err:
+                    if "404" in str(model_err):
+                        logger.info(f"[ATS Analyzer] Gemini {model_name} not found, trying next...")
+                        continue
+                    raise model_err
+
+            if not raw_content:
+                raise Exception("All Gemini models failed to respond")
             # Clean up markdown
             if "```json" in raw_content:
                 raw_content = raw_content.split("```json")[1].split("```")[0].strip()
