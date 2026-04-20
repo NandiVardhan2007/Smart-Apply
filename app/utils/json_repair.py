@@ -48,9 +48,29 @@ def repair_json(content: str) -> str:
                 escaped = False
         else:
             if char == '"':
+                # Check for missing comma before starting a new string (potential key)
+                if repaired:
+                    prev_non_white = ""
+                    for j in range(len(repaired)-1, -1, -1):
+                        if repaired[j] not in ' \t\n\r':
+                            prev_non_white = repaired[j]
+                            break
+                    if prev_non_white in '"}]':
+                        repaired.append(',')
+                
                 in_string = True
                 repaired.append('"')
             elif char == '{':
+                # Check for missing comma between objects in an array
+                if repaired:
+                    prev_non_white = ""
+                    for j in range(len(repaired)-1, -1, -1):
+                        if repaired[j] not in ' \t\n\r':
+                            prev_non_white = repaired[j]
+                            break
+                    if prev_non_white in '"}]':
+                        repaired.append(',')
+                
                 stack.append('}')
                 repaired.append(char)
             elif char == '[':
@@ -61,6 +81,7 @@ def repair_json(content: str) -> str:
                     # AI might close with wrong bracket, we force the right one
                     expected = stack.pop()
                     repaired.append(expected)
+                # If stack is empty, it's an extra bracket - skip it
             elif char == ':':
                 repaired.append(char)
             elif char == ',':
@@ -72,11 +93,10 @@ def repair_json(content: str) -> str:
                     pass
                 else:
                     repaired.append(char)
-            elif char.isdigit() or char == '.' or char == '-':
+            elif char.isalnum() or char in '.-+':
+                # Allow letters for true/false/null and numbers (including scientific notation)
                 repaired.append(char)
             elif char in ' \t\n\r':
-                repaired.append(char)
-            elif char.lower() in 'tf': # Handle true/false
                 repaired.append(char)
         
         i += 1
@@ -107,11 +127,19 @@ def repair_json(content: str) -> str:
                 # Find the quote before that
                 prev_quote = final_str.rfind('"', 0, last_quote)
                 if prev_quote != -1:
-                    # Check if there's only whitespace between prev_quote and last_quote
-                    # Actually, just prune everything after the comma or brace before this key
-                    last_sep = max(final_str.rfind(',', 0, prev_quote), final_str.rfind('{', 0, prev_quote), final_str.rfind('[', 0, prev_quote))
-                    final_str = final_str[:last_sep+1].strip()
-                    changed = True
+                    # Prune everything after the comma or brace before this key
+                    last_sep = -1
+                    for sep in [',', '{', '[']:
+                        idx = final_str.rfind(sep, 0, prev_quote)
+                        if idx > last_sep: last_sep = idx
+                    
+                    if last_sep != -1:
+                        final_str = final_str[:last_sep+1].strip()
+                        changed = True
+                    else:
+                        # It was the only key in the root object
+                        final_str = "{"
+                        changed = True
 
         if not changed:
             break
@@ -149,11 +177,31 @@ def robust_json_loads(content: str) -> dict:
         except Exception:
             # Step 3: Repair the string
             repaired = repair_json(cleaned)
-            return json.loads(repaired)
+            try:
+                return json.loads(repaired)
+            except Exception as e:
+                # If it still fails, try to find the largest valid JSON block
+                # This handles cases where the AI appends garbage or repeats itself
+                logger.warning(f"[JSON Repair] Basic repair failed, trying block recovery. Error: {e}")
+                
+                # Heuristic: if we have multiple {}, try the first full one
+                stack = []
+                for i, c in enumerate(repaired):
+                    if c == '{': stack.append(i)
+                    elif c == '}':
+                        if stack:
+                            start = stack.pop()
+                            if not stack: # Top level block
+                                candidate = repaired[start:i+1]
+                                try:
+                                    return json.loads(candidate)
+                                except: continue
+                
+                raise e # Re-raise if block recovery fails
             
     except Exception as e:
         # Be noisy about the failure and show the content for debugging
-        logger.warning(f"[JSON Repair] Failed to parse/repair. Error: {e}")
-        # Only log a slice to keep logs manageable but useful
-        logger.warning(f"[JSON Repair] Snippet of failed content: {content[:1000]}")
+        logger.warning(f"[JSON Repair] CRITICAL FAILURE. Error: {e}")
+        # Log a larger slice if it failed critically
+        logger.warning(f"[JSON Repair] Failed content (first 2000 chars): {content[:2000]}")
         return {}
