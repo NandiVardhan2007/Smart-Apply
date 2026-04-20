@@ -6,7 +6,7 @@ Evaluates across 8 categories and returns structured improvement data.
 
 import json
 import logging
-from app.services.ai_parser import get_next_client
+from app.services.ai_parser import get_next_client, _clients
 from app.utils.json_repair import robust_json_loads
 from app.core.config import settings
 from google import genai
@@ -138,7 +138,7 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
     Returns a structured dict with scores, categories, milestones, drawbacks,
     and a prioritized improvement plan.
     """
-    client = get_next_client()
+
     
     # Truncate text to avoid huge context windows and speed up processing
     resume_text = resume_text[:8000]
@@ -153,7 +153,6 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
     raw_content = ""
     try:
         # PRIMARY: NVIDIA Fleet with rotation and retry
-        from app.services.ai_parser import get_next_client, _clients
         
         max_retries = min(3, len(_clients) if _clients else 3)
         last_err = None
