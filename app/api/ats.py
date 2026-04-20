@@ -53,7 +53,8 @@ async def scan_resume(
     # 3. Run AI analysis
     analysis_result = await analyze_resume_ats(
         resume_text=resume_text,
-        job_description=job_description
+        job_description=job_description,
+        file_bytes=file_content
     )
     
     # 4. Build scan document for persistence

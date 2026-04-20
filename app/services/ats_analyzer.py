@@ -119,7 +119,14 @@ Evaluate across exactly 8 categories and return ONLY raw JSON matching the schem
 - NO markdown. ONLY raw JSON.
 - Findings must be SPECIFIC to the resume content (don't say "improve verbs", say "replace 'led' in the first bullet with 'orchestrated'").
 - Suggestions must be IMMEDIATELY ACTIONABLE.
-- SCORE GRANULARITY: Evaluate every bullet point. Use the full 0-100 scale. DO NOT default to common numbers (like 72 or 82). A slight change in the resume MUST result in a different score.
+- SCORE CALCULATION (CRITICAL): Do not guess the score. Use this exact rubric:
+    * Keywords (20pts): Max points if all industry skills found.
+    * Experience Depth (20pts): Max if dates and progressive responsibility clear.
+    * Impact/Metrics (30pts): 10pts per unique metric (%, $, #) found (max 30).
+    * Presentation/ATS (10pts): Deduct 2pts per trap (columns, icons, tables).
+    * Formatting (10pts): Clarity, fonts, length.
+    * JD Match (10pts): Direct relevance to the target role.
+- GRANULARITY: A slight improvement in a bullet point MUST increase the score by at least 1-2 points. Never return the same score for different resumes. Avoid round numbers (e.g., 80, 85).
 - Exactly 8 categories. Exactly 3 milestones. Exactly 3 drawbacks. Exactly 4 improvement steps.
 """
 
@@ -130,30 +137,61 @@ JD_CONTEXT_TEMPLATE = """
 """
 
 
-async def analyze_resume_ats(resume_text: str, job_description: str = None) -> dict:
+async def analyze_resume_ats(resume_text: str, job_description: str = None, file_bytes: bytes = None) -> dict:
     """
-    Performs a comprehensive ATS analysis of the provided resume text.
-    Optionally matches against a job description for tailored feedback.
-    
-    Returns a structured dict with scores, categories, milestones, drawbacks,
-    and a prioritized improvement plan.
+    Performs a comprehensive ATS analysis of the provided resume.
+    If file_bytes is provided, uses Gemini 1.5 to visually analyze the PDF.
+    Otherwise, falls back to text-based analysis via NVIDIA NIM.
     """
-
-    
-    # Truncate text to avoid huge context windows and speed up processing
+    # Truncate text for prompt safety
     resume_text = resume_text[:8000]
     
     user_content = f"Analyze this resume content for strict ATS compatibility and professional impact:\n\n{resume_text}"
-    
     if job_description and job_description.strip():
         user_content += "\n\n" + JD_CONTEXT_TEMPLATE.format(job_description=job_description)
     else:
-        user_content += "\n\n(No job description provided — analyze for general market alignment based on inferred target role.)"
+        user_content += "\n\n(No job description provided — analyze for general market alignment.)"
 
+    # --- PRIMARY ENGINE: GOOGLE GEMINI 1.5 (Multimodal) ---
+    if file_bytes and settings.GOOGLE_API_KEY:
+        try:
+            gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+            gemini_system = ANALYSIS_SYSTEM_PROMPT + "\n\nCRITICAL: Analyze the visual layout of the attached PDF as well. Return ONLY raw JSON."
+            
+            response = gemini_client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=[
+                    types.Content(
+                        role="user", 
+                        parts=[
+                            types.Part.from_text(text=user_content),
+                            types.Part.from_bytes(data=file_bytes, mime_type="application/pdf")
+                        ]
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    system_instruction=gemini_system,
+                    temperature=0.1,
+                )
+            )
+            
+            raw_content = response.text.strip()
+            # Clean up markdown
+            if "```json" in raw_content:
+                raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw_content:
+                raw_content = raw_content.split("```")[1].split("```")[0].strip()
+            
+            result = robust_json_loads(raw_content)
+            if result:
+                logger.info("[ATS Analyzer] Gemini Visual Analysis SUCCEEDED.")
+                return _validate_and_normalize(result)
+        except Exception as e:
+            logger.warning(f"[ATS Analyzer] Gemini Visual Analysis failed: {e}. Falling back to NVIDIA.")
+
+    # --- SECONDARY ENGINE: NVIDIA NIM (Text-based) ---
     raw_content = ""
     try:
-        # PRIMARY: NVIDIA Fleet with rotation and retry
-        
         max_retries = min(3, len(_clients) if _clients else 3)
         last_err = None
         
@@ -170,62 +208,19 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None) -> d
                     max_tokens=4096 
                 )
                 raw_content = response.choices[0].message.content
-                break # Success!
+                break 
             except Exception as e:
                 last_err = e
-                logger.info(f"[ATS Analyzer] NVIDIA Fleet retry {attempt+1} failed, rotating...")
+                logger.info(f"[ATS Analyzer] NVIDIA Fleet retry {attempt+1} failed...")
         
-        if not raw_content:
-            raise last_err or Exception("NVIDIA NIM fleet failed to respond")
-        
-        # Step 3: Parse and Repair
-        result = robust_json_loads(raw_content)
-
-        if not result:
-            logger.error(f"[ATS Analyzer] Failed to parse AI response: {raw_content[:500]}")
-            return _fallback_result("Invalid AI response format")
-        
-        return _validate_and_normalize(result)
-        
+        if raw_content:
+            result = robust_json_loads(raw_content)
+            if result:
+                return _validate_and_normalize(result)
     except Exception as e:
-        logger.warning(f"[ATS Analyzer] Primary Engine (NVIDIA) failed: {e}. Pivoting to Gemini Fallback.")
-        
-        # --- FALLBACK: GOOGLE GEMINI ---
-        if settings.GOOGLE_API_KEY:
-            try:
-                gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-                
-                # Gemini doesn't use the same exact prompt structure, so we adapt slightly
-                gemini_system = ANALYSIS_SYSTEM_PROMPT + "\n\nCRITICAL: Return ONLY raw JSON. No conversational filler."
-                
-                response = gemini_client.models.generate_content(
-                    model="gemini-flash-latest",
-                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=user_content)])],
-                    config=types.GenerateContentConfig(
-                        system_instruction=gemini_system,
-                        temperature=0.1,
-                        candidate_count=1
-                    )
-                )
-                
-                raw_content = response.text.strip()
-                # Clean up markdown if Gemini adds it
-                if "```json" in raw_content:
-                    raw_content = raw_content.split("```json")[1].split("```")[0].strip()
-                elif "```" in raw_content:
-                    raw_content = raw_content.split("```")[1].split("```")[0].strip()
-                
-                result = robust_json_loads(raw_content)
-                if result:
-                    logger.info("[ATS Analyzer] Gemini Fallback SUCCEEDED.")
-                    return _validate_and_normalize(result)
-                else:
-                    logger.error(f"[ATS Analyzer] Gemini Fallback failed to produce valid JSON: {raw_content[:500]}")
-            except Exception as gemini_err:
-                logger.error(f"[ATS Analyzer] Gemini Fallback CRITICAL FAILURE: {gemini_err}")
-        
-        logger.error(f"[ATS Analyzer] Both Engines Failed. Final error: {e}", exc_info=True)
-        return _fallback_result(f"Analysis service temporary delay (AI Congestion). Please try again.")
+        logger.error(f"[ATS Analyzer] All engines failed: {e}")
+
+    return _fallback_result("Analysis service temporary delay. Please try again.")
 
 
 def _validate_and_normalize(result: dict) -> dict:
