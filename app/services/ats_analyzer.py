@@ -153,13 +153,15 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None, file
         user_content += "\n\n(No job description provided — analyze for general market alignment.)"
 
     # --- PRIMARY ENGINE: GOOGLE GEMINI 1.5 (Multimodal) ---
+    raw_content = ""
     if file_bytes and settings.GOOGLE_API_KEY:
         try:
             gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
             gemini_system = ANALYSIS_SYSTEM_PROMPT + "\n\nCRITICAL: Analyze the visual layout of the attached PDF as well. Detect columns, tables, and non-standard fonts. Return ONLY raw JSON."
             
             # Try a few common model names in case of regional/SDK naming differences
-            for model_name in ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"]:
+            # Added gemini-flash-latest which is known to work in ai_parser.py
+            for model_name in ["gemini-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"]:
                 try:
                     response = gemini_client.models.generate_content(
                         model=model_name,
