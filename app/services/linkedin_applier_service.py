@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from bson import ObjectId
 
-from app.services.ai_parser import get_next_client
+from app.services.ai_parser import MODELS, call_nvidia
 from app.services.memory_service import memory_service
 from app.db.mongodb import get_database
 from app.utils.json_repair import robust_json_loads
@@ -56,7 +56,6 @@ class LinkedInApplierService:
             )
             profile_context += f"\n\nSaved Job Preferences:\n{pref_text}"
 
-        client = get_next_client()
 
         # STRICTOR PROMPT: Focus on Job Type and Search Accuracy
         system_prompt = """You are a career expert AI. Generate optimized LinkedIn job search terms.
@@ -83,17 +82,15 @@ Example URL for Internship: https://www.linkedin.com/jobs/search/?keywords=Softw
 No preamble or explanation, ONLY the JSON object."""
 
         try:
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+            raw = await call_nvidia(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"User Profile & Preferences:\n{profile_context}\n\nRequested Job Preferences: {json.dumps(job_preferences or {})}"},
                 ],
+                model=MODELS["fast"],
                 temperature=0.2,
                 max_tokens=1200,
             )
-
-            raw = response.choices[0].message.content
             parsed = await asyncio.to_thread(robust_json_loads, raw)
 
             if not parsed:
@@ -156,7 +153,6 @@ No preamble or explanation, ONLY the JSON object."""
                 "reasoning": "Only one resume available."
             }
             
-        client = get_next_client()
         
         # Build a summaries list for the AI
         resume_summaries = []
@@ -184,16 +180,14 @@ AVAILABLE RESUMES:
 {json.dumps(resume_summaries, indent=2)}"""
 
         try:
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+            raw = await call_nvidia(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ],
+                model=MODELS["fast"],
                 temperature=0.1,
             )
-            
-            raw = response.choices[0].message.content
             parsed = await asyncio.to_thread(robust_json_loads, raw)
             
             best_id = parsed.get("selected_resume_id")
@@ -264,7 +258,6 @@ AVAILABLE RESUMES:
         user_context = await self._get_user_context(user_id, selected_resume_content)
 
         # ── Step 3: AI-powered answer generation ──
-        client = get_next_client()
 
         options_text = ""
         if options:
@@ -304,17 +297,15 @@ Question Type: {question_type}
 Question: {question}{options_text}"""
 
         try:
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+            raw = await call_nvidia(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ],
+                model=MODELS["fast"],
                 temperature=0.1,
                 max_tokens=400,
             )
-
-            raw = response.choices[0].message.content
             parsed = await asyncio.to_thread(robust_json_loads, raw)
 
             answer = parsed.get("answer", "")

@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timezone
 from bson import ObjectId
 from app.db.mongodb import get_database
-from app.services.ai_parser import get_next_client
+from app.services.ai_parser import MODELS, call_nvidia
 from app.utils.json_repair import robust_json_loads
 
 logger = logging.getLogger(__name__)
@@ -90,18 +90,15 @@ CURRENT JAVASCRIPT:
 """
         
         try:
-            client = get_next_client()
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+            healed_script = await call_nvidia(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
+                model=MODELS["quality"], # Code healing needs high intelligence
                 temperature=0.1,
                 max_tokens=8000,
             )
-            
-            healed_script = response.choices[0].message.content
             # Cleanup markdown if AI ignores instructions
             if healed_script.strip().startswith("```"):
                 # Handle possible ```javascript\n or just ```\n

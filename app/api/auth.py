@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
+from pydantic import BaseModel, EmailStr
+
 from app.schemas.user import UserCreate, UserLogin, Token, OTPVerify, ForgotPasswordRequest, PasswordReset
 from app.db.mongodb import get_database
 from app.core.security import get_password_hash, verify_password, create_access_token
@@ -8,6 +10,9 @@ import string
 from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
+
+class OTPRequest(BaseModel):
+    email: EmailStr
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user_in: UserCreate):
@@ -195,7 +200,8 @@ async def reset_password(data: PasswordReset):
     return {"message": "Password has been reset successfully."}
 
 @router.post("/request-otp")
-async def request_otp(email: str):
+async def request_otp(data: OTPRequest):
+    email = data.email
     db = get_database()
     # Check if user exists — don't reveal whether user exists
     user = await db.users.find_one({"email": email})

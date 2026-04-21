@@ -6,7 +6,7 @@ Evaluates across 8 categories and returns structured improvement data.
 
 import json
 import logging
-from app.services.ai_parser import get_next_client, _clients
+from app.services.ai_parser import MODELS, call_nvidia
 from app.utils.json_repair import robust_json_loads
 from app.core.config import settings
 from google import genai
@@ -204,28 +204,17 @@ async def analyze_resume_ats(resume_text: str, job_description: str = None, file
             logger.warning(f"[ATS Analyzer] Gemini Visual Analysis failed: {e}. Falling back to NVIDIA.")
 
     # --- SECONDARY ENGINE: NVIDIA NIM (Text-based) ---
-    raw_content = ""
     try:
-        max_retries = min(3, len(_clients) if _clients else 3)
-        last_err = None
-        
-        for attempt in range(max_retries):
-            try:
-                client = get_next_client()
-                response = await client.chat.completions.create(
-                    model="meta/llama-3.1-70b-instruct",
-                    messages=[
-                        {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
-                        {"role": "user", "content": user_content}
-                    ],
-                    temperature=0.7, 
-                    max_tokens=4096 
-                )
-                raw_content = response.choices[0].message.content
-                break 
-            except Exception as e:
-                last_err = e
-                logger.info(f"[ATS Analyzer] NVIDIA Fleet retry {attempt+1} failed...")
+        raw_content = await call_nvidia(
+            messages=[
+                {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
+                {"role": "user", "content": user_content}
+            ],
+            model=MODELS["quality"],
+            temperature=0.7,
+            max_tokens=4096,
+            retries=3
+        )
         
         if raw_content:
             result = robust_json_loads(raw_content)

@@ -656,9 +656,14 @@ class ResumeGenerator:
         """Generates a resume using a DOCX template."""
         template_path = os.path.join(self.template_dir, template_filename)
         if not os.path.exists(template_path):
-            logger.error(f"Template not found: {template_path}")
-            # Fallback to standard PDF if template is missing
-            return self.generate_pdf(data, style="standard")
+            logger.warning(f"[ResumeGen] DOCX template not found: {template_path}. Falling back to premium PDF.")
+            # We don't return here because we want to signal the caller that a fallback happened
+            # via the exception, but we could also return the bytes if we catch it elsewhere.
+            # The plan says to raise so the API layer can return a clear error.
+            raise FileNotFoundError(
+                f"Resume template '{template_filename}' not found on server. "
+                f"PDF generated as fallback — check app/static/templates/resumes/ directory."
+            )
 
         try:
             doc = DocxTemplate(template_path)

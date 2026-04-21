@@ -46,7 +46,7 @@ def create_access_token(data: dict):
 
 def decode_access_token(token: str):
     try:
-        decoded_token = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-        return decoded_token if decoded_token["exp"] >= datetime.now(timezone.utc).timestamp() else None
+        # python-jose validates exp automatically and raises JWTError if expired
+        return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except JWTError:
         return None

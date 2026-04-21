@@ -7,7 +7,7 @@ from bson import ObjectId
 import asyncio
 
 from app.db.mongodb import get_database
-from app.services.ai_parser import get_next_client
+from app.services.ai_parser import MODELS, call_nvidia
 from app.core.security import decrypt_token
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -148,7 +148,7 @@ Return structured JSON only. NO MARKDOWN:
         if manual_payload and len(manual_payload) > 15:
             email_data = manual_payload
         elif creds:
-             loop = asyncio.get_event_loop()
+             loop = asyncio.get_running_loop()
              result = await loop.run_in_executor(None, self._fetch_real_emails, creds)
              email_data = result["ai_data"]
              recent_emails = result["recent_emails"]
@@ -156,17 +156,15 @@ Return structured JSON only. NO MARKDOWN:
              return {"error": "No Google OAuth credentials found. Please Connect Gmail."}
                 
         try:
-            client = get_next_client()
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
+            raw_content = await call_nvidia(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": f"INPUT MAILBOX DATA:\n{email_data}\n\nNOW ANALYZE THE CONNECTED MAILBOX AND RESPOND ACCORDINGLY. RETURN PURE JSON."}
                 ],
+                model=MODELS["quality"], # Email summarization needs quality
                 temperature=0.1,
                 max_tokens=2000
             )
-            raw_content = response.choices[0].message.content
             
             # Clean up markdown code blocks to coerce strictly into JSON
             if "```json" in raw_content:
@@ -184,20 +182,17 @@ Return structured JSON only. NO MARKDOWN:
             return {"error": f"AI Parsing Error: {str(e)}"}
 
     async def generate_draft_reply(self, user_id: str, thread_context: str, user_instruction: str) -> Dict[str, Any]:
-        client = get_next_client()
         input_data = f"THREAD CONTEXT: {thread_context}\nUSER INSTRUCTION: {user_instruction}\n\nDraft a reply adhering to the Agent Rules. Return PURE JSON."
-        
         try:
-            response = await client.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
+            raw_content = await call_nvidia(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": input_data}
                 ],
+                model=MODELS["fast"], # Quick reply generation
                 temperature=0.2,
                 max_tokens=800
             )
-            raw_content = response.choices[0].message.content
             if "```json" in raw_content:
                 raw_content = raw_content.split("```json")[1].split("```")[0].strip()
             elif "```" in raw_content:
@@ -260,7 +255,7 @@ Return structured JSON only. NO MARKDOWN:
         if not creds:
             return {"error": "No Google OAuth credentials found."}
             
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._send_real_reply, creds, thread_id, reply_body, subject)
 
 email_agent_service = EmailAgentService()

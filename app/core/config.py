@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     NVIDIA_NIM_KEY_1: Optional[str] = None
     NVIDIA_NIM_KEY_2: Optional[str] = None
     NVIDIA_NIM_KEY_3: Optional[str] = None
+    NVIDIA_NIM_KEYS: Optional[str] = None  # comma-separated: "key1,key2,key3"
     GOOGLE_API_KEY: Optional[str] = None
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None

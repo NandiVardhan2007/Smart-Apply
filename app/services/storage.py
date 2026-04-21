@@ -46,11 +46,33 @@ class StorageService:
             return None
 
     def get_key_from_url(self, url: str) -> str:
-        """Extracts the object key from the full R2 URL."""
-        if not url: return ""
-        prefix = f"{settings.R2_ENDPOINT_URL}/{settings.R2_BUCKET_NAME}/"
+        """Extracts the object key from a full R2 URL. Handles trailing slash variants."""
+        if not url:
+            return ""
+        # If it's already a bare key (no scheme), return as-is
+        if not url.startswith("http"):
+            return url
+        # Normalize: strip trailing slash from endpoint before building prefix
+        base = settings.R2_ENDPOINT_URL.rstrip("/")
+        bucket = settings.R2_BUCKET_NAME.strip("/")
+        prefix = f"{base}/{bucket}/"
         if url.startswith(prefix):
             return url[len(prefix):]
-        return url
+        # Fallback: find the bucket name in the path and extract everything after it
+        marker = f"/{bucket}/"
+        idx = url.find(marker)
+        if idx != -1:
+            return url[idx + len(marker):]
+        # Last resort: return the path component after the hostname
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            path = parsed.path.lstrip("/")
+            # Remove bucket prefix from path if present
+            if path.startswith(bucket + "/"):
+                return path[len(bucket) + 1:]
+            return path
+        except Exception:
+            return url
 
 storage_service = StorageService()

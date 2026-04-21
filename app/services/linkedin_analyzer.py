@@ -6,7 +6,7 @@ Evaluates across 8 categories and returns structured improvement data.
 
 import json
 import logging
-from app.services.ai_parser import get_next_client
+from app.services.ai_parser import MODELS, call_nvidia
 from app.services.memory_service import memory_service
 from app.schemas.memory import MemoryCreate
 
@@ -156,7 +156,6 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
     Performs a comprehensive AI analysis of the provided LinkedIn profile data.
     Uses user memory if available to personalize recommendations.
     """
-    client = get_next_client()
     
     # Fetch user memory for personalization if user_id is provided
     user_context = ""
@@ -180,45 +179,18 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
         {"role": "user", "content": user_content}
     ]
 
-    max_retries = 2
-    last_error = ""
-
     try:
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"[LinkedIn Analyzer] Analysis attempt {attempt + 1}")
-                response = await client.chat.completions.create(
-                    model="meta/llama-3.1-8b-instruct",
-                    messages=messages,
-                    temperature=0.1,
-                    max_tokens=4096
-                )
+        raw_content = await call_nvidia(
+            messages=messages,
+            model=MODELS["quality"],   # LinkedIn analysis needs quality, not fast
+            temperature=0.1,
+            max_tokens=4096
+        )
+        result = robust_json_loads(raw_content)
 
-                raw_content = response.choices[0].message.content.strip()
-                result = robust_json_loads(raw_content)
-
-                if result and result.get("overall_score") is not None:
-                    # Success!
-                    return _validate_and_normalize(result)
-                
-                # If we're here, parsing failed or was incomplete
-                logger.warning(f"[LinkedIn Analyzer] Attempt {attempt + 1} produced unparseable JSON.")
-                if attempt == 0:
-                    # Add a retry message to the conversation
-                    messages.append({"role": "assistant", "content": raw_content})
-                    messages.append({
-                        "role": "user", 
-                        "content": "ERROR: Your previous response was NOT valid JSON. It contained extra text or markdown. "
-                                   "Return ONLY the raw JSON object starting with '{' and ending with '}'. No formatting tags."
-                    })
-                last_error = "Malformed AI response"
-
-            except Exception as e:
-                logger.error(f"[LinkedIn Analyzer] Attempt {attempt + 1} failed: {e}")
-                last_error = str(e)
-        
-        # If loop finishes without returning, we hit the general except block below
-        raise ValueError(f"NVIDIA Exhausted: {last_error}")
+        if result and result.get("overall_score") is not None:
+            # Success!
+            return _validate_and_normalize(result)
 
     except Exception as e:
 
@@ -258,7 +230,7 @@ async def analyze_linkedin_profile(profile_data: dict, user_id: str = None) -> d
             except Exception as gemini_err:
                 logger.error(f"[LinkedIn Analyzer] Gemini Fallback CRITICAL FAILURE: {gemini_err}")
 
-        logger.error(f"[LinkedIn Analyzer] All engines exhausted. Last NVIDIA error: {last_error}")
+        logger.error(f"[LinkedIn Analyzer] All engines exhausted.")
         return _fallback_result("Our AI engines are currently congested. Please try again in a few minutes.")
 
 

@@ -303,8 +303,21 @@ class ResumeTailoringService:
         max_tokens: int = 4000,
         prefer_pro: bool = False
     ) -> str:
-        """Call NVIDIA NIM (Llama) directly for resume tasks to save Gemini quota."""
-        # Per user request: use NVIDIA exclusively for resume tasks
+        """
+        Route AI calls efficiently:
+        - Short analysis tasks (max_tokens <= 2000): Gemini Flash (fast, cheap)
+        - Long generation tasks (LaTeX, max_tokens > 2000): NVIDIA 70B (reliable, large output)
+        """
+        if max_tokens <= 2000 and self.gemini_available:
+            try:
+                from app.services.ai_parser import call_gemini
+                return await call_gemini(
+                    system_prompt, user_prompt,
+                    model="gemini-2.0-flash",
+                    temperature=temperature
+                )
+            except Exception as e:
+                logger.warning(f"[ResumeTailor] Gemini failed for analysis, falling back to NVIDIA: {e}")
         return await self._call_nvidia(system_prompt, user_prompt, temperature, max_tokens, prefer_pro)
 
     async def _call_gemini(
@@ -333,29 +346,16 @@ class ResumeTailoringService:
 
         return (response.text or "").strip()
 
-    async def _call_nvidia(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        temperature: float,
-        max_tokens: int,
-        prefer_pro: bool
-    ) -> str:
-        """Call NVIDIA NIM (Llama) as fallback."""
-        client = get_next_client()
-        model = "meta/llama-3.1-70b-instruct" if prefer_pro else "meta/llama-3.1-8b-instruct"
-
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-
-        return (response.choices[0].message.content or "").strip()
+    async def _call_nvidia(self, system_prompt, user_prompt, temperature, max_tokens, prefer_pro):
+        """Call NVIDIA NIM. LaTeX generation always uses 70B for output quality."""
+        from app.services.ai_parser import call_nvidia, MODELS
+        # Always use 70B for resume tasks — 8B produces structurally broken LaTeX
+        model = MODELS["gen"]
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        return await call_nvidia(messages, model=model, temperature=temperature, max_tokens=max_tokens)
 
     # -----------------------------------------------------------------------
     # User Context Builder

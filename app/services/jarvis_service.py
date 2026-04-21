@@ -6,7 +6,7 @@ import base64
 import traceback
 from datetime import timezone, datetime
 
-from app.services.ai_parser import get_next_client
+from app.services.ai_parser import MODELS, call_nvidia, get_next_client
 from app.services.memory_service import memory_service
 from app.services.email import email_service
 from app.services.ats_analyzer import analyze_resume_ats
@@ -146,7 +146,6 @@ Keep your responses punchy and varied."""
     async def _chat_nvidia(self, user_id: str, message: str, system_prompt: str, history: List[Dict[str, Any]], preferred_model: str) -> Dict[str, Any]:
         """NVIDIA NIM (Llama 3.1 8B/70B) pivot for when Gemini is exhausted or unavailable."""
         try:
-            client = get_next_client()
             # Maintain consistency with the executive persona in a text-only environment
             pivot_prompt = system_prompt + "\n\nNOTE: You are currently running on a backup neural link. Vision and advanced tool-calling are temporarily limited. Focus on providing elite textual intelligence, Sir."
             
@@ -163,16 +162,14 @@ Keep your responses punchy and varied."""
 
             # Map the preferred model to an NVIDIA-available one
             # Llama 3.1 8B is our standard fast backup
-            model_to_use = "meta/llama-3.1-8b-instruct" if "8b" in preferred_model.lower() or "flash" in preferred_model.lower() else "meta/llama-3.1-70b-instruct"
+            model_to_use = MODELS["fast"] if "8b" in preferred_model.lower() or "flash" in preferred_model.lower() else MODELS["quality"]
 
-            response = await client.chat.completions.create(
-                model=model_to_use,
+            raw = await call_nvidia(
                 messages=messages,
+                model=model_to_use,
                 temperature=0.7,
                 max_tokens=1000,
             )
-            
-            raw = (response.choices[0].message.content or "").strip()
             return await self._process_ai_response(user_id, message, raw)
         except Exception as e:
             logger.error(f"[JARVIS] NVIDIA Pivot Critical Failure: {e}")
@@ -248,19 +245,27 @@ Keep your responses punchy and varied."""
             try:
                 # Define synchronous stubs for the Gemini SDK to prevent AFC coroutine errors
                 def scan_my_resume(job_description: Optional[str] = None) -> str:
-                    """Scans the user's current resume for ATS compatibility and overall score."""
+                    """Scans the user's uploaded resume for ATS score and improvement suggestions.
+                    Optionally accepts a job description to score against a specific role."""
                     return "triggering_scan"
 
-                def draft_linkedin_outreach(job_title: str, company: str, recruiter_name: Optional[str] = None) -> str:
-                    """Drafts a professional recruitment outreach message."""
+                def draft_linkedin_outreach(
+                    job_title: str,
+                    company: str,
+                    recruiter_name: Optional[str] = None
+                ) -> str:
+                    """Drafts a professional LinkedIn connection request or recruiter outreach message
+                    for a specific job title and company."""
                     return "triggering_outreach"
 
                 def get_platform_stats() -> str:
-                    """Fetches the user's current application and profile statistics."""
+                    """Fetches the user's current application count, ATS score, and profile
+                    completion percentage from the Smart Apply platform."""
                     return "triggering_stats"
 
                 def report_to_admin(feedback_text: str) -> str:
-                    """Submits feedback, bugs, or feature requests to the development team."""
+                    """Submits a bug report, feature request, or support message to the
+                    Smart Apply development team on behalf of the user."""
                     return "triggering_report"
 
                 # Build parts for multimodal support
@@ -374,7 +379,6 @@ Keep your responses punchy and varied."""
                     
                     # Call NVIDIA NIM in STREAMING mode — seamless pivot, no user-facing apology
                     try:
-                        client = get_next_client()
                         # Strictly enforce alternating roles for Llama 3.1 compatibility
                         nv_messages = [{"role": "system", "content": f"{system_prompt}\n\nNOTE: You are on a backup link. Be concise and professional, Sir."}]
                         
@@ -404,8 +408,9 @@ Keep your responses punchy and varied."""
                              nv_messages.append({"role": "user", "content": message})
 
                         logger.info(f"[JARVIS] Initiating Polished NVIDIA Stream for user {user_id}")
+                        client = get_next_client()
                         nv_stream = await client.chat.completions.create(
-                            model="meta/llama-3.1-8b-instruct",
+                            model=MODELS["fast"],
                             messages=nv_messages,
                             temperature=0.7,
                             stream=True,
