@@ -14,10 +14,27 @@ from app.websockets.auth_ws import router as ws_router
 import subprocess
 import sys
 import logging
+import asyncio
+import httpx
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
 worker_process = None
+
+async def self_ping():
+    while True:
+        try:
+            await asyncio.sleep(600)  # 10 minutes
+            external_url = os.getenv("EXTERNAL_URL")
+            if external_url:
+                ping_url = f"{external_url.rstrip('/')}/ping"
+                async with httpx.AsyncClient() as client:
+                    await client.get(ping_url)
+                    logging.info(f"Self-pinged {ping_url}")
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logging.error(f"Error in self-ping: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,9 +46,13 @@ async def lifespan(app: FastAPI):
     worker_script = os.path.join(backend_dir, "agents", "interview_worker.py")
     worker_process = subprocess.Popen([sys.executable, worker_script, "dev"], cwd=backend_dir)
 
+    ping_task = asyncio.create_task(self_ping())
+
     await init_db()
     yield
     await close_db()
+
+    ping_task.cancel()
     
     if worker_process:
         worker_process.terminate()
@@ -56,6 +77,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/ping")
+async def ping():
+    return {"status": "ok"}
 
 # ── API Routers ──
 app.include_router(auth.router)
