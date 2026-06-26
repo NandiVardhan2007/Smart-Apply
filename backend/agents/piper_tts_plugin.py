@@ -72,7 +72,7 @@ class PiperChunkedStream(tts.ChunkedStream):
             raise e
 
 class PiperTTS(tts.TTS):
-    def __init__(self, english_model: str = "models/en_US-ryan-medium.onnx", 
+    def __init__(self, english_model: str = "models/en_GB-southern_english_female-low.onnx", 
                  telugu_model: str = "models/te_IN-venkatesh-medium.onnx"):
         import os
         base_dir = os.path.dirname(__file__)
@@ -86,11 +86,11 @@ class PiperTTS(tts.TTS):
             logger.info("Downloading Piper TTS model...")
             os.makedirs(os.path.dirname(english_model), exist_ok=True)
             urllib.request.urlretrieve(
-                "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/medium/en_US-ryan-medium.onnx", 
+                "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx", 
                 english_model
             )
             urllib.request.urlretrieve(
-                "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/medium/en_US-ryan-medium.onnx.json", 
+                "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx.json", 
                 english_model + ".json"
             )
             logger.info("Piper TTS model downloaded.")
