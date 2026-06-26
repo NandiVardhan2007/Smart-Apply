@@ -48,7 +48,7 @@ class GTTSChunkedStream(tts.ChunkedStream):
                     for frame in container.decode(audio_stream):
                         resampled_frames = resampler.resample(frame)
                         for res_frame in resampled_frames:
-                            chunk_queue.put(res_frame.planes[0].to_bytes())
+                            chunk_queue.put(bytes(res_frame.planes[0]))
                             
                     chunk_queue.put(None)  # EOF
                 except Exception as e:
