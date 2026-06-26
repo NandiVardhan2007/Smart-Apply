@@ -67,13 +67,12 @@ export default function DashboardLayout() {
             {pageTitle}.
           </motion.div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <motion.div
               key={location.pathname}
               variants={pageVariants}
               initial="initial"
               animate="animate"
-              exit="exit"
               transition={{ duration: 0.3 }}
             >
               <Outlet />

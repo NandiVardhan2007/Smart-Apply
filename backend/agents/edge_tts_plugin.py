@@ -3,7 +3,7 @@ import io
 import logging
 from typing import Optional
 
-import edge_tts
+
 import av
 from livekit import rtc
 from livekit.agents import tts
@@ -14,13 +14,18 @@ logger = logging.getLogger("edge_tts")
 class EdgeChunkedStream(tts.ChunkedStream):
     async def _run(self, output_emitter: tts.AudioEmitter) -> None:
         try:
-            # 1. Download MP3 from Edge TTS
-            communicate = edge_tts.Communicate(self.input_text, self._tts.voice)
-            audio_bytes = bytearray()
-            async for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    audio_bytes.extend(chunk["data"])
+            import httpx
+            import urllib.parse
+
+            # Use Google Translate TTS (free, no auth, tw-ob client)
+            # Break text into chunks if it's too long, but for interviews short sentences are fine
+            url = f"https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q={urllib.parse.quote(self.input_text)}"
             
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+                resp.raise_for_status()
+                audio_bytes = resp.content
+
             if not audio_bytes:
                 return
 
@@ -75,7 +80,7 @@ class EdgeChunkedStream(tts.ChunkedStream):
             raise e
 
 class EdgeTTS(tts.TTS):
-    def __init__(self, voice: str = "en-US-ChristopherNeural"):
+    def __init__(self, voice: str = "en-US"):
         super().__init__(
             capabilities=tts.TTSCapabilities(streaming=False),
             sample_rate=24000,
@@ -85,11 +90,11 @@ class EdgeTTS(tts.TTS):
         
     @property
     def model(self) -> str:
-        return "edge-tts"
+        return "google-tts"
 
     @property
     def provider(self) -> str:
-        return "microsoft"
+        return "google"
         
     def synthesize(self, text: str, *, conn_options = None) -> tts.ChunkedStream:
         if conn_options is None:
