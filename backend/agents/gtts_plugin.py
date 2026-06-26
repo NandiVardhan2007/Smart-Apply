@@ -11,6 +11,8 @@ from gtts import gTTS
 from livekit.agents.tts.tts import DEFAULT_API_CONNECT_OPTIONS
 import logging
 import re
+import tempfile
+import os
 
 logger = logging.getLogger("gtts-plugin")
 
@@ -28,27 +30,47 @@ class GTTSChunkedStream(tts.ChunkedStream):
                     
                     # gTTS generates an MP3
                     tts_engine = gTTS(text=self.input_text, lang=lang, slow=False)
-                    mp3_fp = io.BytesIO()
-                    tts_engine.write_to_fp(mp3_fp)
-                    mp3_fp.seek(0)
                     
-                    # Decode MP3 to raw PCM chunks using PyAV
-                    container = av.open(mp3_fp)
-                    audio_stream = container.streams.audio[0]
+                    # Use a temporary file to avoid PyAV BytesIO seek bugs on some Linux environments
+                    fd, temp_path = tempfile.mkstemp(suffix='.mp3')
+                    os.close(fd)
                     
-                    sample_rate = audio_stream.rate
-                    num_channels = audio_stream.channels
-                    
-                    chunk_queue.put({"meta": {"sample_rate": sample_rate, "num_channels": num_channels}})
-                    
-                    # PyAV resamples to s16 format automatically if configured or we just extract frames
-                    # The frames from av are already numpy/bytes usually, but to be safe:
-                    resampler = av.AudioResampler(format='s16', layout='mono', rate=24000)
-                    
-                    for frame in container.decode(audio_stream):
-                        resampled_frames = resampler.resample(frame)
-                        for res_frame in resampled_frames:
+                    try:
+                        tts_engine.save(temp_path)
+                        
+                        # Decode MP3 to raw PCM chunks using PyAV
+                        container = av.open(temp_path)
+                        audio_stream = container.streams.audio[0]
+                        
+                        sample_rate = audio_stream.rate
+                        num_channels = audio_stream.channels
+                        
+                        chunk_queue.put({"meta": {"sample_rate": sample_rate, "num_channels": num_channels}})
+                        
+                        # PyAV resamples to s16 format automatically if configured or we just extract frames
+                        # The frames from av are already numpy/bytes usually, but to be safe:
+                        resampler = av.AudioResampler(format='s16', layout='mono', rate=24000)
+                        
+                        frames_pushed = 0
+                        for frame in container.decode(audio_stream):
+                            resampled_frames = resampler.resample(frame)
+                            for res_frame in resampled_frames:
+                                chunk_queue.put(bytes(res_frame.planes[0]))
+                                frames_pushed += 1
+                                
+                        # Flush the resampler
+                        for res_frame in resampler.resample(None):
                             chunk_queue.put(bytes(res_frame.planes[0]))
+                            frames_pushed += 1
+                            
+                        logger.info(f"gTTS successfully generated and pushed {frames_pushed} chunks.")
+                    finally:
+                        try:
+                            container.close()
+                        except:
+                            pass
+                        if os.path.exists(temp_path):
+                            os.remove(temp_path)
                             
                     chunk_queue.put(None)  # EOF
                 except Exception as e:
