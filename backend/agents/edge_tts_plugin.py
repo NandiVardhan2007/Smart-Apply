@@ -76,7 +76,7 @@ class EdgeChunkedStream(tts.ChunkedStream):
             output_emitter.flush()
 
         except Exception as e:
-            self._emit_error(e, recoverable=False)
+            logger.error(f"TTS Synthesis Error: {e}", exc_info=True)
             raise e
 
 class EdgeTTS(tts.TTS):
