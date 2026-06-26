@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import '../styles/dashboard.css';
@@ -67,17 +67,15 @@ export default function DashboardLayout() {
             {pageTitle}.
           </motion.div>
 
-          <AnimatePresence>
-            <motion.div
-              key={location.pathname}
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              transition={{ duration: 0.3 }}
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <motion.div
+            key={location.pathname}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            transition={{ duration: 0.3 }}
+          >
+            <Outlet />
+          </motion.div>
         </div>
       </main>
     </div>
