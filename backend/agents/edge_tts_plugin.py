@@ -48,7 +48,7 @@ class EdgeChunkedStream(tts.ChunkedStream):
             for frame in container.decode(audio_stream):
                 resampled_frames = resampler.resample(frame)
                 for r_frame in resampled_frames:
-                    pcm_data = r_frame.planes[0].to_bytes()
+                    pcm_data = bytes(r_frame.planes[0])
                     audio_frame = rtc.AudioFrame(
                         data=pcm_data,
                         sample_rate=sample_rate,
@@ -59,7 +59,7 @@ class EdgeChunkedStream(tts.ChunkedStream):
 
             # Flush the resampler
             for r_frame in resampler.resample(None):
-                pcm_data = r_frame.planes[0].to_bytes()
+                pcm_data = bytes(r_frame.planes[0])
                 audio_frame = rtc.AudioFrame(
                     data=pcm_data,
                     sample_rate=sample_rate,
