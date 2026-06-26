@@ -10,6 +10,7 @@ from piper import PiperVoice
 from livekit.agents.tts.tts import DEFAULT_API_CONNECT_OPTIONS
 import logging
 
+logger = logging.getLogger("piper-tts")
 # Suppress the spammy phoneme debug logs from piper
 logging.getLogger("piper.voice").setLevel(logging.INFO)
 
