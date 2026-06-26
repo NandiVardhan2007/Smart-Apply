@@ -35,12 +35,12 @@ export default function Profile() {
   const [education, setEducation] = useState<string[]>(user?.education || []);
   const [experience, setExperience] = useState<string[]>(user?.experience || []);
 
-  const initials = fullName
+  const initials = (fullName || 'Smart Apply')
     .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2) || 'SA';
+    .slice(0, 2);
 
   useEffect(() => {
     const fetchResumes = async () => {
@@ -236,7 +236,7 @@ export default function Profile() {
       <div className="page-welcome-banner">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
           <div>
-            <h1 style={{ fontSize: '1.6rem', marginBottom: '8px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>Complete your profile, {user?.full_name?.split(' ')[0] || 'there'}!</h1>
+            <h1 style={{ fontSize: '1.6rem', marginBottom: '8px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>Complete your profile, {(user?.full_name || '').split(' ')[0] || 'there'}!</h1>
             <p style={{ color: 'var(--text-secondary)' }}>A complete profile increases your chances of getting noticed by ATS algorithms.</p>
           </div>
           <div style={{ flex: '1', minWidth: '250px', maxWidth: '300px' }}>

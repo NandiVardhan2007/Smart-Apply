@@ -120,7 +120,7 @@ export default function Onboarding() {
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="auth-header">
-          <h2 style={{ fontSize: '1.8rem' }}>Welcome, {user?.full_name?.split(' ')[0]}!</h2>
+          <h2 style={{ fontSize: '1.8rem' }}>Welcome, {(user?.full_name || '').split(' ')[0] || 'User'}!</h2>
           <p>Let's set up your profile to personalize your experience.</p>
         </div>
 

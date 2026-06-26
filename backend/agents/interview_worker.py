@@ -33,15 +33,20 @@ async def entrypoint(ctx: JobContext):
     )
 
     try:
+        logger.info("Initializing LLM plugin...")
         llm_plugin = openai.LLM(
             base_url="https://integrate.api.nvidia.com/v1",
             api_key=nvidia_api_key,
             model=nvidia_model
         )
+        logger.info("Initializing STT plugin...")
         stt_plugin = groq.STT(model="whisper-large-v3")
+        logger.info("Initializing TTS plugin...")
         tts_plugin = edge_tts_plugin.EdgeTTS()
+        logger.info("Initializing VAD plugin...")
         vad_plugin = silero.VAD.load()
 
+        logger.info("Creating Agent...")
         agent = Agent(
             instructions=initial_instructions,
             stt=stt_plugin,
@@ -49,6 +54,7 @@ async def entrypoint(ctx: JobContext):
             tts=tts_plugin,
             vad=vad_plugin,
         )
+        logger.info("Creating AgentSession...")
         session = AgentSession(
             stt=stt_plugin,
             llm=llm_plugin,
@@ -138,11 +144,14 @@ async def entrypoint(ctx: JobContext):
         # Keep the shutdown callback just in case the job is killed server-side
         ctx.add_shutdown_callback(post_raw_data_for_analysis)
 
+        logger.info("Starting AgentSession...")
         await session.start(agent=agent, room=ctx.room)
+        logger.info("AgentSession started. Saying welcome message...")
         await session.say(
             "Hello, I am your AI interviewer. To get started, could you please introduce yourself and turn on your camera?",
             allow_interruptions=True
         )
+        logger.info("Welcome message queued.")
 
     except Exception as e:
         logger.error(f"Error in entrypoint: {e}")

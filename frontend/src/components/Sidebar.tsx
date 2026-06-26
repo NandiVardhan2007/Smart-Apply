@@ -34,12 +34,12 @@ const navItemsAi = [
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
-  const initials = user?.full_name
-    ?.split(' ')
+  const initials = (user?.full_name || 'Smart Apply')
+    .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2) || 'SA';
+    .slice(0, 2);
 
   return (
     <>

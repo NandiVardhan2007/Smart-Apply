@@ -106,7 +106,7 @@ export default function AiChatbot() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, padding: '0 8px' }}>
                     {isUser ? (
-                      <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>{user?.full_name?.split(' ')[0] || 'You'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>{(user?.full_name || '').split(' ')[0] || 'You'}</span>
                     ) : (
                       <>
                         <Sparkles size={14} style={{ color: 'var(--accent)' }} />
