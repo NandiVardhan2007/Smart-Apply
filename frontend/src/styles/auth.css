@@ -1,0 +1,239 @@
+/* ═══════════════════════════════════════════════
+   Auth Pages Styles (Login, Signup, OTP, Reset) — Skeuomorphic
+   ═══════════════════════════════════════════════ */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border: var(--border-brutal);
+  padding: 40px 32px;
+  position: relative;
+  z-index: 2;
+  box-shadow: var(--shadow-brutal);
+}
+
+
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.auth-logo h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #000;
+  text-transform: uppercase;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: #000;
+}
+
+.auth-header p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-form .btn-primary {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px;
+}
+
+.auth-links {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.auth-links a,
+.auth-links button {
+  color: var(--accent-secondary);
+  font-weight: 600;
+  transition: color var(--transition-fast);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+}
+
+.auth-links a:hover,
+.auth-links button:hover {
+  color: var(--accent-start);
+}
+
+.forgot-link {
+  display: block;
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: -8px;
+  transition: color var(--transition-fast);
+}
+
+.forgot-link:hover {
+  color: var(--accent-secondary);
+}
+
+/* ── OTP Input ── */
+.otp-inputs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.otp-input {
+  width: 52px;
+  height: 60px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: var(--bg-primary);
+  border: var(--border-thin);
+  color: #000;
+  transition: all var(--transition);
+  box-shadow: 2px 2px 0px #000;
+}
+
+.otp-input:focus {
+  border-color: #000;
+  outline: none;
+  background: #fff;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px #000;
+}
+
+.otp-input.filled {
+  background: var(--accent);
+  color: #000;
+}
+
+.resend-section {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.resend-btn {
+  color: var(--accent-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+}
+
+.resend-btn:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  text-shadow: none;
+}
+
+/* ── Password Strength ── */
+.password-strength {
+  margin-top: -10px;
+}
+
+.strength-bar {
+  height: 8px;
+  background: var(--bg-primary);
+  border: var(--border-thin);
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  transition: all var(--transition);
+  border-right: var(--border-thin);
+}
+
+.strength-label {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Auth Error ── */
+.auth-error {
+  background: var(--error);
+  border: var(--border-thin);
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 2px 2px 0px #000;
+}
+
+/* ── Step Indicator ── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.step-dot {
+  width: 16px;
+  height: 16px;
+  background: var(--bg-primary);
+  transition: all var(--transition);
+  border: 2px solid #000;
+}
+
+.step-dot.active {
+  background: var(--accent);
+}
+
+.step-dot.completed {
+  background: var(--success);
+}
+
+.step-line {
+  width: 40px;
+  height: 4px;
+  background: #000;
+  transition: all var(--transition);
+}
+
+.step-line.active {
+  background: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 32px 20px;
+  }
+
+  .otp-input {
+    width: 44px;
+    height: 52px;
+    font-size: 1.3rem;
+  }
+}

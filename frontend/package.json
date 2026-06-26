@@ -1,0 +1,35 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.185.0",
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.0"
+  },
+  "dependencies": {
+    "@livekit/components-react": "^2.9.21",
+    "@livekit/components-styles": "^1.2.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@vladmandic/face-api": "^1.7.15",
+    "framer-motion": "^12.42.0",
+    "livekit-client": "^2.20.0",
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-easy-crop": "^6.0.2",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.18.0",
+    "three": "^0.185.0"
+  }
+}
