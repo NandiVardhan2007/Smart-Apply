@@ -14,6 +14,9 @@ load_dotenv()
 
 logger = logging.getLogger("interview-agent")
 
+# Pre-load the VAD model globally so it doesn't take 5-10 seconds to load on Render's 0.1 CPU for every new connection
+logger.info("Pre-loading VAD plugin...")
+_global_vad = silero.VAD.load()
 
 
 async def entrypoint(ctx: JobContext):
@@ -43,8 +46,8 @@ async def entrypoint(ctx: JobContext):
         stt_plugin = groq.STT(model="whisper-large-v3")
         logger.info("Initializing TTS plugin...")
         tts_plugin = edge_tts_plugin.EdgeTTS()
-        logger.info("Initializing VAD plugin...")
-        vad_plugin = silero.VAD.load()
+        logger.info("Using pre-loaded VAD plugin...")
+        vad_plugin = _global_vad
 
         logger.info("Creating Agent...")
         agent = Agent(
