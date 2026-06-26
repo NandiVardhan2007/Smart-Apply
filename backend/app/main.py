@@ -93,7 +93,7 @@ app.include_router(interview.router)
 app.include_router(tailor.router)
 
 # ── WebSocket Router ──
-app.include_router(ws_router)
+app.include_router(ws_router, prefix="/api")
 
 # ── Serve frontend static files (production) ──
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
