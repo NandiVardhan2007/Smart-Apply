@@ -8,26 +8,12 @@ from dotenv import load_dotenv
 from livekit.agents import JobContext, WorkerOptions, WorkerType, cli
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import openai, silero, groq
-import piper_tts_plugin
+import edge_tts_plugin
 
 load_dotenv()
 
 logger = logging.getLogger("interview-agent")
 
-def _download_models_sync():
-    base_dir = Path(__file__).parent / "models"
-    base_dir.mkdir(exist_ok=True)
-    models_to_download = {
-        "en_US-ryan-high.onnx": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx",
-        "en_US-ryan-high.onnx.json": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx.json",
-    }
-    for filename, url in models_to_download.items():
-        file_path = base_dir / filename
-        if not file_path.exists():
-            logger.info(f"Downloading {filename} (this may take a minute)...")
-            urllib.request.urlretrieve(url, file_path)
-            logger.info(f"Downloaded {filename}")
-    return base_dir
 
 
 async def entrypoint(ctx: JobContext):
@@ -47,18 +33,13 @@ async def entrypoint(ctx: JobContext):
     )
 
     try:
-        models_dir = await asyncio.to_thread(_download_models_sync)
-
         llm_plugin = openai.LLM(
             base_url="https://integrate.api.nvidia.com/v1",
             api_key=nvidia_api_key,
             model=nvidia_model
         )
         stt_plugin = groq.STT(model="whisper-large-v3")
-        tts_plugin = piper_tts_plugin.PiperTTS(
-            english_model=str(models_dir / "en_US-ryan-high.onnx"),
-            telugu_model=""
-        )
+        tts_plugin = edge_tts_plugin.EdgeTTS()
         vad_plugin = silero.VAD.load()
 
         agent = Agent(
