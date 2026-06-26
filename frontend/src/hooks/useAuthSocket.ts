@@ -32,9 +32,17 @@ export function useAuthSocket(opts?: UseAuthSocketOpts) {
   const connect = useCallback(() => {
     if (!mountedRef.current) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const url = `${protocol}//${host}/ws/auth/${sessionId}`;
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    let wsBaseUrl = '';
+    
+    if (apiBaseUrl) {
+      wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws');
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      wsBaseUrl = `${protocol}//${host}`;
+    }
+    const url = `${wsBaseUrl}/ws/auth/${sessionId}`;
 
     const ws = new WebSocket(url);
     wsRef.current = ws;

@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: smartapply-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: MONGODB_URI
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        # This will be updated automatically if you name your static site properly, 
+        # or you can set it manually in the Render dashboard after the frontend deploys.
+        value: https://smartapply.onrender.com
+
+  - type: web
+    name: smartapply-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        # This dynamic reference uses the backend's automatically generated Render URL
+        fromService:
+          type: web
+          name: smartapply-backend
+          envVarKey: RENDER_EXTERNAL_URL
