@@ -97,14 +97,8 @@ class PiperTTS(tts.TTS):
             
         self.voice_en = PiperVoice.load(english_model)
         
-        if not os.path.isabs(telugu_model):
-            telugu_model = os.path.join(base_dir, telugu_model)
-            
-        try:
-            self.voice_te = PiperVoice.load(telugu_model)
-        except Exception as e:
-            logger.warning(f"Failed to load Telugu Piper voice: {e}")
-            self.voice_te = None
+        # Disabled Telugu model loading to prevent Out of Memory (OOM) crashes on 512MB RAM servers.
+        self.voice_te = None
         
         # Piper provides sample_rate in config, always 1 channel
         sample_rate = getattr(self.voice_en.config, 'sample_rate', 22050)
