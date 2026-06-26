@@ -55,12 +55,19 @@ class PiperChunkedStream(tts.ChunkedStream):
                 
                 if chunk is None:
                     break
-                output_emitter.push(chunk)
+                
+                audio_frame = rtc.AudioFrame(
+                    data=chunk,
+                    sample_rate=sample_rate,
+                    num_channels=self._tts.num_channels,
+                    samples_per_channel=len(chunk) // 2,
+                )
+                output_emitter.push(audio_frame)
 
             output_emitter.flush()
                 
         except Exception as e:
-            self._emit_error(e, recoverable=False)
+            logger.error(f"Piper TTS Error: {e}", exc_info=True)
             raise e
 
 class PiperTTS(tts.TTS):

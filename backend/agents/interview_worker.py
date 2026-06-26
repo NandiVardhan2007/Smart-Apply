@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from livekit.agents import JobContext, WorkerOptions, WorkerType, cli
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import openai, silero, groq
-import edge_tts_plugin
+import piper_tts_plugin
 
 load_dotenv()
 
@@ -42,7 +42,7 @@ async def entrypoint(ctx: JobContext):
         logger.info("Initializing STT plugin...")
         stt_plugin = groq.STT(model="whisper-large-v3")
         logger.info("Initializing TTS plugin...")
-        tts_plugin = edge_tts_plugin.EdgeTTS()
+        tts_plugin = piper_tts_plugin.PiperTTS()
         logger.info("Initializing VAD plugin...")
         vad_plugin = silero.VAD.load()
 
