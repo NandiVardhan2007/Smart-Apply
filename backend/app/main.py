@@ -51,7 +51,7 @@ app = FastAPI(
 # ── CORS (for development with Vite dev server) ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000", "https://www.smartapplies.app", "https://smartapplies.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
