@@ -17,3 +17,4 @@ livekit-plugins-openai>=0.9.0
 livekit-plugins-silero>=0.3.0
 livekit-plugins-groq
 piper-tts>=0.3.0
+email-validator>=2.2.0
