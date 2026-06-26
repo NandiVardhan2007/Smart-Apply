@@ -2,13 +2,14 @@ import asyncio
 import logging
 import os
 import urllib.request
+import uuid
 from pathlib import Path
 from dotenv import load_dotenv
 
 from livekit.agents import JobContext, WorkerOptions, WorkerType, cli
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import openai, silero, groq
-import piper_tts_plugin
+import gtts_plugin
 
 load_dotenv()
 
@@ -42,7 +43,7 @@ async def entrypoint(ctx: JobContext):
         logger.info("Initializing STT plugin...")
         stt_plugin = groq.STT(model="whisper-large-v3")
         logger.info("Initializing TTS plugin...")
-        tts_plugin = piper_tts_plugin.PiperTTS()
+        tts_plugin = gtts_plugin.GTTSTextToSpeech()
         logger.info("Initializing VAD plugin...")
         vad_plugin = silero.VAD.load()
 
