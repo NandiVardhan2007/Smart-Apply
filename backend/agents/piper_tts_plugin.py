@@ -78,6 +78,22 @@ class PiperTTS(tts.TTS):
 
         if not os.path.isabs(english_model):
             english_model = os.path.join(base_dir, english_model)
+            
+        import urllib.request
+        
+        if not os.path.exists(english_model):
+            logger.info("Downloading Piper TTS model...")
+            os.makedirs(os.path.dirname(english_model), exist_ok=True)
+            urllib.request.urlretrieve(
+                "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx", 
+                english_model
+            )
+            urllib.request.urlretrieve(
+                "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx.json", 
+                english_model + ".json"
+            )
+            logger.info("Piper TTS model downloaded.")
+            
         self.voice_en = PiperVoice.load(english_model)
         
         if not os.path.isabs(telugu_model):
