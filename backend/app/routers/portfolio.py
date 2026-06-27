@@ -21,9 +21,9 @@ async def generate_portfolio(
         user_data = {
             "full_name": user.full_name or "Anonymous User",
             "bio": user.bio or "",
-            "linkedin": user.linkedin or "",
-            "github": user.github or "",
-            "portfolio": user.portfolio or "",
+            "linkedin": user.linkedin_url or "",
+            "github": user.github_url or "",
+            "portfolio": user.portfolio_url or "",
             "education": user.education or "",
         }
         
