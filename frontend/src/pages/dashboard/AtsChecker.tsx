@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, FileText, CheckCircle, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { UploadCloud, FileText, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { InlineLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
 
@@ -254,7 +255,7 @@ export default function AtsChecker() {
           >
             {analyzing ? (
               <>
-                <Loader2 size={24} className="spin" />
+                <ButtonSpinner size={22} />
                 <span>ANALYZING...</span>
               </>
             ) : (
@@ -284,15 +285,11 @@ export default function AtsChecker() {
             )}
 
             {analyzing && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}
-              >
-                <Loader2 size={64} className="spin" style={{ color: 'var(--accent)' }} />
-                <h3 style={{ fontSize: 24, fontWeight: 900, textTransform: 'uppercase' }}>AI IS READING...</h3>
-              </motion.div>
+              <InlineLoader
+                variant="analyze"
+                title="AI IS READING YOUR RESUME..."
+                subtitle="Scanning for keywords, formatting, and ATS compatibility"
+              />
             )}
 
             {result && !analyzing && (
@@ -388,7 +385,7 @@ export default function AtsChecker() {
                         disabled={tailoring}
                         style={{ width: '100%', fontSize: 18, padding: 16 }}
                       >
-                        {tailoring ? <Loader2 size={24} className="spin" /> : "Send to AI & Tailor Resume"}
+                        {tailoring ? <><ButtonSpinner size={22} /><span style={{ marginLeft: 8 }}>Tailoring...</span></> : "Send to AI & Tailor Resume"}
                       </button>
                     </motion.div>
                   )}

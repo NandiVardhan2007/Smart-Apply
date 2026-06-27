@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Play, Download, Loader2, ArrowLeft, Code, Layout, ZoomIn, ZoomOut, Edit3 } from 'lucide-react';
+import { FileText, Play, Download, ArrowLeft, Code, Layout, ZoomIn, ZoomOut, Edit3 } from 'lucide-react';
+import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
 
@@ -202,16 +203,15 @@ export default function ResumeTailor() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
-        <Loader2 size={48} className="spin" style={{ color: 'var(--accent-start)' }} />
-        <h3 style={{ fontSize: 20 }}>{loadingText}</h3>
-      </div>
-    );
-  }
-
   return (
+    <>
+      {/* Full-page PageLoader during extraction */}
+      <PageLoader
+        show={isLoading}
+        variant={mode === 'latex' ? 'extract' : 'default'}
+        title={loadingText?.toUpperCase()}
+      />
+
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', border: 'var(--border-brutal)', boxShadow: '8px 8px 0px #000', background: 'var(--bg-surface)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-surface)' }}>
         
@@ -242,7 +242,7 @@ export default function ResumeTailor() {
         <div style={{ display: 'flex', gap: 12 }}>
           {mode === 'latex' && (
             <button className="btn btn-primary" onClick={() => handleCompile(latexCode)} disabled={compiling}>
-              {compiling ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
+              {compiling ? <ButtonSpinner size={16} /> : <Play size={16} />}
               Compile PDF
             </button>
           )}
@@ -399,5 +399,6 @@ export default function ResumeTailor() {
       </div>
 
     </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Code, Clock, Star, ArrowRight, ChevronLeft, CheckCircle } from 'lucide-react';
+import { Code, Clock, Star, ArrowRight, ChevronLeft, CheckCircle } from 'lucide-react';
+import { InlineLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
 
@@ -174,7 +175,7 @@ export default function ProjectRecommender() {
                 disabled={loading}
               >
                 {loading ? (
-                  <><Loader2 className="spin" size={20} style={{ marginRight: 8 }} /> Analyzing...</>
+                  <><span style={{ marginRight: 8, display: 'inline-flex' }}><ButtonSpinner size={18} /></span> Analyzing...</>
                 ) : (
                   <>Find Projects <ArrowRight size={20} style={{ marginLeft: 8 }} /></>
                 )}
@@ -202,10 +203,11 @@ export default function ProjectRecommender() {
             <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>2. Recommended Projects</h2>
             
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '64px', background: '#fff', border: 'var(--border-brutal)', boxShadow: '8px 8px 0px #000' }}>
-                <Loader2 className="spin" size={48} style={{ margin: '0 auto', color: 'var(--accent)' }} />
-                <h3 style={{ marginTop: 24, fontWeight: 900 }}>Generating your roadmap...</h3>
-              </div>
+              <InlineLoader
+                variant="generate"
+                title="GENERATING YOUR ROADMAP..."
+                subtitle="Finding the best projects matched to your skills"
+              />
             ) : (
               <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
                 {projects.map((proj) => (
@@ -344,7 +346,7 @@ export default function ProjectRecommender() {
                 disabled={loading}
               >
                 {loading ? (
-                  <><Loader2 className="spin" size={20} style={{ marginRight: 8 }} /> Generating...</>
+                  <><span style={{ marginRight: 8, display: 'inline-flex' }}><ButtonSpinner size={18} /></span> Generating...</>
                 ) : (
                   <>Generate Roadmap <ArrowRight size={20} style={{ marginLeft: 8 }} /></>
                 )}

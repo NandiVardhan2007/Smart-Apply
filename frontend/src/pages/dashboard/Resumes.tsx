@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, UploadCloud, Trash2, Loader2 } from 'lucide-react';
+import { FileText, UploadCloud, Trash2 } from 'lucide-react';
+import { SkeletonCard, ButtonSpinner } from '../../components/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
@@ -106,14 +107,14 @@ export default function Resumes() {
           <UploadCloud size={48} className="ats-upload-icon" style={{ color: 'var(--accent-start)' }} />
           <h3>{uploading ? 'Processing AI Extraction...' : 'Drag & drop your resume here'}</h3>
           <p>or click to browse files (PDF only, up to 10MB)</p>
-          {uploading && <div style={{ marginTop: 16 }}><Loader2 size={24} className="spin" style={{ margin: '0 auto', color: 'var(--accent-start)' }} /></div>}
+          {uploading && <div style={{ marginTop: 16 }}><ButtonSpinner size={24} /></div>}
         </div>
       </div>
 
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="settings-card skeleton" style={{ height: 160 }} />
+            <SkeletonCard key={i} height={160} />
           ))}
         </div>
       ) : (
