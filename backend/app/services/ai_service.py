@@ -129,7 +129,10 @@ Return ONLY valid JSON, matching the keys above. No markdown or extra text."""
 
 async def chat_completion(messages: List[Dict[str, str]]) -> str:
     """General AI chatbot for career advice."""
-    client = _get_client()
+    client = AsyncOpenAI(
+        base_url=settings.NVIDIA_BASE_URL,
+        api_key=settings.CHATBOT_API_KEY or settings.NVIDIA_API_KEY,
+    )
     system_msg = {
         "role": "system",
         "content": (
@@ -193,7 +196,10 @@ async def evaluate_interview_answer(
     question: str, answer: str, role: str
 ) -> Dict[str, Any]:
     """Evaluate an interview answer and provide feedback."""
-    client = _get_client()
+    client = AsyncOpenAI(
+        base_url=settings.NVIDIA_BASE_URL,
+        api_key=settings.INTERVIEW_EVAL_API_KEY or settings.NVIDIA_API_KEY,
+    )
     prompt = f"""You are an expert interviewer for a {role} position.
 
 Evaluate the following answer to the interview question.
@@ -236,7 +242,10 @@ Return ONLY valid JSON."""
 
 async def suggest_projects(skills: str, time_commitment: str, interests: str) -> List[Dict[str, Any]]:
     """Suggest software projects based on user skills, time, and interests."""
-    client = _get_client()
+    client = AsyncOpenAI(
+        base_url=settings.NVIDIA_BASE_URL,
+        api_key=settings.PROJECT_FINDER_API_KEY or settings.NVIDIA_API_KEY,
+    )
     prompt = f"""You are an expert software engineering mentor. Based on the following user profile, suggest 3 to 5 realistic software projects they can build for their portfolio.
 
 User Skills: {skills}
@@ -276,7 +285,10 @@ Return a JSON array of project objects. Return ONLY valid JSON, no markdown form
 
 async def generate_project_roadmap(project_details: Dict[str, Any], preferences: Dict[str, str] = None) -> Dict[str, Any]:
     """Generate a step-by-step roadmap for a specific project."""
-    client = _get_client()
+    client = AsyncOpenAI(
+        base_url=settings.NVIDIA_BASE_URL,
+        api_key=settings.PROJECT_FINDER_API_KEY or settings.NVIDIA_API_KEY,
+    )
     
     prefs_text = ""
     if preferences:

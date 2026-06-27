@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     NVIDIA_IMAGE: str = ""
     NVIDIA_IMAGE_MODEL: str = "meta/llama-3.2-90b-vision-instruct"
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+    
+    CHATBOT_API_KEY: str = ""
+    PROJECT_FINDER_API_KEY: str = ""
+    INTERVIEW_EVAL_API_KEY: str = ""
 
     # ── Cloudflare R2 (Storage) ──
     R2_ACCOUNT_ID: str = ""
