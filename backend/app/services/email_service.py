@@ -3,6 +3,8 @@ import string
 from datetime import datetime, timedelta, timezone
 
 import httpx
+import logging
+import urllib.parse
 
 from app.config import settings
 
