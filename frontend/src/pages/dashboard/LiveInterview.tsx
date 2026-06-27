@@ -85,7 +85,7 @@ const AudioVisualizer = ({ stream, isSpeaking, maxHeight = 80 }: { stream?: Medi
       {[0,1,2,3,4].map(i => (
         <div 
           key={i} 
-          ref={el => barsRef.current[i] = el}
+          ref={el => { barsRef.current[i] = el; }}
           style={{
             width: '12px',
             background: 'var(--accent)',
