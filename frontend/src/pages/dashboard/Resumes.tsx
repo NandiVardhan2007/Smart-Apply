@@ -147,7 +147,7 @@ export default function Resumes() {
                     <a href={resume.file_url} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
                       View PDF
                     </a>
-                    <Link to={`/dashboard/tailor-resume/${resume._id}`} className="btn btn-primary btn-sm">
+                    <Link to={`/dashboard/tailor-resume/${btoa(resume._id)}`} className="btn btn-primary btn-sm">
                       Edit PDF
                     </Link>
                   </div>

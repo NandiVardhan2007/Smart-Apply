@@ -5,7 +5,8 @@ import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
 
 export default function ResumeTailor() {
-  const { id } = useParams();
+  const { id: rawId } = useParams();
+  const id = rawId ? atob(rawId) : undefined;
   const navigate = useNavigate();
   const { showToast } = useToast();
   const iframeRef = useRef<HTMLIFrameElement>(null);
