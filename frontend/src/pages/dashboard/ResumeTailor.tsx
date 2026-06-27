@@ -328,6 +328,7 @@ export default function ResumeTailor() {
                 <div style={{ width: '100%', height: '100%' }}>
                   <iframe 
                     ref={iframeRef}
+                    sandbox="allow-scripts"
                     srcDoc={(mode === 'visual' ? htmlCode.replace(/<div class="resume-page">/, '<div class="resume-page" contenteditable="true" style="outline: 2px dashed #000; outline-offset: 4px;">').replace('</body>', `
 <style>
   .sa-floating-toolbar {

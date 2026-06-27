@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # ── App URLs ──
     FRONTEND_URL: str = "https://smartapplies.app"
+    ENVIRONMENT: str = "development"
 
     class Config:
         env_file = ".env"

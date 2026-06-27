@@ -37,9 +37,11 @@ def _email_wrapper(body_html: str) -> str:
     """
 
 
+import secrets
+
 def generate_otp(length: int = 6) -> str:
-    """Generate a random numeric OTP."""
-    return "".join(random.choices(string.digits, k=length))
+    """Generate a secure random numeric OTP."""
+    return "".join(secrets.choice(string.digits) for _ in range(length))
 
 
 def get_otp_expiry(minutes: int = 10) -> datetime:

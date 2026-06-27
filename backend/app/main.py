@@ -6,6 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.rate_limiter import limiter
+from app.config import settings
+
 from app.database import close_db, init_db
 from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, stats
 from app.websockets.auth_ws import router as ws_router
@@ -55,10 +60,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS (for development with Vite dev server) ──
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── CORS ──
+origins = ["https://www.smartapplies.app", "https://smartapplies.app"]
+if settings.ENVIRONMENT != "production":
+    origins.extend(["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000", "https://www.smartapplies.app", "https://smartapplies.app"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,22 +94,4 @@ app.include_router(stats.router)
 # ── WebSocket Router ──
 app.include_router(ws_router, prefix="/api")
 
-# ── Serve frontend static files (production) ──
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
-FRONTEND_DIR = os.path.abspath(FRONTEND_DIR)
-
-if os.path.isdir(FRONTEND_DIR):
-    # Mount static assets (JS, CSS, images)
-    assets_dir = os.path.join(FRONTEND_DIR, "assets")
-    if os.path.isdir(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-
-    @app.get("/{full_path:path}")
-    async def serve_spa(request: Request, full_path: str):
-        """Serve the React SPA — return index.html for all non-API routes."""
-        # Try to serve the exact file first (favicon, manifest, etc.)
-        file_path = os.path.join(FRONTEND_DIR, full_path)
-        if full_path and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        # Fall back to index.html for SPA routing
-        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+# SPA Serving removed - handled by Render separate frontend service

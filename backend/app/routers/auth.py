@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
+from app.rate_limiter import limiter
 
 from app.models.user import User
 from app.schemas.auth import (
@@ -38,7 +39,8 @@ def _user_dict(user: User) -> dict:
 
 
 @router.post("/signup", response_model=MessageResponse)
-async def signup(body: SignupRequest, request: Request):
+@limiter.limit("5/minute")
+async def signup(request: Request, body: SignupRequest):
     """Register a new user and send OTP email."""
     existing = await User.find_one(User.email == body.email)
     if existing:
@@ -73,7 +75,8 @@ async def signup(body: SignupRequest, request: Request):
 
 
 @router.post("/verify-otp", response_model=TokenResponse)
-async def verify_otp(body: OtpVerifyRequest, request: Request):
+@limiter.limit("5/minute")
+async def verify_otp(request: Request, body: OtpVerifyRequest):
     """Verify the 6-digit OTP and activate the account."""
     user = await User.find_one(User.email == body.email)
     if not user:
@@ -112,7 +115,8 @@ async def verify_otp(body: OtpVerifyRequest, request: Request):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, request: Request):
+@limiter.limit("5/minute")
+async def login(request: Request, body: LoginRequest):
     """Authenticate with email and password."""
     user = await User.find_one(User.email == body.email)
     session_id = get_session_id(request)
@@ -157,7 +161,8 @@ async def login(body: LoginRequest, request: Request):
 
 
 @router.post("/forgot-password", response_model=MessageResponse)
-async def forgot_password(body: ForgotPasswordRequest, request: Request):
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, body: ForgotPasswordRequest):
     """Send a password-reset OTP to the user's email."""
     user = await User.find_one(User.email == body.email)
     if not user:
@@ -182,7 +187,8 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
 
 
 @router.post("/reset-password", response_model=MessageResponse)
-async def reset_password(body: ResetPasswordRequest, request: Request):
+@limiter.limit("3/minute")
+async def reset_password(request: Request, body: ResetPasswordRequest):
     """Reset password after verifying OTP."""
     user = await User.find_one(User.email == body.email)
     if not user:
@@ -211,7 +217,8 @@ async def reset_password(body: ResetPasswordRequest, request: Request):
 
 
 @router.post("/resend-otp", response_model=MessageResponse)
-async def resend_otp(body: ForgotPasswordRequest, request: Request):
+@limiter.limit("3/minute")
+async def resend_otp(request: Request, body: ForgotPasswordRequest):
     """Resend OTP to an existing user."""
     user = await User.find_one(User.email == body.email)
     if not user:

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile, Body
+from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile, Body, Request
+from app.rate_limiter import limiter
 from fastapi.responses import Response
 from beanie import PydanticObjectId
 from typing import List, Optional
@@ -22,7 +23,8 @@ class TailorRequest(BaseModel):
     custom_instructions: str = ""
 
 @router.post("/extract-latex")
-async def extract_latex(resume_id: str = Body(..., embed=True), user: User = Depends(get_current_user)):
+@limiter.limit("5/minute")
+async def extract_latex(request: Request, resume_id: str = Body(..., embed=True), user: User = Depends(get_current_user)):
     """Extract LaTeX from a resume PDF using the NVIDIA image model."""
     try:
         resume = await Resume.get(PydanticObjectId(resume_id))
@@ -47,7 +49,8 @@ async def extract_latex(resume_id: str = Body(..., embed=True), user: User = Dep
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/extract-html")
-async def extract_html(resume_id: str = Body(..., embed=True), user: User = Depends(get_current_user)):
+@limiter.limit("5/minute")
+async def extract_html(request: Request, resume_id: str = Body(..., embed=True), user: User = Depends(get_current_user)):
     """Extract HTML from a resume PDF using the NVIDIA image model."""
     try:
         resume = await Resume.get(PydanticObjectId(resume_id))
@@ -76,7 +79,8 @@ class CompileRequest(BaseModel):
     latex_code: str
 
 @router.post("/compile")
-async def compile_latex(req: CompileRequest, user: User = Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def compile_latex(request: Request, req: CompileRequest, user: User = Depends(get_current_user)):
     """Compile LaTeX to PDF and return as bytes."""
     try:
         pdf_bytes = await latex_service.compile_latex_to_pdf(req.latex_code)
@@ -85,7 +89,8 @@ async def compile_latex(req: CompileRequest, user: User = Depends(get_current_us
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/auto-apply")
-async def auto_apply_tailor(req: TailorRequest, user: User = Depends(get_current_user)):
+@limiter.limit("5/minute")
+async def auto_apply_tailor(request: Request, req: TailorRequest, user: User = Depends(get_current_user)):
     """Apply recommendations to a resume, compile, and email the PDF to the user."""
     try:
         resume = await Resume.get(PydanticObjectId(req.resume_id))

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request
+from app.rate_limiter import limiter
 import fitz  # PyMuPDF
 
 from app.middleware.auth_middleware import get_current_user
@@ -23,7 +24,9 @@ from beanie import PydanticObjectId
 from app.models.resume import Resume
 
 @router.post("/ats-check", response_model=AtsCheckResponse)
+@limiter.limit("10/minute")
 async def ats_check(
+    request: Request,
     job_description: str = Form(""),
     resume_id: str = Form(None),
     resume_file: UploadFile = File(None),
@@ -62,7 +65,9 @@ async def ats_check(
     return AtsCheckResponse(**result)
 
 @router.post("/parse-resume", response_model=ResumeParseResponse)
+@limiter.limit("10/minute")
 async def parse_resume(
+    request: Request,
     resume_file: UploadFile = File(...),
     user: User = Depends(get_current_user)
 ):
@@ -88,7 +93,8 @@ async def parse_resume(
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(body: ChatRequest, user: User = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def chat(request: Request, body: ChatRequest, user: User = Depends(get_current_user)):
     """Send messages to the AI career advisor chatbot."""
     messages = [{"role": m.role, "content": m.content} for m in body.messages]
     reply = await ai_service.chat_completion(messages)
@@ -96,8 +102,9 @@ async def chat(body: ChatRequest, user: User = Depends(get_current_user)):
 
 
 @router.post("/interview/question", response_model=InterviewQuestionResponse)
+@limiter.limit("10/minute")
 async def interview_question(
-    body: InterviewQuestionRequest, user: User = Depends(get_current_user)
+    request: Request, body: InterviewQuestionRequest, user: User = Depends(get_current_user)
 ):
     """Generate an AI interview question for the given role and difficulty."""
     result = await ai_service.generate_interview_question(body.role, body.difficulty)
@@ -105,8 +112,9 @@ async def interview_question(
 
 
 @router.post("/interview/evaluate", response_model=InterviewEvaluateResponse)
+@limiter.limit("10/minute")
 async def interview_evaluate(
-    body: InterviewEvaluateRequest, user: User = Depends(get_current_user)
+    request: Request, body: InterviewEvaluateRequest, user: User = Depends(get_current_user)
 ):
     """Evaluate an interview answer and provide AI feedback."""
     result = await ai_service.evaluate_interview_answer(

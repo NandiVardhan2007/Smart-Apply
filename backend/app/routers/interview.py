@@ -2,15 +2,17 @@ import json
 import logging
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
+from app.rate_limiter import limiter
 
 from app.config import settings
 from app.middleware.auth_middleware import get_current_user
 from app.models.interview_report import InterviewReport
 from app.models.user import User
 from app.services.email_service import send_interview_report_email
+from app.services.auth_service import decode_access_token
 
 import openai
 
@@ -23,7 +25,22 @@ router = APIRouter(prefix="/api/interview", tags=["Interview"])
 # ─────────────────────────────────────────────
 
 @router.websocket("/ws/chat")
-async def interview_chat_ws(websocket: WebSocket):
+async def interview_chat_ws(websocket: WebSocket, token: str = None):
+    if not token:
+        await websocket.close(code=1008, reason="Missing token")
+        return
+        
+    payload = decode_access_token(token)
+    if not payload or not payload.get("sub"):
+        await websocket.close(code=1008, reason="Invalid or expired token")
+        return
+
+    email = payload.get("sub")
+    user = await User.find_one(User.email == email)
+    if not user:
+        await websocket.close(code=1008, reason="User not found")
+        return
+
     await websocket.accept()
     
     # Initialize Groq client
@@ -96,10 +113,13 @@ class ReportCreateRequest(BaseModel):
     communication_feedback: str
 
 @router.post("/report")
-async def create_report(request: ReportCreateRequest):
+@limiter.limit("10/minute")
+async def create_report(request: Request, body: ReportCreateRequest, current_user: User = Depends(get_current_user)):
     """Internal endpoint to save a pre-built report directly."""
     try:
-        report = InterviewReport(**request.dict())
+        if body.user_id != str(current_user.id):
+            raise HTTPException(status_code=403, detail="Not authorized")
+        report = InterviewReport(**body.dict())
         await report.insert()
         return {"status": "success", "id": str(report.id)}
     except Exception as e:
@@ -116,9 +136,7 @@ class AnalyzeRequest(BaseModel):
     telemetry: Dict[str, Any]          # {"avg_confidence": float, "blink_count": int}
 
 async def _run_llm_and_save(data: AnalyzeRequest) -> None:
-    nvidia_api_key = (
-        "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"
-    )
+    nvidia_api_key = settings.NVIDIA_API_KEY
     nvidia_model = settings.NVIDIA_MODEL
 
     avg_confidence = data.telemetry.get("avg_confidence", 0.0)
@@ -201,10 +219,13 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
         traceback.print_exc()
 
 @router.post("/analyze", status_code=202)
-async def analyze_interview(request: AnalyzeRequest, background_tasks: BackgroundTasks):
-    logger.info(f"Accepted raw interview data for room {request.room_name}, queuing analysis...")
-    background_tasks.add_task(_run_llm_and_save, request)
-    return {"status": "accepted", "room_name": request.room_name}
+@limiter.limit("5/minute")
+async def analyze_interview(request: Request, body: AnalyzeRequest, background_tasks: BackgroundTasks, current_user: User = Depends(get_current_user)):
+    if body.user_id != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    logger.info(f"Accepted raw interview data for room {body.room_name}, queuing analysis...")
+    background_tasks.add_task(_run_llm_and_save, body)
+    return {"status": "accepted", "room_name": body.room_name}
 
 # ─────────────────────────────────────────────
 # User-facing GET endpoints
