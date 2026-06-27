@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 
@@ -17,6 +18,7 @@ import Onboarding from './pages/Onboarding';
 
 // Dashboard Pages
 import Profile from './pages/dashboard/Profile';
+import Home from './pages/dashboard/Home';
 import Resumes from './pages/dashboard/Resumes';
 import ResumeTailor from './pages/dashboard/ResumeTailor';
 import AtsChecker from './pages/dashboard/AtsChecker';
@@ -28,6 +30,12 @@ import Settings from './pages/dashboard/Settings';
 import PortfolioGenerator from './pages/dashboard/PortfolioGenerator';
 
 export default function App() {
+  useEffect(() => {
+    if (localStorage.getItem('sa_theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, []);
+
   return (
     <Router>
       <ToastProvider>
@@ -60,7 +68,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard/profile" replace />} />
+              <Route index element={<Home />} />
               <Route path="profile" element={<Profile />} />
               <Route path="resumes" element={<Resumes />} />
               <Route path="tailor-resume/:id" element={<ResumeTailor />} />

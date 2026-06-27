@@ -7,10 +7,11 @@ import {
   MessageSquare,
   Mic,
   LogOut,
-  X,
   FileText,
   Lightbulb,
   Globe,
+  Home,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../styles/dashboard.css';
@@ -21,6 +22,7 @@ interface SidebarProps {
 }
 
 const navItemsProfile = [
+  { to: '/dashboard', icon: Home, label: 'Home', color: '#facc15', end: true },
   { to: '/dashboard/profile', icon: User, label: 'Profile', color: '#2F8FFF' },
   { to: '/dashboard/resumes', icon: FileText, label: 'My Resumes', color: '#FF4757' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings', color: '#636e72' },
@@ -84,6 +86,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? 'active' : ''}`
               }

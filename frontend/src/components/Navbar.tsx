@@ -45,7 +45,8 @@ function Clock() {
 
 const HOME_SECTIONS = [
   { label: 'Features', href: '/#features' },
-  { label: 'Stats', href: '/#stats' },
+  { label: 'Testimonials', href: '/#testimonials' },
+  { label: 'Pricing', href: '/#pricing' },
 ];
 
 export default function Navbar() {

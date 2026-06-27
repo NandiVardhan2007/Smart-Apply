@@ -24,6 +24,34 @@ const features = [
     icon: Shield,
     title: 'Secure & Private',
     desc: 'Your data is encrypted and stored securely. We never share your personal information or resumes with third parties.',
+  },
+  {
+    icon: Zap,
+    title: 'Portfolio Generator',
+    desc: 'Turn your profile into a 1-click single page portfolio website instantly.',
+  },
+  {
+    icon: Bot,
+    title: 'Project Finder',
+    desc: 'Get AI-recommended side projects that match your exact skillset to build your resume.',
+  }
+];
+
+const testimonials = [
+  {
+    quote: "The ATS Checker is magic. It pointed out 5 missing keywords from the job description, and I got an interview the next day.",
+    author: "Sarah J.",
+    role: "Software Engineer"
+  },
+  {
+    quote: "Practicing with the live AI interviewer helped me get over my nerves. It's like having a FAANG recruiter in your browser.",
+    author: "David L.",
+    role: "Data Scientist"
+  },
+  {
+    quote: "I generated my portfolio in literally one click and hosted it on GitHub Pages. Easiest web dev I've never done.",
+    author: "Elena M.",
+    role: "UX Designer"
   }
 ];
 
@@ -285,6 +313,67 @@ export default function Landing() {
             <TiltFeatureCard key={f.title} feature={f} index={i} />
           ))}
         </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="testimonials-section" id="testimonials" style={{ padding: '120px 24px', maxWidth: '1280px', margin: '0 auto', background: 'var(--bg-primary)' }}>
+        <div className="section-header">
+          <h2 style={{ fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: '24px' }}>
+            Wall of Love.
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {testimonials.map((t, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              viewport={{ once: true }}
+              className="testimonial-card"
+            >
+              <div style={{ fontSize: '4rem', lineHeight: '0', color: 'var(--accent)', marginBottom: '24px' }}>"</div>
+              <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', fontStyle: 'italic' }}>{t.quote}</p>
+              <div>
+                <strong style={{ display: 'block', fontSize: '1.2rem', textTransform: 'uppercase', fontWeight: 900 }}>{t.author}</strong>
+                <span style={{ color: 'var(--text-muted)' }}>{t.role}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="pricing-section" id="pricing" style={{ padding: '100px 24px', borderTop: 'var(--border-brutal)', borderBottom: 'var(--border-brutal)', background: 'var(--accent-pink)' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', background: '#fff', border: 'var(--border-brutal)', boxShadow: '8px 8px 0px #000', padding: '40px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '3rem', fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>Free Forever</h2>
+            <p style={{ fontSize: '1.2rem', fontWeight: 600, marginTop: '8px' }}>Because job hunting is hard enough.</p>
+          </div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {['Unlimited ATS Checks', 'Unlimited AI Mock Interviews', '1-Click Portfolios', 'Project Finder', 'Cloud Resume Storage'].map(f => (
+              <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.1rem', fontWeight: 600 }}>
+                <div style={{ background: 'var(--accent)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #000' }}>✓</div> {f}
+              </li>
+            ))}
+          </ul>
+          <Link to="/signup" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '20px', fontSize: '1.2rem' }}>
+            GET STARTED
+          </Link>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section style={{ padding: '120px 24px', textAlign: 'center', background: 'var(--accent)', borderBottom: 'var(--border-brutal)' }}>
+        <h2 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, textTransform: 'uppercase', marginBottom: '24px', color: '#000' }}>
+          Ready to land your dream job?
+        </h2>
+        <p style={{ fontSize: '1.2rem', fontWeight: 600, color: '#000', marginBottom: '40px', maxWidth: '600px', margin: '0 auto 40px' }}>
+          Join thousands of other job seekers using Smart Apply to build their careers.
+        </p>
+        <Link to="/signup" className="btn" style={{ background: '#000', color: '#fff', padding: '20px 40px', fontSize: '1.5rem', border: 'none', boxShadow: '8px 8px 0px var(--accent-pink)' }}>
+          Start For Free
+        </Link>
       </section>
 
       {/* Footer */}

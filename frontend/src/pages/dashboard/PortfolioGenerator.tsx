@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Globe, Download, RefreshCw, Palette } from 'lucide-react';
+import { Globe, Download, RefreshCw, Palette, Copy, Check } from 'lucide-react';
 import { InlineLoader } from '../../components/LoadingSpinner';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
@@ -11,6 +11,7 @@ export default function PortfolioGenerator() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Form State
   const [theme, setTheme] = useState('Neo-Brutalism');
@@ -56,6 +57,18 @@ export default function PortfolioGenerator() {
     a.download = `${user?.full_name?.replace(/\s+/g, '_') || 'My'}_Portfolio.html`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCopy = async () => {
+    if (!htmlContent) return;
+    try {
+      await navigator.clipboard.writeText(htmlContent);
+      setCopied(true);
+      showToast('success', 'HTML Copied to clipboard!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      showToast('error', 'Failed to copy HTML');
+    }
   };
 
   return (
@@ -143,8 +156,12 @@ export default function PortfolioGenerator() {
               <button onClick={() => setHtmlContent(null)} className="btn" style={{ background: '#fff' }}>
                 <RefreshCw size={20} style={{ marginRight: 8 }} /> Try Another Theme
               </button>
+              <button onClick={handleCopy} className="btn" style={{ background: '#60a5fa', color: '#000' }}>
+                {copied ? <Check size={20} style={{ marginRight: 8 }} /> : <Copy size={20} style={{ marginRight: 8 }} />}
+                {copied ? 'Copied!' : 'Copy HTML'}
+              </button>
               <button onClick={handleDownload} className="btn btn-primary">
-                <Download size={20} style={{ marginRight: 8 }} /> Download HTML
+                <Download size={20} style={{ marginRight: 8 }} /> Download
               </button>
             </div>
           </div>

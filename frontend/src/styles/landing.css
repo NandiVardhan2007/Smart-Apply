@@ -358,3 +358,13 @@
     padding: 40px 24px;
   }
 }
+
+.testimonial-card {
+  background: var(--bg-card);
+  border: var(--border-brutal);
+  padding: 32px;
+  box-shadow: var(--shadow-brutal);
+  display: flex;
+  flex-direction: column;
+}
+

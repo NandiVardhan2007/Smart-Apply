@@ -13,6 +13,7 @@ export default function Settings() {
   const [newPw, setNewPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('sa_theme') === 'dark');
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -116,6 +117,26 @@ export default function Settings() {
                   });
                 } catch(err) {
                   // Ignore backend failure if field doesn't exist
+                }
+              }} />
+              <span className="slider"></span>
+            </label>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Dark Mode</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Use a darker theme for the dashboard</div>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" checked={darkMode} onChange={(e) => {
+                const val = e.target.checked;
+                setDarkMode(val);
+                if (val) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                  localStorage.setItem('sa_theme', 'dark');
+                } else {
+                  document.documentElement.removeAttribute('data-theme');
+                  localStorage.removeItem('sa_theme');
                 }
               }} />
               <span className="slider"></span>
