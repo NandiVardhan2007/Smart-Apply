@@ -256,7 +256,7 @@ export default function LiveInterview() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         {!isActive ? (
           <div className="settings-card" style={{ textAlign: 'center', maxWidth: 500, width: '100%' }}>
-            <Video size={48} style={{ color: 'var(--accent-start)', margin: '0 auto 1rem' }} />
+            <Video size={48} style={{ color: 'var(--accent)', margin: '0 auto 1rem' }} />
             <h2 style={{ marginBottom: '1rem' }}>Ready for your video interview?</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
               You are about to start a real-time video interview. Ensure your camera and microphone are connected and you are in a well-lit, quiet environment.
@@ -297,7 +297,7 @@ export default function LiveInterview() {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ marginBottom: '2rem', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {agentSpeaking ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '100px' }}>
                        {[1,2,3,4,5].map(i => (
                          <div key={i} className="speaking-bar" />
                        ))}
@@ -309,7 +309,7 @@ export default function LiveInterview() {
                        <div className="dot-pulse" style={{ animationDelay: '0.4s' }} />
                     </div>
                   ) : (
-                    <div style={{ width: '100px', height: '4px', background: 'var(--border-color)', borderRadius: '2px' }} />
+                    <div className="listening-bar" />
                   )}
                 </div>
                 <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>
@@ -377,29 +377,44 @@ export default function LiveInterview() {
         @keyframes spin { to { transform: rotate(360deg); } }
         .speaking-bar {
           width: 12px;
-          background: var(--accent-start);
+          background: var(--accent);
+          border: 2px solid #000;
           border-radius: 6px;
           animation: bounce 1s ease-in-out infinite;
+          box-shadow: 2px 2px 0px 0px #000;
         }
-        .speaking-bar:nth-child(1) { animation-delay: 0.1s; height: 60px; }
-        .speaking-bar:nth-child(2) { animation-delay: 0.2s; height: 80px; }
-        .speaking-bar:nth-child(3) { animation-delay: 0.3s; height: 100px; }
-        .speaking-bar:nth-child(4) { animation-delay: 0.4s; height: 80px; }
-        .speaking-bar:nth-child(5) { animation-delay: 0.5s; height: 60px; }
+        .speaking-bar:nth-child(1) { animation-delay: 0.1s; height: 40px; }
+        .speaking-bar:nth-child(2) { animation-delay: 0.2s; height: 60px; }
+        .speaking-bar:nth-child(3) { animation-delay: 0.3s; height: 80px; }
+        .speaking-bar:nth-child(4) { animation-delay: 0.4s; height: 60px; }
+        .speaking-bar:nth-child(5) { animation-delay: 0.5s; height: 40px; }
         @keyframes bounce {
-          0%, 100% { transform: scaleY(0.3); }
-          50% { transform: scaleY(1); }
+          0%, 100% { transform: scaleY(0.5); }
+          50% { transform: scaleY(1.1); }
         }
         .dot-pulse {
-          width: 12px;
-          height: 12px;
-          background: var(--text-secondary);
+          width: 16px;
+          height: 16px;
+          background: #000;
           border-radius: 50%;
           animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse {
-          0%, 100% { transform: scale(0.8); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 1; }
+          0%, 100% { transform: scale(0.6); opacity: 0.5; }
+          50% { transform: scale(1); opacity: 1; }
+        }
+        .listening-bar {
+          width: 100px;
+          height: 6px;
+          background: var(--accent);
+          border: 2px solid #000;
+          border-radius: 3px;
+          animation: listenPulse 2s infinite ease-in-out;
+          box-shadow: 4px 4px 0px 0px #000;
+        }
+        @keyframes listenPulse {
+          0%, 100% { width: 100px; opacity: 1; }
+          50% { width: 140px; opacity: 0.8; }
         }
       `}</style>
     </div>
