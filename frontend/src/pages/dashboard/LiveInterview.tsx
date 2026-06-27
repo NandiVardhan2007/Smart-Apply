@@ -176,22 +176,23 @@ export default function LiveInterview() {
     utterance.onstart = () => {
       setAgentSpeaking(true);
       // Ensure we are not recording while agent speaks
-      if (recognitionRef.current && isRecording) {
-        recognitionRef.current.abort();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch(e){}
+        setIsRecording(false);
       }
     };
     
     utterance.onend = () => {
       setAgentSpeaking(false);
       // Auto-start listening after agent finishes speaking
-      startListening();
+      setTimeout(startListening, 100); // small delay to avoid capturing the end of the tts
     };
     
     window.speechSynthesis.speak(utterance);
   };
 
   const startListening = () => {
-    if (recognitionRef.current && !agentSpeaking && status === 'connected') {
+    if (recognitionRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
       try {
         recognitionRef.current.start();
         setIsRecording(true);
@@ -292,18 +293,18 @@ export default function LiveInterview() {
               
               {/* Agent Visualizer */}
               <div style={{ textAlign: 'center' }}>
-                <div style={{ marginBottom: '2rem', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ marginBottom: '2rem', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {agentSpeaking ? (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                        {[1,2,3,4,5].map(i => (
-                         <div key={i} style={{ 
-                           width: '12px', 
-                           height: `${Math.max(20, Math.random() * 80)}px`, 
-                           background: 'var(--accent-start)', 
-                           borderRadius: '6px',
-                           transition: 'height 0.1s ease'
-                         }} />
+                         <div key={i} className="speaking-bar" />
                        ))}
+                    </div>
+                  ) : status === 'waiting' ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                       <div className="dot-pulse" style={{ animationDelay: '0s' }} />
+                       <div className="dot-pulse" style={{ animationDelay: '0.2s' }} />
+                       <div className="dot-pulse" style={{ animationDelay: '0.4s' }} />
                     </div>
                   ) : (
                     <div style={{ width: '100px', height: '4px', background: 'var(--border-color)', borderRadius: '2px' }} />
@@ -315,6 +316,11 @@ export default function LiveInterview() {
                    agentSpeaking ? 'Agent is speaking...' : 
                    status === 'waiting' ? 'Agent is thinking...' : 'Agent is listening...'}
                 </h3>
+                {transcript.length > 0 && transcript[transcript.length - 1].role === 'user' && (
+                  <p style={{ color: 'var(--text-secondary)', marginTop: '1rem', fontStyle: 'italic' }}>
+                    You: "{transcript[transcript.length - 1].content}"
+                  </p>
+                )}
               </div>
 
               {/* Local Video */}
@@ -364,7 +370,36 @@ export default function LiveInterview() {
           </div>
         )}
       </div>
-      <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        .spin { animation: spin 1s linear infinite; } 
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .speaking-bar {
+          width: 12px;
+          background: var(--accent-start);
+          border-radius: 6px;
+          animation: bounce 1s ease-in-out infinite;
+        }
+        .speaking-bar:nth-child(1) { animation-delay: 0.1s; height: 60px; }
+        .speaking-bar:nth-child(2) { animation-delay: 0.2s; height: 80px; }
+        .speaking-bar:nth-child(3) { animation-delay: 0.3s; height: 100px; }
+        .speaking-bar:nth-child(4) { animation-delay: 0.4s; height: 80px; }
+        .speaking-bar:nth-child(5) { animation-delay: 0.5s; height: 60px; }
+        @keyframes bounce {
+          0%, 100% { transform: scaleY(0.3); }
+          50% { transform: scaleY(1); }
+        }
+        .dot-pulse {
+          width: 12px;
+          height: 12px;
+          background: var(--text-secondary);
+          border-radius: 50%;
+          animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(0.8); opacity: 0.5; }
+          50% { transform: scale(1.2); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
