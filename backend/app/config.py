@@ -33,10 +33,8 @@ class Settings(BaseSettings):
     R2_BUCKET_NAME: str = "smartapply-uploads"
     R2_PUBLIC_URL: Optional[str] = None
 
-    # ── LiveKit (Voice Interview) ──
-    LIVEKIT_URL: str = ""
-    LIVEKIT_API_KEY: str = ""
-    LIVEKIT_API_SECRET: str = ""
+    # ── Groq (Voice Interview) ──
+    GROQ_API_KEY: str = ""
 
     # ── App URLs ──
     FRONTEND_URL: str = "http://localhost:5173"
