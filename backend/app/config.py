@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
 
     # ── App URLs ──
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "https://smartapplies.app"
 
     class Config:
         env_file = ".env"

@@ -29,6 +29,7 @@ export default function LiveInterview() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const recognitionRef = useRef<any>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   
   const { modelsLoaded, getTelemetrySummary } = useFaceAnalyzer(videoRef, isActive);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -38,7 +39,7 @@ export default function LiveInterview() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = false;
       recognition.lang = 'en-US';
       
@@ -162,6 +163,7 @@ export default function LiveInterview() {
     window.speechSynthesis.cancel(); // Stop any ongoing speech
     
     const utterance = new SpeechSynthesisUtterance(text);
+    utteranceRef.current = utterance;
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     
