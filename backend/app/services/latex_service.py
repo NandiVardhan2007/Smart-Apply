@@ -153,7 +153,7 @@ async def compile_latex_to_pdf(latex_code: str) -> bytes:
     url = "https://latex.ytotech.com/builds/sync"
     
     payload = {
-        "compiler": "pdflatex",
+        "compiler": "xelatex",
         "resources": [
             {
                 "main": True,
