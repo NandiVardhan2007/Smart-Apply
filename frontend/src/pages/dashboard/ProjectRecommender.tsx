@@ -240,7 +240,15 @@ export default function ProjectRecommender() {
 
                     <button 
                       className="btn btn-primary" 
-                      style={{ width: '100%', justifyContent: 'center' }}
+                      style={{ 
+                        width: '100%', 
+                        justifyContent: 'center', 
+                        fontSize: '0.85rem', 
+                        padding: '12px 8px', 
+                        whiteSpace: 'normal', 
+                        textAlign: 'center',
+                        lineHeight: 1.4
+                      }}
                       onClick={() => handlePrepareRoadmap(proj)}
                     >
                       Customize & Generate Roadmap

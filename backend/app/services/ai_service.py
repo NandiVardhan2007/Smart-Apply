@@ -279,10 +279,7 @@ Return a JSON array of project objects. Return ONLY valid JSON, no markdown form
 
 async def generate_project_roadmap(project_details: Dict[str, Any], preferences: Dict[str, str] = None) -> Dict[str, Any]:
     """Generate a step-by-step roadmap for a specific project."""
-    client = AsyncOpenAI(
-        base_url=settings.NVIDIA_BASE_URL,
-        api_key=settings.PROJECT_FINDER_API_KEY or settings.NVIDIA_API_KEY,
-    )
+    client = _get_client()
     
     prefs_text = ""
     if preferences:
