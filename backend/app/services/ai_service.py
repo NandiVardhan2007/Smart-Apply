@@ -387,6 +387,12 @@ async def generate_portfolio_html(user_data: Dict[str, Any], theme: str, custom_
 - LinkedIn: {user_data.get('linkedin', '#')}
 - GitHub: {user_data.get('github', '#')}
 
+## FULL RESUME DATA
+(Extract the user's actual skills, experience, and projects from the raw text below and incorporate them into the website. Do not hallucinate projects if real ones are provided here!)
+---
+{user_data.get('extracted_text', '')}
+---
+
 ## REQUESTED THEME: {theme}
 (Apply the following visual rules based strictly on this theme):
 - **Neo-Brutalism**: Hard black borders (3px-4px), solid bold colors (yellow #F1C40F, pink #FF6B6B, blue #2F8FFF), heavy sharp drop shadows (e.g. `box-shadow: 8px 8px 0px #000`), bold uppercase typography (import 'Space Grotesk' from Google Fonts), asymmetric layouts.
@@ -417,7 +423,7 @@ async def generate_portfolio_html(user_data: Dict[str, Any], theme: str, custom_
 """
 
     completion = await client.chat.completions.create(
-        model=settings.NVIDIA_MODEL,
+        model="meta/llama-3.1-405b-instruct",
         messages=[
             {"role": "system", "content": "You are a master frontend developer. You only output raw HTML."},
             {"role": "user", "content": prompt}
