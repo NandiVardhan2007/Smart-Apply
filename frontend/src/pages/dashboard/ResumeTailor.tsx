@@ -21,6 +21,7 @@ export default function ResumeTailor() {
   const [latexFetched, setLatexFetched] = useState(false);
   const [htmlFetched, setHtmlFetched] = useState(false);
   const [compiling, setCompiling] = useState(false);
+  const [compileError, setCompileError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
@@ -79,6 +80,7 @@ export default function ResumeTailor() {
   const handleCompile = async (codeToCompile: string = latexCode) => {
     if (!codeToCompile.trim()) return;
     setCompiling(true);
+    setCompileError(null);
     try {
       const res = await fetch(`/api/tailor/compile`, {
         method: 'POST',
@@ -94,11 +96,15 @@ export default function ResumeTailor() {
         const url = URL.createObjectURL(blob);
         setPdfUrl(url);
       } else {
-        const err = await res.json();
-        showToast('error', err.detail || 'Compilation failed');
+        try {
+          const err = await res.json();
+          setCompileError(err.detail || 'Compilation failed. Please check your LaTeX syntax.');
+        } catch(e) {
+          setCompileError('Compilation failed with a server error.');
+        }
       }
-    } catch (err) {
-      showToast('error', 'Failed to compile');
+    } catch (err: any) {
+      setCompileError(err.message || 'Network error occurred while compiling.');
     } finally {
       setCompiling(false);
     }
@@ -276,7 +282,12 @@ export default function ResumeTailor() {
         {/* Preview Pane */}
         <div style={{ flex: 1, background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
           {mode === 'latex' ? (
-            pdfUrl ? (
+            compileError ? (
+              <div style={{ flex: 1, padding: '2rem', overflow: 'auto', background: '#1e1e1e', color: '#ff5f56' }}>
+                <h3 style={{ marginTop: 0 }}>Compilation Error</h3>
+                <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontFamily: 'monospace', fontSize: '0.9rem' }}>{compileError}</pre>
+              </div>
+            ) : pdfUrl ? (
               <iframe src={pdfUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="PDF Preview" />
             ) : (
               <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
