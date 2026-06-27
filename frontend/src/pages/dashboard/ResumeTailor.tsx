@@ -82,8 +82,9 @@ export default function ResumeTailor() {
     if (!codeToCompile.trim()) return;
     setCompiling(true);
     setCompileError(null);
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
     try {
-      const res = await fetch(`/api/tailor/compile`, {
+      const res = await fetch(`${baseUrl}/tailor/compile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
