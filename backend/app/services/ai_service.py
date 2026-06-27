@@ -196,10 +196,7 @@ async def evaluate_interview_answer(
     question: str, answer: str, role: str
 ) -> Dict[str, Any]:
     """Evaluate an interview answer and provide feedback."""
-    client = AsyncOpenAI(
-        base_url=settings.NVIDIA_BASE_URL,
-        api_key=settings.INTERVIEW_EVAL_API_KEY or settings.NVIDIA_API_KEY,
-    )
+    client = _get_client()
     prompt = f"""You are an expert interviewer for a {role} position.
 
 Evaluate the following answer to the interview question.
@@ -242,10 +239,7 @@ Return ONLY valid JSON."""
 
 async def suggest_projects(skills: str, time_commitment: str, interests: str) -> List[Dict[str, Any]]:
     """Suggest software projects based on user skills, time, and interests."""
-    client = AsyncOpenAI(
-        base_url=settings.NVIDIA_BASE_URL,
-        api_key=settings.PROJECT_FINDER_API_KEY or settings.NVIDIA_API_KEY,
-    )
+    client = _get_client()
     prompt = f"""You are an expert software engineering mentor. Based on the following user profile, suggest 3 to 5 realistic software projects they can build for their portfolio.
 
 User Skills: {skills}
