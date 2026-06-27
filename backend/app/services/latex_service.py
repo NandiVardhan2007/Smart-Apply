@@ -107,6 +107,7 @@ CRITICAL RULES FOR CONTENT:
 4. For Projects, Skills, Certifications, and Achievements, do NOT use \\resumeSubheading. Instead, use a simple \\begin{{itemize}}[leftmargin=0.15in] and use \\resumeItem{{text}} for each item.
 5. Match the colors (e.g., \\color{{airforceblue}} for section headers).
 6. CRITICAL: You MUST escape all LaTeX special characters like &, %, $, _, # by preceding them with a backslash (e.g. \\&, \\%, \\$, \\_, \\#) inside text content.
+7. CRITICAL: Do NOT forget the contact information at the very top (under the name). You MUST include the email, phone number, LinkedIn, GitHub, and Portfolio links if they exist in the image. Format them nicely using \\href{{URL}}{{Text}} separated by | or bullets.
 {urls_context}"""
                     },
                     {

@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SMART APPLY â€” Premium Loading Components  v2
+   SMART APPLY — Premium Loading Components  v2
    Neo-Brutalist Â· Yellow accent Â· Hard shadows Â· Rich motion
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
@@ -17,7 +17,7 @@ export default function LoadingSpinner({ size = 40 }: { size?: number }) {
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ORBIT SPINNER
-   A square with two orbiting dots â€” premium feel
+   A square with two orbiting dots — premium feel
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function OrbitSpinner({ size = 44 }: { size?: number }) {
   const r = size / 2;
@@ -64,7 +64,7 @@ export function BrutalSpinner({ size = 40 }: { size?: number }) {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   BUTTON SPINNER  â€” square, crisp, minimal
+   BUTTON SPINNER  — square, crisp, minimal
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function ButtonSpinner({ size = 16 }: { size?: number }) {
   return (
@@ -82,7 +82,7 @@ export function ButtonSpinner({ size = 16 }: { size?: number }) {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   BOUNCING DOTS  â€” 3 squares with staggered bounce
+   BOUNCING DOTS  — 3 squares with staggered bounce
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function BouncingDots({ size = 10 }: { size?: number }) {
   return (
@@ -120,10 +120,10 @@ const VARIANT_CONFIG = {
       'Scoring against job description',
     ],
     messages: [
-      'Reading your resume carefullyâ€¦',
-      'Matching keywords to job requirementsâ€¦',
-      'Detecting ATS-friendly formattingâ€¦',
-      'Calculating compatibility scoreâ€¦',
+      'Reading your resume carefully...',
+      'Matching keywords to job requirements...',
+      'Detecting ATS-friendly formatting...',
+      'Calculating compatibility score...',
     ],
   },
   generate: {
@@ -139,10 +139,10 @@ const VARIANT_CONFIG = {
       'Compiling final recommendations',
     ],
     messages: [
-      'Scanning your skill setâ€¦',
-      'Finding perfect project matchesâ€¦',
-      'Ranking by market demandâ€¦',
-      'Finalizing your roadmapâ€¦',
+      'Scanning your skill set...',
+      'Finding perfect project matches...',
+      'Ranking by market demand...',
+      'Finalizing your roadmap...',
     ],
   },
   extract: {
@@ -158,10 +158,10 @@ const VARIANT_CONFIG = {
       'Formatting editable output',
     ],
     messages: [
-      'Uploading your resumeâ€¦',
-      'Vision AI is reading the fileâ€¦',
-      'Extracting text & formattingâ€¦',
-      'Preparing the editorâ€¦',
+      'Uploading your resume...',
+      'Vision AI is reading the file...',
+      'Extracting text & formatting...',
+      'Preparing the editor...',
     ],
   },
   default: {
@@ -172,10 +172,10 @@ const VARIANT_CONFIG = {
     bar2: '#fbbf24',
     steps: ['Initializing AI model', 'Processing request', 'Generating output', 'Finalizing result'],
     messages: [
-      'Starting AI engineâ€¦',
-      'Processing your requestâ€¦',
-      'Generating smart outputâ€¦',
-      'Almost thereâ€¦',
+      'Starting AI engine...',
+      'Processing your request...',
+      'Generating smart output...',
+      'Almost there...',
     ],
   },
 } as const;
@@ -193,7 +193,7 @@ function useCyclingText(messages: readonly string[], intervalMs = 2200) {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PAGE LOADER  â€” full-screen premium overlay
+   PAGE LOADER  — full-screen premium overlay
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 interface PageLoaderProps {
   show: boolean;
@@ -463,7 +463,7 @@ function PremiumStepItem({ index, label, total, accentColor }: {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   INLINE LOADER  â€” card-level, dramatic scan effect
+   INLINE LOADER  — card-level, dramatic scan effect
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 interface InlineLoaderProps {
   title?: string;
@@ -595,7 +595,7 @@ export function InlineLoader({ title, subtitle, variant = 'default' }: InlineLoa
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SKELETON CARD  â€” diagonal shimmer + structured placeholders
+   SKELETON CARD  — diagonal shimmer + structured placeholders
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function SkeletonCard({ height = 160 }: { height?: number }) {
   return (
