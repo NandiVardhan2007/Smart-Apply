@@ -10,6 +10,7 @@ import {
   X,
   FileText,
   Lightbulb,
+  Globe,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../styles/dashboard.css';
@@ -30,6 +31,7 @@ const navItemsAi = [
   { to: '/dashboard/ai-chatbot', icon: MessageSquare, label: 'AI Chatbot', color: '#9B59B6' },
   { to: '/dashboard/live-interview', icon: Mic, label: 'Live Interview', color: '#FF9F43' },
   { to: '/dashboard/project-recommender', icon: Lightbulb, label: 'Project Finder', color: '#F1C40F' },
+  { to: '/dashboard/portfolio-generator', icon: Globe, label: 'Portfolio Gen', color: '#FF6B6B' },
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {

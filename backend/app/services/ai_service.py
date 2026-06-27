@@ -372,3 +372,64 @@ Instructions:
         content = content[:-3]
         
     return content.strip()
+
+
+async def generate_portfolio_html(user_data: Dict[str, Any], theme: str, custom_instructions: str = "") -> str:
+    """Generate a full HTML/CSS portfolio website based on user data and theme."""
+    client = _get_client()
+    
+    prompt = f"""You are an elite frontend developer and UI/UX designer. Your task is to generate a breathtaking, fully responsive, single-page portfolio website.
+
+## USER PROFILE DATA
+- Name: {user_data.get('full_name')}
+- Bio: {user_data.get('bio')}
+- Education: {user_data.get('education')}
+- LinkedIn: {user_data.get('linkedin')}
+- GitHub: {user_data.get('github')}
+
+## REQUESTED THEME: {theme}
+(Apply the following visual rules based strictly on this theme):
+- **Neo-Brutalism**: Hard black borders (3px-4px), solid bold colors (yellow #F1C40F, pink #FF6B6B, blue #2F8FFF), heavy sharp drop shadows (e.g. `box-shadow: 8px 8px 0px #000`), bold uppercase typography (import 'Space Grotesk' from Google Fonts).
+- **Minimalist**: Maximum whitespace, very subtle grays (#FAFAFA, #111), clean typography (import 'Inter' from Google Fonts), no borders, delicate hover opacities, highly elegant and spacious layout.
+- **Cyberpunk**: Dark background (#0d0d0d), neon accents (cyan #00ffcc, magenta #ff00ff), monospace fonts (import 'Fira Code'), glowing drop shadows (`box-shadow: 0 0 10px #00ffcc`), glitch hover effects if possible.
+- **Clean Professional**: Standard modern enterprise styling, soft diffuse shadows (`box-shadow: 0 4px 20px rgba(0,0,0,0.05)`), rounded corners (8px), primary blue tones (#2563EB), highly readable (import 'Roboto').
+- **Retro 90s Web**: Web-safe colors, tiled background patterns or gray backgrounds, classic fonts (Times New Roman or Comic Sans), HTML table-like borders, blue underlined links, marquee tags for bio, vintage nostalgia.
+- **Dark Mode Hacker**: Pitch black background (#000000), terminal green text (#00ff00), monospace font (Courier New), blinking cursor effects, command-line aesthetic, very stark contrast.
+- **Glassmorphism**: Beautiful colorful gradient background (e.g., mesh gradients), translucent frosted-glass panels (`background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);`), white borders (`border: 1px solid rgba(255,255,255,0.2)`), soft elegant text.
+- **Y2K Aesthetic**: Metallic gradients, chunky rounded borders, bright pinks and purples (#FF00FF, #00FFFF), early 2000s tech vibe, bubbly fonts (import 'Varela Round' or similar), fun cursor trails or hover effects.
+
+## CUSTOM INSTRUCTIONS
+{custom_instructions}
+
+## STRICT REQUIREMENTS
+1. Output exactly ONE file. It must contain the HTML structure and all CSS embedded within a <style> block.
+2. Structure the site logically: 
+   - A striking Hero Section containing the Name and a headline.
+   - An About Section containing the Bio.
+   - An Education/Experience Section.
+   - A Contact/Links Section with styled buttons for GitHub and LinkedIn.
+3. Import appropriate Google Fonts at the top of your CSS based on the chosen theme.
+4. CSS Must Include: Smooth hover transitions (`transition: all 0.3s ease`), responsive media queries (stack columns on mobile), CSS variables for colors, and modern layout techniques (Flexbox/Grid).
+5. Output ONLY the raw HTML string. Do NOT use markdown code blocks (no ```html ... ```). Start exactly with `<!DOCTYPE html>` and end with `</html>`. Do not write any conversational text.
+"""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.6,
+        max_tokens=4000,
+    )
+
+    content = completion.choices[0].message.content or "<html><body><h1>Error generating portfolio.</h1></body></html>"
+    content = content.strip()
+    
+    # Strip markdown block formatting if the LLM adds it anyway
+    if content.startswith("```html"):
+        content = content[7:]
+    elif content.startswith("```"):
+        content = content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+        
+    return content.strip()
+

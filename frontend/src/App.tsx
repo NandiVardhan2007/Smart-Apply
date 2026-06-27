@@ -25,6 +25,7 @@ import ProjectRecommender from './pages/dashboard/ProjectRecommender';
 import LiveInterview from './pages/dashboard/LiveInterview';
 import InterviewReport from './pages/dashboard/InterviewReport';
 import Settings from './pages/dashboard/Settings';
+import PortfolioGenerator from './pages/dashboard/PortfolioGenerator';
 
 export default function App() {
   return (
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="project-recommender" element={<ProjectRecommender />} />
               <Route path="live-interview" element={<LiveInterview />} />
               <Route path="live-interview/report/:roomName" element={<InterviewReport />} />
+              <Route path="portfolio-generator" element={<PortfolioGenerator />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.database import close_db, init_db
-from app.routers import ai, auth, upload, user, resume, projects, interview, tailor
+from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, portfolio
 from app.websockets.auth_ws import router as ws_router
 
 
@@ -77,6 +77,7 @@ app.include_router(resume.router)
 app.include_router(projects.router)
 app.include_router(interview.router)
 app.include_router(tailor.router)
+app.include_router(portfolio.router)
 
 # ── WebSocket Router ──
 app.include_router(ws_router, prefix="/api")
