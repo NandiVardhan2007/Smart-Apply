@@ -185,3 +185,80 @@ async def send_interview_report_email(to_email: str, report_data: dict) -> bool:
         "SMART APPLY: AI INTERVIEW ASSESSMENT",
         html,
     )
+
+
+# ---------------------------------------------------------------------------
+# Tailored resume email  (PDF attachment via Brevo)
+# ---------------------------------------------------------------------------
+async def send_tailored_resume_email(
+    to_email: str,
+    pdf_bytes: bytes,
+    filename: str = "tailored_resume.pdf",
+) -> bool:
+    """Send the tailored PDF resume as an email attachment via Brevo."""
+    import base64
+
+    body = """
+    <div style="background: #facc15; border: 4px solid #000; padding: 20px;
+                box-shadow: 6px 6px 0px #000; text-align: center; margin-bottom: 32px;">
+        <h2 style="font-size: 24px; font-weight: 900; margin: 0;
+                   text-transform: uppercase; color: #000;">
+            YOUR TAILORED RESUME IS READY
+        </h2>
+    </div>
+
+    <div style="background: #fff; border: 4px solid #000; padding: 32px;
+                box-shadow: 8px 8px 0px #000; margin-bottom: 32px;">
+        <p style="font-size: 16px; font-weight: 700; line-height: 1.7;
+                  color: #000; margin: 0 0 20px 0;">
+            Our AI has successfully tailored your resume based on the job description
+            and recommendations you provided. Your customised PDF is attached to this email.
+        </p>
+        <p style="font-size: 14px; font-weight: 600; color: #555; margin: 0;">
+            Open the attached <strong>PDF</strong> and review the changes.
+            Head back to Smart Apply to make further edits anytime.
+        </p>
+    </div>
+
+    <div style="background: #000; border: 4px solid #000; padding: 24px;
+                box-shadow: 8px 8px 0px #555; margin-bottom: 32px;">
+        <p style="font-size: 13px; font-weight: 700; color: #facc15;
+                  text-transform: uppercase; letter-spacing: 0.08em; margin: 0;">
+            TIP: Paste this resume into your job application portal for the best ATS results.
+        </p>
+    </div>
+    """
+
+    html = _email_wrapper(body)
+
+    # Encode PDF as base64 for Brevo attachment
+    pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "api-key": settings.BREVO_API_KEY,
+    }
+    payload = {
+        "sender": {
+            "name": settings.BREVO_SENDER_NAME,
+            "email": settings.BREVO_SENDER_EMAIL,
+        },
+        "to": [{"email": to_email}],
+        "subject": "SMART APPLY: Your Tailored Resume Is Ready 🎯",
+        "htmlContent": html,
+        "attachment": [
+            {
+                "content": pdf_b64,
+                "name": filename,
+            }
+        ],
+    }
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, headers=headers)
+            return response.status_code in (200, 201)
+    except Exception as exc:
+        logging.getLogger(__name__).error("Failed to send tailored resume email: %s", exc)
+        return False

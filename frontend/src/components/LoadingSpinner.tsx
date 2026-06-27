@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -23,9 +23,10 @@ export function OrbitSpinner({ size = 44 }: { size?: number }) {
   const r = size / 2;
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      {/* Static square */}
+      {/* Static circle */}
       <div style={{
         position: 'absolute', inset: size * 0.2,
+        borderRadius: '50%',
         border: '3px solid #000',
         background: 'var(--accent)',
       }} />
@@ -33,6 +34,7 @@ export function OrbitSpinner({ size = 44 }: { size?: number }) {
       <motion.div
         style={{
           position: 'absolute', inset: 0,
+          borderRadius: '50%',
           border: '2px solid transparent',
           borderTopColor: '#000',
           borderRightColor: '#000',
@@ -44,6 +46,7 @@ export function OrbitSpinner({ size = 44 }: { size?: number }) {
       <motion.div
         style={{
           position: 'absolute', inset: size * 0.1,
+          borderRadius: '50%',
           border: '2px solid transparent',
           borderBottomColor: 'var(--accent)',
           borderLeftColor: 'var(--accent)',
@@ -68,6 +71,7 @@ export function ButtonSpinner({ size = 16 }: { size?: number }) {
     <motion.div
       style={{
         width: size, height: size, flexShrink: 0, display: 'inline-block',
+        borderRadius: '50%',
         border: '2px solid rgba(0,0,0,0.2)',
         borderTopColor: '#000',
       }}

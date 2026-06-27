@@ -4,11 +4,15 @@ from beanie import PydanticObjectId
 from typing import List, Optional
 from pydantic import BaseModel
 import httpx
+import logging
 
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 from app.models.resume import Resume
 from app.services import latex_service, ai_service
+from app.services.email_service import send_tailored_resume_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tailor", tags=["tailor"])
 
@@ -82,7 +86,7 @@ async def compile_latex(req: CompileRequest, user: User = Depends(get_current_us
 
 @router.post("/auto-apply")
 async def auto_apply_tailor(req: TailorRequest, user: User = Depends(get_current_user)):
-    """Apply recommendations to a resume, compile, and email."""
+    """Apply recommendations to a resume, compile, and email the PDF to the user."""
     try:
         resume = await Resume.get(PydanticObjectId(req.resume_id))
         if not resume or resume.user_id != user.id:
@@ -100,23 +104,44 @@ async def auto_apply_tailor(req: TailorRequest, user: User = Depends(get_current
             resume.latex_code = latex_code
             await resume.save()
             
-        # Tailor LaTeX
+        # Tailor LaTeX via AI
         new_latex = await ai_service.tailor_resume_latex(
             latex_code, 
             req.recommendations, 
             req.custom_instructions
         )
         
-        # Save updated latex
+        # Persist updated LaTeX
         resume.latex_code = new_latex
         await resume.save()
         
-        # Compile
+        # Compile to PDF
         pdf_bytes = await latex_service.compile_latex_to_pdf(new_latex)
         
-        # TODO: Email the PDF. For now, simulate success.
-        # In a real app, use Brevo/Sendgrid here with `user.email`.
-        
-        return {"message": "Resume tailored and emailed successfully", "latex_code": new_latex}
+        # Email the PDF to the user
+        safe_filename = f"tailored_{resume.filename or 'resume'}"
+        if not safe_filename.endswith(".pdf"):
+            safe_filename += ".pdf"
+
+        email_sent = await send_tailored_resume_email(
+            to_email=user.email,
+            pdf_bytes=pdf_bytes,
+            filename=safe_filename,
+        )
+
+        if not email_sent:
+            logger.warning("Tailored resume compiled but email delivery failed for user %s", user.email)
+            return {
+                "message": "Resume tailored successfully but email delivery failed. Please download it manually.",
+                "latex_code": new_latex,
+                "email_sent": False,
+            }
+
+        logger.info("Tailored resume emailed to %s (%s)", user.email, safe_filename)
+        return {
+            "message": f"Resume tailored and emailed to {user.email} successfully.",
+            "latex_code": new_latex,
+            "email_sent": True,
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

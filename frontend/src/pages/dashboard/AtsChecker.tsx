@@ -138,7 +138,7 @@ export default function AtsChecker() {
     
     setTailoring(true);
     try {
-      const res = await apiFetch('/tailor/auto-apply', {
+      const res = await apiFetch<{ message: string; latex_code: string; email_sent: boolean }>('/tailor/auto-apply', {
         method: 'POST',
         body: JSON.stringify({
           resume_id: selectedResumeId,
@@ -147,8 +147,12 @@ export default function AtsChecker() {
         }),
       });
       
-      if (res.ok) {
-        showToast('success', 'Your tailored resume has been sent to your email!');
+      if (res.ok && res.data) {
+        if (res.data.email_sent) {
+          showToast('success', '✅ Tailored resume sent to your email!');
+        } else {
+          showToast('error', '⚠️ Resume tailored but email failed — please download it manually.');
+        }
         setSelectedRecommendations([]);
         setCustomInstructions('');
       } else {
