@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   useCallback,
   type ReactNode,
 } from 'react';
@@ -91,6 +92,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { sessionId } = useAuthSocket({ onEvent: handleAuthEvent });
 
+  // Keep stable refs so configureClient getters always read the latest values
+  // without needing to re-call configureClient on every render.
+  const tokenRef = useRef(token);
+  const sessionIdRef = useRef(sessionId);
+  const logoutRef = useRef(logout);
+  tokenRef.current = token;
+  sessionIdRef.current = sessionId;
+  logoutRef.current = logout;
+
+  // FIX: Call configureClient synchronously during render (not in a useEffect).
+  // React fires child effects BEFORE parent effects, so putting this in a
+  // useEffect meant every dashboard page's first apiFetch ran before _getToken
+  // was set — sending requests with no Authorization header and getting empty
+  // responses (visible as blank pages on first visit).
+  //
+  // Calling it inline here guarantees _getToken is wired up before any child
+  // component renders or fires its own mount effects.
+  configureClient({
+    getToken: () => tokenRef.current,
+    getSessionId: () => sessionIdRef.current,
+    onUnauthorized: () => logoutRef.current(),
+  });
+
   const updateUser = useCallback((updates: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
@@ -99,15 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return updated;
     });
   }, []);
-
-  // Wire up the API client
-  useEffect(() => {
-    configureClient({
-      getToken: () => token,
-      getSessionId: () => sessionId,
-      onUnauthorized: logout,
-    });
-  }, [token, sessionId, logout]);
 
   return (
     <AuthContext.Provider

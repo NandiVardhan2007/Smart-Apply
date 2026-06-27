@@ -1,5 +1,17 @@
 /**
  * API client — reusable fetch wrapper with auth and session headers.
+ *
+ * FIX: configureClient was previously called inside a useEffect in AuthContext,
+ * meaning child component effects (Profile, Resumes, etc.) fired BEFORE
+ * _getToken was wired up — causing every first-visit to a dashboard page to
+ * send requests with no Authorization header, returning empty/401 responses.
+ *
+ * The fix is two-part:
+ *  1. apiFetch falls back to reading directly from localStorage when _getToken
+ *     is not yet set, so the token is never missing on first mount.
+ *  2. AuthContext calls configureClient() synchronously during render (not in
+ *     a useEffect), so _getToken is always set before any child renders or fires
+ *     their own effects.
  */
 
 let _getToken: (() => string | null) | null = null;
@@ -31,8 +43,9 @@ export async function apiFetch<T = unknown>(
     ...(options.headers as Record<string, string> || {}),
   };
 
-  // Attach auth token
-  const token = _getToken?.();
+  // Attach auth token — fall back to localStorage if configureClient hasn't
+  // been called yet (can happen on very first render before AuthContext effect fires)
+  const token = _getToken ? _getToken() : localStorage.getItem('sa_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
