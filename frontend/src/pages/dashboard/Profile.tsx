@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Plus, X, Save, Loader2, Upload, FileText } from 'lucide-react';
+import { Camera, Plus, X, Save, Loader2, Upload, FileText, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { apiFetch } from '../../api/client';
@@ -361,33 +361,69 @@ export default function Profile() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="input-group">
                   <label>LinkedIn URL</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={linkedin}
-                    onChange={(e) => setLinkedin(e.target.value)}
-                    placeholder="https://linkedin.com/in/..."
-                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={linkedin}
+                      onChange={(e) => setLinkedin(e.target.value)}
+                      placeholder="https://linkedin.com/in/..."
+                      style={{ flex: 1 }}
+                    />
+                    {linkedin && (
+                      <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noreferrer" style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 44, height: 44, background: 'var(--accent)', border: '2px solid #000',
+                        color: '#000', flexShrink: 0, textDecoration: 'none'
+                      }}>
+                        <ExternalLink size={20} />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div className="input-group">
                   <label>GitHub URL</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={github}
-                    onChange={(e) => setGithub(e.target.value)}
-                    placeholder="https://github.com/..."
-                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={github}
+                      onChange={(e) => setGithub(e.target.value)}
+                      placeholder="https://github.com/..."
+                      style={{ flex: 1 }}
+                    />
+                    {github && (
+                      <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noreferrer" style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 44, height: 44, background: 'var(--accent)', border: '2px solid #000',
+                        color: '#000', flexShrink: 0, textDecoration: 'none'
+                      }}>
+                        <ExternalLink size={20} />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div className="input-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Portfolio Website</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={portfolio}
-                    onChange={(e) => setPortfolio(e.target.value)}
-                    placeholder="https://mywebsite.com"
-                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={portfolio}
+                      onChange={(e) => setPortfolio(e.target.value)}
+                      placeholder="https://mywebsite.com"
+                      style={{ flex: 1 }}
+                    />
+                    {portfolio && (
+                      <a href={portfolio.startsWith('http') ? portfolio : `https://${portfolio}`} target="_blank" rel="noreferrer" style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 44, height: 44, background: 'var(--accent)', border: '2px solid #000',
+                        color: '#000', flexShrink: 0, textDecoration: 'none'
+                      }}>
+                        <ExternalLink size={20} />
+                      </a>
+                    )}
+                  </div>
                 </div>
             </div>
 
