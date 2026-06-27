@@ -423,7 +423,7 @@ async def generate_portfolio_html(user_data: Dict[str, Any], theme: str, custom_
 """
 
     completion = await client.chat.completions.create(
-        model=settings.NVIDIA_MODEL,
+        model="nvidia/llama-3.1-nemotron-ultra-253b-v1",
         messages=[
             {"role": "system", "content": "You are a master frontend developer. You only output raw HTML."},
             {"role": "user", "content": prompt}
