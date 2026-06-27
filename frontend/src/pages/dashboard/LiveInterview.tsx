@@ -113,7 +113,7 @@ export default function LiveInterview() {
   const [codeLanguage, setCodeLanguage] = useState('javascript');
   const [codeContent, setCodeContent] = useState('// Write your solution here\n');
   
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -212,10 +212,11 @@ export default function LiveInterview() {
 
     // Connect to WebSocket
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const wsUrl = baseUrl 
+    const baseWsUrl = baseUrl 
       ? baseUrl.replace(/^http/, 'ws') + '/interview/ws/chat'
       : (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/api/interview/ws/chat';
       
+    const wsUrl = `${baseWsUrl}?token=${encodeURIComponent(token ?? '')}`;
     const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {

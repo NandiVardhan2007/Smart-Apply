@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
+import secrets
 from fastapi import APIRouter, HTTPException, Request, status
 from app.rate_limiter import limiter
 
@@ -85,7 +86,8 @@ async def verify_otp(request: Request, body: OtpVerifyRequest):
     session_id = get_session_id(request)
 
     if (
-        user.otp_code != body.otp_code
+        not user.otp_code
+        or not secrets.compare_digest(user.otp_code, body.otp_code)
         or user.otp_expires_at is None
         or datetime.now(timezone.utc) > user.otp_expires_at.replace(tzinfo=timezone.utc)
     ):
@@ -195,7 +197,8 @@ async def reset_password(request: Request, body: ResetPasswordRequest):
         raise HTTPException(status_code=404, detail="User not found")
 
     if (
-        user.otp_code != body.otp_code
+        not user.otp_code
+        or not secrets.compare_digest(user.otp_code, body.otp_code)
         or user.otp_expires_at is None
         or datetime.now(timezone.utc) > user.otp_expires_at.replace(tzinfo=timezone.utc)
     ):

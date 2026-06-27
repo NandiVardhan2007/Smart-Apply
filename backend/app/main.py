@@ -44,6 +44,9 @@ async def self_ping():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
+    if settings.ENVIRONMENT == "production":
+        assert settings.SECRET_KEY != "change-this-in-production", "SECRET_KEY must be changed in production"
+
     ping_task = asyncio.create_task(self_ping())
 
     await init_db()

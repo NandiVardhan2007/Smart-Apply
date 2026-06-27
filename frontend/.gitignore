@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Face API Models
-public/models/*
+

@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from app.rate_limiter import limiter
 from pydantic import BaseModel
 
 from app.middleware.auth_middleware import get_current_user
@@ -19,8 +20,9 @@ class RoadmapRequest(BaseModel):
     preferences: Optional[Dict[str, str]] = None
 
 @router.post("/recommend")
+@limiter.limit("5/minute")
 async def recommend_projects(
-    request: ProjectRequest, current_user: User = Depends(get_current_user)
+    request_obj: Request, request: ProjectRequest, current_user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
     """Suggest projects based on user input."""
     return await ai_service.suggest_projects(
@@ -30,8 +32,9 @@ async def recommend_projects(
     )
 
 @router.post("/roadmap")
+@limiter.limit("5/minute")
 async def generate_roadmap(
-    request: RoadmapRequest, current_user: User = Depends(get_current_user)
+    request_obj: Request, request: RoadmapRequest, current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Generate a step-by-step roadmap for a selected project."""
     return await ai_service.generate_project_roadmap(

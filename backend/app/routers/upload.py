@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request
+from app.rate_limiter import limiter
 from starlette.concurrency import run_in_threadpool
 
 from app.middleware.auth_middleware import get_current_user
@@ -13,8 +14,9 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 @router.post("/resume")
+@limiter.limit("5/minute")
 async def upload_resume(
-    file: UploadFile = File(...), user: User = Depends(get_current_user)
+    request: Request, file: UploadFile = File(...), user: User = Depends(get_current_user)
 ):
     """Upload a resume PDF to Cloudflare R2."""
     if file.content_type not in ALLOWED_RESUME_TYPES:
@@ -40,8 +42,9 @@ async def upload_resume(
 
 
 @router.post("/avatar")
+@limiter.limit("5/minute")
 async def upload_avatar(
-    file: UploadFile = File(...), user: User = Depends(get_current_user)
+    request: Request, file: UploadFile = File(...), user: User = Depends(get_current_user)
 ):
     """Upload a profile picture to Cloudflare R2."""
     if file.content_type not in ALLOWED_IMAGE_TYPES:

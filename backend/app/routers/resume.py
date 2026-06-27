@@ -1,7 +1,8 @@
 from typing import List
 
 import fitz  # PyMuPDF
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request
+from app.rate_limiter import limiter
 from beanie import PydanticObjectId
 
 from app.middleware.auth_middleware import get_current_user
@@ -16,8 +17,9 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 @router.post("")
+@limiter.limit("5/minute")
 async def upload_new_resume(
-    file: UploadFile = File(...), user: User = Depends(get_current_user)
+    request: Request, file: UploadFile = File(...), user: User = Depends(get_current_user)
 ):
     """Upload a new resume, extract its text, and save it to the library."""
     if file.content_type not in ALLOWED_RESUME_TYPES:
@@ -74,14 +76,16 @@ async def upload_new_resume(
 
 
 @router.get("")
-async def list_resumes(user: User = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def list_resumes(request: Request, user: User = Depends(get_current_user)):
     """List all resumes uploaded by the user."""
     resumes = await Resume.find({"user_id": user.id}).sort("-uploaded_at").to_list()
     return {"resumes": resumes}
 
 
 @router.delete("/{resume_id}")
-async def delete_resume(resume_id: str, user: User = Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def delete_resume(request: Request, resume_id: str, user: User = Depends(get_current_user)):
     """Delete a resume from the library."""
     try:
         resume = await Resume.get(PydanticObjectId(resume_id))
