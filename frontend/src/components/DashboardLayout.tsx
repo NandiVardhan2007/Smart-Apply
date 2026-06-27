@@ -21,6 +21,8 @@ export default function DashboardLayout() {
   let currentPage = pathParts[pathParts.length - 1];
   if (/^[0-9a-fA-F]{24}$/.test(currentPage) && pathParts.length > 1) {
     currentPage = pathParts[pathParts.length - 2];
+  } else if (currentPage.startsWith('interview-') && pathParts.length > 1) {
+    currentPage = pathParts[pathParts.length - 2];
   }
   
   const pageTitle = currentPage
