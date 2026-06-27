@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
-import { Loader2, Mic, PhoneOff, Video, MicOff } from 'lucide-react';
+import { Loader2, Mic, PhoneOff, Video, MicOff, Code2, Send } from 'lucide-react';
 import { useFaceAnalyzer } from '../../hooks/useFaceAnalyzer';
+import Editor from '@monaco-editor/react';
 
 // For TypeScript
 declare global {
@@ -107,6 +108,10 @@ export default function LiveInterview() {
   const [transcript, setTranscript] = useState<{role: string, content: string}[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [agentSpeaking, setAgentSpeaking] = useState(false);
+  
+  const [isCodingMode, setIsCodingMode] = useState(false);
+  const [codeLanguage, setCodeLanguage] = useState('javascript');
+  const [codeContent, setCodeContent] = useState('// Write your solution here\n');
   
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -223,8 +228,13 @@ export default function LiveInterview() {
         const data = JSON.parse(event.data);
         if (data.text) {
           setStatus('connected');
-          setTranscript(prev => [...prev, { role: 'assistant', content: data.text }]);
-          speakText(data.text);
+          let textToSpeak = data.text;
+          if (textToSpeak.includes('[OPEN_EDITOR]')) {
+             textToSpeak = textToSpeak.replace('[OPEN_EDITOR]', '').trim();
+             setIsCodingMode(true);
+          }
+          setTranscript(prev => [...prev, { role: 'assistant', content: textToSpeak }]);
+          speakText(textToSpeak);
         }
       } catch (err) {
         console.error('Failed to parse WS message', err);
@@ -298,6 +308,15 @@ export default function LiveInterview() {
     }
   };
 
+  const handleCodeSubmit = () => {
+    const formattedMessage = `I have submitted code in ${codeLanguage}:\n\n\`\`\`${codeLanguage}\n${codeContent}\n\`\`\``;
+    setTranscript(prev => [...prev, { role: 'user', content: formattedMessage }]);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ text: formattedMessage }));
+      setStatus('waiting');
+    }
+  };
+
   const handleDisconnect = async () => {
     setIsActive(false);
     stopLocalMedia();
@@ -366,97 +385,140 @@ export default function LiveInterview() {
           <div
             style={{ 
               width: '100%', 
-              maxWidth: 1000, 
+              maxWidth: isCodingMode ? 1400 : 1000, 
               height: 600, 
               background: 'var(--bg-surface)', 
               borderRadius: 16, 
               border: '1px solid var(--border-color)', 
               display: 'flex', 
-              flexDirection: 'column',
+              flexDirection: isCodingMode ? 'row' : 'column',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              transition: 'max-width 0.3s ease'
             }}
           >
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative' }}>
-              
-              {/* Agent Visualizer */}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ marginBottom: '2rem', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                  {agentSpeaking ? (
-                    <AudioVisualizer isSpeaking={true} />
-                  ) : status === 'waiting' ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                       <div className="dot-pulse" style={{ animationDelay: '0s' }} />
-                       <div className="dot-pulse" style={{ animationDelay: '0.2s' }} />
-                       <div className="dot-pulse" style={{ animationDelay: '0.4s' }} />
-                    </div>
-                  ) : (
-                    <div className="listening-bar" />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative' }}>
+                
+                {/* Agent Visualizer */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ marginBottom: '2rem', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {agentSpeaking ? (
+                      <AudioVisualizer isSpeaking={true} />
+                    ) : status === 'waiting' ? (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                         <div className="dot-pulse" style={{ animationDelay: '0s' }} />
+                         <div className="dot-pulse" style={{ animationDelay: '0.2s' }} />
+                         <div className="dot-pulse" style={{ animationDelay: '0.4s' }} />
+                      </div>
+                    ) : (
+                      <div className="listening-bar" />
+                    )}
+                  </div>
+                  <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>
+                    {status === 'disconnected' ? 'Agent Offline' : 
+                     status === 'connecting' ? 'Connecting to Agent...' : 
+                     agentSpeaking ? 'Agent is speaking...' : 
+                     status === 'waiting' ? 'Agent is thinking...' : 'Agent is listening...'}
+                  </h3>
+                  {transcript.length > 0 && transcript[transcript.length - 1].role === 'user' && (
+                    <p style={{ color: 'var(--text-secondary)', marginTop: '1rem', fontStyle: 'italic' }}>
+                      You: "{transcript[transcript.length - 1].content}"
+                    </p>
                   )}
                 </div>
-                <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>
-                  {status === 'disconnected' ? 'Agent Offline' : 
-                   status === 'connecting' ? 'Connecting to Agent...' : 
-                   agentSpeaking ? 'Agent is speaking...' : 
-                   status === 'waiting' ? 'Agent is thinking...' : 'Agent is listening...'}
-                </h3>
-                {transcript.length > 0 && transcript[transcript.length - 1].role === 'user' && (
-                  <p style={{ color: 'var(--text-secondary)', marginTop: '1rem', fontStyle: 'italic' }}>
-                    You: "{transcript[transcript.length - 1].content}"
-                  </p>
-                )}
-              </div>
 
-              {/* Local Video */}
-              <div style={{
-                position: 'absolute',
-                bottom: '2rem',
-                right: '2rem',
-                width: '240px',
-                aspectRatio: '16/9',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                background: '#000',
-                border: '2px solid var(--border-color)'
-              }}>
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  muted 
-                  playsInline 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
-                />
-              </div>
-
-            </div>
-
-            <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-              {/* User Mic Visualizer */}
-              {isRecording && localStreamRef.current && (
-                <div style={{ position: 'absolute', left: '2rem' }}>
-                  <AudioVisualizer stream={localStreamRef.current} isSpeaking={true} maxHeight={40} />
+                {/* Local Video */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '2rem',
+                  right: '2rem',
+                  width: isCodingMode ? '180px' : '240px',
+                  aspectRatio: '16/9',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  background: '#000',
+                  border: '2px solid var(--border-color)',
+                  transition: 'width 0.3s ease'
+                }}>
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    muted 
+                    playsInline 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
+                  />
                 </div>
-              )}
-              <button 
-                className={`btn ${isRecording ? 'btn-primary' : ''}`}
-                onClick={isRecording ? stopListening : startListening}
-                disabled={agentSpeaking || status !== 'connected'}
-                style={{ borderRadius: '50%', width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title={isRecording ? "Stop recording" : "Start recording"}
-              >
-                {isRecording ? <Mic size={20} /> : <MicOff size={20} />}
-              </button>
-              
-              <button 
-                className="btn" 
-                onClick={handleDisconnect}
-                style={{ background: 'var(--error)', color: 'white', borderRadius: '50%', width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title="End Interview"
-              >
-                <PhoneOff size={20} />
-              </button>
+              </div>
+
+              <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+                {/* User Mic Visualizer */}
+                {isRecording && localStreamRef.current && (
+                  <div style={{ position: 'absolute', left: '2rem' }}>
+                    <AudioVisualizer stream={localStreamRef.current} isSpeaking={true} maxHeight={40} />
+                  </div>
+                )}
+                <button 
+                  className={`btn ${isRecording ? 'btn-primary' : ''}`}
+                  onClick={isRecording ? stopListening : startListening}
+                  disabled={agentSpeaking || status !== 'connected'}
+                  style={{ borderRadius: '50%', width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title={isRecording ? "Stop recording" : "Start recording"}
+                >
+                  {isRecording ? <Mic size={20} /> : <MicOff size={20} />}
+                </button>
+                
+                <button 
+                  className={`btn`}
+                  onClick={() => setIsCodingMode(!isCodingMode)}
+                  style={{ borderRadius: '50%', width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isCodingMode ? 'var(--primary)' : 'transparent', color: isCodingMode ? 'var(--primary-foreground)' : 'var(--text-secondary)', border: '1px solid var(--border-color)' }}
+                  title="Toggle Code Editor"
+                >
+                  <Code2 size={20} />
+                </button>
+
+                <button 
+                  className="btn" 
+                  onClick={handleDisconnect}
+                  style={{ background: 'var(--error)', color: 'white', borderRadius: '50%', width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="End Interview"
+                >
+                  <PhoneOff size={20} />
+                </button>
+              </div>
             </div>
+            
+            {isCodingMode && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', background: '#1e1e1e' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderBottom: '1px solid #333', background: '#252526' }}>
+                  <select 
+                    value={codeLanguage}
+                    onChange={(e) => setCodeLanguage(e.target.value)}
+                    style={{ background: '#3c3c3c', color: '#fff', border: '1px solid #555', padding: '4px 8px', borderRadius: 4, outline: 'none', cursor: 'pointer' }}
+                  >
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                  </select>
+                  <button onClick={handleCodeSubmit} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Send size={14} /> Submit Code
+                  </button>
+                </div>
+                <div style={{ flex: 1, paddingBottom: '10px' }}>
+                  <Editor
+                    height="100%"
+                    language={codeLanguage}
+                    theme="vs-dark"
+                    value={codeContent}
+                    onChange={(val) => setCodeContent(val || '')}
+                    options={{ minimap: { enabled: false }, fontSize: 14 }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
