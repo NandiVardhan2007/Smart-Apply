@@ -39,13 +39,6 @@ async def self_ping():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
-    global worker_process
-    
-    # Start the LiveKit worker automatically
-    backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    worker_script = os.path.join(backend_dir, "agents", "interview_worker.py")
-    worker_process = subprocess.Popen([sys.executable, worker_script, "dev"], cwd=backend_dir)
-
     ping_task = asyncio.create_task(self_ping())
 
     await init_db()
@@ -53,13 +46,6 @@ async def lifespan(app: FastAPI):
     await close_db()
 
     ping_task.cancel()
-    
-    if worker_process:
-        worker_process.terminate()
-        try:
-            worker_process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            worker_process.kill()
 
 
 app = FastAPI(

@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { LocalParticipant } from 'livekit-client';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Use global faceapi from CDN to avoid Vite build issues
 declare const faceapi: any;
@@ -13,13 +12,16 @@ export interface FaceTelemetry {
 
 export function useFaceAnalyzer(
   videoRef: React.RefObject<HTMLVideoElement | null>,
-  participant: LocalParticipant | undefined,
+  isActive: boolean,
   intervalMs: number = 100
 ) {
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const blinkCountRef = useRef(0);
   const lastEyeRatioRef = useRef(0.3);
   const telemetryIntervalRef = useRef<number | null>(null);
+  
+  const confidenceSumRef = useRef(0);
+  const confidenceCountRef = useRef(0);
 
   // Load models on mount
   useEffect(() => {
@@ -41,12 +43,10 @@ export function useFaceAnalyzer(
   }, []);
 
   useEffect(() => {
-    if (!modelsLoaded || !videoRef.current || !participant) return;
+    if (!modelsLoaded || !videoRef.current || !isActive) return;
 
     const video = videoRef.current;
 
-    // Helper: calculate Eye Aspect Ratio (EAR)
-    // Points 36-41 (left eye) and 42-47 (right eye)
     const getEAR = (eye: any[]) => {
       const v1 = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
       const v2 = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
@@ -57,50 +57,35 @@ export function useFaceAnalyzer(
     const analyzeFace = async () => {
       if (video.paused || video.ended) return;
 
-      const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceExpressions();
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceExpressions();
 
-      if (detection) {
-        const landmarks = detection.landmarks;
-        const leftEye = landmarks.getLeftEye();
-        const rightEye = landmarks.getRightEye();
+        if (detection) {
+          const landmarks = detection.landmarks;
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
 
-        const leftEAR = getEAR(leftEye);
-        const rightEAR = getEAR(rightEye);
-        const ear = (leftEAR + rightEAR) / 2;
+          const leftEAR = getEAR(leftEye);
+          const rightEAR = getEAR(rightEye);
+          const ear = (leftEAR + rightEAR) / 2;
 
-        // Blink detection threshold
-        if (ear < 0.25 && lastEyeRatioRef.current >= 0.25) {
-          blinkCountRef.current += 1;
+          if (ear < 0.25 && lastEyeRatioRef.current >= 0.25) {
+            blinkCountRef.current += 1;
+          }
+          lastEyeRatioRef.current = ear;
+
+          const expr = detection.expressions;
+          let confidence = (expr.neutral + expr.happy) - (expr.sad + expr.fearful + expr.disgusted + expr.angry);
+          confidence = Math.max(0, Math.min(1, (confidence + 1) / 2));
+          
+          confidenceSumRef.current += confidence;
+          confidenceCountRef.current += 1;
         }
-        lastEyeRatioRef.current = ear;
-
-        // Calculate heuristic confidence
-        // Higher confidence = mostly neutral or happy, low fearful/sad/disgusted
-        const expr = detection.expressions;
-        let confidence = (expr.neutral + expr.happy) - (expr.sad + expr.fearful + expr.disgusted + expr.angry);
-        confidence = Math.max(0, Math.min(1, (confidence + 1) / 2)); // Normalize to 0-1
-
-        const telemetry: FaceTelemetry = {
-          expressions: {
-            neutral: expr.neutral,
-            happy: expr.happy,
-            sad: expr.sad,
-            angry: expr.angry,
-            fear: expr.fearful,
-            surprised: expr.surprised,
-          },
-          blinkCount: blinkCountRef.current,
-          confidence,
-          timestamp: Date.now(),
-        };
-
-        // Publish over LiveKit Data Channel
-        const encoder = new TextEncoder();
-        const payload = encoder.encode(JSON.stringify({ type: 'telemetry', data: telemetry }));
-        participant.publishData(payload, { reliable: false });
+      } catch (e) {
+        // Ignored
       }
     };
 
@@ -111,7 +96,18 @@ export function useFaceAnalyzer(
         clearInterval(telemetryIntervalRef.current);
       }
     };
-  }, [modelsLoaded, participant, videoRef, intervalMs]);
+  }, [modelsLoaded, isActive, videoRef, intervalMs]);
 
-  return { modelsLoaded, currentBlinks: blinkCountRef.current };
+  const getTelemetrySummary = useCallback(() => {
+    const avgConfidence = confidenceCountRef.current > 0 
+      ? confidenceSumRef.current / confidenceCountRef.current 
+      : 0;
+      
+    return {
+      avg_confidence: avgConfidence,
+      blink_count: blinkCountRef.current,
+    };
+  }, []);
+
+  return { modelsLoaded, getTelemetrySummary };
 }

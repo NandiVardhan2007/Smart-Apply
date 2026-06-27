@@ -1,11 +1,10 @@
 import json
 import logging
-import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from livekit import api
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
 from app.middleware.auth_middleware import get_current_user
@@ -13,47 +12,71 @@ from app.models.interview_report import InterviewReport
 from app.models.user import User
 from app.services.email_service import send_interview_report_email
 
+import openai
+
 logger = logging.getLogger("interview-router")
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
 # ─────────────────────────────────────────────
-# Token endpoint
+# Real-time Chat WebSocket
 # ─────────────────────────────────────────────
 
-class TokenRequest(BaseModel):
-    room_name: str
-
-
-@router.post("/token")
-async def get_livekit_token(
-    request: TokenRequest,
-    current_user: User = Depends(get_current_user),
-):
+@router.websocket("/ws/chat")
+async def interview_chat_ws(websocket: WebSocket):
+    await websocket.accept()
+    
+    # Initialize Groq client
+    groq_api_key = settings.GROQ_API_KEY
+    if not groq_api_key:
+        logger.error("GROQ_API_KEY is not configured.")
+        await websocket.close(code=1011, reason="Groq API key missing")
+        return
+        
+    client = openai.AsyncOpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        api_key=groq_api_key,
+    )
+    
+    system_prompt = (
+        "You are an expert technical interviewer named Ryan. "
+        "Keep your responses extremely concise (1-2 sentences max) since they will be spoken aloud via text-to-speech. "
+        "Ask technical questions, wait for the user to answer, and then provide brief feedback before moving on to the next question. "
+        "Be friendly but professional."
+    )
+    
+    messages = [{"role": "system", "content": system_prompt}]
+    
     try:
-        livekit_api_key = settings.LIVEKIT_API_KEY
-        livekit_api_secret = settings.LIVEKIT_API_SECRET
-
-        if not livekit_api_key or not livekit_api_secret:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="LiveKit credentials are not configured on the server.",
+        while True:
+            data = await websocket.receive_text()
+            user_msg = json.loads(data)
+            
+            # Add user message to history
+            messages.append({"role": "user", "content": user_msg["text"]})
+            
+            # Call Groq LLM
+            response = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=256,
             )
-
-        token = api.AccessToken(livekit_api_key, livekit_api_secret)
-
-        safe_name = current_user.full_name or "user"
-        participant_identity = f"{str(current_user.id)}_{safe_name.replace(' ', '_')}"
-        token.with_identity(participant_identity)
-        token.with_name(safe_name)
-        token.with_grants(api.VideoGrants(room_join=True, room=request.room_name))
-
-        return {"token": token.to_jwt(), "url": settings.LIVEKIT_URL}
+            
+            ai_text = response.choices[0].message.content.strip()
+            messages.append({"role": "assistant", "content": ai_text})
+            
+            # Send response back to browser
+            await websocket.send_json({"text": ai_text})
+            
+    except WebSocketDisconnect:
+        logger.info("Client disconnected from chat WebSocket.")
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
+        logger.error(f"WebSocket error: {e}")
+        try:
+            await websocket.close(code=1011)
+        except:
+            pass
 
 # ─────────────────────────────────────────────
 # Internal report-save endpoint (legacy / direct)
@@ -71,7 +94,6 @@ class ReportCreateRequest(BaseModel):
     overall_feedback: str
     communication_feedback: str
 
-
 @router.post("/report")
 async def create_report(request: ReportCreateRequest):
     """Internal endpoint to save a pre-built report directly."""
@@ -82,10 +104,8 @@ async def create_report(request: ReportCreateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # ─────────────────────────────────────────────
-# Analyze endpoint — called by the worker
-# Returns 202 instantly; all heavy work runs in background
+# Analyze endpoint — called by the frontend when interview finishes
 # ─────────────────────────────────────────────
 
 class AnalyzeRequest(BaseModel):
@@ -94,16 +114,7 @@ class AnalyzeRequest(BaseModel):
     transcript: List[Dict[str, str]]   # [{"role": "user"|"assistant", "content": "..."}]
     telemetry: Dict[str, Any]          # {"avg_confidence": float, "blink_count": int}
 
-
 async def _run_llm_and_save(data: AnalyzeRequest) -> None:
-    """
-    Background task:
-      1. Calls NVIDIA LLM to generate the report JSON
-      2. Saves the report to MongoDB
-      3. Looks up the user's email by user_id
-      4. Sends the report email
-    """
-    # Hard-coded NVIDIA key as requested; also falls back to env / settings
     nvidia_api_key = (
         "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"
     )
@@ -141,9 +152,7 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
     )
 
     try:
-        import openai as openai_client
-
-        client = openai_client.AsyncOpenAI(
+        client = openai.AsyncOpenAI(
             base_url=settings.NVIDIA_BASE_URL,
             api_key=nvidia_api_key,
         )
@@ -156,7 +165,6 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
         )
         report_json = response.choices[0].message.content.strip()
 
-        # Strip markdown fences if model added them anyway
         if "```" in report_json:
             report_json = report_json.split("```")[1]
             if report_json.startswith("json"):
@@ -167,16 +175,13 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
         report_data["user_id"] = data.user_id
         report_data["room_name"] = data.room_name
 
-        # ── Save to DB ──
         report = InterviewReport(**report_data)
         await report.insert()
         logger.info(f"Report saved to DB for room {data.room_name}")
 
-        # ── Send email ──
         try:
             user = await User.find_one({"_id": data.user_id})
             if not user:
-                # user_id is a hex string of ObjectId
                 from bson import ObjectId
                 user = await User.find_one(User.id == ObjectId(data.user_id))
 
@@ -186,8 +191,6 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
                     logger.info(f"Report email sent to {user.email}")
                 else:
                     logger.warning(f"Failed to send report email to {user.email}")
-            else:
-                logger.warning(f"No user found for user_id={data.user_id}, skipping email")
         except Exception as email_err:
             logger.error(f"Email send error: {email_err}")
 
@@ -196,18 +199,11 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
         import traceback
         traceback.print_exc()
 
-
 @router.post("/analyze", status_code=202)
 async def analyze_interview(request: AnalyzeRequest, background_tasks: BackgroundTasks):
-    """
-    Called by the interview worker immediately after the session ends.
-    Returns 202 instantly so the worker exits before LiveKit's shutdown timer.
-    LLM analysis + DB save + email are all done in the background by FastAPI.
-    """
     logger.info(f"Accepted raw interview data for room {request.room_name}, queuing analysis...")
     background_tasks.add_task(_run_llm_and_save, request)
     return {"status": "accepted", "room_name": request.room_name}
-
 
 # ─────────────────────────────────────────────
 # User-facing GET endpoints
@@ -215,17 +211,14 @@ async def analyze_interview(request: AnalyzeRequest, background_tasks: Backgroun
 
 @router.get("/reports")
 async def get_reports(current_user: User = Depends(get_current_user)):
-    """Get all reports for the current user."""
     reports = await InterviewReport.find({"user_id": str(current_user.id)}).to_list()
     return reports
-
 
 @router.get("/report/{room_name}")
 async def get_report_by_room(
     room_name: str,
     current_user: User = Depends(get_current_user),
 ):
-    """Get a specific report by room name."""
     report = await InterviewReport.find_one(
         {"room_name": room_name, "user_id": str(current_user.id)}
     )
