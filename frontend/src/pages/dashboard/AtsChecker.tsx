@@ -92,7 +92,7 @@ export default function AtsChecker() {
   };
 
   const handleAnalyze = async () => {
-    if (!file && !selectedResumeId && selectedResumeId !== 'new') return showToast('error', 'Please select or upload a resume');
+    if (!file && !selectedResumeId) return showToast('error', 'Please select or upload a resume');
 
     setAnalyzing(true);
     setResult(null);
@@ -398,7 +398,7 @@ export default function AtsChecker() {
           </AnimatePresence>
         </div>
       </div>
-      <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
     </div>
   );
 }

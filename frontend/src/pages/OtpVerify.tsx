@@ -31,6 +31,7 @@ export default function OtpVerify() {
 
   // Listen for WebSocket otp_verified event
   useEffect(() => {
+    if (verifiedRef.current) return;
     if (lastAuthEvent?.type === 'otp_verified' && lastAuthEvent.data.token) {
       setSuccess(true);
       setTimeout(() => navigate(lastAuthEvent.data.has_onboarded ? '/dashboard/resumes' : '/onboarding'), 1000);
@@ -69,6 +70,8 @@ export default function OtpVerify() {
     inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   };
 
+  const verifiedRef = useRef(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = otp.join('');
@@ -91,6 +94,7 @@ export default function OtpVerify() {
       });
 
       if (res.ok) {
+        verifiedRef.current = true;
         login(res.data.access_token, res.data.user);
         setSuccess(true);
         showToast('success', 'Email verified successfully!');
@@ -208,7 +212,7 @@ export default function OtpVerify() {
           </form>
         )}
 
-        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       </motion.div>
     </div>
   );

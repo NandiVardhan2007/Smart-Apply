@@ -47,6 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [lastAuthEvent, setLastAuthEvent] = useState<AuthSocketEvent | null>(null);
 
+  const login = useCallback((newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem('sa_token', newToken);
+    localStorage.setItem('sa_user', JSON.stringify(newUser));
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('sa_token');
+    localStorage.removeItem('sa_user');
+  }, []);
+
   const handleAuthEvent = useCallback((event: AuthSocketEvent) => {
     setLastAuthEvent(event);
 
@@ -73,23 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
         break;
     }
-  }, []);
+  }, [logout]);
 
   const { sessionId } = useAuthSocket({ onEvent: handleAuthEvent });
-
-  const login = useCallback((newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('sa_token', newToken);
-    localStorage.setItem('sa_user', JSON.stringify(newUser));
-  }, []);
-
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('sa_token');
-    localStorage.removeItem('sa_user');
-  }, []);
 
   const updateUser = useCallback((updates: Partial<User>) => {
     setUser((prev) => {

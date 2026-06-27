@@ -47,9 +47,10 @@ export default function AiChatbot() {
     setIsLoading(true);
 
     try {
+      const cappedMessages = newMessages.slice(-10);
       const res = await apiFetch<{ reply: string }>('/ai/chat', {
         method: 'POST',
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: cappedMessages }),
       });
 
       if (res.ok) {
@@ -74,9 +75,7 @@ export default function AiChatbot() {
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 6rem)', maxWidth: 1000, margin: '0 auto', padding: 24, animation: 'fadeIn 0.3s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 36, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', margin: 0 }}>
-            AI Chatbot.
-          </h1>
+
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: 16, marginTop: 4 }}>
             Get personalized guidance for your job search
           </p>

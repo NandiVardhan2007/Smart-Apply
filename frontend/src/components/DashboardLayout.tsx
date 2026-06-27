@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import '../styles/dashboard.css';
@@ -19,7 +19,11 @@ export default function DashboardLayout() {
   
   // If the last part is a MongoDB ObjectId (24 hex chars), use the preceding part for the title
   let currentPage = pathParts[pathParts.length - 1];
+  const isBase64Id = /^[A-Za-z0-9+/]+=*$/.test(currentPage) && currentPage.length > 20;
+
   if (/^[0-9a-fA-F]{24}$/.test(currentPage) && pathParts.length > 1) {
+    currentPage = pathParts[pathParts.length - 2];
+  } else if (isBase64Id && pathParts.length > 1) {
     currentPage = pathParts[pathParts.length - 2];
   } else if (currentPage.startsWith('interview-') && pathParts.length > 1) {
     currentPage = pathParts[pathParts.length - 2];
@@ -69,15 +73,18 @@ export default function DashboardLayout() {
             {pageTitle}.
           </motion.div>
 
-          <motion.div
-            key={location.pathname}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            transition={{ duration: 0.3 }}
-          >
-            <Outlet />
-          </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

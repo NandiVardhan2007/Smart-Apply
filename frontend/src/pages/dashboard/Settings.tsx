@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Lock, AlertTriangle, Shield, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
+import { apiFetch } from '../../api/client';
 
 export default function Settings() {
   const { user, logout } = useAuth();
@@ -15,13 +16,20 @@ export default function Settings() {
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPw.length < 8) return showToast('error', 'New password must be at least 8 characters');
-    // Implement API call in future
-    showToast('success', 'Password updated successfully');
-    setCurrentPw('');
-    setNewPw('');
+    try {
+      await apiFetch('/user/settings/password', {
+        method: 'PUT',
+        body: JSON.stringify({ current_password: currentPw, new_password: newPw })
+      });
+      showToast('success', 'Password updated successfully');
+      setCurrentPw('');
+      setNewPw('');
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to update password');
+    }
   };
 
   return (
@@ -97,7 +105,19 @@ export default function Settings() {
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive updates on product features and career tips</div>
             </div>
             <label className="toggle-switch">
-              <input type="checkbox" checked={notifications} onChange={(e) => setNotifications(e.target.checked)} />
+              <input type="checkbox" checked={notifications} onChange={async (e) => {
+                const val = e.target.checked;
+                setNotifications(val);
+                localStorage.setItem('sa_notifications', String(val));
+                try {
+                  await apiFetch('/user/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify({ notifications_enabled: val })
+                  });
+                } catch(err) {
+                  // Ignore backend failure if field doesn't exist
+                }
+              }} />
               <span className="slider"></span>
             </label>
           </div>
@@ -130,9 +150,14 @@ export default function Settings() {
               <p style={{ marginBottom: 24, fontWeight: 500 }}>Are you sure you want to delete your account? All your data, resumes, and interview history will be permanently erased.</p>
               <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowDeleteModal(false)}>Cancel</button>
-                <button className="btn btn-primary" style={{ flex: 1, background: 'var(--error)' }} onClick={() => {
-                  showToast('info', 'Account scheduled for deletion.');
-                  logout();
+                <button className="btn btn-primary" style={{ flex: 1, background: 'var(--error)' }} onClick={async () => {
+                  try {
+                    await apiFetch('/user/account', { method: 'DELETE' });
+                    showToast('info', 'Account scheduled for deletion.');
+                    logout();
+                  } catch (err: any) {
+                    showToast('error', err.message || 'Failed to delete account');
+                  }
                 }}>
                   Yes, Delete
                 </button>

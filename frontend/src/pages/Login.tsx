@@ -188,7 +188,7 @@ export default function Login() {
           Don't have an account? <Link to="/signup">Sign up</Link>
         </div>
 
-        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       </motion.div>
     </div>
   );

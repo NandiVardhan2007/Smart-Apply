@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Use global faceapi from CDN to avoid Vite build issues
-declare const faceapi: any;
+import * as faceapi from '@vladmandic/face-api';
 
 export interface FaceTelemetry {
   expressions: { [key: string]: number };
@@ -9,6 +8,8 @@ export interface FaceTelemetry {
   confidence: number;
   timestamp: number;
 }
+
+let _modelsLoaded = false;
 
 export function useFaceAnalyzer(
   videoRef: React.RefObject<HTMLVideoElement | null>,
@@ -26,6 +27,7 @@ export function useFaceAnalyzer(
   // Load models on mount
   useEffect(() => {
     const loadModels = async () => {
+      if (_modelsLoaded) { setModelsLoaded(true); return; }
       const MODEL_URL = '/models';
       try {
         await Promise.all([
@@ -33,6 +35,7 @@ export function useFaceAnalyzer(
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
         ]);
+        _modelsLoaded = true;
         setModelsLoaded(true);
         console.log('Face API models loaded');
       } catch (e) {

@@ -168,7 +168,7 @@ export default function ResetPassword() {
         <div className="auth-links">
           Remember your password? <Link to="/login">Sign in</Link>
         </div>
-        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       </motion.div>
     </div>
   );

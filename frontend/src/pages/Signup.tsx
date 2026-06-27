@@ -186,7 +186,7 @@ export default function Signup() {
         <div className="auth-links">
           Already have an account? <Link to="/login">Sign in</Link>
         </div>
-        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       </motion.div>
     </div>
   );

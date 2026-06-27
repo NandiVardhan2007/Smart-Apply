@@ -21,11 +21,5 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     target: 'esnext'
-  },
-  optimizeDeps: {
-    exclude: ['@vladmandic/face-api'],
-    esbuildOptions: {
-      target: 'esnext'
-    }
   }
 })

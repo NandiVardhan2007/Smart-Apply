@@ -397,7 +397,7 @@ export default function ResumeTailor() {
           )}
         </div>
       </div>
-      <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
     </div>
   );
 }

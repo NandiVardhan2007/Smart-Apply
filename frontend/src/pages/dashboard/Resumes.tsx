@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, UploadCloud, Trash2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +20,7 @@ export default function Resumes() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
-  const fetchResumes = async () => {
+  const fetchResumes = useCallback(async () => {
     try {
       const res = await apiFetch<{ resumes: Resume[] }>('/resumes');
       if (res.ok) {
@@ -31,11 +31,11 @@ export default function Resumes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchResumes();
-  }, []);
+  }, [fetchResumes]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

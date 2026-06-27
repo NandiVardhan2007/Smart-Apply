@@ -237,7 +237,7 @@ export default function Onboarding() {
           </motion.div>
         )}
 
-        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       </motion.div>
     </div>
   );

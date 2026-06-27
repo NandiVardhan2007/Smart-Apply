@@ -13,10 +13,8 @@ interface ImageCropModalProps {
 
 // Utility to create a cropped image from the original image and crop area
 const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
-  const image = new Image();
-  image.src = imageSrc;
-  
   return new Promise((resolve, reject) => {
+    const image = new Image();
     image.onload = () => {
       // Cap avatar size to 500x500 for faster uploads
       const MAX_SIZE = 500;
@@ -58,6 +56,7 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> =>
       }, 'image/jpeg', 0.85);
     };
     image.onerror = (error) => reject(error);
+    image.src = imageSrc;
   });
 };
 

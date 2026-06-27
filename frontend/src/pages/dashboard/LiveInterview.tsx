@@ -135,9 +135,12 @@ export default function LiveInterview() {
       recognition.lang = 'en-US';
       
       recognition.onresult = (event: any) => {
-        const text = event.results[0][0].transcript;
-        if (text && text.trim().length > 0) {
-          handleUserSpeech(text);
+        const result = event.results[event.resultIndex];
+        if (result.isFinal) {
+          const text = result[0].transcript;
+          if (text && text.trim().length > 0) {
+            handleUserSpeech(text.trim());
+          }
         }
       };
       
@@ -354,7 +357,6 @@ export default function LiveInterview() {
   return (
     <div className="live-interview-page" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="dashboard-page-header">
-        <h1>Live Video Interview</h1>
         <p>Real-time conversational interview with an AI Assistant analyzing expressions</p>
       </div>
 
@@ -523,8 +525,6 @@ export default function LiveInterview() {
         )}
       </div>
       <style>{`
-        .spin { animation: spin 1s linear infinite; } 
-        @keyframes spin { to { transform: rotate(360deg); } }
         .speaking-bar {
           width: 12px;
           background: var(--accent);
