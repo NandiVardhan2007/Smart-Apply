@@ -11,4 +11,4 @@ boto3==1.38.29
 pymupdf==1.25.3
 openai==1.82.0
 websockets==15.0.1
-email-validator>=2.2.0ollama>=0.3.0
+email-validator>=2.2.0
