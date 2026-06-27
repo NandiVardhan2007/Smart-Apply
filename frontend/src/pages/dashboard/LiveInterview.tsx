@@ -14,6 +14,92 @@ declare global {
   }
 }
 
+const AudioVisualizer = ({ stream, isSpeaking, maxHeight = 80 }: { stream?: MediaStream | null, isSpeaking?: boolean, maxHeight?: number }) => {
+  const barsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    let animationId: number;
+    let audioContext: AudioContext;
+    let analyser: AnalyserNode;
+    let source: MediaStreamAudioSourceNode;
+    
+    if (stream && isSpeaking) {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        audioContext = new AudioContextClass();
+        analyser = audioContext.createAnalyser();
+        source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyser.fftSize = 64;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        const renderFrame = () => {
+          analyser.getByteFrequencyData(dataArray);
+          barsRef.current.forEach((bar, i) => {
+            if (bar) {
+              const val = dataArray[i * 2 + 1] || 0;
+              const height = Math.max(10, (val / 255) * maxHeight);
+              bar.style.height = `${height}px`;
+            }
+          });
+          animationId = requestAnimationFrame(renderFrame);
+        };
+        renderFrame();
+      } catch (err) {
+        console.error('AudioContext error', err);
+      }
+    } else if (isSpeaking) {
+      let lastTime = performance.now();
+      const renderFrame = (time: number) => {
+        if (time - lastTime > 100) {
+           barsRef.current.forEach(bar => {
+             if (bar) {
+               const height = Math.max(16, Math.random() * maxHeight);
+               bar.style.height = `${height}px`;
+               bar.style.transition = 'height 0.1s ease';
+             }
+           });
+           lastTime = time;
+        }
+        animationId = requestAnimationFrame(renderFrame);
+      };
+      renderFrame(performance.now());
+    } else {
+      barsRef.current.forEach(bar => {
+        if (bar) {
+          bar.style.height = '10px';
+        }
+      });
+    }
+    
+    return () => {
+      if (animationId) cancelAnimationFrame(animationId);
+      if (source) source.disconnect();
+      if (analyser) analyser.disconnect();
+      if (audioContext && audioContext.state !== 'closed') audioContext.close();
+    };
+  }, [stream, isSpeaking, maxHeight]);
+
+  return (
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      {[0,1,2,3,4].map(i => (
+        <div 
+          key={i} 
+          ref={el => barsRef.current[i] = el}
+          style={{
+            width: '12px',
+            background: 'var(--accent)',
+            border: '2px solid #000',
+            borderRadius: '6px',
+            boxShadow: '2px 2px 0px 0px #000',
+            height: '10px',
+            transition: stream ? 'none' : 'height 0.1s ease'
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 export default function LiveInterview() {
   const [isActive, setIsActive] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
@@ -297,11 +383,7 @@ export default function LiveInterview() {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ marginBottom: '2rem', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {agentSpeaking ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '100px' }}>
-                       {[1,2,3,4,5].map(i => (
-                         <div key={i} className="speaking-bar" />
-                       ))}
-                    </div>
+                    <AudioVisualizer isSpeaking={true} />
                   ) : status === 'waiting' ? (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                        <div className="dot-pulse" style={{ animationDelay: '0s' }} />
@@ -349,7 +431,13 @@ export default function LiveInterview() {
 
             </div>
 
-            <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+              {/* User Mic Visualizer */}
+              {isRecording && localStreamRef.current && (
+                <div style={{ position: 'absolute', left: '2rem' }}>
+                  <AudioVisualizer stream={localStreamRef.current} isSpeaking={true} maxHeight={40} />
+                </div>
+              )}
               <button 
                 className={`btn ${isRecording ? 'btn-primary' : ''}`}
                 onClick={isRecording ? stopListening : startListening}
