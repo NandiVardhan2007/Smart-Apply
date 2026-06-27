@@ -106,7 +106,8 @@ async def send_interview_report_email(to_email: str, report_data: dict) -> bool:
     score = report_data.get("final_score", "N/A")
     feedback = report_data.get("overall_feedback", "")
     room_name = report_data.get("room_name", "")
-    report_url = f"{settings.FRONTEND_URL}/dashboard/live-interview/report/{room_name}"
+    encoded_room_name = urllib.parse.quote(room_name)
+    report_url = f"{settings.FRONTEND_URL}/dashboard/live-interview/report/{encoded_room_name}"
 
     areas_html = "".join(
         f"<li style='margin-bottom:8px; border-bottom: 2px solid #000; padding-bottom: 4px;'>{item}</li>"
