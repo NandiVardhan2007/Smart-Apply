@@ -97,7 +97,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <nav className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <nav className="nav-desktop" style={{ alignItems: 'center', gap: 32 }}>
           {HOME_SECTIONS.map((l) => (
             <a 
               key={l.href} 
@@ -134,12 +134,12 @@ export default function Navbar() {
         </nav>
 
         {/* Right section with Clock */}
-        <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="nav-desktop" style={{ alignItems: 'center', gap: 16 }}>
           <Clock />
         </div>
 
         {/* Mobile controls */}
-        <div className="nav-mobile-btn" style={{ display: 'none', alignItems: 'center', gap: 8 }}>
+        <div className="nav-mobile-btn" style={{ alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{ color: 'var(--text-primary)' }}
@@ -202,9 +202,11 @@ export default function Navbar() {
       </AnimatePresence>
 
       <style>{`
+        .nav-desktop { display: flex; }
+        .nav-mobile-btn { display: none; }
         @media (max-width: 768px) {
-          .nav-desktop { display: none !important; }
-          .nav-mobile-btn { display: flex !important; }
+          .nav-desktop { display: none; }
+          .nav-mobile-btn { display: flex; }
         }
         .clock-hover:hover {
           letter-spacing: 0.2em;

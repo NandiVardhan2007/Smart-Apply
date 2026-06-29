@@ -209,7 +209,7 @@ export default function ProjectRecommender() {
                 subtitle="Finding the best projects matched to your skills"
               />
             ) : (
-              <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+              <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                 {projects.map((proj) => (
                   <div key={proj.id} className="settings-card" style={{ display: 'flex', flexDirection: 'column', background: '#fff' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>

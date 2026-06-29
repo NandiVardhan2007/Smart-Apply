@@ -474,3 +474,28 @@ a:focus:not(:focus-visible) {
 /* Mobile: < 640px */
 /* Tablet: 640px - 1024px */
 /* Desktop: > 1024px */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  .card, .settings-card {
+    padding: 16px;
+  }
+  
+  h1 { font-size: clamp(2rem, 8vw, 3rem); }
+  h2 { font-size: clamp(1.5rem, 6vw, 2.5rem); }
+  h3 { font-size: clamp(1.25rem, 5vw, 2rem); }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .input-field, .select-field {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+}
+

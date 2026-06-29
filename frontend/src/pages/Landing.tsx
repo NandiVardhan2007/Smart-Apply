@@ -251,9 +251,9 @@ export default function Landing() {
         </div>
 
         <div className="hero-bottom-bar" style={{ maxWidth: 1680, width: '100%', margin: '0 auto', padding: '0 24px', marginTop: '96px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div className="hero-bottom-bar-inner">
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} className="hide-mobile" />
-            <div style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.3em', color: 'var(--text-muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.3em', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>
               ALL-IN-ONE AI PLATFORM — {currentYear}
             </div>
             <Link to="/signup" className="resume-button-group">

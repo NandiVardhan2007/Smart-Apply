@@ -53,7 +53,7 @@ export default function DashboardLayout() {
         </button>
       </div>
 
-      <main className="dashboard-main relative z-10" style={{ padding: '32px' }}>
+      <main className="dashboard-main relative z-10">
         <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
           <motion.div 
             className="text-massive text-shiny"

@@ -172,7 +172,7 @@ export default function AtsChecker() {
         <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>Optimize your resume for Applicant Tracking Systems.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
+      <div className="ats-layout" style={{ alignItems: 'start' }}>
         {/* Input Section */}
         <div style={{ background: '#fff', border: '4px solid #000', boxShadow: '8px 8px 0px #000', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>

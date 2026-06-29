@@ -368,3 +368,17 @@
   flex-direction: column;
 }
 
+.hero-bottom-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .hero-bottom-bar-inner {
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+  }
+}
+

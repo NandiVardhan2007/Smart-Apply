@@ -160,7 +160,7 @@ export default function AiChatbot() {
         </div>
 
         {messages.length === 1 && (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', padding: 24, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, pointerEvents: 'none' }}>
             {QUICK_PROMPTS.map((prompt) => (
               <button
                 key={prompt}

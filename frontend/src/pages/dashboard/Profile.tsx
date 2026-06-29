@@ -358,7 +358,7 @@ export default function Profile() {
 
             <h3 style={{ marginTop: 32, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>Social Links</h3>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
                 <div className="input-group">
                   <label>LinkedIn URL</label>
                   <div style={{ display: 'flex', gap: 8 }}>

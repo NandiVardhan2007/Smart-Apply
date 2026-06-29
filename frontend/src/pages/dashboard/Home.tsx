@@ -83,8 +83,8 @@ export default function Home() {
         </motion.div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-        <div style={{ background: '#fff', border: '4px solid #000', padding: 32, boxShadow: '8px 8px 0px #000' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+        <div className="card" style={{ border: '4px solid #000', boxShadow: '8px 8px 0px #000' }}>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>Quick Actions</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Link to="/dashboard/ats-checker" className="btn btn-outline" style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -99,7 +99,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={{ background: '#fff', border: '4px solid #000', padding: 32, boxShadow: '8px 8px 0px #000' }}>
+        <div className="card" style={{ border: '4px solid #000', boxShadow: '8px 8px 0px #000' }}>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>Your Profile</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontWeight: 600, fontSize: '1.1rem' }}>
             <p><strong>Member Since:</strong> {formatDate(stats?.member_since)}</p>
