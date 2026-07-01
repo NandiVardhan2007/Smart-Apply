@@ -78,9 +78,9 @@ export default function Navbar() {
         right: 0,
         zIndex: 50,
         transition: 'all 0.3s',
-        background: isScrolled ? '#ffffff' : 'transparent',
-        borderBottom: isScrolled ? 'var(--border-brutal)' : '3px solid transparent',
-        boxShadow: isScrolled ? 'var(--shadow-brutal)' : 'none',
+        background: (isScrolled || mobileOpen) ? '#ffffff' : 'transparent',
+        borderBottom: (isScrolled || mobileOpen) ? 'var(--border-brutal)' : '3px solid transparent',
+        boxShadow: (isScrolled || mobileOpen) ? 'var(--shadow-brutal)' : 'none',
       }}
     >
       <div style={{

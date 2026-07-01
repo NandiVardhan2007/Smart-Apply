@@ -265,13 +265,26 @@ export default function LiveInterview() {
     const utterance = new SpeechSynthesisUtterance(text);
     utteranceRef.current = utterance;
     utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    utterance.pitch = 0.7; // Lower pitch to enforce a deeper, more masculine tone
     
     // Pick an english voice if available
     const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en-') && (v.name.toLowerCase().includes('male') || v.name.includes('Daniel') || v.name.includes('David') || v.name.includes('Arthur') || v.name.includes('Mark'))) || 
-                           voices.find(v => v.lang.startsWith('en-') && !v.name.toLowerCase().includes('female') && !v.name.toLowerCase().includes('siri') && !v.name.toLowerCase().includes('zira') && !v.name.toLowerCase().includes('samantha')) ||
+    const isMaleName = (name: string) => {
+      const lower = name.toLowerCase();
+      return lower.includes('male') || lower.includes('boy') || lower.includes('man') || 
+             ['daniel', 'david', 'arthur', 'mark', 'alex', 'fred', 'bruce', 'oliver', 'george', 'ryan'].some(n => lower.includes(n));
+    };
+    
+    const isFemaleName = (name: string) => {
+      const lower = name.toLowerCase();
+      return lower.includes('female') || lower.includes('girl') || lower.includes('woman') ||
+             ['siri', 'zira', 'samantha', 'hazel', 'victoria', 'karen', 'tessa', 'veena', 'moira', 'fiona'].some(n => lower.includes(n));
+    };
+
+    const preferredVoice = voices.find(v => v.lang.startsWith('en-') && isMaleName(v.name)) || 
+                           voices.find(v => v.lang.startsWith('en-') && !isFemaleName(v.name)) ||
                            voices.find(v => v.lang.startsWith('en-'));
+                           
     if (preferredVoice) {
       utterance.voice = preferredVoice;
     }
