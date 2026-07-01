@@ -268,53 +268,66 @@ export default function LiveInterview() {
   const speakText = (text: string) => {
     if (!window.speechSynthesis) return;
     
-    window.speechSynthesis.cancel(); // Stop any ongoing speech
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utteranceRef.current = utterance;
-    utterance.rate = 1.0;
-    utterance.pitch = 0.5; // Exceptionally low pitch to force deep/masculine tone
-    
-    // Pick an english voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const isMaleName = (name: string) => {
-      const lower = name.toLowerCase();
-      return lower.includes('male') || lower.includes('boy') || lower.includes('man') || 
-             ['daniel', 'david', 'arthur', 'mark', 'alex', 'fred', 'bruce', 'oliver', 'george', 'ryan'].some(n => lower.includes(n));
-    };
-    
-    const isFemaleName = (name: string) => {
-      const lower = name.toLowerCase();
-      return lower.includes('female') || lower.includes('girl') || lower.includes('woman') ||
-             ['siri', 'zira', 'samantha', 'hazel', 'victoria', 'karen', 'tessa', 'veena', 'moira', 'fiona'].some(n => lower.includes(n));
+    const doSpeak = () => {
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
+      utterance.rate = 1.0;
+      utterance.pitch = 0.5; // Exceptionally low pitch to force deep/masculine tone
+      
+      // Pick an english voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const isMaleName = (name: string) => {
+        const lower = name.toLowerCase();
+        return lower.includes('male') || lower.includes('boy') || lower.includes('man') || 
+               ['daniel', 'david', 'arthur', 'mark', 'alex', 'fred', 'bruce', 'oliver', 'george', 'ryan', 'james', 'thomas', 'john'].some(n => lower.includes(n));
+      };
+      
+      const isFemaleName = (name: string) => {
+        const lower = name.toLowerCase();
+        return lower.includes('female') || lower.includes('girl') || lower.includes('woman') ||
+               ['siri', 'zira', 'samantha', 'hazel', 'victoria', 'karen', 'tessa', 'veena', 'moira', 'fiona', 'luciana', 'ava'].some(n => lower.includes(n));
+      };
+
+      const englishVoices = voices.filter(v => v.lang.startsWith('en-'));
+      
+      const preferredVoice = englishVoices.find(v => isMaleName(v.name)) || 
+                             englishVoices.find(v => !isFemaleName(v.name)) ||
+                             englishVoices[englishVoices.length - 1]; // Use last as fallback, first is often female default
+                             
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+      
+      utterance.onstart = () => {
+        setAgentSpeaking(true);
+        // Ensure we are not recording while agent speaks
+        if (recognitionRef.current) {
+          try { recognitionRef.current.abort(); } catch(e){}
+          setIsRecording(false);
+        }
+      };
+      
+      utterance.onend = () => {
+        setAgentSpeaking(false);
+        // Auto-start listening after agent finishes speaking
+        setTimeout(startListening, 100); // small delay to avoid capturing the end of the tts
+      };
+      
+      window.speechSynthesis.speak(utterance);
     };
 
-    const englishVoices = voices.filter(v => v.lang.startsWith('en-'));
-    
-    const preferredVoice = englishVoices.find(v => isMaleName(v.name)) || 
-                           englishVoices.find(v => !isFemaleName(v.name)) ||
-                           englishVoices[englishVoices.length - 1]; // Use last as fallback, first is often female default
-                           
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    if (window.speechSynthesis.getVoices().length === 0) {
+      // Voices not loaded yet, wait for them
+      window.speechSynthesis.onvoiceschanged = () => {
+        doSpeak();
+        // Clear listener so it doesn't trigger multiple times
+        window.speechSynthesis.onvoiceschanged = null;
+      };
+    } else {
+      doSpeak();
     }
-    
-    utterance.onstart = () => {
-      setAgentSpeaking(true);
-      // Ensure we are not recording while agent speaks
-      if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch(e){}
-        setIsRecording(false);
-      }
-    };
-    
-    utterance.onend = () => {
-      setAgentSpeaking(false);
-      // Auto-start listening after agent finishes speaking
-      setTimeout(startListening, 100); // small delay to avoid capturing the end of the tts
-    };
-    
-    window.speechSynthesis.speak(utterance);
   };
 
   const startListening = () => {

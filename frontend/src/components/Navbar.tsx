@@ -153,13 +153,27 @@ export default function Navbar() {
       {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.nav
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            style={{ overflow: 'hidden', background: 'var(--bg-primary)', borderBottom: 'var(--border-brutal)', boxShadow: 'var(--shadow-brutal)' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 16 }}>
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                zIndex: -1, // Behind the nav content, but inside the fixed header context
+                height: '100vh'
+              }}
+            />
+            <motion.nav
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              style={{ overflow: 'hidden', background: 'var(--bg-primary)', borderBottom: 'var(--border-brutal)', boxShadow: 'var(--shadow-brutal)', position: 'relative', zIndex: 1 }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 16 }}>
               {HOME_SECTIONS.map((l) => (
                 <a
                   key={l.href}
@@ -197,7 +211,8 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-          </motion.nav>
+            </motion.nav>
+          </>
         )}
       </AnimatePresence>
 
