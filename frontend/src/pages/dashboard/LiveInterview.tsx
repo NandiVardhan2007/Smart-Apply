@@ -269,7 +269,8 @@ export default function LiveInterview() {
     
     // Pick an english voice if available
     const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en-') && v.name.includes('Male')) || 
+    const preferredVoice = voices.find(v => v.lang.startsWith('en-') && (v.name.toLowerCase().includes('male') || v.name.includes('Daniel') || v.name.includes('David') || v.name.includes('Arthur') || v.name.includes('Mark'))) || 
+                           voices.find(v => v.lang.startsWith('en-') && !v.name.toLowerCase().includes('female') && !v.name.toLowerCase().includes('siri') && !v.name.toLowerCase().includes('zira') && !v.name.toLowerCase().includes('samantha')) ||
                            voices.find(v => v.lang.startsWith('en-'));
     if (preferredVoice) {
       utterance.voice = preferredVoice;
@@ -386,15 +387,14 @@ export default function LiveInterview() {
           </div>
         ) : (
           <div
+            className={`live-interview-container ${isCodingMode ? 'coding-mode' : ''}`}
             style={{ 
               width: '100%', 
               maxWidth: isCodingMode ? 1400 : 1000, 
-              height: 600, 
               background: 'var(--bg-surface)', 
               borderRadius: 16, 
               border: '1px solid var(--border-color)', 
               display: 'flex', 
-              flexDirection: isCodingMode ? 'row' : 'column',
               position: 'relative',
               overflow: 'hidden',
               transition: 'max-width 0.3s ease'
@@ -432,19 +432,22 @@ export default function LiveInterview() {
                 </div>
 
                 {/* Local Video */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '2rem',
-                  right: '2rem',
-                  width: isCodingMode ? '180px' : '240px',
-                  aspectRatio: '16/9',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                  background: '#000',
-                  border: '2px solid var(--border-color)',
-                  transition: 'width 0.3s ease'
-                }}>
+                <div 
+                  className="local-video-container"
+                  style={{
+                    position: 'absolute',
+                    bottom: '2rem',
+                    right: '2rem',
+                    width: isCodingMode ? '180px' : '240px',
+                    aspectRatio: '16/9',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                    background: '#000',
+                    border: '2px solid var(--border-color)',
+                    transition: 'width 0.3s ease'
+                  }}
+                >
                   <video 
                     ref={videoRef} 
                     autoPlay 
@@ -493,7 +496,7 @@ export default function LiveInterview() {
             </div>
             
             {isCodingMode && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', background: '#1e1e1e' }}>
+              <div className="editor-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', background: '#1e1e1e', minHeight: '400px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderBottom: '1px solid #333', background: '#252526' }}>
                   <select 
                     value={codeLanguage}

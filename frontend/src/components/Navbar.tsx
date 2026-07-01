@@ -157,15 +157,15 @@ export default function Navbar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ overflow: 'hidden', background: '#fff', borderBottom: 'var(--border-brutal)', boxShadow: 'var(--shadow-brutal)' }}
+            style={{ overflow: 'hidden', background: 'var(--bg-primary)', borderBottom: 'var(--border-brutal)', boxShadow: 'var(--shadow-brutal)' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', padding: '16px 24px', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 16 }}>
               {HOME_SECTIONS.map((l) => (
                 <a
                   key={l.href}
                   href={l.href}
                   onClick={() => setMobileOpen(false)}
-                  style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}
+                  className="mobile-nav-link"
                 >
                   {l.label}
                 </a>
@@ -174,27 +174,27 @@ export default function Navbar() {
                 <Link
                   to="/dashboard"
                   onClick={() => setMobileOpen(false)}
-                  style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)', marginTop: 8 }}
+                  className="mobile-nav-link mobile-nav-primary"
                 >
                   Dashboard
                 </Link>
               ) : (
-                <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
                   <Link
                     to="/login"
                     onClick={() => setMobileOpen(false)}
-                    style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)', marginTop: 8 }}
+                    className="mobile-nav-link"
                   >
                     Log In
                   </Link>
                   <Link
                     to="/signup"
                     onClick={() => setMobileOpen(false)}
-                    style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)' }}
+                    className="mobile-nav-link mobile-nav-primary"
                   >
                     Get Started
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </motion.nav>
@@ -204,6 +204,28 @@ export default function Navbar() {
       <style>{`
         .nav-desktop { display: flex; }
         .nav-mobile-btn { display: none; }
+        .mobile-nav-link {
+          display: block;
+          padding: 14px 16px;
+          font-size: 1.1rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #000;
+          background: #fff;
+          border: 2px solid #000;
+          box-shadow: 4px 4px 0px #000;
+          text-align: center;
+          text-decoration: none;
+          transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .mobile-nav-link:active {
+          transform: translate(2px, 2px);
+          box-shadow: 2px 2px 0px #000;
+        }
+        .mobile-nav-primary {
+          background: var(--accent);
+        }
         @media (max-width: 768px) {
           .nav-desktop { display: none; }
           .nav-mobile-btn { display: flex; }

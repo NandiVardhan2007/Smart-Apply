@@ -658,6 +658,15 @@
 }
 
 /* ── Interview ── */
+.live-interview-container {
+  height: 600px;
+  flex-direction: column;
+}
+
+.live-interview-container.coding-mode {
+  flex-direction: row;
+}
+
 .interview-setup {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -915,6 +924,32 @@
 
   .interview-setup {
     grid-template-columns: 1fr;
+  }
+
+  .live-interview-container {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 600px;
+  }
+  
+  .live-interview-container.coding-mode {
+    flex-direction: column !important;
+  }
+
+  .live-interview-container > div:first-child {
+    min-height: 400px;
+  }
+
+  .local-video-container {
+    width: 140px !important;
+    bottom: 1rem !important;
+    right: 1rem !important;
+  }
+
+  .editor-container {
+    border-left: none !important;
+    border-top: 1px solid var(--border-color);
+    min-height: 500px !important;
   }
 }
 
