@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Sidebar from './Sidebar';
 import '../styles/dashboard.css';
 
@@ -45,11 +45,11 @@ export default function DashboardLayout() {
           <img src="/logo.svg" alt="Smart Apply Logo" style={{ height: '32px', objectFit: 'contain' }} />
         </div>
         <button
-          onClick={() => setSidebarOpen(true)}
-          aria-label="Open menu"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? "Close menu" : "Open menu"}
           style={{ background: 'var(--accent)', border: 'var(--border-brutal)', padding: '4px 8px', boxShadow: '2px 2px 0px #000' }}
         >
-          <Menu size={22} color="#000" />
+          {sidebarOpen ? <X size={22} color="#000" /> : <Menu size={22} color="#000" />}
         </button>
       </div>
 

@@ -126,6 +126,14 @@ export default function LiveInterview() {
   const localStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    if (window.speechSynthesis) {
+      // Force voices to load on mount for mobile browsers
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+    
     // Initialize Web Speech API
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -265,7 +273,7 @@ export default function LiveInterview() {
     const utterance = new SpeechSynthesisUtterance(text);
     utteranceRef.current = utterance;
     utterance.rate = 1.0;
-    utterance.pitch = 0.7; // Lower pitch to enforce a deeper, more masculine tone
+    utterance.pitch = 0.5; // Exceptionally low pitch to force deep/masculine tone
     
     // Pick an english voice if available
     const voices = window.speechSynthesis.getVoices();
@@ -281,9 +289,11 @@ export default function LiveInterview() {
              ['siri', 'zira', 'samantha', 'hazel', 'victoria', 'karen', 'tessa', 'veena', 'moira', 'fiona'].some(n => lower.includes(n));
     };
 
-    const preferredVoice = voices.find(v => v.lang.startsWith('en-') && isMaleName(v.name)) || 
-                           voices.find(v => v.lang.startsWith('en-') && !isFemaleName(v.name)) ||
-                           voices.find(v => v.lang.startsWith('en-'));
+    const englishVoices = voices.filter(v => v.lang.startsWith('en-'));
+    
+    const preferredVoice = englishVoices.find(v => isMaleName(v.name)) || 
+                           englishVoices.find(v => !isFemaleName(v.name)) ||
+                           englishVoices[englishVoices.length - 1]; // Use last as fallback, first is often female default
                            
     if (preferredVoice) {
       utterance.voice = preferredVoice;
