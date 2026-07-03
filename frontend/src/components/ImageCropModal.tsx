@@ -88,35 +88,18 @@ export default function ImageCropModal({ isOpen, imageSrc, mode, onClose, onSave
   return (
     <AnimatePresence>
       <motion.div
-        className="modal-backdrop"
+        className="modal-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}
         onClick={onClose}
       >
         <motion.div
-          className="modal-content"
+          className="modal"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           style={{
-            background: '#fff',
-            border: 'var(--border-brutal)',
-            boxShadow: '8px 8px 0px #000',
-            padding: '24px',
-            width: '90%',
             maxWidth: mode === 'crop' ? '500px' : '400px',
             position: 'relative',
           }}

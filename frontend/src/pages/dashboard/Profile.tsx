@@ -54,6 +54,41 @@ export default function Profile() {
     fetchResumes();
   }, []);
 
+  // Hydrate the full profile from the backend on mount. The user object in
+  // AuthContext comes from the login/signup response, which only carries
+  // identity fields (id, email, full_name, is_verified, profile_pic_url) —
+  // never bio/skills/education/experience/social links. Without this fetch,
+  // a user who filled out their profile in a previous session and then logs
+  // in again sees a page that looks empty, even though the data is saved.
+  useEffect(() => {
+    const fetchFullProfile = async () => {
+      try {
+        const res = await apiFetch<{
+          full_name: string;
+          bio: string | null;
+          skills: string[];
+          linkedin_url: string | null;
+          github_url: string | null;
+          portfolio_url: string | null;
+          education: string[];
+          experience: string[];
+          profile_pic_url: string | null;
+        }>('/user/profile');
+        if (res.ok) {
+          updateUser(res.data);
+        } else {
+          showToast('error', 'Failed to load profile data');
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile', err);
+        showToast('error', 'Network error while loading profile');
+      }
+    };
+    fetchFullProfile();
+    // Runs once on mount — the sync-effect below picks up the result via `user`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Sync state when user object loads or updates
   useEffect(() => {
     if (user) {

@@ -19,7 +19,7 @@ export default function LoadingSpinner({ size = 40 }: { size?: number }) {
    ORBIT SPINNER
    A square with two orbiting dots — premium feel
    =========================================================== */
-export function OrbitSpinner({ size = 44 }: { size?: number }) {
+function OrbitSpinner({ size = 44 }: { size?: number }) {
   const r = size / 2;
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
@@ -58,11 +58,6 @@ export function OrbitSpinner({ size = 44 }: { size?: number }) {
   );
 }
 
-/* --- kept as BrutalSpinner alias for backwards compat --- */
-export function BrutalSpinner({ size = 40 }: { size?: number }) {
-  return <OrbitSpinner size={size} />;
-}
-
 /* ===========================================================
    BUTTON SPINNER  — square, crisp, minimal
    =========================================================== */
@@ -84,7 +79,7 @@ export function ButtonSpinner({ size = 16 }: { size?: number }) {
 /* ===========================================================
    BOUNCING DOTS  — 3 squares with staggered bounce
    =========================================================== */
-export function BouncingDots({ size = 10 }: { size?: number }) {
+function BouncingDots({ size = 10 }: { size?: number }) {
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: size * 2.5 }}>
       {[0, 1, 2].map((i) => (

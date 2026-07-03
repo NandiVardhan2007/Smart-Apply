@@ -161,11 +161,10 @@ export default function Settings() {
         {showDeleteModal && (
           <div className="modal-overlay">
             <motion.div
-              className="modal-content"
+              className="modal"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              style={{ background: '#fff', border: 'var(--border-brutal)', boxShadow: '8px 8px 0px #000', padding: 24, maxWidth: 400 }}
             >
               <h3 style={{ fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 12 }}>Delete Account?</h3>
               <p style={{ marginBottom: 24, fontWeight: 500 }}>Are you sure you want to delete your account? All your data, resumes, and interview history will be permanently erased.</p>

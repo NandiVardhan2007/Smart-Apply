@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 
@@ -7,26 +7,31 @@ import { ToastProvider } from './components/Toast';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import LoadingSpinner from './components/LoadingSpinner';
 
-// Public Pages
+// Public Pages — kept eager since these are the most common first paint
+// for a signed-out visitor and are all comparatively light.
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import OtpVerify from './pages/OtpVerify';
 import ResetPassword from './pages/ResetPassword';
-import Onboarding from './pages/Onboarding';
 
-// Dashboard Pages
-import Profile from './pages/dashboard/Profile';
-import Home from './pages/dashboard/Home';
-import Resumes from './pages/dashboard/Resumes';
-import ResumeTailor from './pages/dashboard/ResumeTailor';
-import AtsChecker from './pages/dashboard/AtsChecker';
-import AiChatbot from './pages/dashboard/AiChatbot';
-import ProjectRecommender from './pages/dashboard/ProjectRecommender';
-import LiveInterview from './pages/dashboard/LiveInterview';
-import InterviewReport from './pages/dashboard/InterviewReport';
-import Settings from './pages/dashboard/Settings';
+// Everything below this line only ever renders after a successful login,
+// and several of these pages pull in heavy dependencies (Monaco editor,
+// face-api models, PDF/LaTeX tooling) — code-split so a signed-out visitor
+// never downloads any of it.
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Profile = lazy(() => import('./pages/dashboard/Profile'));
+const Home = lazy(() => import('./pages/dashboard/Home'));
+const Resumes = lazy(() => import('./pages/dashboard/Resumes'));
+const ResumeTailor = lazy(() => import('./pages/dashboard/ResumeTailor'));
+const AtsChecker = lazy(() => import('./pages/dashboard/AtsChecker'));
+const AiChatbot = lazy(() => import('./pages/dashboard/AiChatbot'));
+const ProjectRecommender = lazy(() => import('./pages/dashboard/ProjectRecommender'));
+const LiveInterview = lazy(() => import('./pages/dashboard/LiveInterview'));
+const InterviewReport = lazy(() => import('./pages/dashboard/InterviewReport'));
+const Settings = lazy(() => import('./pages/dashboard/Settings'));
 
 export default function App() {
   useEffect(() => {
@@ -40,48 +45,56 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <Navbar />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/verify-otp" element={<OtpVerify />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner size={44} />
+              </div>
+            }
+          >
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-otp" element={<OtpVerify />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected Onboarding Route */}
-            <Route
-              path="/onboarding"
-              element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected Onboarding Route */}
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Protected Dashboard Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Home />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="resumes" element={<Resumes />} />
-              <Route path="tailor-resume/:id" element={<ResumeTailor />} />
-              <Route path="ats-checker" element={<AtsChecker />} />
-              <Route path="ai-chatbot" element={<AiChatbot />} />
-              <Route path="project-recommender" element={<ProjectRecommender />} />
-              <Route path="live-interview" element={<LiveInterview />} />
-              <Route path="live-interview/report/:roomName" element={<InterviewReport />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+              {/* Protected Dashboard Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Home />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="resumes" element={<Resumes />} />
+                <Route path="tailor-resume/:id" element={<ResumeTailor />} />
+                <Route path="ats-checker" element={<AtsChecker />} />
+                <Route path="ai-chatbot" element={<AiChatbot />} />
+                <Route path="project-recommender" element={<ProjectRecommender />} />
+                <Route path="live-interview" element={<LiveInterview />} />
+                <Route path="live-interview/report/:roomName" element={<InterviewReport />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </ToastProvider>
     </Router>
