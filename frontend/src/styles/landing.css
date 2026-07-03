@@ -25,6 +25,23 @@
   text-shadow: 4px 4px 0px var(--accent-pink);
 }
 
+/* Floating annotation chips beside the hero wordmark */
+.glass-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--accent);
+  border: 2px solid var(--text-primary);
+  box-shadow: 3px 3px 0px 0px var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 .brutal-badge {
   display: flex;
   align-items: center;
@@ -52,8 +69,8 @@
 
 .resume-button-group:hover .resume-button {
   width: 180px;
-  border-color: rgba(255,255,255,0.3);
-  box-shadow: 0 0 20px rgba(255,255,255,0.1);
+  border-color: var(--accent);
+  box-shadow: 4px 4px 0px 0px var(--accent);
 }
 
 .resume-button-group:hover .resume-button-text {
@@ -74,7 +91,7 @@
   border-radius: 999px;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
-  border: 1px solid transparent;
+  border: 2px solid var(--text-primary);
   cursor: pointer;
 }
 
@@ -87,7 +104,7 @@
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #000;
+  color: #fff;
   padding-left: 24px;
   padding-right: 48px;
 }
@@ -100,7 +117,7 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  color: #000;
+  color: #fff;
   transition: transform 0.5s;
 }
 
@@ -133,20 +150,21 @@
   gap: 8px;
   padding: 6px 16px;
   background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--border-color);
   border-radius: 999px;
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 24px;
+  box-shadow: var(--shadow-raised);
 }
 
 .hero-badge .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--text-primary);
+  background: var(--accent-green);
   animation: pulse-dot 2s infinite;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 @keyframes pulse-dot {

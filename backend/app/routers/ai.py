@@ -35,12 +35,15 @@ async def ats_check(
     """Analyze a resume against an optional job description for ATS compatibility."""
     resume_text = ""
 
+    resume = None
     if resume_id:
         try:
             resume = await Resume.get(PydanticObjectId(resume_id))
             if not resume or resume.user_id != user.id:
                 raise HTTPException(status_code=404, detail="Resume not found")
             resume_text = resume.extracted_text
+        except HTTPException:
+            raise
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid resume ID")
     elif resume_file:
@@ -62,6 +65,11 @@ async def ats_check(
         raise HTTPException(status_code=400, detail="Could not extract text from the resume.")
 
     result = await ai_service.analyze_resume_ats(resume_text, job_description)
+
+    if resume is not None:
+        resume.ats_score = result.get("score")
+        await resume.save()
+
     return AtsCheckResponse(**result)
 
 @router.post("/parse-resume", response_model=ResumeParseResponse)

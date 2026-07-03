@@ -66,9 +66,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   const Icon = toast.type === 'success' ? CheckCircle : toast.type === 'error' ? AlertCircle : Info;
   const colors = {
-    success: { bg: 'var(--success-bg)', border: 'rgba(34,199,160,0.3)', color: 'var(--success)' },
-    error: { bg: 'var(--error-bg)', border: 'rgba(239,84,104,0.3)', color: 'var(--error)' },
-    info: { bg: 'var(--accent-soft)', border: 'rgba(47,143,255,0.3)', color: 'var(--accent-secondary)' },
+    success: { bg: 'var(--success-bg)', color: 'var(--success)' },
+    error: { bg: 'var(--error-bg)', color: 'var(--error)' },
+    info: { bg: 'var(--accent-soft)', color: 'var(--accent-secondary)' },
   };
   const c = colors[toast.type];
 
@@ -79,15 +79,14 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       exit={{ opacity: 0, x: 40, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       style={{
-        background: 'var(--bg-card)',
-        border: `1px solid ${c.border}`,
-        borderLeft: `3px solid ${c.color}`,
-        borderRadius: 'var(--radius)',
+        background: c.bg,
+        border: '3px solid #000',
+        borderLeft: `8px solid ${c.color}`,
         padding: '14px 16px',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 10,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        boxShadow: '4px 4px 0px 0px #000',
       }}
     >
       <Icon size={18} style={{ color: c.color, flexShrink: 0, marginTop: 1 }} />

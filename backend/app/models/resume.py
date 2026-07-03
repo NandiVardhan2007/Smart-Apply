@@ -11,11 +11,13 @@ class Resume(Document):
     user_id: PydanticObjectId
     filename: str
     file_url: str
+    file_key: str = ""
     extracted_text: str = ""
     latex_code: str = ""
     html_code: str = ""
 
     is_primary: bool = False
+    ats_score: Optional[int] = None
 
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
 

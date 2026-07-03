@@ -2,6 +2,7 @@ from typing import List
 
 import fitz  # PyMuPDF
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request
+from starlette.concurrency import run_in_threadpool
 from app.rate_limiter import limiter
 from beanie import PydanticObjectId
 
@@ -44,8 +45,9 @@ async def upload_new_resume(
             status_code=400, detail="Could not extract text from the PDF. It may be an image."
         )
 
-    # Upload to R2
-    key = storage_service.upload_file(
+    # Upload to R2 (runs the blocking boto3 call off the event loop)
+    key = await run_in_threadpool(
+        storage_service.upload_file,
         file_bytes=contents,
         original_filename=file.filename or "resume.pdf",
         folder=f"resumes/{user.id}",
@@ -62,6 +64,7 @@ async def upload_new_resume(
         user_id=user.id,
         filename=file.filename or "resume.pdf",
         file_url=url,
+        file_key=key,
         extracted_text=resume_text,
         is_primary=is_primary,
     )
@@ -95,5 +98,27 @@ async def delete_resume(request: Request, resume_id: str, user: User = Depends(g
     if not resume or resume.user_id != user.id:
         raise HTTPException(status_code=404, detail="Resume not found")
 
+    was_primary = resume.is_primary
+    file_key = resume.file_key
+
     await resume.delete()
+
+    # Clean up the underlying file in R2 so deleted resumes don't linger forever
+    if file_key:
+        await run_in_threadpool(storage_service.delete_file, file_key)
+
+    # If the deleted resume was primary, promote the most recently uploaded
+    # remaining resume so the user always has a primary resume when one exists
+    if was_primary:
+        next_primary = (
+            await Resume.find({"user_id": user.id}).sort("-uploaded_at").first_or_none()
+        )
+        if next_primary:
+            next_primary.is_primary = True
+            await next_primary.save()
+            user.resume_url = next_primary.file_url
+        else:
+            user.resume_url = None
+        await user.save()
+
     return {"message": "Resume deleted successfully"}

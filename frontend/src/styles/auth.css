@@ -78,7 +78,6 @@
   color: var(--accent-secondary);
   font-weight: 600;
   transition: color var(--transition-fast);
-  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
 }
 
 .auth-links a:hover,
@@ -144,13 +143,11 @@
   color: var(--accent-secondary);
   font-weight: 600;
   font-size: 0.85rem;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
 }
 
 .resend-btn:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
-  text-shadow: none;
 }
 
 /* ── Password Strength ── */

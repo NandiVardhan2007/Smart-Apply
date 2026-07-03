@@ -42,7 +42,9 @@ export function useAuthSocket(opts?: UseAuthSocketOpts) {
       const host = window.location.host;
       wsBaseUrl = `${protocol}//${host}`;
     }
-    const url = `${wsBaseUrl}/ws/auth/${sessionId}`;
+    // The auth websocket router is mounted under the /api prefix on the backend
+    // (see app.include_router(ws_router, prefix="/api") in main.py) — this must match.
+    const url = `${wsBaseUrl}/api/ws/auth/${sessionId}`;
 
     const ws = new WebSocket(url);
     wsRef.current = ws;

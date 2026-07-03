@@ -8,37 +8,12 @@ from app.services import storage_service
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
-ALLOWED_RESUME_TYPES = {"application/pdf"}
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
-
-@router.post("/resume")
-@limiter.limit("5/minute")
-async def upload_resume(
-    request: Request, file: UploadFile = File(...), user: User = Depends(get_current_user)
-):
-    """Upload a resume PDF to Cloudflare R2."""
-    if file.content_type not in ALLOWED_RESUME_TYPES:
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-
-    contents = await file.read()
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
-
-    key = storage_service.upload_file(
-        file_bytes=contents,
-        original_filename=file.filename or "resume.pdf",
-        folder=f"resumes/{user.id}",
-        content_type=file.content_type or "application/pdf",
-    )
-    url = storage_service.get_file_url(key)
-
-    # Update user's resume URL
-    user.resume_url = url
-    await user.save()
-
-    return {"message": "Resume uploaded successfully", "url": url, "key": key}
+# Note: resume uploads go through POST /api/resumes (see routers/resume.py), which
+# also extracts text and manages the resume library. A duplicate, unused
+# POST /api/upload/resume endpoint previously lived here and has been removed.
 
 
 @router.post("/avatar")

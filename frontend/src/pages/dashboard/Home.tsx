@@ -90,8 +90,8 @@ export default function Home() {
             <Link to="/dashboard/ats-checker" className="btn btn-outline" style={{ display: 'flex', justifyContent: 'space-between' }}>
               Check Resume ATS Score <ArrowRight size={18} />
             </Link>
-            <Link to="/dashboard/portfolio-generator" className="btn btn-outline" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              Generate Portfolio <ArrowRight size={18} />
+            <Link to="/dashboard/resumes" className="btn btn-outline" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              Tailor a Resume <ArrowRight size={18} />
             </Link>
             <Link to="/dashboard/live-interview" className="btn btn-outline" style={{ display: 'flex', justifyContent: 'space-between' }}>
               Practice Interview <ArrowRight size={18} />

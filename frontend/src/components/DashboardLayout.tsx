@@ -56,14 +56,14 @@ export default function DashboardLayout() {
       <main className="dashboard-main relative z-10">
         <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
           <motion.div 
-            className="text-massive text-shiny"
+            className="text-massive"
             style={{ 
               fontSize: 'clamp(2rem, 4vw, 4rem)', 
               marginBottom: '32px', 
               letterSpacing: '-0.05em', 
               lineHeight: 1,
-              color: '#000',
-              textShadow: '2px 2px 0px #fff'
+              color: 'var(--text-primary)',
+              textShadow: '4px 4px 0px var(--accent)'
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

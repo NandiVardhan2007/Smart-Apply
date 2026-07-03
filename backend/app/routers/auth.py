@@ -107,9 +107,11 @@ async def verify_otp(request: Request, body: OtpVerifyRequest):
 
     if session_id:
         await manager.send_event(session_id, "otp_verified", {
+            "id": str(user.id),
             "email": user.email,
             "token": token,
             "full_name": user.full_name,
+            "profile_pic_url": user.profile_pic_url,
             "has_onboarded": bool(user.bio or user.skills or user.education or user.experience)
         })
 
@@ -154,9 +156,11 @@ async def login(request: Request, body: LoginRequest):
     if session_id:
         manager.associate_email(session_id, user.email)
         await manager.send_event(session_id, "login_success", {
+            "id": str(user.id),
             "email": user.email,
             "token": token,
             "full_name": user.full_name,
+            "profile_pic_url": user.profile_pic_url,
         })
 
     return TokenResponse(access_token=token, user=_user_dict(user))

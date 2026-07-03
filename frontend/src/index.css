@@ -1,56 +1,75 @@
-/* ═══════════════════════════════════════════════════════════
-   SMART APPLY — Instrument Panel Design System
-   Cool-toned · Skeuomorphic via layered shadow bevels (zero gradients)
+/* ===============================================================
+   SMART APPLY — Neo-Brutalist Design System
+   Flat color blocks · hard offset shadows · zero border-radius
    Typography: Space Grotesk (display) · Inter (body) · JetBrains Mono (data)
-   ═══════════════════════════════════════════════════════════ */
+   =============================================================== */
 
 :root {
-  /* ── Surfaces — Neo-Brutalist ── */
+  /* -- Surfaces -- */
   --bg-primary: #f4f4f0;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-input: #ffffff;
+  --bg-body: #f4f4f0;        /* alias of bg-primary, used for full-bleed page backgrounds */
+  --bg-surface: #ffffff;      /* alias of bg-card, used for panel/container backgrounds */
+  --bg-elevated: #ececea;     /* a step up from bg-surface, e.g. scrollbar thumbs, raised chips */
+  --bg-card-hover: #e4e4de;   /* hover state for elevated surfaces */
 
-  /* ── Accent — Vibrant Neo-Brutalist ── */
-  --accent: #facc15; /* Yellow */
+  /* -- Accent — Vibrant Neo-Brutalist -- */
+  --accent: #facc15;          /* Yellow — primary brand accent */
   --accent-pink: #f472b6;
   --accent-blue: #60a5fa;
   --accent-green: #4ade80;
+  --accent-yellow: #facc15;   /* alias of accent */
+  --accent-secondary: #2563eb; /* higher-contrast blue for text/icons on light surfaces */
+  --accent-start: #2563eb;    /* alias of accent-secondary, used for upload/percentage highlights */
+  --accent-soft: #dbeafe;     /* flat pastel tint for icon badges — solid, no transparency */
+  --border-accent: #facc15;   /* accent-colored border for interactive hover states */
 
-  /* ── Text hierarchy ── */
+  /* -- Text hierarchy -- */
   --text-primary: #000000;
   --text-secondary: #333333;
   --text-muted: #666666;
 
-  /* ── Semantic ── */
-  --success: #4ade80;
-  --error: #f87171;
+  /* -- Semantic -- */
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --error: #dc2626;
+  --error-bg: #fee2e2;
   --warning: #facc15;
-  --info: #60a5fa;
+  --info: #2563eb;
 
-  /* ── Borders / Hard lines ── */
+  /* -- Primary / foreground pairing (for inverted active states) -- */
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+
+  /* -- Borders / Hard lines -- */
   --border-color: #000000;
+  --border: #d8d8d2;          /* quiet divider, not a brutal structural border */
   --border-brutal: 3px solid #000000;
   --border-thin: 2px solid #000000;
 
-  /* ── Shadows & Depth ── */
+  /* -- Shadows & Depth (always hard-edged, zero blur) -- */
   --shadow-brutal: 4px 4px 0px 0px #000000;
   --shadow-brutal-lg: 8px 8px 0px 0px #000000;
+  --shadow-raised: 2px 2px 0px 0px #000000;
+  --shadow-inset: inset 3px 3px 0px rgba(0, 0, 0, 0.12);
   --shadow-pressed: 0px 0px 0px 0px #000000;
 
-  /* ── Radii ── */
+  /* -- Radii — brutalist system is intentionally square -- */
   --radius-sm: 0px;
   --radius: 0px;
   --radius-lg: 0px;
   --radius-xl: 0px;
 
-  /* ── Typography ── */
+  /* -- Typography -- */
   --font-body: 'Inter', -apple-system, sans-serif;
   --font-heading: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* ── Timing ── */
+  /* -- Timing -- */
   --transition: 0.1s ease-in-out;
+  --transition-fast: 0.08s ease-in-out;
 }
 
 [data-theme="dark"] {
@@ -58,27 +77,49 @@
   --bg-secondary: #141414;
   --bg-card: #171717;
   --bg-input: #141414;
-  
+  --bg-body: #0d0d0d;
+  --bg-surface: #171717;
+  --bg-elevated: #212121;
+  --bg-card-hover: #2a2a2a;
+
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
-  
+
+  --success: #4ade80;
+  --success-bg: #14251a;
+  --error: #f87171;
+  --error-bg: #2a1616;
+  --warning: #eab308;
+  --info: #3b82f6;
+
+  --primary: #f4f4f5;
+  --primary-foreground: #0d0d0d;
+
   --border-color: #27272a;
+  --border: #3f3f46;
   --border-brutal: 3px solid #3f3f46;
   --border-thin: 2px solid #3f3f46;
-  
+
   /* Give the shadows a subtle bright outline to contrast the dark theme */
   --shadow-brutal: 4px 4px 0px 0px rgba(255, 255, 255, 0.15);
   --shadow-brutal-lg: 8px 8px 0px 0px rgba(255, 255, 255, 0.15);
-  
+  --shadow-raised: 2px 2px 0px 0px rgba(255, 255, 255, 0.15);
+  --shadow-inset: inset 3px 3px 0px rgba(255, 255, 255, 0.08);
+
   /* Tweak accent colors for dark mode vibrancy */
   --accent: #eab308;
   --accent-pink: #ec4899;
   --accent-blue: #3b82f6;
   --accent-green: #22c55e;
+  --accent-yellow: #eab308;
+  --accent-secondary: #3b82f6;
+  --accent-start: #3b82f6;
+  --accent-soft: #17233a;
+  --border-accent: #eab308;
 }
 
-/* ── Reset & Base ── */
+/* -- Reset & Base -- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -135,7 +176,7 @@ input, textarea, select {
   outline: none;
 }
 
-/* ── Typography ── */
+/* -- Typography -- */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -143,43 +184,19 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-/* Solid accent text — replaces the old gradient-clipped text technique.
-   Same usage sites, flat color, zero gradients. */
 .text-accent {
   color: var(--accent);
 }
 
-/* Monospace utility — for data readouts, scores, badges, timestamps.
-   Reinforces the instrument-panel identity with sharp, technical glyphs. */
+/* Monospace utility — for data readouts, scores, badges, timestamps. */
 .text-mono {
   font-family: var(--font-mono);
   letter-spacing: -0.01em;
 }
 
-/* Shiny Text Animation */
-.text-shiny {
-  background: linear-gradient(
-    110deg,
-    #ffffff 45%,
-    #a0a0a0 50%,
-    #ffffff 55%
-  );
-  background-size: 200% auto;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shine 4s linear infinite;
-}
-
-@keyframes shine {
-  to {
-    background-position: 200% center;
-  }
-}
-
-/* ══════════════════════════════════
+/* ==================================
    NEO-BRUTALIST BUTTONS
-   ══════════════════════════════════ */
+   ================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -226,13 +243,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-ghost:hover {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   box-shadow: none;
   transform: none;
 }
 
 .btn-danger {
   background: var(--error);
+  color: #fff;
 }
 
 .btn-sm {
@@ -252,9 +270,9 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-brutal) !important;
 }
 
-/* ══════════════════════════════════
+/* ==================================
    NEO-BRUTALIST INPUTS
-   ══════════════════════════════════ */
+   ================================== */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -316,9 +334,9 @@ textarea.input-field {
   transform: translate(-2px, -2px);
 }
 
-/* ══════════════════════════════════
+/* ==================================
    NEO-BRUTALIST CARDS
-   ══════════════════════════════════ */
+   ================================== */
 .card {
   background: var(--bg-card);
   border: var(--border-brutal);
@@ -350,39 +368,33 @@ textarea.input-field {
   box-shadow: var(--shadow-brutal-lg);
 }
 
-/* ── Tags / Chips — embossed pills ── */
+/* -- Tags / Chips — flat, hard-edged -- */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 4px 12px;
-  border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 500;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 1px 3px rgba(0, 0, 0, 0.2);
+  font-weight: 700;
+  border: 2px solid #000;
 }
 
 .tag-success {
   background: var(--success-bg);
   color: var(--success);
-  border: 1px solid rgba(34, 199, 160, 0.2);
 }
 
 .tag-error {
   background: var(--error-bg);
   color: var(--error);
-  border: 1px solid rgba(239, 84, 104, 0.2);
 }
 
 .tag-accent {
   background: var(--accent-soft);
   color: var(--accent-secondary);
-  border: 1px solid rgba(47, 143, 255, 0.2);
 }
 
-/* ── Container ── */
+/* -- Container -- */
 .container {
   width: 100%;
   max-width: 1200px;
@@ -390,9 +402,9 @@ textarea.input-field {
   padding: 0 24px;
 }
 
-/* ══════════════════════════════════
+/* ==================================
    GLOBAL UTILITIES
-   ══════════════════════════════════ */
+   ================================== */
 
 /* Spinner animation — used everywhere */
 .spin {
@@ -406,14 +418,12 @@ textarea.input-field {
 .skeleton {
   background: var(--bg-surface);
   animation: skeleton-pulse 1.6s ease-in-out infinite;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-inset);
+  border: 2px solid var(--border-color);
 }
 
 .skeleton-line {
   height: 14px;
   margin-bottom: 10px;
-  border-radius: 6px;
 }
 
 .skeleton-line:last-child {
@@ -441,7 +451,7 @@ a:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* ── Scrollbar — inset track, solid raised thumb ── */
+/* -- Scrollbar — flat, hard-edged, no soft insets -- */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -449,28 +459,24 @@ a:focus:not(:focus-visible) {
 
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
-  border-radius: 4px;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--bg-elevated);
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  border: 1px solid var(--border-color);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--bg-card-hover);
 }
 
-/* ── Selection ── */
+/* -- Selection -- */
 ::selection {
-  background: rgba(47, 143, 255, 0.3);
-  color: var(--text-primary);
+  background: var(--accent);
+  color: #000000;
 }
 
-/* ── Responsive Breakpoints (used in component CSS) ── */
+/* -- Responsive Breakpoints (used in component CSS) -- */
 /* Mobile: < 640px */
 /* Tablet: 640px - 1024px */
 /* Desktop: > 1024px */
@@ -479,23 +485,141 @@ a:focus:not(:focus-visible) {
   .container {
     padding: 0 16px;
   }
-  
+
   .card, .settings-card {
     padding: 16px;
   }
-  
+
   h1 { font-size: clamp(2rem, 8vw, 3rem); }
   h2 { font-size: clamp(1.5rem, 6vw, 2.5rem); }
   h3 { font-size: clamp(1.25rem, 5vw, 2rem); }
-  
+
   .btn {
     padding: 10px 20px;
     font-size: 0.9rem;
   }
-  
+
   .input-field, .select-field {
     padding: 10px 14px;
     font-size: 0.95rem;
   }
 }
 
+/* ===============================================================
+   UTILITY LAYER
+   A focused, hand-written set of Tailwind-style utility classes.
+   This project does not include Tailwind CSS — these classes were
+   referenced throughout the components (flex, gap-4, text-2xl, etc.)
+   with no matching definitions anywhere, so they previously had zero
+   effect. Rather than touch every component, this layer defines
+   exactly the utility classes actually used in the codebase, using
+   the design tokens above so everything stays on-brand.
+   =============================================================== */
+
+/* -- Layout -- */
+.flex { display: flex; }
+.flex-1 { flex: 1 1 0%; }
+.flex-col { flex-direction: column; }
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.relative { position: relative; }
+.z-10 { z-index: 10; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+.max-w-md { max-width: 28rem; }
+.max-w-5xl { max-width: 64rem; }
+
+/* -- Gap -- */
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+
+/* -- Spacing -- */
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-6 { margin-top: 1.5rem; }
+.p-2 { padding: 0.5rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.pb-20 { padding-bottom: 5rem; }
+.pt-40 { padding-top: 10rem; }
+.pl-4 { padding-left: 1rem; }
+.pl-5 { padding-left: 1.25rem; }
+
+/* Real Tailwind space-y mechanism: margin only between adjacent children */
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+.space-y-8 > * + * { margin-top: 2rem; }
+
+/* -- Sizing -- */
+.w-12 { width: 3rem; }
+.w-16 { width: 4rem; }
+.h-12 { height: 3rem; }
+.h-16 { height: 4rem; }
+
+/* -- Typography -- */
+.text-center { text-align: center; }
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.text-5xl { font-size: 3rem; }
+.font-bold { font-weight: 700; }
+.font-black { font-weight: 900; }
+.leading-relaxed { line-height: 1.625; }
+.tracking-wider { letter-spacing: 0.05em; }
+.uppercase { text-transform: uppercase; }
+.list-disc { list-style: disc; }
+
+/* -- Color utilities (mapped to design tokens, not literal Tailwind hex) -- */
+.text-blue-400 { color: var(--accent-blue); }
+.text-green-500 { color: var(--success); }
+.text-purple-400 { color: #a78bfa; }
+.text-yellow-400 { color: var(--accent); }
+.text-text-secondary { color: var(--text-secondary); }
+.bg-bg-primary { background: var(--bg-primary); }
+.bg-bg-secondary { background: var(--bg-secondary); }
+.bg-primary { background: var(--primary); }
+.bg-green-500\/20 { background: var(--success-bg); }
+
+/* -- Borders --
+   Width/style and color are kept in separate classes on purpose: a
+   shorthand like "border-bottom: 2px solid var(--x)" would silently
+   overwrite a color set by a differently-named class, depending on
+   which rule happens to sit lower in this file rather than which
+   classes are actually applied to the element. */
+.border { border-width: 1px; border-style: solid; border-color: var(--border-color); }
+.border-b-2 { border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: var(--border-color); }
+.border-l-2 { border-left-width: 2px; border-left-style: solid; border-left-color: var(--border-color); }
+.border-l-4 { border-left-width: 4px; border-left-style: solid; border-left-color: var(--border-color); }
+.border-l-green-500 { border-left-color: var(--success); }
+.border-l-red-500 { border-left-color: var(--error); }
+.border-accent { border-color: var(--accent); }
+.border-border { border-color: var(--border); }
+
+/* -- Radius — full circles are a legitimate brutalist shape (avatars,
+   icon badges); "lg"/"xl" stay square to keep the zero-radius system intact -- */
+.rounded-full { border-radius: 9999px; }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+
+/* -- Animation -- */
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* -- Responsive variants (Tailwind's md: breakpoint = 768px) -- */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

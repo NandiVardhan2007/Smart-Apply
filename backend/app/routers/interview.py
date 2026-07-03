@@ -119,7 +119,7 @@ async def create_report(request: Request, body: ReportCreateRequest, current_use
     try:
         if body.user_id != str(current_user.id):
             raise HTTPException(status_code=403, detail="Not authorized")
-        report = InterviewReport(**body.dict())
+        report = InterviewReport(**body.model_dump())
         await report.insert()
         return {"status": "success", "id": str(report.id)}
     except Exception as e:
@@ -199,10 +199,8 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
         logger.info(f"Report saved to DB for room {data.room_name}")
 
         try:
-            user = await User.find_one({"_id": data.user_id})
-            if not user:
-                from bson import ObjectId
-                user = await User.find_one(User.id == ObjectId(data.user_id))
+            from bson import ObjectId
+            user = await User.find_one(User.id == ObjectId(data.user_id))
 
             if user and user.email:
                 success = await send_interview_report_email(user.email, report_data)
