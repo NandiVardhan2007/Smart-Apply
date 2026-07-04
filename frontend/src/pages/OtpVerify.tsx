@@ -111,14 +111,18 @@ export default function OtpVerify() {
 
   const handleResend = async () => {
     try {
-      await apiFetch('/auth/resend-otp', {
+      const res = await apiFetch<{ detail?: string }>('/auth/resend-otp', {
         method: 'POST',
         body: JSON.stringify({ email }),
       });
-      setCountdown(60);
-      showToast('info', 'A new OTP has been sent to your email.');
+      if (res.ok) {
+        setCountdown(60);
+        showToast('info', 'A new OTP has been sent to your email.');
+      } else {
+        showToast('error', res.data?.detail || 'Failed to resend OTP.');
+      }
     } catch {
-      showToast('error', 'Failed to resend OTP.');
+      showToast('error', 'Network error while resending OTP.');
     }
   };
 

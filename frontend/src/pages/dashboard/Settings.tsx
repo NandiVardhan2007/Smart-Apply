@@ -21,15 +21,19 @@ export default function Settings() {
     e.preventDefault();
     if (newPw.length < 8) return showToast('error', 'New password must be at least 8 characters');
     try {
-      await apiFetch('/user/settings/password', {
+      const res = await apiFetch<{ detail?: string }>('/user/settings/password', {
         method: 'PUT',
         body: JSON.stringify({ current_password: currentPw, new_password: newPw })
       });
-      showToast('success', 'Password updated successfully');
-      setCurrentPw('');
-      setNewPw('');
+      if (res.ok) {
+        showToast('success', 'Password updated successfully');
+        setCurrentPw('');
+        setNewPw('');
+      } else {
+        showToast('error', res.data?.detail || 'Failed to update password');
+      }
     } catch (err: any) {
-      showToast('error', err.message || 'Failed to update password');
+      showToast('error', err.message || 'Network error while updating password');
     }
   };
 
@@ -172,11 +176,15 @@ export default function Settings() {
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowDeleteModal(false)}>Cancel</button>
                 <button className="btn btn-primary" style={{ flex: 1, background: 'var(--error)' }} onClick={async () => {
                   try {
-                    await apiFetch('/user/account', { method: 'DELETE' });
-                    showToast('info', 'Account scheduled for deletion.');
-                    logout();
+                    const res = await apiFetch<{ detail?: string }>('/user/account', { method: 'DELETE' });
+                    if (res.ok) {
+                      showToast('info', 'Account scheduled for deletion.');
+                      logout();
+                    } else {
+                      showToast('error', res.data?.detail || 'Failed to delete account');
+                    }
                   } catch (err: any) {
-                    showToast('error', err.message || 'Failed to delete account');
+                    showToast('error', err.message || 'Network error while deleting account');
                   }
                 }}>
                   Yes, Delete

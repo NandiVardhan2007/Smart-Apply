@@ -125,12 +125,6 @@ export default function AtsChecker() {
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'var(--success)';
-    if (score >= 60) return 'var(--warning)';
-    return 'var(--error)';
-  };
-
   const handleTailor = async () => {
     if (!selectedResumeId || selectedResumeId === 'new') {
       return showToast('error', 'Please ensure your resume is uploaded first.');

@@ -584,9 +584,16 @@ a:focus:not(:focus-visible) {
 .text-purple-400 { color: #a78bfa; }
 .text-yellow-400 { color: var(--accent); }
 .text-text-secondary { color: var(--text-secondary); }
+.text-primary { color: var(--text-primary); }
 .bg-bg-primary { background: var(--bg-primary); }
 .bg-bg-secondary { background: var(--bg-secondary); }
-.bg-primary { background: var(--primary); }
+/* Note: bg-primary/text-primary-foreground are only used once in the app
+   (Landing.tsx's root wrapper). Every element inside that page is colored
+   for a light background, so these map to the page's normal background/text
+   rather than the black/white --primary pairing used elsewhere via inline
+   styles (e.g. the LiveInterview coding-mode toggle). */
+.bg-primary { background: var(--bg-primary); }
+.text-primary-foreground { color: var(--text-primary); }
 .bg-green-500\/20 { background: var(--success-bg); }
 
 /* -- Borders --

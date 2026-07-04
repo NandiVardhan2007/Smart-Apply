@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
+from starlette.concurrency import run_in_threadpool
 
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
+from app.models.resume import Resume
+from app.models.interview_report import InterviewReport
 from app.schemas.auth import (
     ChangePasswordRequest,
     MessageResponse,
     ProfileUpdateRequest,
 )
 from app.services.auth_service import hash_password, verify_password
+from app.services import storage_service
 
 router = APIRouter(prefix="/api/user", tags=["user"])
 
@@ -94,6 +98,24 @@ async def change_password(
 
 @router.delete("/account", response_model=MessageResponse)
 async def delete_account(user: User = Depends(get_current_user)):
-    """Delete the current user's account permanently."""
+    """Delete the current user's account and all associated data.
+
+    The Settings page tells the user this erases "your data, resumes, and
+    interview history" — this needs to actually do that, not just remove the
+    User document and leave everything else (resume files in R2, resume
+    records, interview reports) orphaned behind.
+    """
+    resumes = await Resume.find(Resume.user_id == user.id).to_list()
+    for resume in resumes:
+        if resume.file_key:
+            try:
+                await run_in_threadpool(storage_service.delete_file, resume.file_key)
+            except Exception:
+                # Don't let a storage hiccup block the rest of account deletion
+                pass
+        await resume.delete()
+
+    await InterviewReport.find(InterviewReport.user_id == str(user.id)).delete()
+
     await user.delete()
     return MessageResponse(message="Account deleted successfully")

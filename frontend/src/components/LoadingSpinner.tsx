@@ -412,7 +412,7 @@ function PremiumStepItem({ index, label, total, accentColor }: {
             initial={{ scale: 0 }} animate={{ scale: 1 }}
             style={{ color: '#facc15', fontSize: 12, fontWeight: 900, lineHeight: 1 }}
           >
-            âœ“
+            ✓
           </motion.span>
         )}
         {phase === 'active' && (

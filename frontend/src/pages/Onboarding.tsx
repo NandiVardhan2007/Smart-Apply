@@ -212,8 +212,8 @@ export default function Onboarding() {
                     <span key={skill} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                       padding: '4px 10px', background: 'var(--bg-input)',
-                      borderRadius: 16, fontSize: '0.85rem',
-                      boxShadow: 'var(--shadow-inset)', border: '1px solid rgba(0,0,0,0.2)'
+                      fontSize: '0.85rem', fontWeight: 600,
+                      border: '2px solid var(--border-color)'
                     }}>
                       {skill}
                       <button onClick={() => handleRemoveSkill(skill)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}>

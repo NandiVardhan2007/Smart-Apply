@@ -219,9 +219,12 @@ export default function LiveInterview() {
     await startLocalMedia();
 
     // Connect to WebSocket
+    // The interview router is mounted at /api/interview (see
+    // APIRouter(prefix="/api/interview") in routers/interview.py), so the
+    // websocket route is /api/interview/ws/chat in both cases below.
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const baseWsUrl = baseUrl 
-      ? baseUrl.replace(/^http/, 'ws') + '/interview/ws/chat'
+    const baseWsUrl = baseUrl
+      ? baseUrl.replace(/^http/, 'ws') + '/api/interview/ws/chat'
       : (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/api/interview/ws/chat';
       
     const wsUrl = `${baseWsUrl}?token=${encodeURIComponent(token ?? '')}`;
@@ -376,7 +379,7 @@ export default function LiveInterview() {
     if (currentRoom) {
       try {
         const telemetry = getTelemetrySummary();
-        await apiFetch('/interview/analyze', {
+        const res = await apiFetch('/interview/analyze', {
           method: 'POST',
           body: JSON.stringify({
             user_id: user?.id || '',
@@ -385,7 +388,11 @@ export default function LiveInterview() {
             telemetry
           })
         });
-        navigate(`/dashboard/live-interview/report/${currentRoom}`);
+        if (res.ok) {
+          navigate(`/dashboard/live-interview/report/${currentRoom}`);
+        } else {
+          showToast('error', 'Failed to generate report.');
+        }
       } catch (err) {
         showToast('error', 'Failed to generate report.');
       }

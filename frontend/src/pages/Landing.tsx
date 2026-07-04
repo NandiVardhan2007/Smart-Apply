@@ -252,7 +252,7 @@ export default function Landing() {
 
         <div className="hero-bottom-bar" style={{ maxWidth: 1680, width: '100%', margin: '0 auto', padding: '0 24px', marginTop: '96px' }}>
           <div className="hero-bottom-bar-inner">
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} className="hide-mobile" />
+            <div style={{ flex: 1, height: '2px', background: 'var(--border-color)' }} className="hide-mobile" />
             <div style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.3em', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>
               ALL-IN-ONE AI PLATFORM — {currentYear}
             </div>
@@ -272,7 +272,7 @@ export default function Landing() {
 
       {/* Stats */}
       <section className="stats-section" id="stats">
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px', padding: '60px 24px', maxWidth: '1280px', margin: '0 auto', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px', padding: '60px 24px', maxWidth: '1280px', margin: '0 auto', borderTop: '2px solid var(--border-color)' }}>
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -377,7 +377,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="landing-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '40px 24px', textAlign: 'center' }}>
+      <footer className="landing-footer" style={{ borderTop: '2px solid var(--border-color)', padding: '40px 24px', textAlign: 'center' }}>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
           © {currentYear} <span className="text-primary" style={{ fontWeight: 900 }}>Smart Apply</span>. Built for students, by developers who care.
         </p>
