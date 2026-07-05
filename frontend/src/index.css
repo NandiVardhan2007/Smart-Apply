@@ -8,23 +8,23 @@
 
 :root {
   /* -- Surfaces -- */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-card: #161616;
-  --bg-input: #1a1a1a;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #0a0a0a;
+  --bg-input: #0a0a0a;
   --bg-body: #0a0a0a;
-  --bg-surface: #111111;
+  --bg-surface: #0a0a0a;
   --bg-elevated: #1f1f1f;
   --bg-card-hover: #1c1c1c;
 
   /* -- Accent — Sleek Electric Blue to Cyan -- */
-  --accent: #3b82f6;
+  --accent: #0070f3;
   --accent-pink: #ec4899;
   --accent-blue: #3b82f6;
   --accent-green: #10b981;
   --accent-yellow: #f59e0b;
   --accent-secondary: #0ea5e9;
-  --accent-start: #2563eb;
+  --accent-start: #0070f3;
   --accent-soft: rgba(59, 130, 246, 0.15);
   --border-accent: #60a5fa;
 
@@ -47,14 +47,14 @@
   --primary-foreground: #ffffff;
 
   /* -- Borders -- */
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.15);
+  --border-color: #333;
+  --border: #444;
   --border-brutal: 1px solid rgba(255, 255, 255, 0.1); 
-  --border-thin: 1px solid rgba(255, 255, 255, 0.08);
+  --border-thin: 1px solid #333;
 
   /* -- Shadows & Depth (Soft & Glowing) -- */
-  --shadow-brutal: 0 4px 24px -1px rgba(0, 0, 0, 0.5); 
-  --shadow-brutal-lg: 0 8px 32px -4px rgba(0, 0, 0, 0.6);
+  --shadow-soft: 0 4px 24px -1px rgba(0, 0, 0, 0.5); 
+  --shadow-soft-lg: 0 8px 32px -4px rgba(0, 0, 0, 0.6);
   --shadow-raised: 0 2px 8px -1px rgba(0, 0, 0, 0.4);
   --shadow-inset: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
   --shadow-pressed: inset 0 2px 4px 0 rgba(0, 0, 0, 0.5);
@@ -156,17 +156,13 @@ h1, h2, h3, h4, h5, h6 {
    GLASSMORPHISM
    ================================== */
 .glass-panel {
-  background: rgba(22, 22, 22, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #000;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .glass-nav {
-  background: rgba(10, 10, 10, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #000;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -191,7 +187,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-brutal-lg);
+  box-shadow: var(--shadow-soft-lg);
 }
 
 .btn:active {
@@ -200,13 +196,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-start) 0%, var(--accent) 100%);
+  background: var(--accent);
   color: var(--primary-foreground);
-  box-shadow: var(--shadow-glow);
+  box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .btn-primary:hover {
-  box-shadow: 0 0 24px -2px rgba(59, 130, 246, 0.6);
+  box-shadow: 0 4px 14px 0 rgba(0, 112, 243, 0.39);
   filter: brightness(1.1);
 }
 
@@ -347,7 +343,7 @@ textarea.input-field {
 }
 
 .card:hover {
-  box-shadow: var(--shadow-brutal);
+  box-shadow: var(--shadow-soft);
   border-color: rgba(255,255,255,0.15);
 }
 
@@ -365,7 +361,7 @@ textarea.input-field {
 }
 
 .settings-card:hover {
-  box-shadow: var(--shadow-brutal);
+  box-shadow: var(--shadow-soft);
 }
 
 /* -- Tags / Chips -- */
@@ -607,8 +603,8 @@ a:focus:not(:focus-visible) {
 
 /* Shadows */
 .shadow-sm { box-shadow: var(--shadow-raised); }
-.shadow-md { box-shadow: var(--shadow-brutal); }
-.shadow-lg { box-shadow: var(--shadow-brutal-lg); }
+.shadow-md { box-shadow: var(--shadow-soft); }
+.shadow-lg { box-shadow: var(--shadow-soft-lg); }
 
 /* Animation */
 .animate-spin { animation: spin 1s linear infinite; }

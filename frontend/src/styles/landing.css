@@ -34,8 +34,8 @@
   gap: 6px;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  
+  border: 1px solid #333;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   font-size: 0.75rem;
@@ -54,11 +54,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
+  background: #0a0a0a;
+  
   padding: 8px 16px;
   border-radius: var(--radius-xl);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #333;
   color: var(--text-primary);
   box-shadow: var(--shadow-md);
   transition: all var(--transition);
@@ -159,9 +159,9 @@
   align-items: center;
   gap: 8px;
   padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a0a0a;
+  
+  border: 1px solid #333;
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -196,8 +196,8 @@
   padding: 80px 24px;
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
+  background: #0a0a0a;
+  
 }
 
 .stats-grid {
@@ -260,9 +260,9 @@
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a0a0a;
+  
+  border: 1px solid #333;
   border-radius: var(--radius-lg);
   padding: 40px 32px;
   transition: all var(--transition);
@@ -338,8 +338,8 @@
 .landing-footer {
   padding: 40px 24px;
   border-top: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
+  background: #0a0a0a;
+  
   text-align: center;
 }
 
@@ -353,9 +353,9 @@
 }
 
 .testimonial-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a0a0a;
+  
+  border: 1px solid #333;
   border-radius: var(--radius-lg);
   padding: 32px;
   box-shadow: var(--shadow-sm);

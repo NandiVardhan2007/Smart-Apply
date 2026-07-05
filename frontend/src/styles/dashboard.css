@@ -1,5 +1,5 @@
 /* ===============================================================
-   Dashboard Styles — Neo-Brutalist
+   Dashboard Styles — Minimalist Dark Mode
    =============================================================== */
 
 /* ── Layout ── */
@@ -45,7 +45,7 @@
   background: var(--accent-pink);
   padding: 24px;
   margin-bottom: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
   box-shadow: var(--shadow-sm);
 }
 
@@ -56,10 +56,10 @@
   left: 0;
   width: 80px; /* Collapsed width */
   height: 100vh;
-  background: rgba(16, 16, 16, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;
+  
+  -webkit-
+  border-right: 1px solid #333;
   display: flex;
   flex-direction: column;
   z-index: 100;
@@ -74,7 +74,7 @@
 
 .sidebar-logo {
   padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #333;
   min-width: 260px; 
 }
 
@@ -122,7 +122,7 @@
 }
 
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #333;
   color: var(--text-primary);
 }
 
@@ -189,13 +189,13 @@
 
 .sidebar-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: #333;
   margin: 12px 12px;
 }
 
 .sidebar-footer {
   padding: 16px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid #333;
   background: transparent;
   min-width: 260px;
 }
@@ -205,15 +205,15 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #0a0a0a;
+  border: 1px solid #333;
   border-radius: var(--radius);
   transition: all var(--transition);
 }
 
 .sidebar-user:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: #444;
 }
 
 .sidebar-avatar {
@@ -287,7 +287,7 @@
   color: var(--text-primary);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
 }
 
 .profile-avatar img {
@@ -355,8 +355,8 @@
 }
 
 .ats-upload-area {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
+  border: 1px solid #333;
+  background: #000000;  -webkit-;
   padding: 40px;
   text-align: center;
   transition: all var(--transition);
@@ -390,13 +390,13 @@
 .ats-file-name {
   margin-top: 12px;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
+  background: #000000;  -webkit-;
   border-radius: var(--radius);
   font-size: 0.85rem;
   color: var(--accent-secondary);
   display: inline-block;
   box-shadow: var(--shadow-raised);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #333;
 }
 
 .ats-results {
@@ -408,8 +408,8 @@
   height: 140px;
   margin: 0 auto 24px;
   position: relative;
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  background: #000000;  -webkit-;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
   box-shadow: var(--shadow-sm);
 }
 
@@ -481,12 +481,12 @@
   display: flex;
   gap: 10px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
+  background: #000000;
+  
   font-size: 0.9rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #333;
 }
 
 .suggestion-item .num {
@@ -501,8 +501,8 @@
   flex-direction: column;
   height: calc(100vh - 160px);
   max-height: 700px;
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  background: #000000;  -webkit-;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -510,7 +510,7 @@
 .chat-header-bar {
   padding: 16px 24px;
   background: var(--accent-yellow);
-  border-bottom: var(--border-brutal);
+  border-bottom: var(--border-thin);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -533,7 +533,7 @@
   font-size: 0.95rem;
   line-height: 1.6;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
   box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
@@ -546,8 +546,8 @@
 
 .chat-bubble.assistant {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;  -webkit-;
+  border: 1px solid #333;
   box-shadow: var(--shadow-raised);
 }
 
@@ -568,7 +568,7 @@
 /* Markdown Code blocks */
 .markdown-content pre {
   background: var(--bg-input) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #333;
   padding: 12px;
   margin: 12px 0;
   overflow-x: auto;
@@ -579,8 +579,8 @@
   gap: 4px;
   padding: 14px 18px;
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;  -webkit-;
+  border: 1px solid #333;
   box-shadow: var(--shadow-raised);
 }
 
@@ -606,13 +606,13 @@
   gap: 8px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
+  background: #000000;  -webkit-;
 }
 
 .quick-prompt {
   padding: 8px 16px;
   background: var(--bg-elevated);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #333;
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -637,7 +637,7 @@
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
+  background: #000000;  -webkit-;
 }
 
 .chat-input-area .input-field {
@@ -662,8 +662,8 @@
 }
 
 .question-card {
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  background: #000000;  -webkit-;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
   padding: 24px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
@@ -689,14 +689,14 @@
   font-size: 0.85rem;
   color: var(--text-secondary);
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;
+  
+  border: 1px solid #333;
 }
 
 .feedback-card {
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
+  background: #000000;  -webkit-;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
   padding: 24px;
   margin-top: 20px;
   box-shadow: var(--shadow-sm);
@@ -704,9 +704,9 @@
 
 .feedback-score-bar {
   height: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;
+  
+  border: 1px solid #333;
   margin: 16px 0;
   overflow: hidden;
 }
@@ -764,9 +764,9 @@
 .improved-answer {
   margin-top: 16px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;
+  
+  border: 1px solid #333;
   border-left: 4px solid var(--success);
   font-size: 0.9rem;
   color: var(--text-secondary);
@@ -814,9 +814,9 @@
 }
 
 .modal {
-  background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-lg);;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  background: #000000;  -webkit-;
+  border: 1px solid #333; border-radius: var(--radius-lg);;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 32px;
   max-width: 420px;
   width: 100%;
@@ -876,8 +876,8 @@
     right: 0;
     z-index: 101;
     height: 64px;
-    background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);;
-    border-bottom: var(--border-brutal);
+    background: #000000;  -webkit-;
+    border-bottom: var(--border-thin);
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
