@@ -129,13 +129,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
             <div className="sidebar-user-info">
               <div className="name">{user?.full_name || 'User'}</div>
-              <div className="email" style={{ color: '#000', fontWeight: 600 }}>{user?.email || ''}</div>
+              <div className="email">{user?.email || ''}</div>
             </div>
           </Link>
           <button
-            className="sidebar-link"
+            className="sidebar-link btn-danger"
             onClick={logout}
-            style={{ marginTop: 8, width: '100%', background: 'var(--error)' }}
+            style={{ marginTop: 8, width: '100%' }}
           >
             <div className="sidebar-link-content">
               <LogOut size={20} className="icon" />
