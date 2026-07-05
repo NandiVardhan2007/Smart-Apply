@@ -78,11 +78,8 @@ export default function Navbar() {
         right: 0,
         zIndex: 50,
         transition: 'all 0.3s',
-        background: (isScrolled || mobileOpen) ? 'rgba(10, 10, 10, 0.75)' : 'transparent',
-        backdropFilter: (isScrolled || mobileOpen) ? 'blur(20px)' : 'none',
-        WebkitBackdropFilter: (isScrolled || mobileOpen) ? 'blur(20px)' : 'none',
-        borderBottom: (isScrolled || mobileOpen) ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent',
-        boxShadow: (isScrolled || mobileOpen) ? '0 4px 32px rgba(0,0,0,0.4)' : 'none',
+        background: (isScrolled || mobileOpen) ? '#000000' : 'transparent',
+        borderBottom: (isScrolled || mobileOpen) ? '1px solid #333' : '1px solid transparent',
       }}
     >
       <div style={{
@@ -171,7 +168,7 @@ export default function Navbar() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden', background: 'rgba(10, 10, 10, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', position: 'relative', zIndex: 1 }}
+              style={{ overflow: 'hidden', background: '#000000', borderBottom: '1px solid #333', position: 'relative', zIndex: 1 }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 12 }}>
               {HOME_SECTIONS.map((l) => (
@@ -236,10 +233,8 @@ export default function Navbar() {
           background: rgba(255, 255, 255, 0.08);
         }
         .mobile-nav-primary {
-          background: linear-gradient(135deg, var(--accent-start) 0%, var(--accent) 100%);
+          background: var(--accent);
           color: var(--primary-foreground);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: var(--shadow-glow);
         }
         @media (max-width: 768px) {
           .nav-desktop { display: none; }
