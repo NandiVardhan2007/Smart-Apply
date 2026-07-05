@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { MouseEvent } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { FileSearch, MessageSquare, Mic, Shield, ArrowDownRight, Bot, Zap } from 'lucide-react';
 import '../styles/landing.css';
 
@@ -65,8 +65,8 @@ const stats = [
 function TiltFeatureCard({ feature, index }: { feature: typeof features[number]; index: number }) {
   const px = useMotionValue(0);
   const py = useMotionValue(0);
-  const rotateX = useSpring(useTransform(py, [-0.5, 0.5], [9, -9]), { stiffness: 280, damping: 22 });
-  const rotateY = useSpring(useTransform(px, [-0.5, 0.5], [-9, 9]), { stiffness: 280, damping: 22 });
+  const rotateX = useSpring(useTransform(py, [-0.5, 0.5], [4, -4]), { stiffness: 280, damping: 22 });
+  const rotateY = useSpring(useTransform(px, [-0.5, 0.5], [-4, 4]), { stiffness: 280, damping: 22 });
 
   function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -82,24 +82,24 @@ function TiltFeatureCard({ feature, index }: { feature: typeof features[number];
   return (
     <motion.div
       className="feature-card"
-      style={{ perspective: 900 }}
-      initial={{ opacity: 0, y: 30 }}
+      style={{ perspective: 1000 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.5 }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
       viewport={{ once: true }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       <motion.div
         style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-        whileHover={{ y: -4 }}
+        whileHover={{ y: -2 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
         <div className="feature-icon">
-          <feature.icon size={26} />
+          <feature.icon size={24} />
         </div>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '12px' }}>{feature.title}</h3>
-        <p style={{ color: 'var(--text-muted)' }}>{feature.desc}</p>
+        <h3>{feature.title}</h3>
+        <p>{feature.desc}</p>
       </motion.div>
     </motion.div>
   );
@@ -109,41 +109,33 @@ export default function Landing() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="landing-page relative min-h-screen w-full flex flex-col bg-primary text-primary-foreground">
+    <div className="landing-page min-h-screen w-full flex flex-col bg-primary text-primary-foreground">
       
       {/* Background Dot Grid */}
       <div className="bg-dots" />
 
       {/* Hero */}
-      <main className="hero relative flex-1 flex flex-col justify-center pt-40 pb-20 z-10" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div className="hero-typography-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '0 24px', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+      <main className="hero flex-1 flex flex-col justify-center pt-40 pb-20 z-10">
+        <div className="container mx-auto flex flex-col items-center justify-center gap-6">
           
           {/* Line 1 */}
-          <div style={{ display: 'flex', gap: '32px', alignItems: 'center', justifyContent: 'center', position: 'relative', flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap items-center justify-center gap-8 relative">
             <motion.p
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              style={{
-                fontSize: '0.75rem',
-                color: 'var(--text-muted)',
-                textAlign: 'right',
-                maxWidth: '220px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.2em',
-              }}
+              className="text-right text-text-muted font-bold uppercase tracking-wider text-sm max-w-[220px]"
             >
               Hi, we are Smart Apply. We build practical tools to help you land your dream job.
             </motion.p>
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <motion.div
-                animate={{ y: [0, 10, 0] }}
+                animate={{ y: [0, 8, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ position: 'absolute', top: '-24px', right: '8px', zIndex: 20 }}
+                className="absolute -top-6 right-2 z-20"
               >
                 <div className="glass-bubble">
-                  <FileSearch size={16} />
+                  <FileSearch size={14} />
                   <span>ATS Check</span>
                 </div>
               </motion.div>
@@ -151,7 +143,7 @@ export default function Landing() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                className="text-massive"
+                className="text-massive text-primary"
               >
                 SMART
               </motion.div>
@@ -159,15 +151,15 @@ export default function Landing() {
           </div>
 
           {/* Line 2 */}
-          <div style={{ display: 'flex', gap: '32px', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            <div style={{ position: 'relative' }}>
+          <div className="flex items-center justify-center gap-8 relative">
+            <div className="relative">
               <motion.div
-                animate={{ y: [0, -10, 0] }}
+                animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ position: 'absolute', top: '-32px', left: '16px', zIndex: 20 }}
+                className="absolute -top-8 left-4 z-20"
               >
                 <div className="glass-bubble">
-                  <Mic size={16} />
+                  <Mic size={14} />
                   <span>Interview</span>
                 </div>
               </motion.div>
@@ -175,16 +167,15 @@ export default function Landing() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="text-massive"
-                style={{ display: 'flex', alignItems: 'center' }}
+                className="text-massive text-primary flex items-center"
               >
                 <span>CARE</span>
                 <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                  style={{ margin: '0 0.05em' }}
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="mx-2 text-accent"
                 >
-                  <Bot className="text-accent" style={{ width: '0.8em', height: '0.8em' }} />
+                  <Bot size={64} />
                 </motion.div>
                 <span>ER</span>
               </motion.div>
@@ -192,42 +183,31 @@ export default function Landing() {
           </div>
 
           {/* Line 3 */}
-          <div style={{ display: 'flex', gap: '32px', alignItems: 'center', justifyContent: 'center', position: 'relative', flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap items-center justify-center gap-8 relative">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 1 }}
-              className="brutal-badge hide-mobile"
-              style={{ 
-                position: 'absolute', 
-                top: '15%', 
-                right: '-10%',
-              }}
+              className="brutal-badge hide-mobile absolute top-1/4 -right-12"
             >
-              <Zap size={14} />
-              <span>ATS Check</span>
+              <Zap size={14} className="text-accent" />
+              <span>Speed</span>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 1.2 }}
-              className="brutal-badge hide-mobile"
-              style={{ 
-                position: 'absolute', 
-                bottom: '25%', 
-                left: '-15%',
-                background: 'var(--accent-pink)'
-              }}
+              className="brutal-badge hide-mobile absolute bottom-1/4 -left-16"
             >
-              <Mic size={14} />
-              <span>Interview</span>
+              <Shield size={14} className="text-green-500" />
+              <span>Private</span>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-massive"
+              className="text-massive text-primary"
             >
               APPLY
             </motion.div>
@@ -235,25 +215,17 @@ export default function Landing() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              style={{
-                fontSize: '0.75rem',
-                color: 'var(--text-muted)',
-                textAlign: 'left',
-                maxWidth: '200px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.2em',
-              }}
+              className="text-left text-text-muted font-bold uppercase tracking-wider text-sm max-w-[200px]"
             >
               Open to students, professionals, and anyone seeking career growth.
             </motion.p>
           </div>
         </div>
 
-        <div className="hero-bottom-bar" style={{ maxWidth: 1680, width: '100%', margin: '0 auto', padding: '0 24px', marginTop: '96px' }}>
-          <div className="hero-bottom-bar-inner">
-            <div style={{ flex: 1, height: '2px', background: 'var(--border-color)' }} className="hide-mobile" />
-            <div style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.3em', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>
+        <div className="container mx-auto mt-24">
+          <div className="hero-bottom-bar-inner items-center justify-between">
+            <div className="flex-1 h-px bg-border hide-mobile" />
+            <div className="text-xs font-bold tracking-widest text-text-muted uppercase text-center mx-4">
               ALL-IN-ONE AI PLATFORM — {currentYear}
             </div>
             <Link to="/signup" className="resume-button-group">
@@ -272,7 +244,7 @@ export default function Landing() {
 
       {/* Stats */}
       <section className="stats-section" id="stats">
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px', padding: '60px 24px', maxWidth: '1280px', margin: '0 auto', borderTop: '2px solid var(--border-color)' }}>
+        <div className="stats-grid">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -281,34 +253,30 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
-              style={{ textAlign: 'center' }}
             >
-              <h3 className="text-primary" style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.05em' }}>{stat.value}</h3>
-              <p style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', marginTop: '8px' }}>{stat.label}</p>
+              <h3>{stat.value}</h3>
+              <p>{stat.label}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* Features */}
-      <section className="features-section" id="features" style={{ padding: '120px 24px', maxWidth: '1280px', margin: '0 auto' }}>
+      <section className="features-section" id="features">
         <motion.div
           className="section-header"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
-          style={{ marginBottom: '64px', maxWidth: '600px' }}
         >
-          <h2 style={{ fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: '24px' }}>
-            Everything You Need to Succeed.
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.125rem', lineHeight: 1.6 }}>
+          <h2>Everything You Need to Succeed.</h2>
+          <p>
             Powerful AI tools designed to give you an edge in your job search, without the heavy interface.
           </p>
         </motion.div>
 
-        <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div className="features-grid">
           {features.map((f, i) => (
             <TiltFeatureCard key={f.title} feature={f} index={i} />
           ))}
@@ -316,70 +284,77 @@ export default function Landing() {
       </section>
 
       {/* Testimonials */}
-      <section className="testimonials-section" id="testimonials" style={{ padding: '120px 24px', maxWidth: '1280px', margin: '0 auto', background: 'var(--bg-primary)' }}>
-        <div className="section-header">
-          <h2 style={{ fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: '24px' }}>
-            Wall of Love.
-          </h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-          {testimonials.map((t, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
-              viewport={{ once: true }}
-              className="testimonial-card"
-            >
-              <div style={{ fontSize: '4rem', lineHeight: '0', color: 'var(--accent)', marginBottom: '24px' }}>"</div>
-              <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', fontStyle: 'italic' }}>{t.quote}</p>
-              <div>
-                <strong style={{ display: 'block', fontSize: '1.2rem', textTransform: 'uppercase', fontWeight: 900 }}>{t.author}</strong>
-                <span style={{ color: 'var(--text-muted)' }}>{t.role}</span>
-              </div>
-            </motion.div>
-          ))}
+      <section className="bg-bg-secondary py-32 px-6" id="testimonials">
+        <div className="container mx-auto">
+          <div className="section-header">
+            <h2>Wall of Love.</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((t, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                viewport={{ once: true }}
+                className="testimonial-card"
+              >
+                <div className="text-4xl text-accent mb-4">"</div>
+                <p className="text-lg font-medium mb-6 italic text-text-primary flex-1">{t.quote}</p>
+                <div>
+                  <strong className="block text-lg uppercase font-bold text-text-primary">{t.author}</strong>
+                  <span className="text-text-muted text-sm font-medium">{t.role}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Pricing */}
-      <section className="pricing-section" id="pricing" style={{ padding: '100px 24px', borderTop: 'var(--border-brutal)', borderBottom: 'var(--border-brutal)', background: 'var(--accent-pink)' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto', background: '#fff', border: 'var(--border-brutal)', boxShadow: '8px 8px 0px #000', padding: '40px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '3rem', fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>Free Forever</h2>
-            <p style={{ fontSize: '1.2rem', fontWeight: 600, marginTop: '8px' }}>Because job hunting is hard enough.</p>
+      <section className="py-24 px-6 bg-accent-soft" id="pricing">
+        <div className="container mx-auto flex justify-center">
+          <div className="bg-bg-surface border border-border rounded-xl shadow-md p-10 md:p-12 max-w-2xl w-full text-center">
+            <h2 className="text-3xl font-bold uppercase text-text-primary mb-2">Free Forever</h2>
+            <p className="text-lg font-medium text-text-secondary mb-8">Because job hunting is hard enough.</p>
+            
+            <ul className="flex flex-col gap-4 text-left mx-auto max-w-md mb-10">
+              {['Unlimited ATS Checks', 'Unlimited AI Mock Interviews', '1-Click Portfolios', 'Project Finder', 'Cloud Resume Storage'].map(f => (
+                <li key={f} className="flex items-center gap-4 text-lg font-medium text-text-primary">
+                  <div className="bg-success-bg text-success rounded-full w-8 h-8 flex items-center justify-center shrink-0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </div> 
+                  {f}
+                </li>
+              ))}
+            </ul>
+            
+            <Link to="/signup" className="btn btn-primary w-full py-4 text-lg justify-center">
+              GET STARTED
+            </Link>
           </div>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {['Unlimited ATS Checks', 'Unlimited AI Mock Interviews', '1-Click Portfolios', 'Project Finder', 'Cloud Resume Storage'].map(f => (
-              <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.1rem', fontWeight: 600 }}>
-                <div style={{ background: 'var(--accent)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #000' }}>✓</div> {f}
-              </li>
-            ))}
-          </ul>
-          <Link to="/signup" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '20px', fontSize: '1.2rem' }}>
-            GET STARTED
-          </Link>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section style={{ padding: '120px 24px', textAlign: 'center', background: 'var(--accent)', borderBottom: 'var(--border-brutal)' }}>
-        <h2 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, textTransform: 'uppercase', marginBottom: '24px', color: '#000' }}>
-          Ready to land your dream job?
-        </h2>
-        <p style={{ fontSize: '1.2rem', fontWeight: 600, color: '#000', marginBottom: '40px', maxWidth: '600px', margin: '0 auto 40px' }}>
-          Join thousands of other job seekers using Smart Apply to build their careers.
-        </p>
-        <Link to="/signup" className="btn" style={{ background: '#000', color: '#fff', padding: '20px 40px', fontSize: '1.5rem', border: 'none', boxShadow: '8px 8px 0px var(--accent-pink)' }}>
-          Start For Free
-        </Link>
+      <section className="py-32 px-6 text-center bg-bg-primary border-t border-border">
+        <div className="container mx-auto max-w-3xl">
+          <h2 className="text-4xl md:text-5xl font-bold uppercase mb-6 text-text-primary">
+            Ready to land your dream job?
+          </h2>
+          <p className="text-xl font-medium text-text-secondary mb-10">
+            Join thousands of other job seekers using Smart Apply to build their careers.
+          </p>
+          <Link to="/signup" className="btn btn-primary px-10 py-4 text-xl shadow-lg hover:shadow-xl transition-shadow">
+            Start For Free
+          </Link>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="landing-footer" style={{ borderTop: '2px solid var(--border-color)', padding: '40px 24px', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          © {currentYear} <span className="text-primary" style={{ fontWeight: 900 }}>Smart Apply</span>. Built for students, by developers who care.
+      <footer className="landing-footer">
+        <p>
+          © {currentYear} <span className="text-accent">Smart Apply</span>. Built for students, by developers who care.
         </p>
       </footer>
     </div>

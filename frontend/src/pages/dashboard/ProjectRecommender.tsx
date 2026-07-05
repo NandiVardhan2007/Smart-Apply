@@ -193,7 +193,7 @@ export default function ProjectRecommender() {
           >
             <button 
               className="btn" 
-              style={{ marginBottom: 24, background: '#fff', border: 'var(--border-brutal)', boxShadow: '4px 4px 0px #000', fontWeight: 900 }}
+              style={{ marginBottom: 24, background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }}
               onClick={() => setStep(1)}
               disabled={loading}
             >
@@ -214,7 +214,7 @@ export default function ProjectRecommender() {
                   <div key={proj.id} className="settings-card" style={{ display: 'flex', flexDirection: 'column', background: '#fff' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <h3 style={{ fontSize: '1.3rem', fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>{proj.title}</h3>
-                      <div style={{ background: 'var(--accent)', color: '#000', fontWeight: 900, padding: '4px 8px', border: '2px solid #000', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ background: 'var(--accent)', color: '#000', fontWeight: 900, padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Star size={14} fill="#000" /> {proj.rating}/10
                       </div>
                     </div>
@@ -222,17 +222,17 @@ export default function ProjectRecommender() {
                     <p style={{ fontWeight: 500, marginBottom: 16, flex: 1 }}>{proj.description}</p>
                     
                     <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, background: '#eee', padding: '4px 8px', border: '1px solid #000', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, background: '#eee', padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Code size={14} /> {proj.skill_level}
                       </span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, background: '#eee', padding: '4px 8px', border: '1px solid #000', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, background: '#eee', padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={14} /> {proj.estimated_time}
                       </span>
                     </div>
 
                     <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {proj.key_technologies.map(tech => (
-                        <span key={tech} style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--accent-pink)', color: '#000', padding: '2px 8px', border: '1px solid #000', borderRadius: 999 }}>
+                        <span key={tech} style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--accent-pink)', color: '#000', padding: '2px 8px', border: '1px solid var(--border-color)', borderRadius: 999 }}>
                           {tech}
                         </span>
                       ))}
@@ -271,7 +271,7 @@ export default function ProjectRecommender() {
           >
             <button 
               className="btn" 
-              style={{ marginBottom: 24, background: '#fff', border: 'var(--border-brutal)', boxShadow: '4px 4px 0px #000', fontWeight: 900 }}
+              style={{ marginBottom: 24, background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }}
               onClick={() => setStep(2)}
               disabled={loading}
             >
@@ -372,7 +372,7 @@ export default function ProjectRecommender() {
           >
             <button 
               className="btn" 
-              style={{ marginBottom: 24, background: '#fff', border: 'var(--border-brutal)', boxShadow: '4px 4px 0px #000', fontWeight: 900 }}
+              style={{ marginBottom: 24, background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }}
               onClick={() => setStep(3)}
             >
               <ChevronLeft size={20} style={{ marginRight: 8 }} /> Back to Preferences

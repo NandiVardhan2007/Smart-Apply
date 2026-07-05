@@ -71,7 +71,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <button
               onClick={onClose}
               className="mobile-close-btn"
-              style={{ display: 'none', color: '#000', background: 'var(--accent)', border: '2px solid #000', borderRadius: '4px', padding: '4px', boxShadow: '2px 2px 0px #000', cursor: 'pointer', zIndex: 10 }}
+              style={{ display: 'none', color: 'var(--text-primary)', background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '6px', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', zIndex: 10 }}
               aria-label="Close menu"
             >
               <X size={20} />

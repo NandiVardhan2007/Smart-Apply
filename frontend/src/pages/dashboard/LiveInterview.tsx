@@ -90,9 +90,9 @@ const AudioVisualizer = ({ stream, isSpeaking, maxHeight = 80 }: { stream?: Medi
           style={{
             width: '12px',
             background: 'var(--accent)',
-            border: '2px solid #000',
+            border: '1px solid var(--border-color)',
             borderRadius: '6px',
-            boxShadow: '2px 2px 0px 0px #000',
+            boxShadow: 'var(--shadow-sm)',
             height: '10px',
             transition: stream ? 'none' : 'height 0.1s ease'
           }}
@@ -575,10 +575,10 @@ export default function LiveInterview() {
         .speaking-bar {
           width: 12px;
           background: var(--accent);
-          border: 2px solid #000;
+          border: 1px solid var(--border-color);
           border-radius: 6px;
           animation: bounce 1s ease-in-out infinite;
-          box-shadow: 2px 2px 0px 0px #000;
+          box-shadow: var(--shadow-sm);
         }
         .speaking-bar:nth-child(1) { animation-delay: 0.1s; height: 40px; }
         .speaking-bar:nth-child(2) { animation-delay: 0.2s; height: 60px; }
@@ -604,10 +604,10 @@ export default function LiveInterview() {
           width: 100px;
           height: 6px;
           background: var(--accent);
-          border: 2px solid #000;
+          border: 1px solid var(--border-color);
           border-radius: 3px;
           animation: listenPulse 2s infinite ease-in-out;
-          box-shadow: 4px 4px 0px 0px #000;
+          box-shadow: var(--shadow-sm);
         }
         @keyframes listenPulse {
           0%, 100% { width: 100px; opacity: 1; }

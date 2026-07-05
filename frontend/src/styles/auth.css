@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   Auth Pages Styles (Login, Signup, OTP, Reset) — Skeuomorphic
+   Auth Pages Styles (Login, Signup, OTP, Reset) — Minimalist
    ═══════════════════════════════════════════════ */
 
 .auth-page {
@@ -15,15 +15,14 @@
 .auth-card {
   width: 100%;
   max-width: 440px;
-  background: #fff;
-  border: var(--border-brutal);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   padding: 40px 32px;
   position: relative;
   z-index: 2;
-  box-shadow: var(--shadow-brutal);
+  box-shadow: var(--shadow-brutal-lg); /* Uses the soft shadow defined in index.css */
 }
-
-
 
 .auth-logo {
   text-align: center;
@@ -31,10 +30,11 @@
 }
 
 .auth-logo h1 {
-  font-size: 2.5rem;
-  font-weight: 900;
-  color: #000;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
   text-transform: uppercase;
+  letter-spacing: -0.02em;
 }
 
 .auth-header {
@@ -44,14 +44,14 @@
 
 .auth-header h2 {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 6px;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .auth-header p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .auth-form {
@@ -63,19 +63,19 @@
 .auth-form .btn-primary {
   width: 100%;
   margin-top: 6px;
-  padding: 14px;
+  padding: 12px;
 }
 
 .auth-links {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
 .auth-links a,
 .auth-links button {
-  color: var(--accent-secondary);
+  color: var(--accent);
   font-weight: 600;
   transition: color var(--transition-fast);
 }
@@ -95,13 +95,13 @@
 }
 
 .forgot-link:hover {
-  color: var(--accent-secondary);
+  color: var(--accent);
 }
 
 /* ── OTP Input ── */
 .otp-inputs {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
   margin: 24px 0;
 }
@@ -111,38 +111,40 @@
   height: 60px;
   text-align: center;
   font-size: 1.5rem;
-  font-weight: 900;
-  background: var(--bg-primary);
-  border: var(--border-thin);
-  color: #000;
+  font-weight: 700;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   transition: all var(--transition);
-  box-shadow: 2px 2px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .otp-input:focus {
-  border-color: #000;
+  border-color: var(--accent);
   outline: none;
-  background: #fff;
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0px #000;
+  background: var(--bg-surface);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .otp-input.filled {
-  background: var(--accent);
-  color: #000;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .resend-section {
   text-align: center;
-  margin-top: 16px;
-  font-size: 0.85rem;
+  margin-top: 20px;
+  font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
 .resend-btn {
-  color: var(--accent-secondary);
+  color: var(--accent);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .resend-btn:disabled {
@@ -156,35 +158,36 @@
 }
 
 .strength-bar {
-  height: 8px;
-  background: var(--bg-primary);
-  border: var(--border-thin);
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .strength-fill {
   height: 100%;
   transition: all var(--transition);
-  border-right: var(--border-thin);
+  border-radius: 3px;
 }
 
 .strength-label {
   font-size: 0.75rem;
-  margin-top: 4px;
+  margin-top: 6px;
   color: var(--text-muted);
   font-weight: 500;
 }
 
 /* ── Auth Error ── */
 .auth-error {
-  background: var(--error);
-  border: var(--border-thin);
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
-  font-size: 0.85rem;
-  color: #fff;
-  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--error);
+  font-weight: 600;
   text-align: center;
-  box-shadow: 2px 2px 0px #000;
+  margin-bottom: 16px;
 }
 
 /* ── Step Indicator ── */
@@ -192,20 +195,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
 .step-dot {
-  width: 16px;
-  height: 16px;
-  background: var(--bg-primary);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
   transition: all var(--transition);
-  border: 2px solid #000;
 }
 
 .step-dot.active {
   background: var(--accent);
+  transform: scale(1.2);
 }
 
 .step-dot.completed {
@@ -214,8 +218,8 @@
 
 .step-line {
   width: 40px;
-  height: 4px;
-  background: #000;
+  height: 2px;
+  background: var(--bg-elevated);
   transition: all var(--transition);
 }
 
@@ -225,15 +229,17 @@
 
 @media (max-width: 480px) {
   .auth-page {
-    padding: 40px 16px;
+    padding: 32px 16px;
   }
   .auth-card {
-    padding: 24px 16px;
+    padding: 32px 20px;
+    border-radius: var(--radius-lg);
   }
 
   .otp-input {
-    width: 40px;
-    height: 48px;
-    font-size: 1.2rem;
+    width: 44px;
+    height: 52px;
+    font-size: 1.25rem;
+    gap: 8px;
   }
 }

@@ -408,7 +408,7 @@ export default function Profile() {
                     {linkedin && (
                       <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noreferrer" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 44, height: 44, background: 'var(--accent)', border: '2px solid #000',
+                        width: 44, height: 44, background: 'var(--accent)', border: '1px solid var(--border-color)',
                         color: '#000', flexShrink: 0, textDecoration: 'none'
                       }}>
                         <ExternalLink size={20} />
@@ -430,7 +430,7 @@ export default function Profile() {
                     {github && (
                       <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noreferrer" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 44, height: 44, background: 'var(--accent)', border: '2px solid #000',
+                        width: 44, height: 44, background: 'var(--accent)', border: '1px solid var(--border-color)',
                         color: '#000', flexShrink: 0, textDecoration: 'none'
                       }}>
                         <ExternalLink size={20} />
@@ -452,7 +452,7 @@ export default function Profile() {
                     {portfolio && (
                       <a href={portfolio.startsWith('http') ? portfolio : `https://${portfolio}`} target="_blank" rel="noreferrer" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 44, height: 44, background: 'var(--accent)', border: '2px solid #000',
+                        width: 44, height: 44, background: 'var(--accent)', border: '1px solid var(--border-color)',
                         color: '#000', flexShrink: 0, textDecoration: 'none'
                       }}>
                         <ExternalLink size={20} />

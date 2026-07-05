@@ -47,9 +47,9 @@ export default function DashboardLayout() {
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label={sidebarOpen ? "Close menu" : "Open menu"}
-          style={{ background: 'var(--accent)', border: 'var(--border-brutal)', padding: '4px 8px', boxShadow: '2px 2px 0px #000' }}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '6px', boxShadow: 'var(--shadow-sm)' }}
         >
-          {sidebarOpen ? <X size={22} color="#000" /> : <Menu size={22} color="#000" />}
+          {sidebarOpen ? <X size={22} className="text-text-primary" /> : <Menu size={22} className="text-text-primary" />}
         </button>
       </div>
 
@@ -62,8 +62,7 @@ export default function DashboardLayout() {
               marginBottom: '32px', 
               letterSpacing: '-0.05em', 
               lineHeight: 1,
-              color: 'var(--text-primary)',
-              textShadow: '4px 4px 0px var(--accent)'
+              color: 'var(--text-primary)'
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

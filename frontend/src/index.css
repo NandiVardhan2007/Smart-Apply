@@ -1,122 +1,119 @@
 /* ===============================================================
-   SMART APPLY — Neo-Brutalist Design System
-   Flat color blocks · hard offset shadows · zero border-radius
-   Typography: Space Grotesk (display) · Inter (body) · JetBrains Mono (data)
+   SMART APPLY — Minimalist Design System
+   Soft shadows, rounded corners, clean typography, spacious layout.
    =============================================================== */
 
 :root {
   /* -- Surfaces -- */
-  --bg-primary: #f4f4f0;
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
-  --bg-input: #ffffff;
-  --bg-body: #f4f4f0;        /* alias of bg-primary, used for full-bleed page backgrounds */
-  --bg-surface: #ffffff;      /* alias of bg-card, used for panel/container backgrounds */
-  --bg-elevated: #ececea;     /* a step up from bg-surface, e.g. scrollbar thumbs, raised chips */
-  --bg-card-hover: #e4e4de;   /* hover state for elevated surfaces */
+  --bg-input: #f1f5f9;
+  --bg-body: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #e2e8f0;
+  --bg-card-hover: #f1f5f9;
 
-  /* -- Accent — Vibrant Neo-Brutalist -- */
-  --accent: #facc15;          /* Yellow — primary brand accent */
-  --accent-pink: #f472b6;
-  --accent-blue: #60a5fa;
-  --accent-green: #4ade80;
-  --accent-yellow: #facc15;   /* alias of accent */
-  --accent-secondary: #2563eb; /* higher-contrast blue for text/icons on light surfaces */
-  --accent-start: #2563eb;    /* alias of accent-secondary, used for upload/percentage highlights */
-  --accent-soft: #dbeafe;     /* flat pastel tint for icon badges — solid, no transparency */
-  --border-accent: #facc15;   /* accent-colored border for interactive hover states */
+  /* -- Accent — Sleek Indigo -- */
+  --accent: #4f46e5;
+  --accent-pink: #ec4899;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-secondary: #4338ca;
+  --accent-start: #6366f1;
+  --accent-soft: #e0e7ff;
+  --border-accent: #818cf8;
 
   /* -- Text hierarchy -- */
-  --text-primary: #000000;
-  --text-secondary: #333333;
-  --text-muted: #666666;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
 
   /* -- Semantic -- */
-  --success: #16a34a;
-  --success-bg: #dcfce7;
-  --error: #dc2626;
+  --success: #10b981;
+  --success-bg: #d1fae5;
+  --error: #ef4444;
   --error-bg: #fee2e2;
-  --warning: #facc15;
-  --info: #2563eb;
+  --warning: #f59e0b;
+  --info: #3b82f6;
 
-  /* -- Primary / foreground pairing (for inverted active states) -- */
-  --primary: #000000;
+  /* -- Primary / foreground pairing -- */
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
 
-  /* -- Borders / Hard lines -- */
-  --border-color: #000000;
-  --border: #d8d8d2;          /* quiet divider, not a brutal structural border */
-  --border-brutal: 3px solid #000000;
-  --border-thin: 2px solid #000000;
+  /* -- Borders -- */
+  --border-color: #e2e8f0;
+  --border: #cbd5e1;
+  --border-brutal: 1px solid #e2e8f0; /* Kept name for compatibility, but soft style */
+  --border-thin: 1px solid #e2e8f0;
 
-  /* -- Shadows & Depth (always hard-edged, zero blur) -- */
-  --shadow-brutal: 4px 4px 0px 0px #000000;
-  --shadow-brutal-lg: 8px 8px 0px 0px #000000;
-  --shadow-raised: 2px 2px 0px 0px #000000;
-  --shadow-inset: inset 3px 3px 0px rgba(0, 0, 0, 0.12);
-  --shadow-pressed: 0px 0px 0px 0px #000000;
+  /* -- Shadows & Depth (Soft & Clean) -- */
+  --shadow-brutal: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); /* Kept name */
+  --shadow-brutal-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-raised: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+  --shadow-inset: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  --shadow-pressed: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
 
-  /* -- Radii — brutalist system is intentionally square -- */
-  --radius-sm: 0px;
-  --radius: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
+  /* -- Radii -- */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
   /* -- Typography -- */
   --font-body: 'Inter', -apple-system, sans-serif;
-  --font-heading: 'Space Grotesk', sans-serif;
+  --font-heading: 'Space Grotesk', 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   /* -- Timing -- */
-  --transition: 0.1s ease-in-out;
-  --transition-fast: 0.08s ease-in-out;
+  --transition: 0.2s ease;
+  --transition-fast: 0.1s ease;
 }
 
 [data-theme="dark"] {
-  --bg-primary: #0d0d0d;
-  --bg-secondary: #141414;
-  --bg-card: #171717;
-  --bg-input: #141414;
-  --bg-body: #0d0d0d;
-  --bg-surface: #171717;
-  --bg-elevated: #212121;
-  --bg-card-hover: #2a2a2a;
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --bg-input: #334155;
+  --bg-body: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-elevated: #334155;
+  --bg-card-hover: #334155;
 
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
 
-  --success: #4ade80;
-  --success-bg: #14251a;
-  --error: #f87171;
-  --error-bg: #2a1616;
-  --warning: #eab308;
+  --success: #10b981;
+  --success-bg: #064e3b;
+  --error: #ef4444;
+  --error-bg: #7f1d1d;
+  --warning: #f59e0b;
   --info: #3b82f6;
 
-  --primary: #f4f4f5;
-  --primary-foreground: #0d0d0d;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
 
-  --border-color: #27272a;
-  --border: #3f3f46;
-  --border-brutal: 3px solid #3f3f46;
-  --border-thin: 2px solid #3f3f46;
+  --border-color: #334155;
+  --border: #475569;
+  --border-brutal: 1px solid #334155;
+  --border-thin: 1px solid #334155;
 
-  /* Give the shadows a subtle bright outline to contrast the dark theme */
-  --shadow-brutal: 4px 4px 0px 0px rgba(255, 255, 255, 0.15);
-  --shadow-brutal-lg: 8px 8px 0px 0px rgba(255, 255, 255, 0.15);
-  --shadow-raised: 2px 2px 0px 0px rgba(255, 255, 255, 0.15);
-  --shadow-inset: inset 3px 3px 0px rgba(255, 255, 255, 0.08);
+  --shadow-brutal: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-brutal-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  --shadow-raised: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-inset: inset 0 2px 4px 0 rgb(0 0 0 / 0.3);
 
-  /* Tweak accent colors for dark mode vibrancy */
-  --accent: #eab308;
+  --accent: #6366f1;
   --accent-pink: #ec4899;
   --accent-blue: #3b82f6;
-  --accent-green: #22c55e;
-  --accent-yellow: #eab308;
-  --accent-secondary: #3b82f6;
-  --accent-start: #3b82f6;
-  --accent-soft: #17233a;
-  --border-accent: #eab308;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-secondary: #818cf8;
+  --accent-start: #818cf8;
+  --accent-soft: #312e81;
+  --border-accent: #818cf8;
 }
 
 /* -- Reset & Base -- */
@@ -180,60 +177,67 @@ input, textarea, select {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .text-accent {
   color: var(--accent);
 }
 
-/* Monospace utility — for data readouts, scores, badges, timestamps. */
 .text-mono {
   font-family: var(--font-mono);
   letter-spacing: -0.01em;
 }
 
 /* ==================================
-   NEO-BRUTALIST BUTTONS
+   BUTTONS
    ================================== */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 28px;
-  border: var(--border-brutal);
-  font-weight: 800;
+  padding: 10px 24px;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
   font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   transition: all var(--transition);
-  box-shadow: var(--shadow-brutal);
-  color: #000;
+  box-shadow: var(--shadow-raised);
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
 .btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px #000;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-brutal-lg);
 }
 
 .btn:active {
-  transform: translate(4px, 4px);
+  transform: translateY(0);
   box-shadow: var(--shadow-pressed);
 }
 
 .btn-primary {
   background: var(--accent);
+  color: var(--primary-foreground);
 }
 
 .btn-secondary {
-  background: var(--accent-pink);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-outline {
-  background: #fff;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+.btn-outline:hover {
+  background: var(--bg-surface);
+  border-color: var(--border);
 }
 
 .btn-ghost {
@@ -241,9 +245,8 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   box-shadow: none;
 }
-
 .btn-ghost:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-elevated);
   box-shadow: none;
   transform: none;
 }
@@ -254,24 +257,26 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-sm {
-  padding: 8px 16px;
+  padding: 6px 14px;
   font-size: 0.85rem;
+  border-radius: var(--radius);
 }
 
 .btn-lg {
-  padding: 16px 36px;
-  font-size: 1.1rem;
+  padding: 14px 32px;
+  font-size: 1.05rem;
+  border-radius: var(--radius-xl);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
-  transform: translate(0, 0) !important;
-  box-shadow: var(--shadow-brutal) !important;
+  transform: none !important;
+  box-shadow: var(--shadow-raised) !important;
 }
 
 /* ==================================
-   NEO-BRUTALIST INPUTS
+   INPUTS
    ================================== */
 .input-group {
   display: flex;
@@ -280,22 +285,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .input-group label {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .input-field {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-input);
-  border: var(--border-brutal);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
   color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
   transition: all var(--transition);
-  box-shadow: var(--shadow-brutal);
+  box-shadow: var(--shadow-raised);
 }
 
 .input-field::placeholder {
@@ -304,8 +308,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .input-field:focus {
   outline: none;
-  box-shadow: var(--shadow-brutal-lg);
-  transform: translate(-2px, -2px);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 textarea.input-field {
@@ -316,67 +320,67 @@ textarea.input-field {
 .select-field {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-input);
-  border: var(--border-brutal);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
   color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 600;
-  box-shadow: var(--shadow-brutal);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-raised);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 14px center;
+  background-position: right 12px center;
 }
 
 .select-field:focus {
   outline: none;
-  box-shadow: var(--shadow-brutal-lg);
-  transform: translate(-2px, -2px);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* ==================================
-   NEO-BRUTALIST CARDS
+   CARDS
    ================================== */
 .card {
   background: var(--bg-card);
-  border: var(--border-brutal);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 24px;
   transition: all var(--transition);
   box-shadow: var(--shadow-brutal);
-  position: relative;
 }
 
 .card:hover {
-  transform: translate(-2px, -2px);
   box-shadow: var(--shadow-brutal-lg);
 }
 
 .card-accent {
-  border-top: 8px solid var(--accent);
+  border-top: 4px solid var(--accent);
 }
 
 .settings-card {
   background: var(--bg-card);
-  border: var(--border-brutal);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow-brutal);
   transition: all var(--transition);
 }
 
 .settings-card:hover {
-  transform: translate(-2px, -2px);
   box-shadow: var(--shadow-brutal-lg);
 }
 
-/* -- Tags / Chips — flat, hard-edged -- */
+/* -- Tags / Chips -- */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border: 2px solid #000;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
 }
 
 .tag-success {
@@ -406,7 +410,6 @@ textarea.input-field {
    GLOBAL UTILITIES
    ================================== */
 
-/* Spinner animation — used everywhere */
 .spin {
   animation: spin 1s linear infinite;
 }
@@ -414,35 +417,32 @@ textarea.input-field {
   to { transform: rotate(360deg); }
 }
 
-/* Skeleton loader — solid fill pulsing in opacity, no gradient sweep */
 .skeleton {
   background: var(--bg-surface);
   animation: skeleton-pulse 1.6s ease-in-out infinite;
-  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
 }
-
 .skeleton-line {
   height: 14px;
   margin-bottom: 10px;
+  border-radius: var(--radius);
 }
-
 .skeleton-line:last-child {
   width: 60%;
 }
-
 .skeleton-circle {
   border-radius: 50%;
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.6; }
+  0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
 
-/* Focus visible ring for accessibility */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 button:focus:not(:focus-visible),
@@ -451,54 +451,42 @@ a:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* -- Scrollbar — flat, hard-edged, no soft insets -- */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--bg-card-hover);
+  background: var(--text-muted);
 }
 
-/* -- Selection -- */
 ::selection {
-  background: var(--accent);
-  color: #000000;
+  background: var(--accent-soft);
+  color: var(--accent-secondary);
 }
 
-/* -- Responsive Breakpoints (used in component CSS) -- */
-/* Mobile: < 640px */
-/* Tablet: 640px - 1024px */
-/* Desktop: > 1024px */
-
+/* -- Responsive Breakpoints -- */
 @media (max-width: 768px) {
   .container {
     padding: 0 16px;
   }
-
   .card, .settings-card {
     padding: 16px;
   }
-
-  h1 { font-size: clamp(2rem, 8vw, 3rem); }
-  h2 { font-size: clamp(1.5rem, 6vw, 2.5rem); }
-  h3 { font-size: clamp(1.25rem, 5vw, 2rem); }
-
+  h1 { font-size: clamp(1.75rem, 6vw, 2.5rem); }
+  h2 { font-size: clamp(1.5rem, 5vw, 2rem); }
+  h3 { font-size: clamp(1.25rem, 4vw, 1.75rem); }
+  
   .btn {
     padding: 10px 20px;
     font-size: 0.9rem;
   }
-
   .input-field, .select-field {
     padding: 10px 14px;
     font-size: 0.95rem;
@@ -506,25 +494,20 @@ a:focus:not(:focus-visible) {
 }
 
 /* ===============================================================
-   UTILITY LAYER
-   A focused, hand-written set of Tailwind-style utility classes.
-   This project does not include Tailwind CSS — these classes were
-   referenced throughout the components (flex, gap-4, text-2xl, etc.)
-   with no matching definitions anywhere, so they previously had zero
-   effect. Rather than touch every component, this layer defines
-   exactly the utility classes actually used in the codebase, using
-   the design tokens above so everything stays on-brand.
+   UTILITY LAYER (Tailwind-like)
    =============================================================== */
 
-/* -- Layout -- */
 .flex { display: flex; }
 .flex-1 { flex: 1 1 0%; }
 .flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
 .grid { display: grid; }
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 .items-center { align-items: center; }
 .justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
 .relative { position: relative; }
+.absolute { position: absolute; }
 .z-10 { z-index: 10; }
 .mx-auto { margin-left: auto; margin-right: auto; }
 .w-full { width: 100%; }
@@ -533,16 +516,19 @@ a:focus:not(:focus-visible) {
 .max-w-md { max-width: 28rem; }
 .max-w-5xl { max-width: 64rem; }
 
-/* -- Gap -- */
+/* Gap */
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
 .gap-6 { gap: 1.5rem; }
 
-/* -- Spacing -- */
+/* Spacing */
+.m-0 { margin: 0; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-4 { margin-bottom: 1rem; }
 .mb-6 { margin-bottom: 1.5rem; }
-.mt-6 { margin-top: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
 .p-2 { padding: 0.5rem; }
 .p-4 { padding: 1rem; }
 .p-6 { padding: 1.5rem; }
@@ -551,73 +537,80 @@ a:focus:not(:focus-visible) {
 .pl-4 { padding-left: 1rem; }
 .pl-5 { padding-left: 1.25rem; }
 
-/* Real Tailwind space-y mechanism: margin only between adjacent children */
 .space-y-2 > * + * { margin-top: 0.5rem; }
 .space-y-4 > * + * { margin-top: 1rem; }
 .space-y-6 > * + * { margin-top: 1.5rem; }
 .space-y-8 > * + * { margin-top: 2rem; }
 
-/* -- Sizing -- */
+/* Sizing */
 .w-12 { width: 3rem; }
 .w-16 { width: 4rem; }
 .h-12 { height: 3rem; }
 .h-16 { height: 4rem; }
 
-/* -- Typography -- */
+/* Typography */
 .text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
 .text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
 .text-lg { font-size: 1.125rem; }
 .text-xl { font-size: 1.25rem; }
 .text-2xl { font-size: 1.5rem; }
 .text-3xl { font-size: 1.875rem; }
+.text-4xl { font-size: 2.25rem; }
 .text-5xl { font-size: 3rem; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
 .font-black { font-weight: 900; }
 .leading-relaxed { line-height: 1.625; }
 .tracking-wider { letter-spacing: 0.05em; }
+.tracking-tight { letter-spacing: -0.025em; }
 .uppercase { text-transform: uppercase; }
 .list-disc { list-style: disc; }
 
-/* -- Color utilities (mapped to design tokens, not literal Tailwind hex) -- */
-.text-blue-400 { color: var(--accent-blue); }
+/* Colors */
+.text-blue-500 { color: var(--info); }
 .text-green-500 { color: var(--success); }
-.text-purple-400 { color: #a78bfa; }
-.text-yellow-400 { color: var(--accent); }
+.text-purple-500 { color: #8b5cf6; }
+.text-yellow-500 { color: var(--warning); }
 .text-text-secondary { color: var(--text-secondary); }
+.text-text-muted { color: var(--text-muted); }
 .text-primary { color: var(--text-primary); }
+.text-primary-foreground { color: var(--primary-foreground); }
 .bg-bg-primary { background: var(--bg-primary); }
 .bg-bg-secondary { background: var(--bg-secondary); }
-/* Note: bg-primary/text-primary-foreground are only used once in the app
-   (Landing.tsx's root wrapper). Every element inside that page is colored
-   for a light background, so these map to the page's normal background/text
-   rather than the black/white --primary pairing used elsewhere via inline
-   styles (e.g. the LiveInterview coding-mode toggle). */
-.bg-primary { background: var(--bg-primary); }
-.text-primary-foreground { color: var(--text-primary); }
-.bg-green-500\/20 { background: var(--success-bg); }
+.bg-primary { background: var(--primary); }
+.bg-white { background: #ffffff; }
+.bg-green-500\/10 { background: var(--success-bg); }
 
-/* -- Borders --
-   Width/style and color are kept in separate classes on purpose: a
-   shorthand like "border-bottom: 2px solid var(--x)" would silently
-   overwrite a color set by a differently-named class, depending on
-   which rule happens to sit lower in this file rather than which
-   classes are actually applied to the element. */
+/* Borders */
 .border { border-width: 1px; border-style: solid; border-color: var(--border-color); }
-.border-b-2 { border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: var(--border-color); }
+.border-b { border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: var(--border-color); }
+.border-t { border-top-width: 1px; border-top-style: solid; border-top-color: var(--border-color); }
 .border-l-2 { border-left-width: 2px; border-left-style: solid; border-left-color: var(--border-color); }
 .border-l-4 { border-left-width: 4px; border-left-style: solid; border-left-color: var(--border-color); }
 .border-l-green-500 { border-left-color: var(--success); }
 .border-l-red-500 { border-left-color: var(--error); }
 .border-accent { border-color: var(--accent); }
-.border-border { border-color: var(--border); }
+.border-border { border-color: var(--border-color); }
 
-/* -- Radius — full circles are a legitimate brutalist shape (avatars,
-   icon badges); "lg"/"xl" stay square to keep the zero-radius system intact -- */
-.rounded-full { border-radius: 9999px; }
+/* Radii */
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded { border-radius: var(--radius); }
+.rounded-md { border-radius: var(--radius); }
 .rounded-lg { border-radius: var(--radius-lg); }
 .rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: 9999px; }
 
-/* -- Animation -- */
+/* Shadows */
+.shadow-sm { box-shadow: var(--shadow-raised); }
+.shadow-md { box-shadow: var(--shadow-brutal); }
+.shadow-lg { box-shadow: var(--shadow-brutal-lg); }
+
+/* Animation */
 .animate-spin { animation: spin 1s linear infinite; }
 .animate-fade-in { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn {
@@ -625,8 +618,13 @@ a:focus:not(:focus-visible) {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* -- Responsive variants (Tailwind's md: breakpoint = 768px) -- */
+/* Responsive variants */
 @media (min-width: 768px) {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .md\:flex-row { flex-direction: row; }
+}
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

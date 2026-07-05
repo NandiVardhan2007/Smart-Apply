@@ -142,8 +142,8 @@ export default function ResumeTailor() {
           <div 
             onClick={() => setMode('latex')}
             style={{ 
-              background: '#fff', border: 'var(--border-brutal)', padding: 32, cursor: 'pointer',
-              boxShadow: '8px 8px 0 #000', transition: 'transform 0.2s, box-shadow 0.2s',
+              background: '#fff', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex', flexDirection: 'column', gap: 16
             }}
             onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '12px 12px 0 #000'; }}
@@ -162,8 +162,8 @@ export default function ResumeTailor() {
           <div 
             onClick={() => setMode('html')}
             style={{ 
-              background: '#fff', border: 'var(--border-brutal)', padding: 32, cursor: 'pointer',
-              boxShadow: '8px 8px 0 #000', transition: 'transform 0.2s, box-shadow 0.2s',
+              background: '#fff', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex', flexDirection: 'column', gap: 16
             }}
             onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '12px 12px 0 #000'; }}
@@ -182,8 +182,8 @@ export default function ResumeTailor() {
           <div 
             onClick={() => setMode('visual')}
             style={{ 
-              background: '#fff', border: 'var(--border-brutal)', padding: 32, cursor: 'pointer',
-              boxShadow: '8px 8px 0 #000', transition: 'transform 0.2s, box-shadow 0.2s',
+              background: '#fff', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex', flexDirection: 'column', gap: 16
             }}
             onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '12px 12px 0 #000'; }}
@@ -212,7 +212,7 @@ export default function ResumeTailor() {
         title={loadingText?.toUpperCase()}
       />
 
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', border: 'var(--border-brutal)', boxShadow: '8px 8px 0px #000', background: 'var(--bg-surface)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', background: 'var(--bg-surface)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-surface)' }}>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -220,7 +220,7 @@ export default function ResumeTailor() {
             <ArrowLeft size={16} /> Back
           </button>
           
-          <div style={{ display: 'flex', background: 'var(--bg-body)', border: 'var(--border-brutal)', borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-body)', border: '1px solid var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
             <button 
               onClick={() => setMode('latex')}
               style={{ padding: '8px 16px', background: mode === 'latex' ? 'var(--accent-start)' : 'transparent', color: mode === 'latex' ? '#000' : 'inherit', border: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -334,8 +334,8 @@ export default function ResumeTailor() {
   .sa-floating-toolbar {
     position: absolute;
     background: #fff;
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
     padding: 4px;
     border-radius: 4px;
     display: none;
@@ -358,7 +358,7 @@ export default function ResumeTailor() {
   }
   .sa-toolbar-btn:hover {
     background: #f0f0f0;
-    border: 2px solid #000;
+    border: 1px solid var(--border-color);
   }
   @media print {
     .resume-page { outline: none !important; }

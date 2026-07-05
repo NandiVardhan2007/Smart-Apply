@@ -90,7 +90,7 @@ export default function AiChatbot() {
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', border: '4px solid #000', boxShadow: '8px 8px 0px #000', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', position: 'relative' }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => {
@@ -117,8 +117,8 @@ export default function AiChatbot() {
                     style={{ 
                       padding: '16px 20px', 
                       background: isUser ? 'var(--accent)' : '#f4f4f0', 
-                      border: '3px solid #000', 
-                      boxShadow: '4px 4px 0px #000',
+                      border: '1px solid var(--border-color)', 
+                      boxShadow: 'var(--shadow-sm)',
                       borderRadius: 0,
                       color: '#000',
                       fontSize: 15,
@@ -148,7 +148,7 @@ export default function AiChatbot() {
                   <Sparkles size={14} style={{ color: 'var(--accent)' }} />
                   <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>AI Advisor</span>
                 </div>
-                <div style={{ background: '#f4f4f0', border: '3px solid #000', boxShadow: '4px 4px 0px #000', padding: '16px 20px', display: 'flex', gap: 6 }}>
+                <div style={{ background: '#f4f4f0', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '16px 20px', display: 'flex', gap: 6 }}>
                   <div style={{ width: 8, height: 8, background: '#000', borderRadius: '50%', animation: 'bounce 1s infinite' }} />
                   <div style={{ width: 8, height: 8, background: '#000', borderRadius: '50%', animation: 'bounce 1s infinite 0.2s' }} />
                   <div style={{ width: 8, height: 8, background: '#000', borderRadius: '50%', animation: 'bounce 1s infinite 0.4s' }} />
@@ -167,8 +167,8 @@ export default function AiChatbot() {
                 onClick={() => handleSend(prompt)}
                 style={{
                   background: '#fff',
-                  border: '3px solid #000',
-                  boxShadow: '4px 4px 0px #000',
+                  border: '1px solid var(--border-color)',
+                  boxShadow: 'var(--shadow-sm)',
                   padding: 16,
                   textAlign: 'left',
                   fontSize: 14,

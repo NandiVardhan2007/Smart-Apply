@@ -46,7 +46,7 @@
   padding: 24px;
   margin-bottom: 24px;
   border: var(--border-brutal);
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 /* ── Sidebar ── */
@@ -122,7 +122,7 @@
   background: var(--accent);
   color: #000;
   transform: translate(-2px, -2px);
-  box-shadow: 2px 2px 0px #000;
+  box-shadow: var(--shadow-sm);
   border: var(--border-thin);
 }
 
@@ -130,7 +130,7 @@
   background: var(--accent-pink);
   border: var(--border-thin);
   color: #000;
-  box-shadow: 2px 2px 0px #000;
+  box-shadow: var(--shadow-sm);
   transform: translate(-2px, -2px);
 }
 
@@ -210,7 +210,7 @@
   padding: 12px 16px;
   background: var(--bg-primary);
   border: var(--border-brutal);
-  box-shadow: 2px 2px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .sidebar-avatar {
@@ -282,7 +282,7 @@
   font-weight: 900;
   color: #000;
   overflow: hidden;
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: var(--shadow-sm);
   border: var(--border-brutal);
 }
 
@@ -321,7 +321,7 @@
   font-size: 0.8rem;
   font-weight: 800;
   color: #000;
-  box-shadow: 2px 2px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .skill-tag button {
@@ -351,13 +351,13 @@
 }
 
 .ats-upload-area {
-  border: 3px dashed #000;
+  border: 1px solid var(--border-color);
   background: #fff;
   padding: 40px;
   text-align: center;
   transition: all var(--transition);
   cursor: pointer;
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .ats-upload-area:hover,
@@ -406,7 +406,7 @@
   position: relative;
   background: #fff;
   border: var(--border-brutal);
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .ats-score-circle svg {
@@ -499,7 +499,7 @@
   background: #fff;
   border: var(--border-brutal);
   overflow: hidden;
-  box-shadow: 6px 6px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .chat-header-bar {
@@ -529,7 +529,7 @@
   line-height: 1.6;
   position: relative;
   border: var(--border-brutal);
-  box-shadow: 2px 2px 0px #000;
+  box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
 
@@ -661,7 +661,7 @@
   border: var(--border-brutal);
   padding: 24px;
   margin-bottom: 20px;
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .question-card .category {
@@ -693,7 +693,7 @@
   border: var(--border-brutal);
   padding: 24px;
   margin-top: 20px;
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: var(--shadow-sm);
 }
 
 .feedback-score-bar {
@@ -921,6 +921,33 @@
     border-left: none !important;
     border-top: 1px solid var(--border-color);
     min-height: 500px !important;
+  }
+
+  /* Resume Tailor: stack editor/preview instead of squeezing them side by side */
+  .tailor-split {
+    flex-direction: column !important;
+    overflow: visible !important;
+  }
+
+  .tailor-editor-pane,
+  .tailor-preview-pane {
+    flex: none !important;
+    width: 100% !important;
+    min-height: 420px;
+    border-right: none !important;
+  }
+
+  .tailor-editor-pane {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tailor-toolbar {
+    padding: 12px 16px !important;
+  }
+
+  .tailor-mode-switcher,
+  .tailor-actions {
+    width: 100%;
   }
 }
 

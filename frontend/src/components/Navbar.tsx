@@ -79,8 +79,8 @@ export default function Navbar() {
         zIndex: 50,
         transition: 'all 0.3s',
         background: (isScrolled || mobileOpen) ? '#ffffff' : 'transparent',
-        borderBottom: (isScrolled || mobileOpen) ? 'var(--border-brutal)' : '3px solid transparent',
-        boxShadow: (isScrolled || mobileOpen) ? 'var(--shadow-brutal)' : 'none',
+        borderBottom: (isScrolled || mobileOpen) ? '1px solid var(--border-color)' : '1px solid transparent',
+        boxShadow: (isScrolled || mobileOpen) ? 'var(--shadow-sm)' : 'none',
       }}
     >
       <div style={{
@@ -171,7 +171,7 @@ export default function Navbar() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden', background: 'var(--bg-primary)', borderBottom: 'var(--border-brutal)', boxShadow: 'var(--shadow-brutal)', position: 'relative', zIndex: 1 }}
+              style={{ overflow: 'hidden', background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)', position: 'relative', zIndex: 1 }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 16 }}>
               {HOME_SECTIONS.map((l) => (
@@ -226,20 +226,22 @@ export default function Navbar() {
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #000;
-          background: #fff;
-          border: 2px solid #000;
-          box-shadow: 4px 4px 0px #000;
+          color: var(--text-primary);
+          background: var(--bg-surface);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
           text-align: center;
           text-decoration: none;
           transition: transform 0.1s, box-shadow 0.1s;
         }
         .mobile-nav-link:active {
-          transform: translate(2px, 2px);
-          box-shadow: 2px 2px 0px #000;
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-sm);
         }
         .mobile-nav-primary {
           background: var(--accent);
+          color: var(--primary-foreground);
+          border-color: var(--accent);
         }
         @media (max-width: 768px) {
           .nav-desktop { display: none; }

@@ -47,7 +47,7 @@ export default function Settings() {
       <div className="settings-sections">
         {/* Account Info Summary */}
         <div className="settings-card" style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, background: 'var(--accent-pink)' }}>
-          <div style={{ width: 64, height: 64, background: 'var(--accent)', border: 'var(--border-brutal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#000', boxShadow: '2px 2px 0px #000' }}>
+          <div style={{ width: 64, height: 64, background: 'var(--accent)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#000', boxShadow: 'var(--shadow-sm)' }}>
             {user?.full_name?.charAt(0) || 'U'}
           </div>
           <div>
@@ -154,7 +154,7 @@ export default function Settings() {
           <p style={{ fontSize: '0.9rem', color: '#000', marginBottom: 16, fontWeight: 600 }}>
             Permanently delete your account and all associated data. This action cannot be undone.
           </p>
-          <button className="btn" style={{ background: 'var(--error)', color: '#fff', border: 'var(--border-brutal)', boxShadow: '4px 4px 0px #000', fontWeight: 900 }} onClick={() => setShowDeleteModal(true)}>
+          <button className="btn" style={{ background: 'var(--error)', color: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }} onClick={() => setShowDeleteModal(true)}>
             DELETE ACCOUNT
           </button>
         </div>
@@ -197,10 +197,10 @@ export default function Settings() {
       <style>{`
         .toggle-switch { position: relative; display: inline-block; width: 48px; height: 28px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #fff; border: 2px solid #000; box-shadow: 2px 2px 0px #000; transition: .4s; border-radius: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #fff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); transition: .4s; border-radius: 0; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #000; transition: .4s; border-radius: 0; }
         input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(20px); background-color: #fff; border: 2px solid #000; bottom: 1px; left: 1px; height: 20px; width: 20px; }
+        input:checked + .slider:before { transform: translateX(20px); background-color: #fff; border: 1px solid var(--border-color); bottom: 1px; left: 1px; height: 20px; width: 20px; }
       `}</style>
     </div>
   );
