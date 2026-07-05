@@ -80,7 +80,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       style={{
         background: c.bg,
-        border: '3px solid #000',
+        border: '1px solid var(--border-color)',
         borderLeft: `8px solid ${c.color}`,
         padding: '14px 16px',
         display: 'flex',

@@ -90,7 +90,7 @@ export default function AiChatbot() {
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', position: 'relative' }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => {
@@ -105,22 +105,22 @@ export default function AiChatbot() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, padding: '0 8px' }}>
                     {isUser ? (
-                      <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>{(user?.full_name || '').split(' ')[0] || 'You'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase' }}>{(user?.full_name || '').split(' ')[0] || 'You'}</span>
                     ) : (
                       <>
                         <Sparkles size={14} style={{ color: 'var(--accent)' }} />
-                        <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>AI Advisor</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase' }}>AI Advisor</span>
                       </>
                     )}
                   </div>
                   <div 
                     style={{ 
                       padding: '16px 20px', 
-                      background: isUser ? 'var(--accent)' : '#f4f4f0', 
+                      background: isUser ? 'var(--accent)' : 'var(--bg-surface)', 
                       border: '1px solid var(--border-color)', 
                       boxShadow: 'var(--shadow-sm)',
                       borderRadius: 0,
-                      color: '#000',
+                      color: 'var(--bg-surface)',
                       fontSize: 15,
                       fontWeight: 600,
                       lineHeight: 1.6
@@ -146,12 +146,12 @@ export default function AiChatbot() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, padding: '0 8px' }}>
                   <Sparkles size={14} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>AI Advisor</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase' }}>AI Advisor</span>
                 </div>
-                <div style={{ background: '#f4f4f0', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '16px 20px', display: 'flex', gap: 6 }}>
-                  <div style={{ width: 8, height: 8, background: '#000', borderRadius: '50%', animation: 'bounce 1s infinite' }} />
-                  <div style={{ width: 8, height: 8, background: '#000', borderRadius: '50%', animation: 'bounce 1s infinite 0.2s' }} />
-                  <div style={{ width: 8, height: 8, background: '#000', borderRadius: '50%', animation: 'bounce 1s infinite 0.4s' }} />
+                <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '16px 20px', display: 'flex', gap: 6 }}>
+                  <div style={{ width: 8, height: 8, background: 'var(--bg-surface)', borderRadius: '50%', animation: 'bounce 1s infinite' }} />
+                  <div style={{ width: 8, height: 8, background: 'var(--bg-surface)', borderRadius: '50%', animation: 'bounce 1s infinite 0.2s' }} />
+                  <div style={{ width: 8, height: 8, background: 'var(--bg-surface)', borderRadius: '50%', animation: 'bounce 1s infinite 0.4s' }} />
                 </div>
               </motion.div>
             )}
@@ -166,7 +166,7 @@ export default function AiChatbot() {
                 key={prompt}
                 onClick={() => handleSend(prompt)}
                 style={{
-                  background: '#fff',
+                  background: 'var(--bg-card)',
                   border: '1px solid var(--border-color)',
                   boxShadow: 'var(--shadow-sm)',
                   padding: 16,
@@ -186,7 +186,7 @@ export default function AiChatbot() {
                   e.currentTarget.style.boxShadow = '6px 6px 0px #000';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.background = 'var(--bg-card)';
                   e.currentTarget.style.transform = 'translate(0px, 0px)';
                   e.currentTarget.style.boxShadow = '4px 4px 0px #000';
                 }}
@@ -198,7 +198,7 @@ export default function AiChatbot() {
           </div>
         )}
 
-        <div style={{ padding: 24, background: '#f4f4f0', borderTop: '4px solid #000' }}>
+        <div style={{ padding: 24, background: 'var(--bg-surface)', borderTop: '1px solid var(--border-color)' }}>
           <form
             style={{ display: 'flex', gap: 16 }}
             onSubmit={(e) => {

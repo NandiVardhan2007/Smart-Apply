@@ -27,7 +27,7 @@ function OrbitSpinner({ size = 44 }: { size?: number }) {
       <div style={{
         position: 'absolute', inset: size * 0.2,
         borderRadius: '50%',
-        border: '3px solid #000',
+        border: '1px solid var(--border-color)',
         background: 'var(--accent)',
       }} />
       {/* Orbiting ring */}
@@ -35,9 +35,9 @@ function OrbitSpinner({ size = 44 }: { size?: number }) {
         style={{
           position: 'absolute', inset: 0,
           borderRadius: '50%',
-          border: '2px solid transparent',
-          borderTopColor: '#000',
-          borderRightColor: '#000',
+          border: '1px solid transparent',
+          borderTopColor: 'var(--bg-surface)',
+          borderRightColor: 'var(--bg-surface)',
         }}
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
@@ -47,7 +47,7 @@ function OrbitSpinner({ size = 44 }: { size?: number }) {
         style={{
           position: 'absolute', inset: size * 0.1,
           borderRadius: '50%',
-          border: '2px solid transparent',
+          border: '1px solid transparent',
           borderBottomColor: 'var(--accent)',
           borderLeftColor: 'var(--accent)',
         }}
@@ -68,7 +68,7 @@ export function ButtonSpinner({ size = 16 }: { size?: number }) {
         width: size, height: size, flexShrink: 0, display: 'inline-block',
         borderRadius: '50%',
         border: '2px solid rgba(0,0,0,0.2)',
-        borderTopColor: '#000',
+        borderTopColor: 'var(--bg-surface)',
       }}
       animate={{ rotate: 360 }}
       transition={{ duration: 0.65, repeat: Infinity, ease: 'linear' }}
@@ -87,8 +87,8 @@ function BouncingDots({ size = 10 }: { size?: number }) {
           key={i}
           style={{
             width: size, height: size,
-            background: i === 1 ? 'var(--accent)' : '#000',
-            border: '2px solid #000',
+            background: i === 1 ? 'var(--accent)' : 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
           animate={{ scaleY: [1, 2.2, 1], y: [0, -(size * 0.6), 0] }}
           transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12, ease: 'easeInOut' }}
@@ -235,15 +235,15 @@ export function PageLoader({ show, title, subtitle, steps, variant = 'default' }
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             style={{
               position: 'relative', zIndex: 1,
-              background: '#ffffff',
-              border: '4px solid #000',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
               boxShadow: '16px 16px 0px #000',
               width: '90%', maxWidth: 500,
               overflow: 'hidden',
             }}
           >
             {/* Top accent bar */}
-            <div style={{ height: 8, background: '#000', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ height: 8, background: 'var(--bg-surface)', position: 'relative', overflow: 'hidden' }}>
               <motion.div
                 style={{
                   position: 'absolute', inset: 0,
@@ -263,11 +263,11 @@ export function PageLoader({ show, title, subtitle, steps, variant = 'default' }
                   <div style={{
                     display: 'inline-block',
                     background: cfg.accentColor,
-                    border: '3px solid #000',
+                    border: '1px solid var(--border-color)',
                     padding: '3px 12px',
                     fontFamily: 'var(--font-mono)',
                     fontSize: '0.7rem',
-                    fontWeight: 900,
+                    fontWeight: 700,
                     letterSpacing: '0.15em',
                     textTransform: 'uppercase',
                     marginBottom: 6,
@@ -298,8 +298,8 @@ export function PageLoader({ show, title, subtitle, steps, variant = 'default' }
 
               {/* Progress track */}
               <div style={{
-                height: 10, background: '#f4f4f0',
-                border: '2px solid #000',
+                height: 10, background: 'var(--bg-surface)',
+                border: '1px solid var(--border-color)',
                 marginBottom: 32, position: 'relative', overflow: 'hidden',
               }}>
                 {/* Fill */}
@@ -334,9 +334,9 @@ export function PageLoader({ show, title, subtitle, steps, variant = 'default' }
             {/* Bottom corner tags */}
             <div style={{
               position: 'absolute', bottom: 0, right: 0,
-              background: '#000', color: cfg.accentColor,
+              background: 'var(--bg-surface)', color: cfg.accentColor,
               fontFamily: 'var(--font-mono)', fontSize: '0.65rem',
-              fontWeight: 900, padding: '4px 10px',
+              fontWeight: 700, padding: '4px 10px',
               letterSpacing: '0.1em',
             }}>
               SMART APPLY AI
@@ -395,14 +395,14 @@ function PremiumStepItem({ index, label, total, accentColor }: {
       {/* Status box */}
       <motion.div
         animate={{
-          background: phase === 'active' ? accentColor : phase === 'done' ? '#000' : '#f4f4f0',
-          borderColor: phase === 'pending' ? '#ccc' : '#000',
+          background: phase === 'active' ? accentColor : phase === 'done' ? 'var(--bg-surface)' : 'var(--bg-surface)',
+          borderColor: phase === 'pending' ? '#ccc' : 'var(--bg-surface)',
           scale: phase === 'active' ? 1.1 : 1,
         }}
         transition={{ duration: 0.2 }}
         style={{
           width: 22, height: 22,
-          border: '2px solid #ccc',
+          border: '1px solid var(--border-color)',
           flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
@@ -410,14 +410,14 @@ function PremiumStepItem({ index, label, total, accentColor }: {
         {phase === 'done' && (
           <motion.span
             initial={{ scale: 0 }} animate={{ scale: 1 }}
-            style={{ color: '#facc15', fontSize: 12, fontWeight: 900, lineHeight: 1 }}
+            style={{ color: '#facc15', fontSize: 12, fontWeight: 700, lineHeight: 1 }}
           >
             ✓
           </motion.span>
         )}
         {phase === 'active' && (
           <motion.div
-            style={{ width: 6, height: 6, background: '#000' }}
+            style={{ width: 6, height: 6, background: 'var(--bg-surface)' }}
             animate={{ scale: [1, 1.5, 1] }}
             transition={{ duration: 0.5, repeat: Infinity }}
           />
@@ -427,7 +427,7 @@ function PremiumStepItem({ index, label, total, accentColor }: {
       {/* Label */}
       <motion.span
         animate={{
-          color: phase === 'active' ? '#000' : phase === 'done' ? '#666' : '#aaa',
+          color: phase === 'active' ? 'var(--bg-surface)' : phase === 'done' ? '#666' : '#aaa',
           fontWeight: phase === 'active' ? 800 : 600,
         }}
         style={{
@@ -449,7 +449,7 @@ function PremiumStepItem({ index, label, total, accentColor }: {
             flex: 1, height: 2,
             background: accentColor,
             transformOrigin: 'left',
-            border: '1px solid #000',
+            border: '1px solid var(--border-color)',
           }}
         />
       )}
@@ -478,8 +478,8 @@ export function InlineLoader({ title, subtitle, variant = 'default' }: InlineLoa
       transition={{ duration: 0.3 }}
       style={{
         position: 'relative', overflow: 'hidden',
-        background: '#fff',
-        border: '4px solid #000',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
         boxShadow: '8px 8px 0px #000',
         padding: '52px 40px',
         display: 'flex', flexDirection: 'column',
@@ -501,7 +501,7 @@ export function InlineLoader({ title, subtitle, variant = 'default' }: InlineLoa
       {/* Top accent stripe */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 5,
-        background: '#000', overflow: 'hidden',
+        background: 'var(--bg-surface)', overflow: 'hidden',
       }}>
         <motion.div
           style={{
@@ -533,11 +533,11 @@ export function InlineLoader({ title, subtitle, variant = 'default' }: InlineLoa
       {/* Badge */}
       <div style={{
         background: cfg.accentColor,
-        border: '3px solid #000',
+        border: '1px solid var(--border-color)',
         padding: '4px 16px',
         fontFamily: 'var(--font-mono)',
         fontSize: '0.7rem',
-        fontWeight: 900,
+        fontWeight: 700,
         letterSpacing: '0.15em',
         textTransform: 'uppercase',
       }}>
@@ -548,10 +548,10 @@ export function InlineLoader({ title, subtitle, variant = 'default' }: InlineLoa
       <div style={{ minHeight: 48 }}>
         <h3 style={{
           fontFamily: 'var(--font-heading)',
-          fontSize: '1.15rem', fontWeight: 900,
+          fontSize: '1.15rem', fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.04em',
-          marginBottom: 6, color: '#000',
+          marginBottom: 6, color: 'var(--bg-surface)',
         }}>
           {title ?? cfg.label}
         </h3>
@@ -597,7 +597,7 @@ export function SkeletonCard({ height = 160 }: { height?: number }) {
     <div style={{
       height, position: 'relative', overflow: 'hidden',
       background: '#f8f8f4',
-      border: '3px solid #000',
+      border: '1px solid var(--border-color)',
       boxShadow: '4px 4px 0px #000',
     }}>
       {/* Diagonal shimmer */}
@@ -613,24 +613,24 @@ export function SkeletonCard({ height = 160 }: { height?: number }) {
       />
 
       {/* Top accent line */}
-      <div style={{ height: 4, background: '#facc15', borderBottom: '2px solid #000' }} />
+      <div style={{ height: 4, background: '#facc15', borderBottom: '1px solid var(--border-color)' }} />
 
       {/* Content skeleton */}
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 11 }}>
         {/* Title bar */}
         <motion.div
-          style={{ height: 14, background: '#d4d4d4', width: '65%', border: '1px solid #bbb' }}
+          style={{ height: 14, background: '#d4d4d4', width: '65%', border: '1px solid var(--border-color)' }}
           animate={{ opacity: [0.5, 0.9, 0.5] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         />
         {/* Subtitle */}
         <motion.div
-          style={{ height: 10, background: '#e5e5e5', width: '88%', border: '1px solid #ccc' }}
+          style={{ height: 10, background: '#e5e5e5', width: '88%', border: '1px solid var(--border-color)' }}
           animate={{ opacity: [0.4, 0.85, 0.4] }}
           transition={{ duration: 1.8, repeat: Infinity, delay: 0.15 }}
         />
         <motion.div
-          style={{ height: 10, background: '#e5e5e5', width: '50%', border: '1px solid #ccc' }}
+          style={{ height: 10, background: '#e5e5e5', width: '50%', border: '1px solid var(--border-color)' }}
           animate={{ opacity: [0.4, 0.85, 0.4] }}
           transition={{ duration: 1.8, repeat: Infinity, delay: 0.3 }}
         />
@@ -639,7 +639,7 @@ export function SkeletonCard({ height = 160 }: { height?: number }) {
           {[40, 56, 32].map((w, i) => (
             <motion.div
               key={i}
-              style={{ height: 18, width: w, background: '#d4d4d4', border: '1px solid #bbb' }}
+              style={{ height: 18, width: w, background: '#d4d4d4', border: '1px solid var(--border-color)' }}
               animate={{ opacity: [0.4, 0.8, 0.4] }}
               transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.12 }}
             />

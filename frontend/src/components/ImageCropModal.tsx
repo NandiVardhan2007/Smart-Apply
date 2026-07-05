@@ -106,7 +106,7 @@ export default function ImageCropModal({ isOpen, imageSrc, mode, onClose, onSave
           onClick={(e) => e.stopPropagation()}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, textTransform: 'uppercase' }}>
               {mode === 'crop' ? 'Crop Photo' : 'Profile Photo'}
             </h2>
             <button
@@ -115,7 +115,7 @@ export default function ImageCropModal({ isOpen, imageSrc, mode, onClose, onSave
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                color: '#000',
+                color: 'var(--bg-surface)',
               }}
             >
               <X size={24} />
@@ -123,7 +123,7 @@ export default function ImageCropModal({ isOpen, imageSrc, mode, onClose, onSave
           </div>
 
           {mode === 'crop' ? (
-            <div style={{ position: 'relative', width: '100%', height: '300px', background: '#f5f5f5', border: 'var(--border-thin)', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '100%', height: '300px', background: 'var(--bg-surface)', border: 'var(--border-thin)', overflow: 'hidden' }}>
               <Cropper
                 image={imageSrc}
                 crop={crop}
@@ -136,7 +136,7 @@ export default function ImageCropModal({ isOpen, imageSrc, mode, onClose, onSave
               />
             </div>
           ) : (
-            <div style={{ width: '100%', aspectRatio: '1/1', border: 'var(--border-thin)', overflow: 'hidden', background: '#000' }}>
+            <div style={{ width: '100%', aspectRatio: '1/1', border: 'var(--border-thin)', overflow: 'hidden', background: 'var(--bg-surface)' }}>
               <img src={imageSrc} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           )}

@@ -409,7 +409,7 @@ export default function Profile() {
                       <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noreferrer" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         width: 44, height: 44, background: 'var(--accent)', border: '1px solid var(--border-color)',
-                        color: '#000', flexShrink: 0, textDecoration: 'none'
+                        color: 'var(--bg-surface)', flexShrink: 0, textDecoration: 'none'
                       }}>
                         <ExternalLink size={20} />
                       </a>
@@ -431,7 +431,7 @@ export default function Profile() {
                       <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noreferrer" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         width: 44, height: 44, background: 'var(--accent)', border: '1px solid var(--border-color)',
-                        color: '#000', flexShrink: 0, textDecoration: 'none'
+                        color: 'var(--bg-surface)', flexShrink: 0, textDecoration: 'none'
                       }}>
                         <ExternalLink size={20} />
                       </a>
@@ -453,7 +453,7 @@ export default function Profile() {
                       <a href={portfolio.startsWith('http') ? portfolio : `https://${portfolio}`} target="_blank" rel="noreferrer" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         width: 44, height: 44, background: 'var(--accent)', border: '1px solid var(--border-color)',
-                        color: '#000', flexShrink: 0, textDecoration: 'none'
+                        color: 'var(--bg-surface)', flexShrink: 0, textDecoration: 'none'
                       }}>
                         <ExternalLink size={20} />
                       </a>

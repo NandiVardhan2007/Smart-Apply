@@ -15,7 +15,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
     if (this.state.hasError) {
       if (import.meta.env.DEV) {
         return (
-          <div style={{ padding: '2rem', background: '#fff', color: 'red', minHeight: '100vh', zIndex: 9999, position: 'relative' }}>
+          <div style={{ padding: '2rem', background: 'var(--bg-card)', color: 'red', minHeight: '100vh', zIndex: 9999, position: 'relative' }}>
             <h2>React Crash!</h2>
             <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{this.state.error?.toString()}</pre>
             <pre style={{ fontSize: '0.8rem', marginTop: '1rem', overflowX: 'auto' }}>{this.state.error?.stack}</pre>
@@ -30,7 +30,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
             alignItems: 'center',
             justifyContent: 'center',
             padding: '24px',
-            background: '#f4f4f0',
+            background: 'var(--bg-surface)',
             fontFamily: "'Inter', -apple-system, sans-serif",
           }}
         >
@@ -38,14 +38,14 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
             style={{
               maxWidth: 440,
               width: '100%',
-              background: '#fff',
-              border: '3px solid #000',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
               boxShadow: '8px 8px 0px 0px #000',
               padding: 32,
               textAlign: 'center',
             }}
           >
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
+            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 12 }}>
               Something Went Wrong
             </h2>
             <p style={{ color: '#333', marginBottom: 24, lineHeight: 1.5 }}>
@@ -56,9 +56,9 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
               style={{
                 padding: '12px 28px',
                 background: '#facc15',
-                border: '3px solid #000',
+                border: '1px solid var(--border-color)',
                 boxShadow: '4px 4px 0px 0px #000',
-                fontWeight: 800,
+                fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 cursor: 'pointer',

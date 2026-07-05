@@ -132,10 +132,10 @@ export default function ProjectRecommender() {
             className="settings-card"
             style={{ background: 'var(--accent-yellow)' }}
           >
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>1. Tell us about yourself</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 24 }}>1. Tell us about yourself</h2>
             <form onSubmit={handleGetRecommendations} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Current Skills & Technologies</label>
+                <label style={{ fontWeight: 600 }}>Current Skills & Technologies</label>
                 <input
                   type="text"
                   className="input-field"
@@ -146,7 +146,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Available Time</label>
+                <label style={{ fontWeight: 600 }}>Available Time</label>
                 <input
                   type="text"
                   className="input-field"
@@ -157,7 +157,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Interests & Goals</label>
+                <label style={{ fontWeight: 600 }}>Interests & Goals</label>
                 <textarea
                   className="input-field"
                   rows={3}
@@ -193,14 +193,14 @@ export default function ProjectRecommender() {
           >
             <button 
               className="btn" 
-              style={{ marginBottom: 24, background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }}
+              style={{ marginBottom: 24, background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 700 }}
               onClick={() => setStep(1)}
               disabled={loading}
             >
               <ChevronLeft size={20} style={{ marginRight: 8 }} /> Back
             </button>
             
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>2. Recommended Projects</h2>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 24 }}>2. Recommended Projects</h2>
             
             {loading ? (
               <InlineLoader
@@ -211,10 +211,10 @@ export default function ProjectRecommender() {
             ) : (
               <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                 {projects.map((proj) => (
-                  <div key={proj.id} className="settings-card" style={{ display: 'flex', flexDirection: 'column', background: '#fff' }}>
+                  <div key={proj.id} className="settings-card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-card)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                      <h3 style={{ fontSize: '1.3rem', fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>{proj.title}</h3>
-                      <div style={{ background: 'var(--accent)', color: '#000', fontWeight: 900, padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <h3 style={{ fontSize: '1.3rem', fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>{proj.title}</h3>
+                      <div style={{ background: 'var(--accent)', color: 'var(--bg-surface)', fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Star size={14} fill="#000" /> {proj.rating}/10
                       </div>
                     </div>
@@ -222,17 +222,17 @@ export default function ProjectRecommender() {
                     <p style={{ fontWeight: 500, marginBottom: 16, flex: 1 }}>{proj.description}</p>
                     
                     <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, background: '#eee', padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, background: '#eee', padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Code size={14} /> {proj.skill_level}
                       </span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, background: '#eee', padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, background: '#eee', padding: '4px 8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={14} /> {proj.estimated_time}
                       </span>
                     </div>
 
                     <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {proj.key_technologies.map(tech => (
-                        <span key={tech} style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--accent-pink)', color: '#000', padding: '2px 8px', border: '1px solid var(--border-color)', borderRadius: 999 }}>
+                        <span key={tech} style={{ fontSize: '0.75rem', fontWeight: 600, background: 'var(--accent-pink)', color: 'var(--bg-surface)', padding: '2px 8px', border: '1px solid var(--border-color)', borderRadius: 999 }}>
                           {tech}
                         </span>
                       ))}
@@ -271,14 +271,14 @@ export default function ProjectRecommender() {
           >
             <button 
               className="btn" 
-              style={{ marginBottom: 24, background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }}
+              style={{ marginBottom: 24, background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 700 }}
               onClick={() => setStep(2)}
               disabled={loading}
             >
               <ChevronLeft size={20} style={{ marginRight: 8 }} /> Back to Projects
             </button>
             
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 24 }}>
               3. Customize Your Roadmap
             </h2>
             <p style={{ fontWeight: 600, marginBottom: 24 }}>
@@ -287,7 +287,7 @@ export default function ProjectRecommender() {
 
             <form onSubmit={handleGenerateRoadmap} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Preferred Database (Optional)</label>
+                <label style={{ fontWeight: 600 }}>Preferred Database (Optional)</label>
                 <input
                   type="text"
                   className="input-field"
@@ -297,7 +297,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Preferred Hosting/Deployment (Optional)</label>
+                <label style={{ fontWeight: 600 }}>Preferred Hosting/Deployment (Optional)</label>
                 <input
                   type="text"
                   className="input-field"
@@ -307,7 +307,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Team Size (Optional)</label>
+                <label style={{ fontWeight: 600 }}>Team Size (Optional)</label>
                 <input
                   type="text"
                   className="input-field"
@@ -317,7 +317,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Target Audience (Optional)</label>
+                <label style={{ fontWeight: 600 }}>Target Audience (Optional)</label>
                 <input
                   type="text"
                   className="input-field"
@@ -327,7 +327,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Monetization Strategy (Optional)</label>
+                <label style={{ fontWeight: 600 }}>Monetization Strategy (Optional)</label>
                 <input
                   type="text"
                   className="input-field"
@@ -337,7 +337,7 @@ export default function ProjectRecommender() {
                 />
               </div>
               <div className="input-group">
-                <label style={{ fontWeight: 800 }}>Additional Requirements (Optional)</label>
+                <label style={{ fontWeight: 600 }}>Additional Requirements (Optional)</label>
                 <textarea
                   className="input-field"
                   rows={3}
@@ -372,25 +372,25 @@ export default function ProjectRecommender() {
           >
             <button 
               className="btn" 
-              style={{ marginBottom: 24, background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }}
+              style={{ marginBottom: 24, background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 700 }}
               onClick={() => setStep(3)}
             >
               <ChevronLeft size={20} style={{ marginRight: 8 }} /> Back to Preferences
             </button>
 
             <div className="settings-card" style={{ background: 'var(--accent-start)', marginBottom: 32 }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 8 }}>{selectedProject.title}</h2>
+              <h2 style={{ fontSize: '2rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>{selectedProject.title}</h2>
               <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{selectedProject.description}</p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {roadmap.map((phase, i) => (
-                <div key={i} className="settings-card" style={{ background: '#fff' }}>
+                <div key={i} className="settings-card" style={{ background: 'var(--bg-card)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                    <div style={{ width: 48, height: 48, background: '#000', color: '#fff', fontSize: '1.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 48, height: 48, background: 'var(--bg-surface)', color: 'var(--bg-card)', fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {phase.phase_number}
                     </div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>
                       {phase.title}
                     </h3>
                   </div>

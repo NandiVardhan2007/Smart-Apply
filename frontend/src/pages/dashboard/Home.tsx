@@ -45,8 +45,8 @@ export default function Home() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
-      <div style={{ marginBottom: 40, borderBottom: '4px solid #000', paddingBottom: 24 }}>
-        <h1 style={{ fontSize: '3rem', fontWeight: 900, textTransform: 'uppercase', margin: 0, letterSpacing: '-0.02em' }}>
+      <div style={{ marginBottom: 40, borderBottom: '1px solid var(--border-color)', paddingBottom: 24 }}>
+        <h1 style={{ fontSize: '3rem', fontWeight: 700, textTransform: 'uppercase', margin: 0, letterSpacing: '-0.02em' }}>
           Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
         </h1>
         <p style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -58,34 +58,34 @@ export default function Home() {
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
           style={{ background: 'var(--accent-blue)', padding: 24, border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase' }}>Resumes</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase' }}>Resumes</h3>
             <FileText size={24} />
           </div>
-          <div style={{ fontSize: '3.5rem', fontWeight: 900, marginTop: 16 }}>{stats?.total_resumes || 0}</div>
+          <div style={{ fontSize: '3.5rem', fontWeight: 700, marginTop: 16 }}>{stats?.total_resumes || 0}</div>
         </motion.div>
 
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
           style={{ background: 'var(--accent-pink)', padding: 24, border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase' }}>Interviews</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase' }}>Interviews</h3>
             <Mic size={24} />
           </div>
-          <div style={{ fontSize: '3.5rem', fontWeight: 900, marginTop: 16 }}>{stats?.total_interviews || 0}</div>
+          <div style={{ fontSize: '3.5rem', fontWeight: 700, marginTop: 16 }}>{stats?.total_interviews || 0}</div>
         </motion.div>
 
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
           style={{ background: 'var(--accent)', padding: 24, border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase' }}>Avg ATS</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase' }}>Avg ATS</h3>
             <Star size={24} />
           </div>
-          <div style={{ fontSize: '3.5rem', fontWeight: 900, marginTop: 16 }}>{stats?.avg_ats_score || 0}%</div>
+          <div style={{ fontSize: '3.5rem', fontWeight: 700, marginTop: 16 }}>{stats?.avg_ats_score || 0}%</div>
         </motion.div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
         <div className="card" style={{ border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>Quick Actions</h2>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 24 }}>Quick Actions</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Link to="/dashboard/ats-checker" className="btn btn-outline" style={{ display: 'flex', justifyContent: 'space-between' }}>
               Check Resume ATS Score <ArrowRight size={18} />
@@ -100,7 +100,7 @@ export default function Home() {
         </div>
 
         <div className="card" style={{ border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 24 }}>Your Profile</h2>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 24 }}>Your Profile</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontWeight: 600, fontSize: '1.1rem' }}>
             <p><strong>Member Since:</strong> {formatDate(stats?.member_since)}</p>
             <p><strong>Email:</strong> {user?.email}</p>

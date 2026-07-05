@@ -47,12 +47,12 @@ export default function Settings() {
       <div className="settings-sections">
         {/* Account Info Summary */}
         <div className="settings-card" style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, background: 'var(--accent-pink)' }}>
-          <div style={{ width: 64, height: 64, background: 'var(--accent)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#000', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 64, height: 64, background: 'var(--accent)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700, color: 'var(--bg-surface)', boxShadow: 'var(--shadow-sm)' }}>
             {user?.full_name?.charAt(0) || 'U'}
           </div>
           <div>
-            <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 900, textTransform: 'uppercase' }}>{user?.full_name}</h2>
-            <p style={{ color: '#000', margin: '4px 0 0', fontWeight: 600 }}>{user?.email}</p>
+            <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700, textTransform: 'uppercase' }}>{user?.full_name}</h2>
+            <p style={{ color: 'var(--bg-surface)', margin: '4px 0 0', fontWeight: 600 }}>{user?.email}</p>
           </div>
         </div>
 
@@ -150,11 +150,11 @@ export default function Settings() {
 
         {/* Danger Zone */}
         <div className="settings-card danger-zone" style={{ background: '#ffeded', border: '3px solid var(--error)', boxShadow: '4px 4px 0px var(--error)' }}>
-          <h3><AlertTriangle size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: '-3px', color: 'var(--error)' }} /> <span style={{ color: 'var(--error)', fontWeight: 900, textTransform: 'uppercase' }}>Danger Zone</span></h3>
-          <p style={{ fontSize: '0.9rem', color: '#000', marginBottom: 16, fontWeight: 600 }}>
+          <h3><AlertTriangle size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: '-3px', color: 'var(--error)' }} /> <span style={{ color: 'var(--error)', fontWeight: 700, textTransform: 'uppercase' }}>Danger Zone</span></h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--bg-surface)', marginBottom: 16, fontWeight: 600 }}>
             Permanently delete your account and all associated data. This action cannot be undone.
           </p>
-          <button className="btn" style={{ background: 'var(--error)', color: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 900 }} onClick={() => setShowDeleteModal(true)}>
+          <button className="btn" style={{ background: 'var(--error)', color: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', fontWeight: 700 }} onClick={() => setShowDeleteModal(true)}>
             DELETE ACCOUNT
           </button>
         </div>
@@ -170,7 +170,7 @@ export default function Settings() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 12 }}>Delete Account?</h3>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Delete Account?</h3>
               <p style={{ marginBottom: 24, fontWeight: 500 }}>Are you sure you want to delete your account? All your data, resumes, and interview history will be permanently erased.</p>
               <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowDeleteModal(false)}>Cancel</button>

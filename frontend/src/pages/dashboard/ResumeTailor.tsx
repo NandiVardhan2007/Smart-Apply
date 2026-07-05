@@ -142,7 +142,7 @@ export default function ResumeTailor() {
           <div 
             onClick={() => setMode('latex')}
             style={{ 
-              background: '#fff', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
               boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex', flexDirection: 'column', gap: 16
             }}
@@ -162,7 +162,7 @@ export default function ResumeTailor() {
           <div 
             onClick={() => setMode('html')}
             style={{ 
-              background: '#fff', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
               boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex', flexDirection: 'column', gap: 16
             }}
@@ -182,7 +182,7 @@ export default function ResumeTailor() {
           <div 
             onClick={() => setMode('visual')}
             style={{ 
-              background: '#fff', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
               boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex', flexDirection: 'column', gap: 16
             }}
@@ -223,17 +223,17 @@ export default function ResumeTailor() {
           <div style={{ display: 'flex', background: 'var(--bg-body)', border: '1px solid var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
             <button 
               onClick={() => setMode('latex')}
-              style={{ padding: '8px 16px', background: mode === 'latex' ? 'var(--accent-start)' : 'transparent', color: mode === 'latex' ? '#000' : 'inherit', border: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              style={{ padding: '8px 16px', background: mode === 'latex' ? 'var(--accent-start)' : 'transparent', color: mode === 'latex' ? 'var(--bg-surface)' : 'inherit', border: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <Code size={16} /> LaTeX
             </button>
             <button 
               onClick={() => setMode('html')}
-              style={{ padding: '8px 16px', background: mode === 'html' ? 'var(--accent-pink)' : 'transparent', color: mode === 'html' ? '#000' : 'inherit', border: 'none', borderLeft: 'var(--border-brutal)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              style={{ padding: '8px 16px', background: mode === 'html' ? 'var(--accent-pink)' : 'transparent', color: mode === 'html' ? 'var(--bg-surface)' : 'inherit', border: 'none', borderLeft: 'var(--border-brutal)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <Layout size={16} /> HTML / CSS
             </button>
             <button 
               onClick={() => setMode('visual')}
-              style={{ padding: '8px 16px', background: mode === 'visual' ? 'var(--accent-yellow)' : 'transparent', color: mode === 'visual' ? '#000' : 'inherit', border: 'none', borderLeft: 'var(--border-brutal)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              style={{ padding: '8px 16px', background: mode === 'visual' ? 'var(--accent-yellow)' : 'transparent', color: mode === 'visual' ? 'var(--bg-surface)' : 'inherit', border: 'none', borderLeft: 'var(--border-brutal)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <Edit3 size={16} /> Visual Editor
             </button>
           </div>
@@ -298,7 +298,7 @@ export default function ResumeTailor() {
             )
           ) : (
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#f0f0f0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)' }}>
                 {mode === 'visual' ? (
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><b>Visual Mode:</b> Click any text below to edit directly. Ctrl+Scroll to zoom.</span>
                 ) : (

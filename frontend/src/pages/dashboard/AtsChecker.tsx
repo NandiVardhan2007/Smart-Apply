@@ -162,15 +162,15 @@ export default function AtsChecker() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24, animation: 'fadeIn 0.3s ease-out' }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 36, fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>ATS Resume Checker.</h1>
+        <h1 style={{ fontSize: 36, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>ATS Resume Checker.</h1>
         <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>Optimize your resume for Applicant Tracking Systems.</p>
       </div>
 
       <div className="ats-layout" style={{ alignItems: 'start' }}>
         {/* Input Section */}
-        <div style={{ background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 900, textTransform: 'uppercase', marginBottom: 12, display: 'inline-block', background: '#000', color: '#fff', padding: '4px 8px' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12, display: 'inline-block', background: 'var(--bg-surface)', color: 'var(--bg-card)', padding: '4px 8px' }}>
               1. SELECT RESUME
             </h3>
 
@@ -197,7 +197,7 @@ export default function AtsChecker() {
               <div
                 style={{
                   border: '1px solid var(--border-color)',
-                  background: isDragging ? 'var(--accent-pink)' : '#f4f4f0',
+                  background: isDragging ? 'var(--accent-pink)' : 'var(--bg-surface)',
                   padding: 40,
                   textAlign: 'center',
                   cursor: 'pointer',
@@ -216,15 +216,15 @@ export default function AtsChecker() {
                   accept="application/pdf"
                   onChange={handleFileChange}
                 />
-                <UploadCloud size={48} style={{ color: '#000', marginBottom: 16 }} />
-                <h3 style={{ fontSize: 18, fontWeight: 900 }}>DRAG & DROP</h3>
+                <UploadCloud size={48} style={{ color: 'var(--bg-surface)', marginBottom: 16 }} />
+                <h3 style={{ fontSize: 18, fontWeight: 700 }}>DRAG & DROP</h3>
                 <p style={{ fontWeight: 600 }}>or click to browse (PDF only)</p>
 
                 {file && (
-                  <div style={{ marginTop: 16, background: 'var(--accent)', border: '1px solid var(--border-color)', padding: 12, fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{ marginTop: 16, background: 'var(--accent)', border: '1px solid var(--border-color)', padding: 12, fontWeight: 600, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
                     <FileText size={16} />
                     {file.name}
-                    <button style={{ background: '#000', color: '#fff', padding: '4px 8px', fontSize: 12, marginLeft: 8 }} onClick={(e) => { e.stopPropagation(); setFile(null); }}>X</button>
+                    <button style={{ background: 'var(--bg-surface)', color: 'var(--bg-card)', padding: '4px 8px', fontSize: 12, marginLeft: 8 }} onClick={(e) => { e.stopPropagation(); setFile(null); }}>X</button>
                   </div>
                 )}
               </div>
@@ -232,7 +232,7 @@ export default function AtsChecker() {
           </div>
 
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 900, textTransform: 'uppercase', marginBottom: 12, display: 'inline-block', background: '#000', color: '#fff', padding: '4px 8px' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12, display: 'inline-block', background: 'var(--bg-surface)', color: 'var(--bg-card)', padding: '4px 8px' }}>
               2. JOB DESCRIPTION (OPTIONAL)
             </h3>
             <textarea
@@ -265,18 +265,18 @@ export default function AtsChecker() {
         </div>
 
         {/* Results Section */}
-        <div style={{ background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: 32, minHeight: 400, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: 32, minHeight: 400, display: 'flex', flexDirection: 'column' }}>
           <AnimatePresence mode="wait">
             {!result && !analyzing && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#000' }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--bg-surface)' }}
               >
-                <div style={{ background: '#f4f4f0', border: '1px solid var(--border-color)', padding: 24, boxShadow: 'var(--shadow-sm)', transform: 'rotate(2deg)' }}>
+                <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', padding: 24, boxShadow: 'var(--shadow-sm)', transform: 'none' }}>
                   <FileText size={48} style={{ marginBottom: 16 }} />
-                  <h3 style={{ fontSize: 20, fontWeight: 900, textTransform: 'uppercase' }}>AWAITING RESUME</h3>
+                  <h3 style={{ fontSize: 20, fontWeight: 700, textTransform: 'uppercase' }}>AWAITING RESUME</h3>
                   <p style={{ fontWeight: 600 }}>Upload a resume to see your score.</p>
                 </div>
               </motion.div>
@@ -295,15 +295,15 @@ export default function AtsChecker() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <h3 style={{ fontSize: 24, fontWeight: 900, textTransform: 'uppercase', marginBottom: 24, borderBottom: '4px solid #000', paddingBottom: 12 }}>ANALYSIS RESULTS</h3>
+                <h3 style={{ fontSize: 24, fontWeight: 700, textTransform: 'uppercase', marginBottom: 24, borderBottom: '1px solid var(--border-color)', paddingBottom: 12 }}>ANALYSIS RESULTS</h3>
 
                 <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
                   <div style={{ flex: '0 0 auto', background: getScoreColor(result.score), border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', width: 120, height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1, color: '#000' }}>{result.score}</div>
-                    <div style={{ fontSize: 14, fontWeight: 900, textTransform: 'uppercase', color: '#000' }}>SCORE</div>
+                    <div style={{ fontSize: 48, fontWeight: 700, lineHeight: 1, color: 'var(--bg-surface)' }}>{result.score}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', color: 'var(--bg-surface)' }}>SCORE</div>
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <p style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>
+                    <p style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>
                       {result.score >= 80 ? "EXCELLENT! YOUR RESUME IS HIGHLY OPTIMIZED." :
                         result.score >= 60 ? "GOOD START, BUT NEEDS SOME TWEAKS." :
                           "NEEDS SIGNIFICANT IMPROVEMENT."}
@@ -312,12 +312,12 @@ export default function AtsChecker() {
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 16, fontWeight: 900, textTransform: 'uppercase', background: 'var(--success)', color: '#000', display: 'inline-block', padding: '4px 8px', border: '1px solid var(--border-color)', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', background: 'var(--success)', color: 'var(--bg-surface)', display: 'inline-block', padding: '4px 8px', border: '1px solid var(--border-color)', marginBottom: 12 }}>
                     MATCHED KEYWORDS
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {result.matched_keywords?.map((kw: string) => (
-                      <span key={kw} style={{ background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '4px 12px', fontSize: 14, fontWeight: 700 }}>
+                      <span key={kw} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '4px 12px', fontSize: 14, fontWeight: 700 }}>
                         {kw}
                       </span>
                     ))}
@@ -328,12 +328,12 @@ export default function AtsChecker() {
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 16, fontWeight: 900, textTransform: 'uppercase', background: 'var(--error)', color: '#000', display: 'inline-block', padding: '4px 8px', border: '1px solid var(--border-color)', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', background: 'var(--error)', color: 'var(--bg-surface)', display: 'inline-block', padding: '4px 8px', border: '1px solid var(--border-color)', marginBottom: 12 }}>
                     MISSING / SUGGESTED KEYWORDS
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {result.missing_keywords?.map((kw: string) => (
-                      <span key={kw} style={{ background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '4px 12px', fontSize: 14, fontWeight: 700 }}>
+                      <span key={kw} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: '4px 12px', fontSize: 14, fontWeight: 700 }}>
                         {kw}
                       </span>
                     ))}
@@ -344,12 +344,12 @@ export default function AtsChecker() {
                 </div>
 
                 <div>
-                  <h4 style={{ fontSize: 16, fontWeight: 900, textTransform: 'uppercase', background: 'var(--accent)', color: '#000', display: 'inline-block', padding: '4px 8px', border: '1px solid var(--border-color)', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', background: 'var(--accent)', color: 'var(--bg-surface)', display: 'inline-block', padding: '4px 8px', border: '1px solid var(--border-color)', marginBottom: 12 }}>
                     ACTIONABLE SUGGESTIONS
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {result.suggestions?.map((sug: string, i: number) => (
-                      <label key={i} style={{ background: '#f4f4f0', border: '1px solid var(--border-color)', padding: 12, fontWeight: 600, display: 'flex', gap: 12, cursor: 'pointer', alignItems: 'center' }}>
+                      <label key={i} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', padding: 12, fontWeight: 600, display: 'flex', gap: 12, cursor: 'pointer', alignItems: 'center' }}>
                         <input 
                           type="checkbox" 
                           style={{ width: 18, height: 18, cursor: 'pointer' }}
@@ -361,7 +361,7 @@ export default function AtsChecker() {
                             }
                           }}
                         />
-                        <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{i + 1}.</span>
+                        <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{i + 1}.</span>
                         <span>{sug}</span>
                       </label>
                     ))}

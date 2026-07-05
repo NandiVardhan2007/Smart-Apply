@@ -25,13 +25,13 @@ function Clock() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!mounted) return <span style={{ fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: 900, opacity: 0 }}>00:00:00 AM</span>;
+  if (!mounted) return <span style={{ fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: 700, opacity: 0 }}>00:00:00 AM</span>;
 
   return (
     <span style={{ 
       fontFamily: 'var(--font-mono)', 
       fontSize: '0.875rem', 
-      fontWeight: 900, 
+      fontWeight: 700, 
       letterSpacing: '0.1em',
       color: 'var(--text-primary)',
       transition: 'all 0.3s'
@@ -78,7 +78,7 @@ export default function Navbar() {
         right: 0,
         zIndex: 50,
         transition: 'all 0.3s',
-        background: (isScrolled || mobileOpen) ? '#000000' : 'transparent',
+        background: (isScrolled || mobileOpen) ? 'var(--bg-surface)' : 'transparent',
         borderBottom: (isScrolled || mobileOpen) ? '1px solid #333' : '1px solid transparent',
       }}
     >
@@ -168,7 +168,7 @@ export default function Navbar() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden', background: '#000000', borderBottom: '1px solid #333', position: 'relative', zIndex: 1 }}
+              style={{ overflow: 'hidden', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', position: 'relative', zIndex: 1 }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 12 }}>
               {HOME_SECTIONS.map((l) => (

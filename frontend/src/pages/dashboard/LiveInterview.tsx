@@ -491,7 +491,7 @@ export default function LiveInterview() {
                     borderRadius: '12px',
                     overflow: 'hidden',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                    background: '#000',
+                    background: 'var(--bg-surface)',
                     border: '2px solid var(--border-color)',
                     transition: 'width 0.3s ease'
                   }}
@@ -545,11 +545,11 @@ export default function LiveInterview() {
             
             {isCodingMode && (
               <div className="editor-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', background: '#1e1e1e', minHeight: '400px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderBottom: '1px solid #333', background: '#252526' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderBottom: '1px solid var(--border-color)', background: '#252526' }}>
                   <select 
                     value={codeLanguage}
                     onChange={(e) => setCodeLanguage(e.target.value)}
-                    style={{ background: '#3c3c3c', color: '#fff', border: '1px solid #555', padding: '4px 8px', borderRadius: 4, outline: 'none', cursor: 'pointer' }}
+                    style={{ background: '#3c3c3c', color: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '4px 8px', borderRadius: 4, outline: 'none', cursor: 'pointer' }}
                   >
                     <option value="javascript">JavaScript</option>
                     <option value="typescript">TypeScript</option>
