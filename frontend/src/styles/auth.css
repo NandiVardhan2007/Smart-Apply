@@ -15,13 +15,14 @@
 .auth-card {
   width: 100%;
   max-width: 440px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   padding: 40px 32px;
   position: relative;
   z-index: 2;
-  box-shadow: var(--shadow-brutal-lg); /* Uses the soft shadow defined in index.css */
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5); /* Uses the soft shadow defined in index.css */
 }
 
 .auth-logo {
@@ -112,8 +113,9 @@
   text-align: center;
   font-size: 1.5rem;
   font-weight: 700;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   transition: all var(--transition);
@@ -123,7 +125,8 @@
 .otp-input:focus {
   border-color: var(--accent);
   outline: none;
-  background: var(--bg-surface);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
   transform: translateY(-2px);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }

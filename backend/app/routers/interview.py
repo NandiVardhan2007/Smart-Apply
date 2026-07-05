@@ -55,8 +55,21 @@ async def interview_chat_ws(websocket: WebSocket, token: str = None):
         api_key=groq_api_key,
     )
     
+    import random
+    topics = [
+        "React & Frontend",
+        "Python & Backend",
+        "System Design & Scalability",
+        "Databases & SQL",
+        "Data Structures & Algorithms",
+        "DevOps, Docker & Cloud",
+        "JavaScript & TypeScript"
+    ]
+    random_topic = random.choice(topics)
+    
     system_prompt = (
         "You are an expert technical interviewer named Ryan. "
+        f"For this session, kick off the interview by focusing on {random_topic}. Do not mention that you randomly picked it, just naturally start asking an interesting question about it. "
         "Keep your responses extremely concise (1-2 sentences max) since they will be spoken aloud via text-to-speech. "
         "Ask technical questions, wait for the user to answer, and then provide brief feedback before moving on to the next question. "
         "If you want the user to write code, you MUST append the exact string [OPEN_EDITOR] at the very end of your response. "

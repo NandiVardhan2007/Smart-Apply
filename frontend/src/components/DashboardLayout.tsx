@@ -58,10 +58,11 @@ export default function DashboardLayout() {
           <motion.div 
             className="text-massive"
             style={{ 
-              fontSize: 'clamp(2rem, 4vw, 4rem)', 
+              fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', 
               marginBottom: '32px', 
-              letterSpacing: '-0.05em', 
-              lineHeight: 1,
+              letterSpacing: '-0.02em', 
+              fontWeight: 700,
+              lineHeight: 1.2,
               color: 'var(--text-primary)'
             }}
             initial={{ opacity: 0, y: 20 }}

@@ -78,9 +78,11 @@ export default function Navbar() {
         right: 0,
         zIndex: 50,
         transition: 'all 0.3s',
-        background: (isScrolled || mobileOpen) ? '#ffffff' : 'transparent',
-        borderBottom: (isScrolled || mobileOpen) ? '1px solid var(--border-color)' : '1px solid transparent',
-        boxShadow: (isScrolled || mobileOpen) ? 'var(--shadow-sm)' : 'none',
+        background: (isScrolled || mobileOpen) ? 'rgba(10, 10, 10, 0.75)' : 'transparent',
+        backdropFilter: (isScrolled || mobileOpen) ? 'blur(20px)' : 'none',
+        WebkitBackdropFilter: (isScrolled || mobileOpen) ? 'blur(20px)' : 'none',
+        borderBottom: (isScrolled || mobileOpen) ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent',
+        boxShadow: (isScrolled || mobileOpen) ? '0 4px 32px rgba(0,0,0,0.4)' : 'none',
       }}
     >
       <div style={{
@@ -103,12 +105,10 @@ export default function Navbar() {
               key={l.href} 
               href={l.href}
               style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
+                fontSize: '0.85rem',
+                fontWeight: 600,
                 color: 'var(--text-muted)',
-                transition: 'color 0.2s'
+                transition: 'color 0.2s, text-shadow 0.2s'
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
               onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
@@ -171,9 +171,9 @@ export default function Navbar() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden', background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)', position: 'relative', zIndex: 1 }}
+              style={{ overflow: 'hidden', background: 'rgba(10, 10, 10, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', position: 'relative', zIndex: 1 }}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 12 }}>
               {HOME_SECTIONS.map((l) => (
                 <a
                   key={l.href}
@@ -221,27 +221,25 @@ export default function Navbar() {
         .nav-mobile-btn { display: none; }
         .mobile-nav-link {
           display: block;
-          padding: 14px 16px;
-          font-size: 1.1rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
+          padding: 12px 16px;
+          font-size: 1rem;
+          font-weight: 600;
           color: var(--text-primary);
-          background: var(--bg-surface);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius);
           text-align: center;
           text-decoration: none;
-          transition: transform 0.1s, box-shadow 0.1s;
+          transition: all 0.2s;
         }
         .mobile-nav-link:active {
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-sm);
+          background: rgba(255, 255, 255, 0.08);
         }
         .mobile-nav-primary {
-          background: var(--accent);
+          background: linear-gradient(135deg, var(--accent-start) 0%, var(--accent) 100%);
           color: var(--primary-foreground);
-          border-color: var(--accent);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: var(--shadow-glow);
         }
         @media (max-width: 768px) {
           .nav-desktop { display: none; }
