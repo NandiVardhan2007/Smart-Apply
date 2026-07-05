@@ -222,10 +222,15 @@ export default function LiveInterview() {
     // The interview router is mounted at /api/interview (see
     // APIRouter(prefix="/api/interview") in routers/interview.py), so the
     // websocket route is /api/interview/ws/chat in both cases below.
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const baseWsUrl = baseUrl
-      ? baseUrl.replace(/^http/, 'ws') + '/api/interview/ws/chat'
-      : (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/api/interview/ws/chat';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    
+    let baseWsUrl = '';
+    if (baseUrl.startsWith('http')) {
+      baseWsUrl = baseUrl.replace(/^http/, 'ws') + '/interview/ws/chat';
+    } else {
+      baseWsUrl = wsProto + '//' + window.location.host + baseUrl + '/interview/ws/chat';
+    }
       
     const wsUrl = `${baseWsUrl}?token=${encodeURIComponent(token ?? '')}`;
     const ws = new WebSocket(wsUrl);

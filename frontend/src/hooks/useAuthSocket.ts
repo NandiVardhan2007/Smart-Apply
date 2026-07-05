@@ -32,19 +32,15 @@ export function useAuthSocket(opts?: UseAuthSocketOpts) {
   const connect = useCallback(() => {
     if (!mountedRef.current) return;
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    let wsBaseUrl = '';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     
-    if (apiBaseUrl) {
-      wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws');
+    let url = '';
+    if (apiBaseUrl.startsWith('http')) {
+      url = apiBaseUrl.replace(/^http/, 'ws') + `/ws/auth/${sessionId}`;
     } else {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      wsBaseUrl = `${protocol}//${host}`;
+      url = `${wsProto}//${window.location.host}${apiBaseUrl}/ws/auth/${sessionId}`;
     }
-    // The auth websocket router is mounted under the /api prefix on the backend
-    // (see app.include_router(ws_router, prefix="/api") in main.py) — this must match.
-    const url = `${wsBaseUrl}/api/ws/auth/${sessionId}`;
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
