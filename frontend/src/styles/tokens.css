@@ -1,0 +1,94 @@
+/**
+ * Design tokens — Smart Apply
+ * ---------------------------------------------------------------
+ * A restrained, editorial-minimalist palette. One accent color
+ * (signal blue) carries every interactive moment; everything else
+ * is ink, paper, and hairline borders. Type pairs a quiet serif
+ * (Fraunces) for display moments with Inter for interface text and
+ * JetBrains Mono for anything numeric, technical, or scannable —
+ * scores, timestamps, code, IDs — a nod to the engineering audience.
+ */
+
+:root {
+  /* ── Neutrals ── */
+  --paper: #fafaf9;
+  --surface: #ffffff;
+  --surface-sunken: #f3f4f6;
+  --ink: #16181d;
+  --ink-soft: #565a63;
+  --ink-faint: #8b8f99;
+  --border: #e4e5e9;
+  --border-strong: #d4d6dc;
+
+  /* ── Accent (signal blue) ── */
+  --accent: #3452f4;
+  --accent-hover: #2740d6;
+  --accent-ink: #ffffff;
+  --accent-soft: #eef1fe;
+  --accent-soft-border: #d6ddfb;
+
+  /* ── Semantic ── */
+  --success: #157a57;
+  --success-soft: #e7f5ef;
+  --success-border: #bfe4d4;
+  --warning: #b45309;
+  --warning-soft: #fdf3e7;
+  --warning-border: #f3ddb8;
+  --danger: #c0362c;
+  --danger-soft: #fbeae8;
+  --danger-border: #f0c6c1;
+
+  /* ── Typography ── */
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* ── Shape ── */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+
+  /* ── Elevation (hairlines, not shadows) ── */
+  --shadow-sm: 0 1px 2px rgba(20, 22, 28, 0.04);
+  --shadow-md: 0 4px 16px rgba(20, 22, 28, 0.06);
+  --shadow-focus: 0 0 0 3px var(--accent-soft-border);
+
+  /* ── Layout ── */
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 76px;
+  --content-max: 1160px;
+  --header-height: 64px;
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --paper: #121316;
+  --surface: #191b1f;
+  --surface-sunken: #212328;
+  --ink: #f1f1f3;
+  --ink-soft: #a7abb5;
+  --ink-faint: #6d7078;
+  --border: #2b2d33;
+  --border-strong: #3a3d45;
+
+  --accent: #6c85ff;
+  --accent-hover: #8398ff;
+  --accent-ink: #0d0f14;
+  --accent-soft: #1c2340;
+  --accent-soft-border: #2c356b;
+
+  --success: #3ecf8e;
+  --success-soft: #113228;
+  --success-border: #1c5240;
+  --warning: #e2a13d;
+  --warning-soft: #332409;
+  --warning-border: #56410f;
+  --danger: #f2685d;
+  --danger-soft: #3a1613;
+  --danger-border: #5c231d;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}

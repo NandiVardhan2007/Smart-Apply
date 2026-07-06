@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getWsUrl } from '../api/client';
 
 export interface AuthSocketEvent {
   type: string;
@@ -10,8 +11,9 @@ interface UseAuthSocketOpts {
 }
 
 /**
- * Custom hook that manages a WebSocket connection for real-time auth events.
- * Generates a persistent session ID and auto-reconnects on disconnect.
+ * Manages a WebSocket connection for realtime auth events (OTP sent/verified,
+ * login success, session expiry). Generates a persistent per-tab session id
+ * and auto-reconnects with exponential backoff on disconnect.
  */
 export function useAuthSocket(opts?: UseAuthSocketOpts) {
   const [sessionId] = useState<string>(() => {
@@ -32,21 +34,11 @@ export function useAuthSocket(opts?: UseAuthSocketOpts) {
   const connect = useCallback(() => {
     if (!mountedRef.current) return;
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    
-    let url = '';
-    if (apiBaseUrl.startsWith('http')) {
-      url = apiBaseUrl.replace(/^http/, 'ws') + `/ws/auth/${sessionId}`;
-    } else {
-      url = `${wsProto}//${window.location.host}${apiBaseUrl}/ws/auth/${sessionId}`;
-    }
-
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(getWsUrl(`/ws/auth/${sessionId}`));
     wsRef.current = ws;
 
     ws.onopen = () => {
-      reconnectDelay.current = 1000; // Reset backoff
+      reconnectDelay.current = 1000;
     };
 
     ws.onmessage = (e) => {
@@ -60,7 +52,6 @@ export function useAuthSocket(opts?: UseAuthSocketOpts) {
 
     ws.onclose = () => {
       if (!mountedRef.current) return;
-      // Exponential backoff reconnect
       reconnectTimer.current = setTimeout(() => {
         reconnectDelay.current = Math.min(reconnectDelay.current * 2, 30000);
         connect();

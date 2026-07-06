@@ -1,249 +1,126 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-function Clock() {
-  const [time, setTime] = useState('');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const update = () => {
-      const now = new Date();
-      let hours = now.getHours();
-      const period = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12 || 12;
-      const h = String(hours).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      setTime(`${h}:${m}:${s} ${period}`);
-    };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (!mounted) return <span style={{ fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: 700, opacity: 0 }}>00:00:00 AM</span>;
-
-  return (
-    <span style={{ 
-      fontFamily: 'var(--font-mono)', 
-      fontSize: '0.875rem', 
-      fontWeight: 700, 
-      letterSpacing: '0.1em',
-      color: 'var(--text-primary)',
-      transition: 'all 0.3s'
-    }}
-    className="clock-hover"
-    >
-      {time}
-    </span>
-  );
-}
-
-const HOME_SECTIONS = [
-  { label: 'Features', href: '/#features' },
-  { label: 'Testimonials', href: '/#testimonials' },
-  { label: 'Pricing', href: '/#pricing' },
+const LINKS = [
+  { href: '#features', label: 'Features' },
+  { href: '#how-it-works', label: 'How it works' },
 ];
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated } = useAuth();
-  const location = useLocation();
+  const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Don't show navbar on dashboard pages
-  if (location.pathname.startsWith('/dashboard')) return null;
-
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    <header
       style={{
-        position: 'fixed',
+        position: 'sticky',
         top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        transition: 'all 0.3s',
-        background: (isScrolled || mobileOpen) ? 'var(--bg-surface)' : 'transparent',
-        borderBottom: (isScrolled || mobileOpen) ? '1px solid #333' : '1px solid transparent',
+        zIndex: 100,
+        background: scrolled ? 'var(--surface)' : 'transparent',
+        borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease',
       }}
     >
-      <div style={{
-        maxWidth: 1280,
-        margin: '0 auto',
-        padding: '0 24px',
-        height: 64,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
+      <div
+        className="container"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px' }}
+      >
         <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/logo.svg" alt="Smart Apply Logo" style={{ height: '64px', objectFit: 'contain' }} />
+          <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 28 }} />
         </Link>
 
-        {/* Desktop links */}
-        <nav className="nav-desktop" style={{ alignItems: 'center', gap: 32 }}>
-          {HOME_SECTIONS.map((l) => (
-            <a 
-              key={l.href} 
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="desktop-nav-links">
+          {LINKS.map((l) => (
+            <a
+              key={l.href}
               href={l.href}
-              style={{
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-                transition: 'color 0.2s, text-shadow 0.2s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+              style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)' }}
+              className="nav-link-hover"
             >
               {l.label}
             </a>
           ))}
-          {isAuthenticated ? (
-            <Link 
-              to="/dashboard" 
-              className="btn btn-primary btn-sm"
-            >
-              Dashboard
-            </Link>
-          ) : (
-            <Link 
-              to="/login" 
-              className="btn btn-primary btn-sm"
-            >
-              Log In
-            </Link>
-          )}
         </nav>
 
-        {/* Right section with Clock */}
-        <div className="nav-desktop" style={{ alignItems: 'center', gap: 16 }}>
-          <Clock />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="desktop-nav-actions">
+          {isAuthenticated ? (
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/dashboard')}>
+              Go to dashboard
+            </button>
+          ) : (
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/login')}>
+                Log in
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => navigate('/signup')}>
+                Get started
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Mobile controls */}
-        <div className="nav-mobile-btn" style={{ alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            style={{ color: 'var(--text-primary)' }}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
+        <button
+          className="mobile-nav-toggle"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Toggle menu"
+          style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer' }}
+        >
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
 
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-              style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(0,0,0,0.5)',
-                zIndex: -1, // Behind the nav content, but inside the fixed header context
-                height: '100vh'
-              }}
-            />
-            <motion.nav
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', position: 'relative', zIndex: 1 }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: 12 }}>
-              {HOME_SECTIONS.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="mobile-nav-link"
-                >
-                  {l.label}
-                </a>
-              ))}
-              {isAuthenticated ? (
-                <Link
-                  to="/dashboard"
-                  onClick={() => setMobileOpen(false)}
-                  className="mobile-nav-link mobile-nav-primary"
-                >
-                  Dashboard
-                </Link>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="mobile-nav-link"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    to="/signup"
-                    onClick={() => setMobileOpen(false)}
-                    className="mobile-nav-link mobile-nav-primary"
-                  >
-                    Get Started
-                  </Link>
-                </div>
-              )}
-            </div>
-            </motion.nav>
-          </>
-        )}
-      </AnimatePresence>
+      {mobileOpen && (
+        <div
+          style={{
+            borderTop: '1px solid var(--border)',
+            background: 'var(--surface)',
+            padding: '16px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
+          {LINKS.map((l) => (
+            <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{ fontSize: 14.5, fontWeight: 500 }}>
+              {l.label}
+            </a>
+          ))}
+          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+            {isAuthenticated ? (
+              <button className="btn btn-primary btn-block" onClick={() => navigate('/dashboard')}>
+                Go to dashboard
+              </button>
+            ) : (
+              <>
+                <button className="btn btn-secondary btn-block" onClick={() => navigate('/login')}>
+                  Log in
+                </button>
+                <button className="btn btn-primary btn-block" onClick={() => navigate('/signup')}>
+                  Get started
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <style>{`
-        .nav-desktop { display: flex; }
-        .nav-mobile-btn { display: none; }
-        .mobile-nav-link {
-          display: block;
-          padding: 12px 16px;
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: var(--radius);
-          text-align: center;
-          text-decoration: none;
-          transition: all 0.2s;
+        @media (max-width: 800px) {
+          .desktop-nav-links, .desktop-nav-actions { display: none !important; }
+          .mobile-nav-toggle { display: inline-flex !important; }
         }
-        .mobile-nav-link:active {
-          background: rgba(255, 255, 255, 0.08);
-        }
-        .mobile-nav-primary {
-          background: var(--accent);
-          color: var(--primary-foreground);
-        }
-        @media (max-width: 768px) {
-          .nav-desktop { display: none; }
-          .nav-mobile-btn { display: flex; }
-        }
-        .clock-hover:hover {
-          letter-spacing: 0.2em;
-        }
+        .nav-link-hover:hover { color: var(--ink) !important; }
       `}</style>
-    </motion.header>
+    </header>
   );
 }

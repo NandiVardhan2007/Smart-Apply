@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { Mail, Lock, CheckCircle2 } from 'lucide-react';
 
 import { useToast } from '../components/Toast';
-import { apiFetch } from '../api/client';
+import { ButtonSpinner } from '../components/LoadingSpinner';
+import { apiFetch, apiErrorMessage } from '../api/client';
 import '../styles/auth.css';
 
 const fadeSlide = {
-  initial: { opacity: 0, x: 30 },
+  initial: { opacity: 0, x: 24 },
   animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -30 },
+  exit: { opacity: 0, x: -24 },
 };
 
 export default function ResetPassword() {
@@ -20,6 +21,7 @@ export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -33,13 +35,13 @@ export default function ResetPassword() {
         body: JSON.stringify({ email }),
       });
       if (res.ok) {
-        showToast('info', 'If this email is registered, an OTP has been sent.');
+        showToast('info', 'If this email is registered, a code has been sent.');
         setStep(2);
       } else {
-        setError((res.data as any).detail || 'Something went wrong');
+        setError(apiErrorMessage(res, 'Something went wrong.'));
       }
     } catch {
-      setError('Network error');
+      setError('Network error.');
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function ResetPassword() {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('Password must be at least 8 characters.');
       return;
     }
     setError('');
@@ -63,10 +65,10 @@ export default function ResetPassword() {
         showToast('success', 'Password reset successfully!');
         setTimeout(() => navigate('/login'), 2000);
       } else {
-        setError((res.data as any).detail || 'Invalid OTP or error');
+        setError(apiErrorMessage(res, 'Invalid code, please try again.'));
       }
     } catch {
-      setError('Network error');
+      setError('Network error.');
     } finally {
       setLoading(false);
     }
@@ -74,18 +76,16 @@ export default function ResetPassword() {
 
   return (
     <div className="auth-page">
-
       <motion.div
         className="auth-card"
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
       >
-        <div className="auth-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <img src="/logo.svg" alt="Smart Apply Logo" style={{ height: '48px', objectFit: 'contain' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <img src="/logo.svg" alt="Smart Apply" style={{ height: 42 }} />
         </div>
 
-        {/* Step indicator */}
         <div className="step-indicator">
           <div className={`step-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} />
           <div className={`step-line ${step >= 2 ? 'active' : ''}`} />
@@ -104,22 +104,28 @@ export default function ResetPassword() {
           {step === 1 && (
             <motion.div key="step1" {...fadeSlide}>
               <div className="auth-header">
-                <h2>Reset Password</h2>
+                <h2>Reset password</h2>
                 <p>Enter your email to receive a verification code</p>
               </div>
               <form className="auth-form" onSubmit={handleSendOtp}>
                 <div className="input-group">
                   <label htmlFor="reset-email">Email</label>
-                  <div style={{ position: 'relative' }}>
-                    <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input id="reset-email" type="email" className="input-field" style={{ paddingLeft: 42 }}
-                      placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <div className="input-icon-wrap">
+                    <Mail size={17} />
+                    <input
+                      id="reset-email"
+                      type="email"
+                      className="input-field"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
-                <motion.button type="submit" className="btn btn-primary" style={{ width: '100%' }}
-                  disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  {loading ? <Loader2 size={20} className="spin" /> : 'Send OTP'}
-                </motion.button>
+                <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
+                  {loading ? <ButtonSpinner /> : 'Send code'}
+                </button>
               </form>
             </motion.div>
           )}
@@ -127,40 +133,57 @@ export default function ResetPassword() {
           {step === 2 && (
             <motion.div key="step2" {...fadeSlide}>
               <div className="auth-header">
-                <h2>Enter Code & New Password</h2>
+                <h2>Enter code &amp; new password</h2>
                 <p>Check your email for the verification code</p>
               </div>
               <form className="auth-form" onSubmit={handleReset}>
                 <div className="input-group">
-                  <label htmlFor="reset-otp">Verification Code</label>
-                  <input id="reset-otp" type="text" className="input-field" inputMode="numeric"
-                    placeholder="6-digit code" maxLength={6} value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} required />
+                  <label htmlFor="reset-otp">Verification code</label>
+                  <input
+                    id="reset-otp"
+                    type="text"
+                    className="input-field"
+                    inputMode="numeric"
+                    placeholder="6-digit code"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    required
+                  />
                 </div>
                 <div className="input-group">
-                  <label htmlFor="reset-new-pw">New Password</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input id="reset-new-pw" type="password" className="input-field" style={{ paddingLeft: 42 }}
-                      placeholder="Min. 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                  <label htmlFor="reset-new-pw">New password</label>
+                  <div className="input-icon-wrap">
+                    <Lock size={17} />
+                    <input
+                      id="reset-new-pw"
+                      type="password"
+                      className="input-field"
+                      placeholder="Min. 8 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
-                <motion.button type="submit" className="btn btn-primary" style={{ width: '100%' }}
-                  disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  {loading ? <Loader2 size={20} className="spin" /> : 'Reset Password'}
-                </motion.button>
+                <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
+                  {loading ? <ButtonSpinner /> : 'Reset password'}
+                </button>
               </form>
             </motion.div>
           )}
 
           {step === 3 && (
-            <motion.div key="step3" {...fadeSlide} style={{ textAlign: 'center', padding: '32px 0' }}>
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                <CheckCircle size={64} style={{ color: 'var(--success)', margin: '0 auto 16px' }} />
+            <motion.div key="step3" {...fadeSlide} style={{ textAlign: 'center', padding: '28px 0' }}>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+              >
+                <CheckCircle2 size={52} style={{ color: 'var(--success)', margin: '0 auto 14px' }} />
               </motion.div>
-              <h2 style={{ marginBottom: 8 }}>Password Reset!</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Redirecting to login...</p>
+              <h2 style={{ marginBottom: 6, fontSize: 20 }}>Password reset</h2>
+              <p className="text-muted" style={{ fontSize: 13.5 }}>Redirecting you to sign in…</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -168,7 +191,6 @@ export default function ResetPassword() {
         <div className="auth-links">
           Remember your password? <Link to="/login">Sign in</Link>
         </div>
-
       </motion.div>
     </div>
   );

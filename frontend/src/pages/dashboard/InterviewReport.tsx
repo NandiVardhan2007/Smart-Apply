@@ -1,178 +1,180 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiFetch } from '../../api/client';
-import { useToast } from '../../components/Toast';
-import { ArrowLeft, Brain, Eye, Star, Target, MessageSquare } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Eye, AlertTriangle, TrendingUp, MessageCircle, Clock } from 'lucide-react';
 
-interface ReportData {
-  user_id: string;
-  room_name: string;
-  timestamp: string;
-  questions_asked: string[];
-  user_replies: string[];
-  areas_for_improvement: string[];
-  weaknesses: string[];
-  telemetry_summary: {
-    avg_confidence: number;
-    blink_count: number;
-  };
-  final_score: number;
-  overall_feedback: string;
-  communication_feedback: string;
+import { apiFetch } from '../../api/client';
+import { InlineLoader } from '../../components/LoadingSpinner';
+import type { InterviewReportData } from '../../api/types';
+
+function scoreTone(score: number): { color: string; bg: string } {
+  if (score >= 80) return { color: 'var(--success)', bg: 'var(--success-soft)' };
+  if (score >= 60) return { color: 'var(--warning)', bg: 'var(--warning-soft)' };
+  return { color: 'var(--danger)', bg: 'var(--danger-soft)' };
 }
 
 export default function InterviewReport() {
   const { roomName } = useParams();
   const navigate = useNavigate();
-  const { showToast } = useToast();
-  
-  const [report, setReport] = useState<ReportData | null>(null);
+  const [report, setReport] = useState<InterviewReportData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [notReady, setNotReady] = useState(false);
 
   useEffect(() => {
-    let done = false;
-
-    const fetchReport = async () => {
-      if (done || !roomName) return;
-      // apiFetch already prepends /api — so endpoint is /interview/report/...
-      const { data, ok, status } = await apiFetch<ReportData>(`/interview/report/${roomName}`);
-
-      if (ok) {
-        done = true;
-        setReport(data);
-        setLoading(false);
-      } else if (status === 404) {
-        // Report not ready yet — just show completion message
-        done = true;
-        setIsProcessing(true);
-        setLoading(false);
-      } else {
-        // Unexpected error
-        done = true;
-        showToast('error', 'Failed to fetch report');
+    (async () => {
+      if (!roomName) return;
+      try {
+        const res = await apiFetch<InterviewReportData>(`/interview/report/${roomName}`);
+        if (res.ok) {
+          setReport(res.data);
+        } else if (res.status === 404) {
+          setNotReady(true);
+        }
+      } finally {
         setLoading(false);
       }
-    };
+    })();
+  }, [roomName]);
 
-    // Fetch once
-    fetchReport();
+  if (loading) return <InlineLoader title="Loading your report" />;
 
-    return () => {
-      done = true;
-    };
-  }, [roomName, showToast]);
-
-  if (loading) {
+  if (notReady || !report) {
     return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
-        <h2 className="text-xl font-bold">Loading...</h2>
-      </div>
-    );
-  }
-
-  if (isProcessing) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center p-6">
-        <div className="bg-green-500/20 p-6 rounded-full mb-4">
-          <Target className="text-green-500 w-16 h-16" />
+      <div className="container-narrow" style={{ textAlign: 'center', paddingTop: 60 }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'var(--accent-soft)',
+            color: 'var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+          }}
+        >
+          <Clock size={26} />
         </div>
-        <h2 className="text-3xl font-bold">Interview Completed!</h2>
-        <p className="text-text-secondary text-lg max-w-md">
-          Great job! Your interview results are currently being processed by our AI. 
-          A detailed assessment report will be mailed to you shortly.
+        <h2 style={{ fontSize: 20, marginBottom: 10 }}>Your report is still being generated</h2>
+        <p className="text-muted" style={{ fontSize: 14, marginBottom: 24 }}>
+          Our AI is analyzing your interview. This usually takes under a minute — check back shortly.
         </p>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-primary mt-6">
-          Return to Dashboard
+        <button className="btn btn-primary" onClick={() => navigate('/dashboard/live-interview')}>
+          <ArrowLeft size={15} /> Back to live interview
         </button>
       </div>
     );
   }
 
-  if (!report) return null;
+  const tone = scoreTone(report.final_score);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/dashboard/live-interview')} className="btn btn-secondary p-2">
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-3xl font-bold">Interview Assessment</h1>
+    <div className="container-narrow">
+      <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard/live-interview')} style={{ marginBottom: 24 }}>
+        <ArrowLeft size={15} /> New interview
+      </button>
+
+      <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 22, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: '50%',
+            background: tone.bg,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <div className="stat-number" style={{ fontSize: 32, color: tone.color, lineHeight: 1 }}>{report.final_score}</div>
+          <div className="eyebrow" style={{ color: tone.color, marginTop: 3 }}>Score</div>
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <span className="eyebrow">Interview report</span>
+          <h1 style={{ fontSize: 22, marginTop: 4, marginBottom: 8 }}>{report.overall_feedback}</h1>
+          <p className="text-faint" style={{ fontSize: 12.5 }}>{new Date(report.timestamp).toLocaleString()}</p>
+        </div>
+      </motion.div>
+
+      <div className="grid-auto-fit" style={{ marginBottom: 22 }}>
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Eye size={16} style={{ color: 'var(--accent)' }} />
+            <span className="eyebrow">Avg. confidence</span>
+          </div>
+          <div className="stat-number" style={{ fontSize: 26 }}>
+            {Math.round((report.telemetry_summary?.avg_confidence || 0) * 100)}%
+          </div>
+        </div>
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Eye size={16} style={{ color: 'var(--accent)' }} />
+            <span className="eyebrow">Blink count</span>
+          </div>
+          <div className="stat-number" style={{ fontSize: 26 }}>{report.telemetry_summary?.blink_count ?? 0}</div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card bg-bg-secondary p-6 rounded-xl border border-border flex flex-col items-center justify-center text-center">
-          <Star className="text-yellow-400 mb-2" size={40} />
-          <div className="text-sm text-text-secondary uppercase tracking-wider">Final Score</div>
-          <div className="text-5xl font-black text-accent">{report.final_score}/100</div>
+      <div className="card" style={{ marginBottom: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <MessageCircle size={16} style={{ color: 'var(--accent)' }} />
+          <h3 style={{ fontSize: 15.5 }}>Communication feedback</h3>
         </div>
-
-        <div className="card bg-bg-secondary p-6 rounded-xl border border-border flex flex-col items-center justify-center text-center">
-          <Brain className="text-purple-400 mb-2" size={40} />
-          <div className="text-sm text-text-secondary uppercase tracking-wider">Avg Confidence</div>
-          <div className="text-5xl font-black">{(report.telemetry_summary.avg_confidence * 100).toFixed(0)}%</div>
-        </div>
-
-        <div className="card bg-bg-secondary p-6 rounded-xl border border-border flex flex-col items-center justify-center text-center">
-          <Eye className="text-blue-400 mb-2" size={40} />
-          <div className="text-sm text-text-secondary uppercase tracking-wider">Eye Blinks</div>
-          <div className="text-5xl font-black">{report.telemetry_summary.blink_count}</div>
-        </div>
+        <p style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--ink-soft)' }}>{report.communication_feedback}</p>
       </div>
 
-      <div className="card bg-bg-secondary p-6 rounded-xl border border-border">
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <Target className="text-accent" /> Overall Feedback
-        </h2>
-        <p className="text-lg leading-relaxed">{report.overall_feedback}</p>
-      </div>
-
-      {report.communication_feedback && (
-        <div className="card bg-bg-secondary p-6 rounded-xl border border-border">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <MessageSquare className="text-blue-400" /> Communication & Grammar
-          </h2>
-          <p className="text-lg leading-relaxed">{report.communication_feedback}</p>
+      {report.areas_for_improvement?.length > 0 && (
+        <div className="card" style={{ marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <TrendingUp size={16} style={{ color: 'var(--success)' }} />
+            <h3 style={{ fontSize: 15.5 }}>Areas for improvement</h3>
+          </div>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {report.areas_for_improvement.map((item, i) => (
+              <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
+                <span style={{ color: 'var(--success)' }}>—</span> {item}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card bg-bg-secondary p-6 rounded-xl border border-border border-l-4 border-l-green-500">
-          <h3 className="text-xl font-bold mb-4">Areas for Improvement</h3>
-          <ul className="list-disc pl-5 space-y-2">
-            {report.areas_for_improvement.map((area, idx) => (
-              <li key={idx} className="text-text-secondary">{area}</li>
+      {report.weaknesses?.length > 0 && (
+        <div className="card" style={{ marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <AlertTriangle size={16} style={{ color: 'var(--warning)' }} />
+            <h3 style={{ fontSize: 15.5 }}>Weaknesses noted</h3>
+          </div>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {report.weaknesses.map((item, i) => (
+              <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
+                <span style={{ color: 'var(--warning)' }}>—</span> {item}
+              </li>
             ))}
           </ul>
         </div>
-        
-        <div className="card bg-bg-secondary p-6 rounded-xl border border-border border-l-4 border-l-red-500">
-          <h3 className="text-xl font-bold mb-4">Noted Weaknesses</h3>
-          <ul className="list-disc pl-5 space-y-2">
-            {report.weaknesses.map((weakness, idx) => (
-              <li key={idx} className="text-text-secondary">{weakness}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      )}
 
-      <div className="card bg-bg-secondary p-6 rounded-xl border border-border">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <MessageSquare className="text-accent" /> Questions & Responses
-        </h2>
-        <div className="space-y-6">
-          {report.questions_asked.map((q, idx) => (
-            <div key={idx} className="bg-bg-primary p-4 rounded-lg">
-              <div className="font-bold text-lg mb-2">Q: {q}</div>
-              <div className="text-text-secondary border-l-2 border-border pl-4">
-                A: {report.user_replies[idx] || "No reply recorded."}
+      {report.questions_asked?.length > 0 && (
+        <div className="card">
+          <h3 style={{ fontSize: 15.5, marginBottom: 16 }}>Transcript</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {report.questions_asked.map((q, i) => (
+              <div key={i} style={{ paddingBottom: 16, borderBottom: i < report.questions_asked.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 6 }}>Q: {q}</p>
+                {report.user_replies?.[i] && (
+                  <p className="text-muted" style={{ fontSize: 13.5, paddingLeft: 14, borderLeft: '2px solid var(--border)' }}>
+                    {report.user_replies[i]}
+                  </p>
+                )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-
+      )}
     </div>
   );
 }

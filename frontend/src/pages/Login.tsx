@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { apiFetch } from '../api/client';
+import { ButtonSpinner } from '../components/LoadingSpinner';
+import { apiFetch, apiErrorMessage } from '../api/client';
+import type { User } from '../api/types';
 import '../styles/auth.css';
 
-const stagger = { animate: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-};
+interface LoginResponse {
+  access_token: string;
+  user: User;
+  detail?: string;
+}
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,6 +22,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const navigate = useNavigate();
   const { login } = useAuth();
   const { showToast } = useToast();
@@ -30,30 +33,20 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await apiFetch<{
-        access_token: string;
-        user: { id: string; email: string; full_name: string; is_verified: boolean; profile_pic_url: string | null; has_onboarded: boolean };
-        detail?: string;
-      }>('/auth/login', {
+      const res = await apiFetch<LoginResponse>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
 
       if (res.ok) {
         login(res.data.access_token, res.data.user);
-        showToast('success', 'Welcome back!');
-        
-        if (!res.data.user.has_onboarded) {
-          navigate('/onboarding');
-        } else {
-          navigate('/dashboard/resumes');
-        }
+        showToast('success', `Welcome back, ${res.data.user.full_name.split(' ')[0]}!`);
+        navigate(res.data.user.has_onboarded ? '/dashboard' : '/onboarding');
       } else if (res.status === 403) {
-        // Email not verified — redirect to OTP
         showToast('info', 'Please verify your email first.');
         navigate('/verify-otp', { state: { email } });
       } else {
-        setError((res.data as any).detail || 'Invalid email or password');
+        setError(apiErrorMessage(res, 'Invalid email or password.'));
       }
     } catch {
       setError('Network error. Please try again.');
@@ -64,131 +57,82 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-
       <motion.div
         className="auth-card"
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
       >
-        <div className="auth-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <img src="/logo.svg" alt="Smart Apply Logo" style={{ height: '48px', objectFit: 'contain' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <img src="/logo.svg" alt="Smart Apply" style={{ height: 42 }} />
         </div>
+
         <div className="auth-header">
-          <h2>Welcome Back</h2>
-          <p>Sign in to your account to continue</p>
+          <h2>Welcome back</h2>
+          <p>Sign in to keep working on your job search</p>
         </div>
 
         {error && (
-          <motion.div
-            className="auth-error"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-          >
+          <motion.div className="auth-error" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
             {error}
           </motion.div>
         )}
 
-        <motion.form
-          className="auth-form"
-          onSubmit={handleSubmit}
-          variants={stagger}
-          initial="initial"
-          animate="animate"
-        >
-          <motion.div className="input-group" variants={fadeUp}>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="input-group">
             <label htmlFor="login-email">Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail
-                size={18}
-                style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)',
-                }}
-              />
+            <div className="input-icon-wrap">
+              <Mail size={17} />
               <input
                 id="login-email"
                 type="email"
                 className="input-field"
-                style={{ paddingLeft: 42 }}
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div className="input-group" variants={fadeUp}>
+          <div className="input-group">
             <label htmlFor="login-password">Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock
-                size={18}
-                style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)',
-                }}
-              />
+            <div className="input-icon-wrap">
+              <Lock size={17} />
               <input
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                className="input-field"
-                style={{ paddingLeft: 42, paddingRight: 42 }}
-                placeholder="••••••••"
+                className="input-field has-trailing"
+                placeholder="Your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
               <button
                 type="button"
-                style={{
-                  position: 'absolute',
-                  right: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setShowPassword(!showPassword)}
+                className="input-icon-trailing"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div variants={fadeUp}>
-            <Link to="/reset-password" className="forgot-link">
-              Forgot password?
-            </Link>
-          </motion.div>
+          <Link to="/reset-password" className="forgot-link">
+            Forgot password?
+          </Link>
 
-          <motion.div variants={fadeUp}>
-            <motion.button
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {loading ? <Loader2 size={20} className="spin" /> : 'Sign In'}
-            </motion.button>
-          </motion.div>
-        </motion.form>
+          <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
+            {loading ? <ButtonSpinner /> : 'Sign in'}
+          </button>
+        </form>
 
         <div className="auth-links">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+          New to Smart Apply? <Link to="/signup">Create an account</Link>
         </div>
-
-
       </motion.div>
     </div>
   );

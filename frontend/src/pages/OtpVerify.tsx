@@ -1,19 +1,26 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { apiFetch } from '../api/client';
+import { ButtonSpinner } from '../components/LoadingSpinner';
+import { apiFetch, apiErrorMessage } from '../api/client';
+import type { User } from '../api/types';
 import '../styles/auth.css';
+
+interface VerifyResponse {
+  access_token: string;
+  user: User;
+}
 
 export default function OtpVerify() {
   const location = useLocation();
   const navigate = useNavigate();
   const { login, lastAuthEvent } = useAuth();
   const { showToast } = useToast();
-  const email = (location.state as any)?.email || '';
+  const email = (location.state as { email?: string } | null)?.email || '';
 
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [loading, setLoading] = useState(false);
@@ -21,23 +28,24 @@ export default function OtpVerify() {
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const verifiedRef = useRef(false);
 
-  // Countdown timer for resend
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Listen for WebSocket otp_verified event
+  // Auto-verify if a sibling tab / the OTP email link confirms via WebSocket
   useEffect(() => {
     if (verifiedRef.current) return;
     if (lastAuthEvent?.type === 'otp_verified' && lastAuthEvent.data.token) {
+      verifiedRef.current = true;
       setSuccess(true);
-      setTimeout(() => navigate(lastAuthEvent.data.has_onboarded ? '/dashboard/resumes' : '/onboarding'), 1000);
+      setTimeout(() => navigate(lastAuthEvent.data.has_onboarded ? '/dashboard' : '/onboarding'), 1000);
     }
     if (lastAuthEvent?.type === 'otp_failed') {
-      setError(lastAuthEvent.data.reason as string || 'Invalid OTP');
+      setError((lastAuthEvent.data.reason as string) || 'Invalid OTP');
     }
   }, [lastAuthEvent, navigate]);
 
@@ -46,8 +54,6 @@ export default function OtpVerify() {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -63,32 +69,23 @@ export default function OtpVerify() {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     const newOtp = [...otp];
-    for (let i = 0; i < pasted.length; i++) {
-      newOtp[i] = pasted[i];
-    }
+    for (let i = 0; i < pasted.length; i++) newOtp[i] = pasted[i];
     setOtp(newOtp);
     inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   };
-
-  const verifiedRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = otp.join('');
     if (code.length !== 6) {
-      setError('Please enter all 6 digits');
+      setError('Please enter all 6 digits.');
       return;
     }
 
     setError('');
     setLoading(true);
-
     try {
-      const res = await apiFetch<{
-        access_token: string;
-        user: any;
-        detail?: string;
-      }>('/auth/verify-otp', {
+      const res = await apiFetch<VerifyResponse>('/auth/verify-otp', {
         method: 'POST',
         body: JSON.stringify({ email, otp_code: code }),
       });
@@ -97,10 +94,10 @@ export default function OtpVerify() {
         verifiedRef.current = true;
         login(res.data.access_token, res.data.user);
         setSuccess(true);
-        showToast('success', 'Email verified successfully!');
-        setTimeout(() => navigate(res.data.user.has_onboarded ? '/dashboard/resumes' : '/onboarding'), 1000);
+        showToast('success', 'Email verified!');
+        setTimeout(() => navigate(res.data.user.has_onboarded ? '/dashboard' : '/onboarding'), 1000);
       } else {
-        setError((res.data as any).detail || 'Invalid OTP');
+        setError(apiErrorMessage(res, 'Invalid OTP.'));
       }
     } catch {
       setError('Network error. Please try again.');
@@ -111,18 +108,18 @@ export default function OtpVerify() {
 
   const handleResend = async () => {
     try {
-      const res = await apiFetch<{ detail?: string }>('/auth/resend-otp', {
+      const res = await apiFetch('/auth/resend-otp', {
         method: 'POST',
         body: JSON.stringify({ email }),
       });
       if (res.ok) {
         setCountdown(60);
-        showToast('info', 'A new OTP has been sent to your email.');
+        showToast('info', 'A new code has been sent to your email.');
       } else {
-        showToast('error', res.data?.detail || 'Failed to resend OTP.');
+        showToast('error', apiErrorMessage(res, 'Failed to resend the code.'));
       }
     } catch {
-      showToast('error', 'Network error while resending OTP.');
+      showToast('error', 'Network error while resending the code.');
     }
   };
 
@@ -133,52 +130,51 @@ export default function OtpVerify() {
 
   return (
     <div className="auth-page">
-
       <motion.div
         className="auth-card"
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
       >
-        <div className="auth-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <img src="/logo.svg" alt="Smart Apply Logo" style={{ height: '48px', objectFit: 'contain' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <img src="/logo.svg" alt="Smart Apply" style={{ height: 42 }} />
         </div>
+
         <div className="auth-header">
-          <h2>Verify Your Email</h2>
+          <h2>Verify your email</h2>
           <p>
-            We've sent a 6-digit code to{' '}
-            <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
+            We sent a 6-digit code to <strong style={{ color: 'var(--ink)' }}>{email}</strong>
           </p>
         </div>
 
         {error && (
-          <motion.div
-            className="auth-error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
+          <motion.div className="auth-error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {error}
           </motion.div>
         )}
 
         {success ? (
           <motion.div
-            style={{ textAlign: 'center', padding: 32 }}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            style={{ textAlign: 'center', padding: '28px 0' }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
           >
-            <CheckCircle size={64} style={{ color: 'var(--success)', margin: '0 auto 16px' }} />
-            <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>Verified!</p>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Redirecting to dashboard...</p>
+            <CheckCircle2 size={52} style={{ color: 'var(--success)', margin: '0 auto 14px' }} />
+            <p style={{ fontWeight: 600, fontSize: 15.5 }}>Verified</p>
+            <p className="text-muted" style={{ fontSize: 13.5, marginTop: 4 }}>
+              Taking you to your dashboard…
+            </p>
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="otp-inputs" onPaste={handlePaste}>
               {otp.map((digit, i) => (
-                <motion.input
+                <input
                   key={i}
-                  ref={(el) => { inputRefs.current[i] = el; }}
+                  ref={(el) => {
+                    inputRefs.current[i] = el;
+                  }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -186,37 +182,27 @@ export default function OtpVerify() {
                   value={digit}
                   onChange={(e) => handleChange(i, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(i, e)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
                 />
               ))}
             </div>
 
-            <motion.button
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {loading ? <Loader2 size={20} className="spin" /> : 'Verify Code'}
-            </motion.button>
+            <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
+              {loading ? <ButtonSpinner /> : 'Verify code'}
+            </button>
 
             <div className="resend-section">
               {countdown > 0 ? (
-                <span>Resend code in <strong>{countdown}s</strong></span>
+                <span>
+                  Resend code in <strong>{countdown}s</strong>
+                </span>
               ) : (
                 <button type="button" className="resend-btn" onClick={handleResend}>
-                  Resend Code
+                  Resend code
                 </button>
               )}
             </div>
           </form>
         )}
-
-
       </motion.div>
     </div>
   );

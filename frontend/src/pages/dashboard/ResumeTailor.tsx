@@ -1,9 +1,95 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Play, Download, ArrowLeft, Code, Layout, ZoomIn, ZoomOut, Edit3 } from 'lucide-react';
-import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
+import { FileText, Code2, Layout, PenSquare, Play, Download, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
+
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
+import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
+
+type Mode = 'latex' | 'html' | 'visual' | null;
+
+const ENGINE_OPTIONS: {
+  mode: Exclude<Mode, null>;
+  icon: typeof Code2;
+  title: string;
+  description: string;
+  cta: string;
+}[] = [
+  {
+    mode: 'latex',
+    icon: Code2,
+    title: 'LaTeX engine',
+    description:
+      'Extracts your resume into raw LaTeX. Pixel-perfect precision and professional typesetting — best for exact replication and complex multi-column layouts.',
+    cta: 'Use LaTeX',
+  },
+  {
+    mode: 'html',
+    icon: Layout,
+    title: 'HTML / CSS engine',
+    description:
+      'Extracts your resume into modern HTML and CSS with an instant live preview as you type. Best for quick structural edits.',
+    cta: 'Use HTML',
+  },
+  {
+    mode: 'visual',
+    icon: PenSquare,
+    title: 'Visual editor',
+    description:
+      'A WYSIWYG experience — click any text in the preview and type to change it instantly. Best for non-technical edits.',
+    cta: 'Use visual editor',
+  },
+];
+
+/** Injects a tiny floating format toolbar (bold/italic/underline/link) into the
+ * visual-editor iframe, positioned above whatever text the user has selected. */
+function buildVisualDoc(htmlCode: string, zoom: number): string {
+  const withEditable = htmlCode.replace(
+    /<div class="resume-page">/,
+    '<div class="resume-page" contenteditable="true" style="outline: 2px dashed #3452f4; outline-offset: 4px;">'
+  );
+
+  const withToolbar = withEditable.replace(
+    '</body>',
+    `
+<style>
+  .sa-floating-toolbar {
+    position: absolute; background: #fff; border: 1px solid #d4d6dc; box-shadow: 0 4px 16px rgba(20,22,28,0.12);
+    padding: 4px; border-radius: 8px; display: none; gap: 4px; z-index: 9999;
+  }
+  .sa-toolbar-btn {
+    background: #fff; border: none; cursor: pointer; font-weight: 700; font-family: monospace;
+    font-size: 13px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
+  }
+  .sa-toolbar-btn:hover { background: #f3f4f6; }
+  @media print { .resume-page { outline: none !important; } .sa-floating-toolbar { display: none !important; } }
+</style>
+<div id="sa-toolbar" class="sa-floating-toolbar" contenteditable="false">
+  <button class="sa-toolbar-btn" onclick="document.execCommand('bold', false, null)" title="Bold">B</button>
+  <button class="sa-toolbar-btn" onclick="document.execCommand('italic', false, null)" title="Italic" style="font-style: italic;">I</button>
+  <button class="sa-toolbar-btn" onclick="document.execCommand('underline', false, null)" title="Underline" style="text-decoration: underline;">U</button>
+  <button class="sa-toolbar-btn" onclick="const url = prompt('Enter link URL:'); if(url) document.execCommand('createLink', false, url);" title="Link">&#128279;</button>
+</div>
+<script>
+  document.addEventListener('selectionchange', () => {
+    const selection = window.getSelection();
+    const toolbar = document.getElementById('sa-toolbar');
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      toolbar.style.display = 'flex';
+      toolbar.style.top = (rect.top + window.scrollY - 42) + 'px';
+      toolbar.style.left = (rect.left + window.scrollX + rect.width / 2 - toolbar.offsetWidth / 2) + 'px';
+    } else {
+      toolbar.style.display = 'none';
+    }
+  });
+</script>
+</body>`
+  );
+
+  return withToolbar.replace('</head>', `<style>body { zoom: ${zoom}; }</style></head>`);
+}
 
 export default function ResumeTailor() {
   const { id: rawId } = useParams();
@@ -12,11 +98,9 @@ export default function ResumeTailor() {
   const { showToast } = useToast();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const [mode, setMode] = useState<'latex' | 'html' | 'visual' | null>(null);
-  
+  const [mode, setMode] = useState<Mode>(null);
   const [latexCode, setLatexCode] = useState('');
   const [htmlCode, setHtmlCode] = useState('');
-  
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingLatex, setLoadingLatex] = useState(false);
   const [loadingHtml, setLoadingHtml] = useState(false);
@@ -25,59 +109,6 @@ export default function ResumeTailor() {
   const [compiling, setCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
-
-  useEffect(() => {
-    if (mode === 'latex' && !latexFetched && !loadingLatex) {
-      const fetchOrExtractLatex = async () => {
-        setLoadingLatex(true);
-        try {
-          const res = await apiFetch<{ latex_code: string }>(`/tailor/extract-latex`, {
-            method: 'POST',
-            body: JSON.stringify({ resume_id: id }),
-          });
-          if (res.ok && res.data) {
-            setLatexCode(res.data.latex_code);
-            setLatexFetched(true);
-            showToast('success', 'LaTeX code loaded');
-            handleCompile(res.data.latex_code);
-          } else {
-            showToast('error', 'Failed to load LaTeX');
-          }
-        } catch (err) {
-          showToast('error', 'Network error');
-        } finally {
-          setLoadingLatex(false);
-        }
-      };
-      fetchOrExtractLatex();
-    }
-  }, [mode, id, latexFetched, loadingLatex]);
-
-  useEffect(() => {
-    if ((mode === 'html' || mode === 'visual') && !htmlFetched && !loadingHtml) {
-      const fetchOrExtractHtml = async () => {
-        setLoadingHtml(true);
-        try {
-          const res = await apiFetch<{ html_code: string }>(`/tailor/extract-html`, {
-            method: 'POST',
-            body: JSON.stringify({ resume_id: id }),
-          });
-          if (res.ok && res.data) {
-            setHtmlCode(res.data.html_code);
-            setHtmlFetched(true);
-            showToast('success', 'HTML code loaded');
-          } else {
-            showToast('error', 'Failed to load HTML');
-          }
-        } catch (err) {
-          showToast('error', 'Network error fetching HTML');
-        } finally {
-          setLoadingHtml(false);
-        }
-      };
-      fetchOrExtractHtml();
-    }
-  }, [mode, id, htmlFetched, loadingHtml]);
 
   const handleCompile = async (codeToCompile: string = latexCode) => {
     if (!codeToCompile.trim()) return;
@@ -89,29 +120,81 @@ export default function ResumeTailor() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sa_token')}`
+          Authorization: `Bearer ${localStorage.getItem('sa_token')}`,
         },
-        body: JSON.stringify({ latex_code: codeToCompile })
+        body: JSON.stringify({ latex_code: codeToCompile }),
       });
-      
+
       if (res.ok) {
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
+        setPdfUrl(URL.createObjectURL(blob));
       } else {
         try {
           const err = await res.json();
           setCompileError(err.detail || 'Compilation failed. Please check your LaTeX syntax.');
-        } catch(e) {
+        } catch {
           setCompileError('Compilation failed with a server error.');
         }
       }
-    } catch (err: any) {
-      setCompileError(err.message || 'Network error occurred while compiling.');
+    } catch (err) {
+      setCompileError(err instanceof Error ? err.message : 'Network error occurred while compiling.');
     } finally {
       setCompiling(false);
     }
   };
+
+  useEffect(() => {
+    if (mode === 'latex' && !latexFetched && !loadingLatex) {
+      (async () => {
+        setLoadingLatex(true);
+        try {
+          const res = await apiFetch<{ latex_code: string }>('/tailor/extract-latex', {
+            method: 'POST',
+            body: JSON.stringify({ resume_id: id }),
+          });
+          if (res.ok) {
+            setLatexCode(res.data.latex_code);
+            setLatexFetched(true);
+            showToast('success', 'LaTeX code loaded.');
+            handleCompile(res.data.latex_code);
+          } else {
+            showToast('error', 'Failed to load LaTeX.');
+          }
+        } catch {
+          showToast('error', 'Network error.');
+        } finally {
+          setLoadingLatex(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, id, latexFetched, loadingLatex]);
+
+  useEffect(() => {
+    if ((mode === 'html' || mode === 'visual') && !htmlFetched && !loadingHtml) {
+      (async () => {
+        setLoadingHtml(true);
+        try {
+          const res = await apiFetch<{ html_code: string }>('/tailor/extract-html', {
+            method: 'POST',
+            body: JSON.stringify({ resume_id: id }),
+          });
+          if (res.ok) {
+            setHtmlCode(res.data.html_code);
+            setHtmlFetched(true);
+            showToast('success', 'HTML code loaded.');
+          } else {
+            showToast('error', 'Failed to load HTML.');
+          }
+        } catch {
+          showToast('error', 'Network error fetching HTML.');
+        } finally {
+          setLoadingHtml(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, id, htmlFetched, loadingHtml]);
 
   const handleDownload = () => {
     if (mode === 'latex' && pdfUrl) {
@@ -127,77 +210,49 @@ export default function ResumeTailor() {
   };
 
   const isLoading = mode === 'latex' ? loadingLatex : loadingHtml;
-  const loadingText = mode === 'latex' ? 'Extracting LaTeX using NVIDIA Vision...' : 'Extracting HTML using NVIDIA Vision...';
+  const loadingText =
+    mode === 'latex' ? 'Extracting LaTeX with NVIDIA vision…' : 'Extracting HTML with NVIDIA vision…';
 
   if (mode === null) {
     return (
-      <div style={{ padding: 40, maxWidth: 1000, margin: '0 auto' }}>
-        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard/resumes')} style={{ marginBottom: 32 }}>
-          <ArrowLeft size={16} /> Back to Resumes
+      <div className="container-narrow">
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard/resumes')} style={{ marginBottom: 28 }}>
+          <ArrowLeft size={15} /> Back to resumes
         </button>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: 8, textShadow: '2px 2px 0 rgba(0,0,0,0.1)' }}>Select Tailoring Engine</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 40, fontSize: '1.1rem' }}>Choose how you want to extract and edit this resume.</p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32 }}>
-          <div 
-            onClick={() => setMode('latex')}
-            style={{ 
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
-              display: 'flex', flexDirection: 'column', gap: 16
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '12px 12px 0 #000'; }}
-            onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '8px 8px 0 #000'; }}
-          >
-            <div style={{ width: 64, height: 64, background: 'var(--accent-start)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'var(--border-thin)' }}>
-              <Code size={32} color="#000" />
-            </div>
-            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>LaTeX Engine (Recommended)</h2>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, flex: 1 }}>
-              Extracts your resume into raw LaTeX code. Offers pixel-perfect precision and professional typesetting. Best for exact replications and complex multi-column layouts.
-            </p>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Use LaTeX</button>
-          </div>
+        <h1 style={{ fontSize: 26, marginBottom: 8 }}>Choose your tailoring engine</h1>
+        <p className="text-muted" style={{ marginBottom: 32, fontSize: 14.5 }}>
+          Pick how you'd like to extract and edit this resume.
+        </p>
 
-          <div 
-            onClick={() => setMode('html')}
-            style={{ 
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
-              display: 'flex', flexDirection: 'column', gap: 16
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '12px 12px 0 #000'; }}
-            onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '8px 8px 0 #000'; }}
-          >
-            <div style={{ width: 64, height: 64, background: 'var(--accent-pink)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'var(--border-thin)' }}>
-              <Layout size={32} color="#000" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18 }}>
+          {ENGINE_OPTIONS.map((opt) => (
+            <div
+              key={opt.mode}
+              className="card card-interactive"
+              onClick={() => setMode(opt.mode)}
+              style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 'var(--radius)',
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <opt.icon size={22} />
+              </div>
+              <h3 style={{ fontSize: 16.5 }}>{opt.title}</h3>
+              <p className="text-muted" style={{ fontSize: 13.5, lineHeight: 1.55, flex: 1 }}>
+                {opt.description}
+              </p>
+              <button className="btn btn-primary btn-block">{opt.cta}</button>
             </div>
-            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>HTML/CSS Engine</h2>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, flex: 1 }}>
-              Extracts your resume into modern HTML and CSS. Offers an instant live preview as you type and uses familiar web standards for styling. Best for quick structural edits.
-            </p>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'var(--accent-pink)' }}>Use HTML</button>
-          </div>
-
-          <div 
-            onClick={() => setMode('visual')}
-            style={{ 
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 32, cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s, box-shadow 0.2s',
-              display: 'flex', flexDirection: 'column', gap: 16
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '12px 12px 0 #000'; }}
-            onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '8px 8px 0 #000'; }}
-          >
-            <div style={{ width: 64, height: 64, background: 'var(--accent-yellow)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'var(--border-thin)' }}>
-              <Edit3 size={32} color="#000" />
-            </div>
-            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Visual Editor (Easiest)</h2>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, flex: 1 }}>
-              Provides a What You See Is What You Get (WYSIWYG) editing experience. Simply click on the preview text and type to make changes instantly. Best for non-technical users.
-            </p>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'var(--accent-yellow)' }}>Use Visual Editor</button>
-          </div>
+          ))}
         </div>
       </div>
     );
@@ -205,201 +260,162 @@ export default function ResumeTailor() {
 
   return (
     <>
-      {/* Full-page PageLoader during extraction */}
-      <PageLoader
-        show={isLoading}
-        variant={mode === 'latex' ? 'extract' : 'default'}
-        title={loadingText?.toUpperCase()}
-      />
+      <PageLoader show={isLoading} title={loadingText} subtitle="This can take up to 30 seconds." />
 
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', background: 'var(--bg-surface)', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-surface)' }}>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard/resumes')}>
-            <ArrowLeft size={16} /> Back
-          </button>
-          
-          <div style={{ display: 'flex', background: 'var(--bg-body)', border: '1px solid var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
-            <button 
-              onClick={() => setMode('latex')}
-              style={{ padding: '8px 16px', background: mode === 'latex' ? 'var(--accent-start)' : 'transparent', color: mode === 'latex' ? 'var(--bg-surface)' : 'inherit', border: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <Code size={16} /> LaTeX
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '80vh',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          background: 'var(--surface)',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 20px',
+            borderBottom: '1px solid var(--border)',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard/resumes')}>
+              <ArrowLeft size={15} /> Back
             </button>
-            <button 
-              onClick={() => setMode('html')}
-              style={{ padding: '8px 16px', background: mode === 'html' ? 'var(--accent-pink)' : 'transparent', color: mode === 'html' ? 'var(--bg-surface)' : 'inherit', border: 'none', borderLeft: 'var(--border-brutal)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <Layout size={16} /> HTML / CSS
-            </button>
-            <button 
-              onClick={() => setMode('visual')}
-              style={{ padding: '8px 16px', background: mode === 'visual' ? 'var(--accent-yellow)' : 'transparent', color: mode === 'visual' ? 'var(--bg-surface)' : 'inherit', border: 'none', borderLeft: 'var(--border-brutal)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <Edit3 size={16} /> Visual Editor
-            </button>
+
+            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+              {(['latex', 'html', 'visual'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className="btn-sm"
+                  style={{
+                    padding: '7px 14px',
+                    background: mode === m ? 'var(--accent)' : 'transparent',
+                    color: mode === m ? 'var(--accent-ink)' : 'var(--ink)',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {m === 'latex' ? 'LaTeX' : m === 'html' ? 'HTML / CSS' : 'Visual'}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          {mode === 'latex' && (
-            <button className="btn btn-primary" onClick={() => handleCompile(latexCode)} disabled={compiling}>
-              {compiling ? <ButtonSpinner size={16} /> : <Play size={16} />}
-              Compile PDF
-            </button>
-          )}
-          <button className="btn btn-secondary" onClick={handleDownload} disabled={mode === 'latex' && !pdfUrl}>
-            <Download size={16} />
-            Download PDF
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Editor Pane (Hidden in Visual Mode) */}
-        {mode !== 'visual' && (
-          <div style={{ flex: 1, borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
-            {mode === 'latex' ? (
-              <textarea
-                value={latexCode}
-                onChange={(e) => setLatexCode(e.target.value)}
-                style={{
-                  flex: 1, width: '100%', padding: 16, background: '#1e1e1e', color: '#d4d4d4',
-                  fontFamily: 'monospace', fontSize: 14, border: 'none', resize: 'none', outline: 'none',
-                }}
-                spellCheck={false}
-              />
-            ) : (
-              <textarea
-                value={htmlCode}
-                onChange={(e) => setHtmlCode(e.target.value)}
-                style={{
-                  flex: 1, width: '100%', padding: 16, background: '#1e1e1e', color: '#d4d4d4',
-                  fontFamily: 'monospace', fontSize: 14, border: 'none', resize: 'none', outline: 'none',
-                }}
-                spellCheck={false}
-              />
+          <div style={{ display: 'flex', gap: 10 }}>
+            {mode === 'latex' && (
+              <button className="btn btn-primary btn-sm" onClick={() => handleCompile(latexCode)} disabled={compiling}>
+                {compiling ? <ButtonSpinner size={14} /> : <Play size={14} />}
+                Compile PDF
+              </button>
             )}
+            <button className="btn btn-secondary btn-sm" onClick={handleDownload} disabled={mode === 'latex' && !pdfUrl}>
+              <Download size={14} /> Download
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Preview Pane */}
-        <div style={{ flex: 1, background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-          {mode === 'latex' ? (
-            compileError ? (
-              <div style={{ flex: 1, padding: '2rem', overflow: 'auto', background: '#1e1e1e', color: '#ff5f56' }}>
-                <h3 style={{ marginTop: 0 }}>Compilation Error</h3>
-                <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontFamily: 'monospace', fontSize: '0.9rem' }}>{compileError}</pre>
-              </div>
-            ) : pdfUrl ? (
-              <iframe src={pdfUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="PDF Preview" />
-            ) : (
-              <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                Click "Compile PDF" to generate preview
-              </div>
-            )
-          ) : (
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#f0f0f0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)' }}>
-                {mode === 'visual' ? (
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><b>Visual Mode:</b> Click any text below to edit directly. Ctrl+Scroll to zoom.</span>
-                ) : (
-                  <span />
-                )}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setZoom(z => Math.max(0.2, z - 0.1))}>
-                    <ZoomOut size={16} />
-                  </button>
-                  <span style={{ display: 'flex', alignItems: 'center', fontFamily: 'monospace', minWidth: 60, justifyContent: 'center' }}>
-                    {Math.round(zoom * 100)}%
-                  </span>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setZoom(z => Math.min(3, z + 0.1))}>
-                    <ZoomIn size={16} />
-                  </button>
-                </div>
-              </div>
-              <div 
-                style={{ flex: 1, overflow: 'auto' }}
-                onWheel={(e) => {
-                  if (e.ctrlKey) {
-                    e.preventDefault();
-                    setZoom(z => Math.min(Math.max(0.2, z - e.deltaY * 0.001), 3));
-                  }
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {mode !== 'visual' && (
+            <div style={{ flex: 1, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+              <textarea
+                value={mode === 'latex' ? latexCode : htmlCode}
+                onChange={(e) => (mode === 'latex' ? setLatexCode(e.target.value) : setHtmlCode(e.target.value))}
+                style={{
+                  flex: 1,
+                  width: '100%',
+                  padding: 16,
+                  background: '#1a1c22',
+                  color: '#d6d8de',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 13.5,
+                  border: 'none',
+                  resize: 'none',
+                  outline: 'none',
                 }}
-              >
-                <div style={{ width: '100%', height: '100%' }}>
-                  <iframe 
+                spellCheck={false}
+              />
+            </div>
+          )}
+
+          <div style={{ flex: 1, background: 'var(--surface-sunken)', display: 'flex', flexDirection: 'column' }}>
+            {mode === 'latex' ? (
+              compileError ? (
+                <div style={{ flex: 1, padding: 24, overflow: 'auto', background: '#1a1c22', color: '#f2685d' }}>
+                  <h3 style={{ marginTop: 0, fontSize: 15, color: '#f2685d' }}>Compilation error</h3>
+                  <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--font-mono)', fontSize: 12.5 }}>
+                    {compileError}
+                  </pre>
+                </div>
+              ) : pdfUrl ? (
+                <iframe src={pdfUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="PDF preview" />
+              ) : (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-faint)', fontSize: 14 }}>
+                  <FileText size={16} style={{ marginRight: 8 }} /> Click "Compile PDF" to generate a preview
+                </div>
+              )
+            ) : (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    padding: '8px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'var(--surface)',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                >
+                  {mode === 'visual' ? (
+                    <span className="text-muted" style={{ fontSize: 13 }}>
+                      <strong style={{ color: 'var(--ink)' }}>Visual mode:</strong> click any text to edit. Ctrl+scroll to zoom.
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setZoom((z) => Math.max(0.2, z - 0.1))} aria-label="Zoom out">
+                      <ZoomOut size={14} />
+                    </button>
+                    <span className="font-mono" style={{ fontSize: 12.5, minWidth: 46, textAlign: 'center' }}>
+                      {Math.round(zoom * 100)}%
+                    </span>
+                    <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setZoom((z) => Math.min(3, z + 0.1))} aria-label="Zoom in">
+                      <ZoomIn size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div
+                  style={{ flex: 1, overflow: 'auto' }}
+                  onWheel={(e) => {
+                    if (e.ctrlKey) {
+                      e.preventDefault();
+                      setZoom((z) => Math.min(Math.max(0.2, z - e.deltaY * 0.001), 3));
+                    }
+                  }}
+                >
+                  <iframe
                     ref={iframeRef}
-                    sandbox="allow-scripts"
-                    srcDoc={(mode === 'visual' ? htmlCode.replace(/<div class="resume-page">/, '<div class="resume-page" contenteditable="true" style="outline: 2px dashed #000; outline-offset: 4px;">').replace('</body>', `
-<style>
-  .sa-floating-toolbar {
-    position: absolute;
-    background: #fff;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
-    padding: 4px;
-    border-radius: 4px;
-    display: none;
-    gap: 4px;
-    z-index: 9999;
-  }
-  .sa-toolbar-btn {
-    background: #fff;
-    border: 2px solid transparent;
-    cursor: pointer;
-    font-weight: bold;
-    font-family: monospace;
-    font-size: 14px;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 2px;
-  }
-  .sa-toolbar-btn:hover {
-    background: #f0f0f0;
-    border: 1px solid var(--border-color);
-  }
-  @media print {
-    .resume-page { outline: none !important; }
-    .sa-floating-toolbar { display: none !important; }
-  }
-</style>
-<div id="sa-toolbar" class="sa-floating-toolbar" contenteditable="false">
-  <button class="sa-toolbar-btn" onclick="document.execCommand('bold', false, null)" title="Bold">B</button>
-  <button class="sa-toolbar-btn" onclick="document.execCommand('italic', false, null)" title="Italic" style="font-style: italic;">I</button>
-  <button class="sa-toolbar-btn" onclick="document.execCommand('underline', false, null)" title="Underline" style="text-decoration: underline;">U</button>
-  <button class="sa-toolbar-btn" onclick="const url = prompt('Enter link URL:'); if(url) document.execCommand('createLink', false, url);" title="Link">🔗</button>
-</div>
-<script>
-  document.addEventListener('selectionchange', () => {
-    const selection = window.getSelection();
-    const toolbar = document.getElementById('sa-toolbar');
-    
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      
-      toolbar.style.display = 'flex';
-      toolbar.style.top = (rect.top + window.scrollY - 45) + 'px';
-      toolbar.style.left = (rect.left + window.scrollX + rect.width / 2 - toolbar.offsetWidth / 2) + 'px';
-    } else {
-      toolbar.style.display = 'none';
-    }
-  });
-</script>
-</body>`) : htmlCode).replace('</head>', `<style>body { zoom: ${zoom}; }</style></head>`)}
-                    style={{ width: '100%', height: '100%', border: 'none' }} 
-                    title="HTML Preview" 
+                    sandbox="allow-scripts allow-same-origin"
+                    srcDoc={mode === 'visual' ? buildVisualDoc(htmlCode, zoom) : htmlCode.replace('</head>', `<style>body { zoom: ${zoom}; }</style></head>`)}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    title="HTML preview"
                   />
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-
-    </div>
     </>
   );
 }

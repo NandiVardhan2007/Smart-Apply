@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   useRef,
   useCallback,
@@ -9,21 +8,7 @@ import {
 } from 'react';
 import { configureClient } from '../api/client';
 import { useAuthSocket, type AuthSocketEvent } from '../hooks/useAuthSocket';
-
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  is_verified: boolean;
-  profile_pic_url?: string | null;
-  bio?: string | null;
-  skills?: string[];
-  linkedin_url?: string | null;
-  github_url?: string | null;
-  portfolio_url?: string | null;
-  education?: string[];
-  experience?: string[];
-}
+import type { User } from '../api/types';
 
 interface AuthContextType {
   user: User | null;
@@ -43,9 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('sa_user');
     return stored ? JSON.parse(stored) : null;
   });
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem('sa_token')
-  );
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('sa_token'));
   const [lastAuthEvent, setLastAuthEvent] = useState<AuthSocketEvent | null>(null);
 
   const login = useCallback((newToken: string, newUser: User) => {
@@ -62,38 +45,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('sa_user');
   }, []);
 
-  const handleAuthEvent = useCallback((event: AuthSocketEvent) => {
-    setLastAuthEvent(event);
+  const handleAuthEvent = useCallback(
+    (event: AuthSocketEvent) => {
+      setLastAuthEvent(event);
 
-    switch (event.type) {
-      case 'otp_verified':
-      case 'login_success': {
-        const data = event.data;
-        if (data.token) {
-          const u: User = {
-            id: (data.id as string) || '',
-            email: (data.email as string) || '',
-            full_name: (data.full_name as string) || '',
-            is_verified: true,
-            profile_pic_url: null,
-          };
-          setToken(data.token as string);
-          setUser(u);
-          localStorage.setItem('sa_token', data.token as string);
-          localStorage.setItem('sa_user', JSON.stringify(u));
+      switch (event.type) {
+        case 'otp_verified':
+        case 'login_success': {
+          const data = event.data;
+          if (data.token) {
+            const u: User = {
+              id: (data.id as string) || '',
+              email: (data.email as string) || '',
+              full_name: (data.full_name as string) || '',
+              is_verified: true,
+              profile_pic_url: (data.profile_pic_url as string) || null,
+              has_onboarded: Boolean(data.has_onboarded),
+            };
+            setToken(data.token as string);
+            setUser(u);
+            localStorage.setItem('sa_token', data.token as string);
+            localStorage.setItem('sa_user', JSON.stringify(u));
+          }
+          break;
         }
-        break;
+        case 'session_expired':
+          logout();
+          break;
       }
-      case 'session_expired':
-        logout();
-        break;
-    }
-  }, [logout]);
+    },
+    [logout]
+  );
 
   const { sessionId } = useAuthSocket({ onEvent: handleAuthEvent });
 
-  // Keep stable refs so configureClient getters always read the latest values
-  // without needing to re-call configureClient on every render.
+  // Stable refs so configureClient's getters always read the latest state
+  // without needing to be re-registered on every render.
   const tokenRef = useRef(token);
   const sessionIdRef = useRef(sessionId);
   const logoutRef = useRef(logout);
@@ -101,14 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   sessionIdRef.current = sessionId;
   logoutRef.current = logout;
 
-  // FIX: Call configureClient synchronously during render (not in a useEffect).
-  // React fires child effects BEFORE parent effects, so putting this in a
-  // useEffect meant every dashboard page's first apiFetch ran before _getToken
-  // was set — sending requests with no Authorization header and getting empty
-  // responses (visible as blank pages on first visit).
-  //
-  // Calling it inline here guarantees _getToken is wired up before any child
-  // component renders or fires its own mount effects.
+  // Wired up synchronously during render — see the note in api/client.ts
+  // for why this can't move into a useEffect.
   configureClient({
     getToken: () => tokenRef.current,
     getSessionId: () => sessionIdRef.current,
@@ -130,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         token,
         sessionId,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: Boolean(token) && Boolean(user),
         login,
         logout,
         updateUser,
@@ -144,6 +125,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
   return ctx;
 }

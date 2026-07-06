@@ -1,161 +1,123 @@
-import { NavLink, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { NavLink } from 'react-router-dom';
 import {
-  User,
-  Settings,
-  FileSearch,
-  MessageSquare,
-  Mic,
-  LogOut,
+  LayoutDashboard,
   FileText,
+  ScanSearch,
+  MessageSquareText,
   Lightbulb,
-  Home,
-  X,
+  Video,
+  User as UserIcon,
+  Settings as SettingsIcon,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../styles/dashboard.css';
 
+const NAV_SECTIONS = [
+  {
+    title: 'Overview',
+    links: [{ to: '/dashboard', label: 'Home', icon: LayoutDashboard, end: true }],
+  },
+  {
+    title: 'Resume',
+    links: [
+      { to: '/dashboard/resumes', label: 'My resumes', icon: FileText },
+      { to: '/dashboard/ats-checker', label: 'ATS checker', icon: ScanSearch },
+    ],
+  },
+  {
+    title: 'Prepare',
+    links: [
+      { to: '/dashboard/ai-chatbot', label: 'AI career chat', icon: MessageSquareText },
+      { to: '/dashboard/project-recommender', label: 'Project ideas', icon: Lightbulb },
+      { to: '/dashboard/live-interview', label: 'Live interview', icon: Video },
+    ],
+  },
+];
+
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
 }
 
-const navItemsProfile = [
-  { to: '/dashboard', icon: Home, label: 'Home', color: '#facc15', end: true },
-  { to: '/dashboard/profile', icon: User, label: 'Profile', color: '#2F8FFF' },
-  { to: '/dashboard/resumes', icon: FileText, label: 'My Resumes', color: '#FF4757' },
-  { to: '/dashboard/settings', icon: Settings, label: 'Settings', color: '#636e72' },
-];
-
-const navItemsAi = [
-  { to: '/dashboard/ats-checker', icon: FileSearch, label: 'ATS Checker', color: '#2ED573' },
-  { to: '/dashboard/ai-chatbot', icon: MessageSquare, label: 'AI Chatbot', color: '#9B59B6' },
-  { to: '/dashboard/live-interview', icon: Mic, label: 'Live Interview', color: '#FF9F43' },
-  { to: '/dashboard/project-recommender', icon: Lightbulb, label: 'Project Finder', color: '#F1C40F' },
-];
-
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { user, logout } = useAuth();
-  const initials = (user?.full_name || 'Smart Apply')
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = (user?.full_name || user?.email || '?').charAt(0).toUpperCase();
 
   return (
     <>
-      {/* Mobile overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="sidebar-overlay visible"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            style={{ display: 'block' }}
-          />
-        )}
-      </AnimatePresence>
-
-      <motion.aside
-        className={`sidebar ${isOpen ? 'open' : ''}`}
-        initial={false}
-        animate={isOpen ? { x: 0 } : undefined}
-      >
+      {mobileOpen && <div className="sidebar-overlay" onClick={onCloseMobile} />}
+      <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', position: 'relative', height: '80px' }}>
-            <img src="/logo.svg" alt="Smart Apply Logo" className="expanded-logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.35)', transformOrigin: 'center center' }} />
-            <img src="/small_logo.svg" alt="Smart Apply Logo Small" className="collapsed-logo" style={{ width: '48px', height: '48px', objectFit: 'contain', transform: 'scale(1.6)', transformOrigin: 'center center' }} />
-            <button
-              onClick={onClose}
-              className="mobile-close-btn"
-              style={{ display: 'none', color: 'var(--text-primary)', background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '6px', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', zIndex: 10 }}
-              aria-label="Close menu"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <img src="/small_logo.svg" alt="Smart Apply" />
         </div>
 
         <nav className="sidebar-nav">
-          <span className="sidebar-section-title">Profile & Setup</span>
-          {navItemsProfile.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? 'active' : ''}`
-              }
-              onClick={onClose}
-            >
-              <div className="sidebar-link-content">
-                <item.icon size={20} className="icon" style={{ color: item.color }} />
-                <span>{item.label}</span>
-              </div>
-            </NavLink>
-          ))}
-
-          <div className="sidebar-divider"></div>
-
-          <span className="sidebar-section-title">AI Tools</span>
-          {navItemsAi.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? 'active' : ''}`
-              }
-              onClick={onClose}
-            >
-              <div className="sidebar-link-content">
-                <item.icon size={20} className="icon" style={{ color: item.color }} />
-                <span>{item.label}</span>
-              </div>
-            </NavLink>
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.title}>
+              <div className="sidebar-section-title">{section.title}</div>
+              {section.links.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={'end' in link ? link.end : false}
+                  onClick={onCloseMobile}
+                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                >
+                  <span className="sidebar-link-content">
+                    <link.icon size={17} />
+                    {link.label}
+                  </span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          <Link to="/dashboard/profile" className="sidebar-user" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-            <div className="sidebar-avatar" style={{ overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 4 }}>
+            <NavLink to="/dashboard/profile" onClick={onCloseMobile} className="sidebar-link">
+              <span className="sidebar-link-content">
+                <UserIcon size={17} />
+                Profile
+              </span>
+            </NavLink>
+            <NavLink to="/dashboard/settings" onClick={onCloseMobile} className="sidebar-link">
+              <span className="sidebar-link-content">
+                <SettingsIcon size={17} />
+                Settings
+              </span>
+            </NavLink>
+          </div>
+          <div className="sidebar-divider" />
+          <div className="sidebar-user">
+            <div className="sidebar-avatar">
               {user?.profile_pic_url ? (
-                <img src={user.profile_pic_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img
+                  src={user.profile_pic_url}
+                  alt=""
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                />
               ) : (
                 initials
               )}
             </div>
-            <div className="sidebar-user-info">
-              <div className="name">{user?.full_name || 'User'}</div>
-              <div className="email">{user?.email || ''}</div>
+            <div className="sidebar-user-info" style={{ flex: 1 }}>
+              <div className="name">{user?.full_name || 'Your account'}</div>
+              <div className="email">{user?.email}</div>
             </div>
-          </Link>
-          <button
-            className="sidebar-link btn-danger"
-            onClick={logout}
-            style={{ marginTop: 8, width: '100%' }}
-          >
-            <div className="sidebar-link-content">
-              <LogOut size={20} className="icon" />
-              <span>Log Out</span>
-            </div>
-          </button>
+            <button
+              onClick={logout}
+              aria-label="Log out"
+              className="btn-icon"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink-faint)' }}
+              title="Log out"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
-
-        <style>{`
-          @media (max-width: 1024px) {
-            .mobile-close-btn { 
-              display: flex !important; 
-              position: absolute; 
-              right: 16px; 
-              top: 50%;
-              transform: translateY(-50%);
-            }
-          }
-        `}</style>
-      </motion.aside>
+      </aside>
     </>
   );
 }

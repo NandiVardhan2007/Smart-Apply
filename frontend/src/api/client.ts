@@ -1,24 +1,22 @@
 /**
- * API client — reusable fetch wrapper with auth and session headers.
+ * API client — a thin fetch wrapper that attaches the auth token and the
+ * realtime session id to every request, and reports 401s back up so the
+ * app can log the user out.
  *
- * FIX: configureClient was previously called inside a useEffect in AuthContext,
- * meaning child component effects (Profile, Resumes, etc.) fired BEFORE
- * _getToken was wired up — causing every first-visit to a dashboard page to
- * send requests with no Authorization header, returning empty/401 responses.
- *
- * The fix is two-part:
- *  1. apiFetch falls back to reading directly from localStorage when _getToken
- *     is not yet set, so the token is never missing on first mount.
- *  2. AuthContext calls configureClient() synchronously during render (not in
- *     a useEffect), so _getToken is always set before any child renders or fires
- *     their own effects.
+ * `configureClient` is called synchronously during AuthProvider's render
+ * (not inside a useEffect). React runs child effects before parent
+ * effects, so wiring this up in an effect would mean the first render's
+ * child components could fire their own data-fetching effects before the
+ * token getter existed — sending unauthenticated requests on first paint.
+ * `apiFetch` also falls back to reading the token directly from
+ * localStorage so a request is never sent without it, even in that
+ * brief window before configureClient runs.
  */
 
 let _getToken: (() => string | null) | null = null;
 let _getSessionId: (() => string | null) | null = null;
 let _onUnauthorized: (() => void) | null = null;
 
-/** Called by AuthContext to wire up token/session getters */
 export function configureClient(opts: {
   getToken: () => string | null;
   getSessionId: () => string | null;
@@ -29,10 +27,24 @@ export function configureClient(opts: {
   _onUnauthorized = opts.onUnauthorized;
 }
 
-interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = unknown> {
   data: T;
   ok: boolean;
   status: number;
+}
+
+export function getApiBaseUrl(): string {
+  return import.meta.env.VITE_API_BASE_URL || '/api';
+}
+
+/** Converts the REST base URL into a ws:// or wss:// origin + path prefix. */
+export function getWsUrl(path: string): string {
+  const baseUrl = getApiBaseUrl();
+  if (baseUrl.startsWith('http')) {
+    return baseUrl.replace(/^http/, 'ws') + path;
+  }
+  const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProto}//${window.location.host}${baseUrl}${path}`;
 }
 
 export async function apiFetch<T = unknown>(
@@ -40,29 +52,24 @@ export async function apiFetch<T = unknown>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> || {}),
+    ...((options.headers as Record<string, string>) || {}),
   };
 
-  // Attach auth token — fall back to localStorage if configureClient hasn't
-  // been called yet (can happen on very first render before AuthContext effect fires)
   const token = _getToken ? _getToken() : localStorage.getItem('sa_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Attach session ID for WebSocket routing
   const sessionId = _getSessionId?.();
   if (sessionId) {
     headers['X-Session-ID'] = sessionId;
   }
 
-  // Set content type for JSON bodies
   if (options.body && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
     ...options,
     headers,
   });
@@ -79,4 +86,10 @@ export async function apiFetch<T = unknown>(
   }
 
   return { data, ok: response.ok, status: response.status };
+}
+
+/** Extracts a human-readable message from a failed ApiResponse, with a fallback. */
+export function apiErrorMessage(res: ApiResponse<unknown>, fallback: string): string {
+  const data = res.data as { detail?: string } | undefined;
+  return data?.detail || fallback;
 }

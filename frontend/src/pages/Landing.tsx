@@ -1,361 +1,172 @@
-import { Link } from 'react-router-dom';
-import type { MouseEvent } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { FileSearch, MessageSquare, Mic, Shield, ArrowDownRight, Bot, Zap } from 'lucide-react';
-import '../styles/landing.css';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ScanSearch, Wand2, MessageSquareText, Lightbulb, Video, ArrowRight, Check } from 'lucide-react';
 
-const features = [
+import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
+
+const FEATURES = [
   {
-    icon: FileSearch,
-    title: 'ATS Resume Checker',
-    desc: 'Upload your resume and a job description — our AI analyzes ATS compatibility, highlights matching keywords, and suggests improvements.',
+    icon: ScanSearch,
+    title: 'ATS checker',
+    description: 'Score your resume against any job description and see exactly which keywords are missing.',
   },
   {
-    icon: MessageSquare,
-    title: 'AI Career Chatbot',
-    desc: 'Get personalized career advice, cover letter help, and job search strategies from our AI-powered career advisor.',
+    icon: Wand2,
+    title: 'Resume tailoring',
+    description: 'Extract your resume into LaTeX, HTML, or a visual editor — then edit and re-export in seconds.',
   },
   {
-    icon: Mic,
-    title: 'AI Interview Practice',
-    desc: 'Practice with AI-generated interview questions tailored to your target role. Get instant feedback on your answers.',
+    icon: MessageSquareText,
+    title: 'AI career chat',
+    description: 'Get cover letters, interview answers, and salary negotiation advice from an advisor that knows your profile.',
   },
   {
-    icon: Shield,
-    title: 'Secure & Private',
-    desc: 'Your data is encrypted and stored securely. We never share your personal information or resumes with third parties.',
+    icon: Lightbulb,
+    title: 'Project recommendations',
+    description: 'Get project ideas matched to your skills and time, complete with a phased build roadmap.',
   },
   {
-    icon: Zap,
-    title: 'Portfolio Generator',
-    desc: 'Turn your profile into a 1-click single page portfolio website instantly.',
+    icon: Video,
+    title: 'Live interview practice',
+    description: 'Talk through a real-time mock interview with an AI interviewer that reads your expressions and gives feedback.',
   },
-  {
-    icon: Bot,
-    title: 'Project Finder',
-    desc: 'Get AI-recommended side projects that match your exact skillset to build your resume.',
-  }
 ];
 
-const testimonials = [
-  {
-    quote: "The ATS Checker is magic. It pointed out 5 missing keywords from the job description, and I got an interview the next day.",
-    author: "Sarah J.",
-    role: "Software Engineer"
-  },
-  {
-    quote: "Practicing with the live AI interviewer helped me get over my nerves. It's like having a FAANG recruiter in your browser.",
-    author: "David L.",
-    role: "Data Scientist"
-  },
-  {
-    quote: "I generated my portfolio in literally one click and hosted it on GitHub Pages. Easiest web dev I've never done.",
-    author: "Elena M.",
-    role: "UX Designer"
-  }
+const STEPS = [
+  { n: '01', title: 'Upload your resume', description: 'Drop in a PDF and let AI extract your skills, education, and experience.' },
+  { n: '02', title: 'Optimize for the role', description: 'Check your ATS score against a job description and tailor your resume.' },
+  { n: '03', title: 'Practice & apply', description: 'Rehearse with a live AI interviewer, then apply with confidence.' },
 ];
-
-const stats = [
-  { value: '10K+', label: 'Resumes Analyzed' },
-  { value: '95%', label: 'User Satisfaction' },
-  { value: '50+', label: 'Job Categories' },
-  { value: '24/7', label: 'AI Availability' },
-];
-
-function TiltFeatureCard({ feature, index }: { feature: typeof features[number]; index: number }) {
-  const px = useMotionValue(0);
-  const py = useMotionValue(0);
-  const rotateX = useSpring(useTransform(py, [-0.5, 0.5], [4, -4]), { stiffness: 280, damping: 22 });
-  const rotateY = useSpring(useTransform(px, [-0.5, 0.5], [-4, 4]), { stiffness: 280, damping: 22 });
-
-  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    px.set((e.clientX - rect.left) / rect.width - 0.5);
-    py.set((e.clientY - rect.top) / rect.height - 0.5);
-  }
-
-  function handleMouseLeave() {
-    px.set(0);
-    py.set(0);
-  }
-
-  return (
-    <motion.div
-      className="feature-card"
-      style={{ perspective: 1000 }}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.5 }}
-      viewport={{ once: true }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      <motion.div
-        style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-        whileHover={{ y: -2 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      >
-        <div className="feature-icon">
-          <feature.icon size={24} />
-        </div>
-        <h3>{feature.title}</h3>
-        <p>{feature.desc}</p>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 export default function Landing() {
-  const currentYear = new Date().getFullYear();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   return (
-    <div className="landing-page min-h-screen w-full flex flex-col bg-primary text-primary-foreground">
-      
-      {/* Background Dot Grid */}
-      <div className="bg-dots" />
+    <div>
+      <Navbar />
 
       {/* Hero */}
-      <main className="hero flex-1 flex flex-col justify-center pt-40 pb-20 z-10">
-        <div className="container mx-auto flex flex-col items-center justify-center gap-6">
-          
-          {/* Line 1 */}
-          <div className="flex flex-wrap items-center justify-center gap-8 relative">
-            <motion.p
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-right text-text-muted font-bold uppercase tracking-wider text-sm max-w-[220px]"
-            >
-              Hi, we are Smart Apply. We build practical tools to help you land your dream job.
-            </motion.p>
-            <div className="relative">
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -top-6 right-2 z-20"
-              >
-                <div className="glass-bubble">
-                  <FileSearch size={14} />
-                  <span>ATS Check</span>
-                </div>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                className="text-massive text-primary"
-              >
-                SMART
-              </motion.div>
-            </div>
+      <section className="container" style={{ padding: '88px 24px 72px', textAlign: 'center' }}>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="badge badge-accent" style={{ marginBottom: 22 }}>
+            AI-powered job search
           </div>
-
-          {/* Line 2 */}
-          <div className="flex items-center justify-center gap-8 relative">
-            <div className="relative">
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -top-8 left-4 z-20"
-              >
-                <div className="glass-bubble">
-                  <Mic size={14} />
-                  <span>Interview</span>
-                </div>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="text-massive text-primary flex items-center"
-              >
-                <span>CARE</span>
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="mx-2 text-accent"
-                >
-                  <Bot size={64} />
-                </motion.div>
-                <span>ER</span>
-              </motion.div>
-            </div>
+          <h1 style={{ fontSize: 'clamp(32px, 5vw, 54px)', lineHeight: 1.1, maxWidth: 760, margin: '0 auto 20px' }}>
+            Land your next role with an AI co-pilot for every step
+          </h1>
+          <p className="text-muted" style={{ fontSize: 17, maxWidth: 560, margin: '0 auto 34px', lineHeight: 1.6 }}>
+            Smart Apply tailors your resume, scores it against real job descriptions, and rehearses interviews with you —
+            so you walk in prepared.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary btn-lg" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}>
+              {isAuthenticated ? 'Go to dashboard' : 'Get started free'} <ArrowRight size={17} />
+            </button>
+            <a href="#features" className="btn btn-secondary btn-lg">
+              See how it works
+            </a>
           </div>
-
-          {/* Line 3 */}
-          <div className="flex flex-wrap items-center justify-center gap-8 relative">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 1 }}
-              className="brutal-badge hide-mobile absolute top-1/4 -right-12"
-            >
-              <Zap size={14} className="text-accent" />
-              <span>Speed</span>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 1.2 }}
-              className="brutal-badge hide-mobile absolute bottom-1/4 -left-16"
-            >
-              <Shield size={14} className="text-green-500" />
-              <span>Private</span>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-massive text-primary"
-            >
-              APPLY
-            </motion.div>
-            <motion.p
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-left text-text-muted font-bold uppercase tracking-wider text-sm max-w-[200px]"
-            >
-              Open to students, professionals, and anyone seeking career growth.
-            </motion.p>
-          </div>
-        </div>
-
-        <div className="container mx-auto mt-24">
-          <div className="hero-bottom-bar-inner items-center justify-between">
-            <div className="flex-1 h-px bg-border hide-mobile" />
-            <div className="text-xs font-bold tracking-widest text-text-muted uppercase text-center mx-4">
-              ALL-IN-ONE AI PLATFORM — {currentYear}
-            </div>
-            <Link to="/signup" className="resume-button-group">
-              <motion.div className="resume-button">
-                <span className="resume-button-text">
-                  Get Started
-                </span>
-                <div className="resume-button-icon">
-                  <ArrowDownRight size={20} />
-                </div>
-              </motion.div>
-            </Link>
-          </div>
-        </div>
-      </main>
-
-      {/* Stats */}
-      <section className="stats-section" id="stats">
-        <div className="stats-grid">
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              className="stat-item"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
-              viewport={{ once: true }}
-            >
-              <h3>{stat.value}</h3>
-              <p>{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* Features */}
-      <section className="features-section" id="features">
-        <motion.div
-          className="section-header"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-        >
-          <h2>Everything You Need to Succeed.</h2>
-          <p>
-            Powerful AI tools designed to give you an edge in your job search, without the heavy interface.
-          </p>
-        </motion.div>
+      <section id="features" className="container" style={{ padding: '64px 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <span className="eyebrow">Everything you need</span>
+          <h2 style={{ fontSize: 30, marginTop: 8 }}>One platform, the entire job search</h2>
+        </div>
 
-        <div className="features-grid">
-          {features.map((f, i) => (
-            <TiltFeatureCard key={f.title} feature={f} index={i} />
+        <div className="grid-auto-fit">
+          {FEATURES.map((feature, i) => (
+            <motion.div
+              key={feature.title}
+              className="card"
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 'var(--radius)',
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                }}
+              >
+                <feature.icon size={20} />
+              </div>
+              <h3 style={{ fontSize: 16.5, marginBottom: 8 }}>{feature.title}</h3>
+              <p className="text-muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{feature.description}</p>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="bg-bg-secondary py-32 px-6" id="testimonials">
-        <div className="container mx-auto">
-          <div className="section-header">
-            <h2>Wall of Love.</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((t, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                viewport={{ once: true }}
-                className="testimonial-card"
-              >
-                <div className="text-4xl text-accent mb-4">"</div>
-                <p className="text-lg font-medium mb-6 italic text-text-primary flex-1">{t.quote}</p>
-                <div>
-                  <strong className="block text-lg uppercase font-bold text-text-primary">{t.author}</strong>
-                  <span className="text-text-muted text-sm font-medium">{t.role}</span>
-                </div>
-              </motion.div>
+      {/* How it works */}
+      <section id="how-it-works" className="container" style={{ padding: '64px 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <span className="eyebrow">Simple by design</span>
+          <h2 style={{ fontSize: 30, marginTop: 8 }}>Three steps to your next offer</h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 28 }}>
+          {STEPS.map((step, i) => (
+            <motion.div
+              key={step.n}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <div className="stat-number" style={{ fontSize: 15, color: 'var(--accent)', marginBottom: 12 }}>{step.n}</div>
+              <h3 style={{ fontSize: 17, marginBottom: 8 }}>{step.title}</h3>
+              <p className="text-muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{step.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="container" style={{ padding: '64px 24px 96px' }}>
+        <div
+          className="card"
+          style={{
+            textAlign: 'center',
+            padding: '56px 32px',
+            background: 'var(--ink)',
+            borderColor: 'var(--ink)',
+          }}
+        >
+          <h2 style={{ fontSize: 28, color: '#fff', marginBottom: 14 }}>Ready to apply smarter?</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14.5, marginBottom: 28, maxWidth: 420, margin: '0 auto 28px' }}>
+            Create your free account and get your first ATS score in minutes.
+          </p>
+          <button className="btn btn-lg" style={{ background: '#fff', color: 'var(--ink)' }} onClick={() => navigate('/signup')}>
+            Get started free <ArrowRight size={17} />
+          </button>
+          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 24, flexWrap: 'wrap' }}>
+            {['No credit card required', 'Free forever plan', 'Cancel anytime'].map((item) => (
+              <span key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.6)', fontSize: 12.5 }}>
+                <Check size={13} /> {item}
+              </span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-24 px-6 bg-accent-soft" id="pricing">
-        <div className="container mx-auto flex justify-center">
-          <div className="bg-bg-surface border border-border rounded-xl shadow-md p-10 md:p-12 max-w-2xl w-full text-center">
-            <h2 className="text-3xl font-bold uppercase text-text-primary mb-2">Free Forever</h2>
-            <p className="text-lg font-medium text-text-secondary mb-8">Because job hunting is hard enough.</p>
-            
-            <ul className="flex flex-col gap-4 text-left mx-auto max-w-md mb-10">
-              {['Unlimited ATS Checks', 'Unlimited AI Mock Interviews', '1-Click Portfolios', 'Project Finder', 'Cloud Resume Storage'].map(f => (
-                <li key={f} className="flex items-center gap-4 text-lg font-medium text-text-primary">
-                  <div className="bg-success-bg text-success rounded-full w-8 h-8 flex items-center justify-center shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  </div> 
-                  {f}
-                </li>
-              ))}
-            </ul>
-            
-            <Link to="/signup" className="btn btn-primary w-full py-4 text-lg justify-center">
-              GET STARTED
-            </Link>
-          </div>
+      <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 24px' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 22 }} />
+          <p className="text-faint" style={{ fontSize: 12.5 }}>© {new Date().getFullYear()} Smart Apply. All rights reserved.</p>
         </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-32 px-6 text-center bg-bg-primary border-t border-border">
-        <div className="container mx-auto max-w-3xl">
-          <h2 className="text-4xl md:text-5xl font-bold uppercase mb-6 text-text-primary">
-            Ready to land your dream job?
-          </h2>
-          <p className="text-xl font-medium text-text-secondary mb-10">
-            Join thousands of other job seekers using Smart Apply to build their careers.
-          </p>
-          <Link to="/signup" className="btn btn-primary px-10 py-4 text-xl shadow-lg hover:shadow-xl transition-shadow">
-            Start For Free
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="landing-footer">
-        <p>
-          © {currentYear} <span className="text-accent">Smart Apply</span>. Built for students, by developers who care.
-        </p>
       </footer>
     </div>
   );
