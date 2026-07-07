@@ -9,10 +9,19 @@ import { useToast } from '../../components/Toast';
 import { useFaceAnalyzer } from '../../hooks/useFaceAnalyzer';
 
 // The Web Speech API's SpeechRecognition constructor itself has no official
-// TS lib types yet (only its event types — SpeechRecognitionEvent,
-// SpeechRecognitionErrorEvent — ship in lib.dom.d.ts), so we declare a
-// minimal shape for the parts this page actually uses.
+// TS lib types yet. Some environments also lack its event types,
+// so we declare a minimal shape for the parts this page actually uses.
 declare global {
+  interface SpeechRecognitionEvent {
+    resultIndex: number;
+    results: {
+      isFinal: boolean;
+      [index: number]: { transcript: string };
+    }[];
+  }
+  interface SpeechRecognitionErrorEvent {
+    error: string;
+  }
   interface Window {
     SpeechRecognition: new () => SpeechRecognitionInstance;
     webkitSpeechRecognition: new () => SpeechRecognitionInstance;
@@ -219,7 +228,7 @@ export default function LiveInterview() {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.0;
-      utterance.pitch = 0.5;
+      utterance.pitch = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
       const isMaleName = (name: string) => {
@@ -245,6 +254,7 @@ export default function LiveInterview() {
 
       const englishVoices = voices.filter((v) => v.lang.startsWith('en-'));
       const preferredVoice =
+        englishVoices.find((v) => (v.name.includes('Google') || v.name.includes('Premium')) && isMaleName(v.name)) ||
         englishVoices.find((v) => isMaleName(v.name)) ||
         englishVoices.find((v) => !isFemaleName(v.name)) ||
         englishVoices[englishVoices.length - 1];
@@ -415,6 +425,7 @@ export default function LiveInterview() {
         </div>
       ) : (
         <div
+          className="live-interview-layout"
           style={{
             flex: 1,
             display: 'flex',
@@ -453,6 +464,7 @@ export default function LiveInterview() {
               </div>
 
               <div
+                className="live-interview-video-container"
                 style={{
                   position: 'absolute',
                   bottom: 24,
@@ -573,6 +585,27 @@ export default function LiveInterview() {
           )}
         </div>
       )}
+      <style>{`
+        .live-interview-layout {
+          flex-direction: row;
+        }
+        @media (max-width: 900px) {
+          .live-interview-layout {
+            flex-direction: column !important;
+            overflow-y: auto !important;
+          }
+          .live-interview-layout > div {
+            min-height: 50vh;
+            border-left: none !important;
+            border-top: 1px solid var(--border);
+          }
+          .live-interview-video-container {
+            width: 140px !important;
+            bottom: 16px !important;
+            right: 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

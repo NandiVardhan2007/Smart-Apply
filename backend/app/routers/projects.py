@@ -22,22 +22,22 @@ class RoadmapRequest(BaseModel):
 @router.post("/recommend")
 @limiter.limit("5/minute")
 async def recommend_projects(
-    request_obj: Request, request: ProjectRequest, current_user: User = Depends(get_current_user)
+    request: Request, body: ProjectRequest, current_user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
     """Suggest projects based on user input."""
     return await ai_service.suggest_projects(
-        skills=request.skills,
-        time_commitment=request.time_commitment,
-        interests=request.interests,
+        skills=body.skills,
+        time_commitment=body.time_commitment,
+        interests=body.interests,
     )
 
 @router.post("/roadmap")
 @limiter.limit("5/minute")
 async def generate_roadmap(
-    request_obj: Request, request: RoadmapRequest, current_user: User = Depends(get_current_user)
+    request: Request, body: RoadmapRequest, current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Generate a step-by-step roadmap for a selected project."""
     return await ai_service.generate_project_roadmap(
-        project_details=request.project_details,
-        preferences=request.preferences or {}
+        project_details=body.project_details,
+        preferences=body.preferences or {}
     )
