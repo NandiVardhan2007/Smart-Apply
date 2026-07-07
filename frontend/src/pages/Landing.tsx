@@ -1,34 +1,40 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ScanSearch, Wand2, MessageSquareText, Lightbulb, Video, ArrowRight, Check } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { ScanSearch, Wand2, MessageSquareText, Lightbulb, Video, ArrowRight, Check, Sparkles } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import Navbar from '../components/Navbar';
+import AnimatedBackground from '../components/AnimatedBackground';
 import { useAuth } from '../context/AuthContext';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const FEATURES = [
   {
     icon: ScanSearch,
-    title: 'ATS checker',
-    description: 'Score your resume against any job description and see exactly which keywords are missing.',
+    title: 'ATS Checker',
+    description: 'Score your resume against any job description and see exactly which keywords are missing to get past the filters.',
   },
   {
     icon: Wand2,
-    title: 'Resume tailoring',
-    description: 'Extract your resume into LaTeX, HTML, or a visual editor — then edit and re-export in seconds.',
+    title: 'Resume Tailoring',
+    description: 'Extract your resume into our visual editor — then edit and re-export tailored versions in seconds.',
   },
   {
     icon: MessageSquareText,
-    title: 'AI career chat',
+    title: 'AI Career Chat',
     description: 'Get cover letters, interview answers, and salary negotiation advice from an advisor that knows your profile.',
   },
   {
     icon: Lightbulb,
-    title: 'Project recommendations',
+    title: 'Project Recommendations',
     description: 'Get project ideas matched to your skills and time, complete with a phased build roadmap.',
   },
   {
     icon: Video,
-    title: 'Live interview practice',
+    title: 'Live Interview Practice',
     description: 'Talk through a real-time mock interview with an AI interviewer that reads your expressions and gives feedback.',
   },
 ];
@@ -42,130 +48,276 @@ const STEPS = [
 export default function Landing() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const stepsRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll();
+  const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 100]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
+
+  useEffect(() => {
+    // GSAP ScrollTrigger for Features
+    if (featuresRef.current) {
+      const cards = featuresRef.current.querySelectorAll('.feature-card');
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 50, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.6,
+          stagger: 0.1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: featuresRef.current,
+            start: 'top 80%',
+          },
+        }
+      );
+    }
+
+    // GSAP ScrollTrigger for Steps
+    if (stepsRef.current) {
+      const stepCards = stepsRef.current.querySelectorAll('.step-card');
+      gsap.fromTo(
+        stepCards,
+        { opacity: 0, x: -30 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.8,
+          stagger: 0.2,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: stepsRef.current,
+            start: 'top 75%',
+          },
+        }
+      );
+    }
+  }, []);
 
   return (
-    <div>
+    <div style={{ position: 'relative', overflow: 'hidden' }}>
+      <AnimatedBackground />
       <Navbar />
 
       {/* Hero */}
-      <section className="container" style={{ padding: '88px 24px 72px', textAlign: 'center' }}>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <div className="badge badge-accent" style={{ marginBottom: 22 }}>
-            AI-powered job search
-          </div>
-          <h1 style={{ fontSize: 'clamp(32px, 5vw, 54px)', lineHeight: 1.1, maxWidth: 760, margin: '0 auto 20px' }}>
-            Land your next role with an AI co-pilot for every step
+      <section 
+        style={{ 
+          padding: '160px 24px 120px', 
+          textAlign: 'center', 
+          minHeight: '90vh', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          position: 'relative',
+          zIndex: 10
+        }}
+      >
+        <motion.div 
+          className="container"
+          style={{ y: heroY, opacity: heroOpacity }}
+          initial={{ opacity: 0, scale: 0.9 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              padding: '6px 16px', 
+              background: 'var(--accent-soft)', 
+              color: 'var(--accent)', 
+              borderRadius: 'var(--radius-xl)', 
+              fontSize: '0.85rem', 
+              fontWeight: 600,
+              marginBottom: 32,
+              border: '1px solid var(--border-accent)'
+            }}
+          >
+            <Sparkles size={14} /> AI-Powered Job Search
+          </motion.div>
+          
+          <h1 style={{ fontSize: 'clamp(40px, 7vw, 72px)', lineHeight: 1.05, maxWidth: 900, margin: '0 auto 24px', letterSpacing: '-0.03em' }}>
+            Land your next role with an <span className="text-accent">AI co-pilot</span> for every step.
           </h1>
-          <p className="text-muted" style={{ fontSize: 17, maxWidth: 560, margin: '0 auto 34px', lineHeight: 1.6 }}>
+          
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="text-secondary" 
+            style={{ fontSize: 'clamp(16px, 2vw, 20px)', maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6 }}
+          >
             Smart Apply tailors your resume, scores it against real job descriptions, and rehearses interviews with you —
             so you walk in prepared.
-          </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}
+          >
             <button className="btn btn-primary btn-lg" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}>
-              {isAuthenticated ? 'Go to dashboard' : 'Get started free'} <ArrowRight size={17} />
+              {isAuthenticated ? 'Go to dashboard' : 'Start your journey'} <ArrowRight size={18} />
             </button>
             <a href="#features" className="btn btn-secondary btn-lg">
               See how it works
             </a>
-          </div>
+          </motion.div>
         </motion.div>
       </section>
 
       {/* Features */}
-      <section id="features" className="container" style={{ padding: '64px 24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <span className="eyebrow">Everything you need</span>
-          <h2 style={{ fontSize: 30, marginTop: 8 }}>One platform, the entire job search</h2>
-        </div>
+      <section id="features" style={{ padding: '120px 24px', position: 'relative', zIndex: 10 }}>
+        <div className="container" ref={featuresRef}>
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <span className="eyebrow">The Complete Toolkit</span>
+            <h2 style={{ fontSize: 'clamp(32px, 5vw, 48px)', marginTop: 8 }}>Everything you need to succeed</h2>
+          </div>
 
-        <div className="grid-auto-fit">
-          {FEATURES.map((feature, i) => (
-            <motion.div
-              key={feature.title}
-              className="card"
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-            >
+          <div className="grid-auto-fit">
+            {FEATURES.map((feature) => (
               <div
+                key={feature.title}
+                className="card feature-card"
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 'var(--radius)',
-                  background: 'var(--accent-soft)',
-                  color: 'var(--accent)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 16,
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
                 }}
               >
-                <feature.icon size={20} />
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 20,
+                    border: '1px solid var(--border-accent)',
+                  }}
+                >
+                  <feature.icon size={24} />
+                </div>
+                <h3 style={{ fontSize: 20, marginBottom: 12 }}>{feature.title}</h3>
+                <p className="text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>{feature.description}</p>
               </div>
-              <h3 style={{ fontSize: 16.5, marginBottom: 8 }}>{feature.title}</h3>
-              <p className="text-muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{feature.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="how-it-works" className="container" style={{ padding: '64px 24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <span className="eyebrow">Simple by design</span>
-          <h2 style={{ fontSize: 30, marginTop: 8 }}>Three steps to your next offer</h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 28 }}>
-          {STEPS.map((step, i) => (
-            <motion.div
-              key={step.n}
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-            >
-              <div className="stat-number" style={{ fontSize: 15, color: 'var(--accent)', marginBottom: 12 }}>{step.n}</div>
-              <h3 style={{ fontSize: 17, marginBottom: 8 }}>{step.title}</h3>
-              <p className="text-muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{step.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="container" style={{ padding: '64px 24px 96px' }}>
-        <div
-          className="card"
-          style={{
-            textAlign: 'center',
-            padding: '56px 32px',
-            background: 'var(--ink)',
-            borderColor: 'var(--ink)',
-          }}
-        >
-          <h2 style={{ fontSize: 28, color: '#fff', marginBottom: 14 }}>Ready to apply smarter?</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14.5, marginBottom: 28, maxWidth: 420, margin: '0 auto 28px' }}>
-            Create your free account and get your first ATS score in minutes.
-          </p>
-          <button className="btn btn-lg" style={{ background: '#fff', color: 'var(--ink)' }} onClick={() => navigate('/signup')}>
-            Get started free <ArrowRight size={17} />
-          </button>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 24, flexWrap: 'wrap' }}>
-            {['No credit card required', 'Free forever plan', 'Cancel anytime'].map((item) => (
-              <span key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.6)', fontSize: 12.5 }}>
-                <Check size={13} /> {item}
-              </span>
             ))}
           </div>
         </div>
       </section>
 
-      <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 24px' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 22 }} />
-          <p className="text-faint" style={{ fontSize: 12.5 }}>© {new Date().getFullYear()} Smart Apply. All rights reserved.</p>
+      {/* How it works */}
+      <section id="how-it-works" style={{ padding: '120px 24px', background: 'rgba(0,0,0,0.3)', borderTop: '1px solid var(--border-thin)', borderBottom: '1px solid var(--border-thin)', position: 'relative', zIndex: 10 }}>
+        <div className="container" ref={stepsRef}>
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <span className="eyebrow">Simple by design</span>
+            <h2 style={{ fontSize: 'clamp(32px, 5vw, 48px)', marginTop: 8 }}>Three steps to your next offer</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40 }}>
+            {STEPS.map((step) => (
+              <div
+                key={step.n}
+                className="step-card"
+                style={{
+                  padding: '32px',
+                  background: 'var(--bg-elevated)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-color)',
+                  position: 'relative',
+                }}
+              >
+                <div style={{ 
+                  fontSize: 80, 
+                  fontWeight: 900, 
+                  color: 'var(--bg-card)', 
+                  position: 'absolute', 
+                  top: -20, 
+                  right: 20,
+                  zIndex: 0,
+                  WebkitTextStroke: '1px var(--border-color)'
+                }}>
+                  {step.n}
+                </div>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ fontSize: 16, color: 'var(--accent)', fontWeight: 700, marginBottom: 16 }}>Step {step.n}</div>
+                  <h3 style={{ fontSize: 22, marginBottom: 12 }}>{step.title}</h3>
+                  <p className="text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>{step.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ padding: '120px 24px', position: 'relative', zIndex: 10 }}>
+        <div className="container">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="glass-panel"
+            style={{
+              textAlign: 'center',
+              padding: '80px 40px',
+              borderRadius: 'var(--radius-xl)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '100%',
+              height: '100%',
+              background: 'radial-gradient(ellipse at center, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 70%)',
+              zIndex: 0,
+              pointerEvents: 'none'
+            }} />
+            
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h2 style={{ fontSize: 'clamp(32px, 5vw, 48px)', marginBottom: 20 }}>Ready to apply smarter?</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 18, marginBottom: 40, maxWidth: 500, margin: '0 auto 40px' }}>
+                Create your free account and get your first ATS score in minutes. Stop guessing and start landing interviews.
+              </p>
+              <button className="btn btn-primary btn-lg" onClick={() => navigate('/signup')}>
+                Get started free <ArrowRight size={18} />
+              </button>
+              <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
+                {['No credit card required', 'Free forever plan', 'Cancel anytime'].map((item) => (
+                  <span key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>
+                    <Check size={16} color="var(--success)" /> {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <footer style={{ borderTop: '1px solid var(--border-thin)', padding: '40px 24px', position: 'relative', zIndex: 10, background: 'var(--bg-primary)' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 24 }} />
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>SmartApply</span>
+          </div>
+          <p className="text-muted" style={{ fontSize: 14 }}>© {new Date().getFullYear()} Smart Apply. All rights reserved.</p>
         </div>
       </footer>
     </div>
