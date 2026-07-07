@@ -375,5 +375,295 @@ Instructions:
         
     return content.strip()
 
+async def generate_cover_letter(resume_text: str, job_description: str) -> str:
+    """Generate a cover letter based on a resume and job description."""
+    client = _get_client()
+    
+    prompt = f"""You are an expert career coach and professional copywriter.
+Write a highly professional, engaging, and concise cover letter for the following job description based on the candidate's resume.
 
+JOB DESCRIPTION:
+{job_description}
 
+CANDIDATE RESUME:
+{resume_text}
+
+Instructions:
+1. Do not use generic, overly robotic openings (like "I am writing to express my interest in..."). Be enthusiastic and direct.
+2. Highlight 2-3 specific skills or experiences from the resume that directly match the job description.
+3. Keep it under 350 words.
+4. Output ONLY the raw cover letter text. Do not include markdown blocks or conversational text. Use placeholders like [Your Name] or [Company Name] if information is missing.
+"""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+ANSWER: {answer}
+
+Return a JSON object with:
+- "score": integer from 0 to 100
+- "strengths": list of 2-3 things done well
+- "weaknesses": list of 2-3 areas for improvement
+- "improved_answer": a brief example of a stronger answer (2-3 sentences)
+
+Return ONLY valid JSON."""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.4,
+        max_tokens=1500,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return {
+            "score": 50,
+            "strengths": ["Attempted to answer the question"],
+            "weaknesses": ["Could provide more specific examples"],
+            "improved_answer": "Unable to parse AI feedback. Please try again.",
+        }
+
+async def suggest_projects(skills: str, time_commitment: str, interests: str) -> List[Dict[str, Any]]:
+    """Suggest software projects based on user skills, time, and interests."""
+    client = _get_client()
+    prompt = f"""You are an expert software engineering mentor. Based on the following user profile, suggest 3 to 5 realistic software projects they can build for their portfolio.
+
+User Skills: {skills}
+Available Time: {time_commitment}
+Interests/Goals: {interests}
+
+For each project, provide:
+- "id": a unique short string identifier
+- "title": a catchy project title
+- "description": a brief 1-2 sentence description
+- "rating": an integer from 1 to 10 evaluating how good this project is for their portfolio
+- "skill_level": e.g., "Beginner", "Intermediate", "Advanced"
+- "estimated_time": e.g., "2 weeks", "40 hours"
+- "key_technologies": list of 3-5 technologies
+
+Return a JSON array of project objects. Return ONLY valid JSON, no markdown formatting."""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=1500,
+    )
+
+    content = completion.choices[0].message.content or "[]"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return []
+
+async def generate_project_roadmap(project_details: Dict[str, Any], preferences: Dict[str, str] = None) -> Dict[str, Any]:
+    """Generate a step-by-step roadmap for a specific project."""
+    client = _get_client()
+    
+    prefs_text = ""
+    if preferences:
+        prefs_text = "\nUser Preferences for this Roadmap:\n"
+        for k, v in preferences.items():
+            if v and v.strip():
+                prefs_text += f"- {k}: {v}\n"
+
+    prompt = f"""You are an expert technical lead creating a development roadmap.
+
+Create a step-by-step implementation roadmap for the following project:
+Title: {project_details.get('title')}
+Description: {project_details.get('description')}
+Technologies: {', '.join(project_details.get('key_technologies', []))}
+{prefs_text}
+Return a JSON object with a "phases" array. Each phase should have:
+- "phase_number": integer
+- "title": string
+- "description": string
+- "tasks": a list of string tasks to complete in this phase
+
+Ensure the roadmap strictly adheres to the user's preferences if provided.
+Return ONLY valid JSON, no markdown formatting."""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=2000,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return {"phases": []}
+
+async def tailor_resume_latex(latex_code: str, recommendations: List[str], custom_instructions: str) -> str:
+    """Modify LaTeX resume code based on ATS recommendations and user instructions."""
+    client = _get_client()
+    
+    recs_text = "\n".join([f"- {r}" for r in recommendations]) if recommendations else "None"
+    custom_text = custom_instructions if custom_instructions else "None"
+
+    prompt = f"""You are an expert LaTeX developer and career coach.
+I will provide you with the raw LaTeX source code of a user's resume.
+Your task is to modify the LaTeX code to incorporate the following ATS recommendations and custom user instructions.
+
+ATS Recommendations to apply:
+{recs_text}
+
+Custom User Instructions:
+{custom_text}
+
+Original LaTeX Code:
+```latex
+{latex_code}
+```
+
+Instructions:
+1. Make targeted, intelligent edits to the LaTeX code to fulfill the requests.
+2. Ensure the resulting LaTeX code remains valid, compilable, and syntactically correct.
+3. Do NOT change the overall layout, styling, or document class unless explicitly requested.
+4. CRITICAL: You MUST escape all LaTeX special characters like &, %, $, _, # by preceding them with a backslash (e.g. \\&, \\%, \\$, \\_, \\#) inside text content.
+5. CRITICAL: Do NOT delete or modify the user's contact information (email, phone, LinkedIn, GitHub, etc.) or any existing hyperlinks (\\href) unless explicitly requested. Keep them exactly where they are.
+6. Output ONLY the raw updated LaTeX code. Do NOT wrap it in markdown blocks (e.g. ```latex). Do NOT add any conversational text.
+"""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=4000,
+    )
+
+    content = completion.choices[0].message.content or latex_code
+    content = content.strip()
+    
+    if "```latex" in content:
+        content = content.split("```latex")[1]
+    elif "```" in content:
+        content = content.split("```")[1]
+        
+    if "```" in content:
+        content = content.split("```")[0]
+        
+    return content.strip()
+
+async def generate_cover_letter(resume_text: str, job_description: str) -> str:
+    """Generate a cover letter based on a resume and job description."""
+    client = _get_client()
+    
+    prompt = f"""You are an expert career coach and professional copywriter.
+Write a highly professional, engaging, and concise cover letter for the following job description based on the candidate's resume.
+
+JOB DESCRIPTION:
+{job_description}
+
+CANDIDATE RESUME:
+{resume_text}
+
+Instructions:
+1. Do not use generic, overly robotic openings (like "I am writing to express my interest in..."). Be enthusiastic and direct.
+2. Highlight 2-3 specific skills or experiences from the resume that directly match the job description.
+3. Keep it under 350 words.
+4. Output ONLY the raw cover letter text. Do not include markdown blocks or conversational text. Use placeholders like [Your Name] or [Company Name] if information is missing.
+"""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.6,
+        max_tokens=1000,
+    )
+
+    content = completion.choices[0].message.content or "Error generating cover letter."
+    return content.strip()
+
+async def score_jobs_batch(resume_text: str, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Score a batch of jobs against a resume quickly."""
+    if not jobs:
+        return []
+
+    client = _get_client()
+    
+    # We will pass the job titles and brief descriptions to the LLM
+    jobs_summary = ""
+    for i, job in enumerate(jobs):
+        desc_snippet = job['description'][:400].replace('\n', ' ') if job.get('description') else ""
+        jobs_summary += f"Job ID {i}:\nTitle: {job['title']}\nSnippet: {desc_snippet}\n\n"
+
+    prompt = f"""You are an ATS matching engine. Score the following jobs based on their match with the candidate's resume.
+Score each job from 0 to 100 based on title alignment and skill overlap.
+
+CANDIDATE RESUME:
+{resume_text}
+
+JOBS:
+{jobs_summary}
+
+Return ONLY a valid JSON array of objects, where each object has:
+- "index": integer (the Job ID number from above)
+- "score": integer (0-100)
+- "match_reason": a brief 1-sentence reason why it matches or lacks match
+
+Do not include markdown blocks or conversational text.
+"""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=1500,
+    )
+
+    content = completion.choices[0].message.content or "[]"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        results = json.loads(content)
+        # map back scores
+        for job in jobs:
+            job["match_score"] = 50 # default
+            job["match_reason"] = ""
+            
+        for res in results:
+            idx = res.get("index")
+            if idx is not None and 0 <= idx < len(jobs):
+                jobs[idx]["match_score"] = res.get("score", 50)
+                jobs[idx]["match_reason"] = res.get("match_reason", "")
+                
+    except Exception as e:
+        # Fallback if JSON fails
+        for job in jobs:
+            job["match_score"] = 50
+            job["match_reason"] = ""
+
+    # Sort jobs by match_score descending
+    jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+    return jobs

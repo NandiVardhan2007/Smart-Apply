@@ -18,6 +18,8 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Home = lazy(() => import('./pages/dashboard/Home'));
 const Resumes = lazy(() => import('./pages/dashboard/Resumes'));
+const CoverLetterGenerator = lazy(() => import('./pages/dashboard/CoverLetterGenerator'));
+const JobMatching = lazy(() => import('./pages/dashboard/JobMatching'));
 const ResumeTailor = lazy(() => import('./pages/dashboard/ResumeTailor'));
 const AtsChecker = lazy(() => import('./pages/dashboard/AtsChecker'));
 const AiChatbot = lazy(() => import('./pages/dashboard/AiChatbot'));
@@ -89,6 +91,8 @@ export default function App() {
         {/* Dashboard */}
         <Route path="/dashboard" element={<Protected><Home /></Protected>} />
         <Route path="/dashboard/resumes" element={<Protected><Resumes /></Protected>} />
+        <Route path="/dashboard/cover-letter" element={<Protected><CoverLetterGenerator /></Protected>} />
+        <Route path="/dashboard/jobs" element={<Protected><JobMatching /></Protected>} />
         <Route path="/dashboard/tailor-resume/:id" element={<Protected><ResumeTailor /></Protected>} />
         <Route path="/dashboard/ats-checker" element={<Protected><AtsChecker /></Protected>} />
         <Route path="/dashboard/ai-chatbot" element={<Protected><AiChatbot /></Protected>} />

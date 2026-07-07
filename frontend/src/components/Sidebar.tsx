@@ -9,6 +9,8 @@ import {
   User as UserIcon,
   Settings as SettingsIcon,
   LogOut,
+  Mail,
+  Briefcase,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -24,6 +26,13 @@ const NAV_SECTIONS = [
     links: [
       { to: '/dashboard/resumes', label: 'My resumes', icon: FileText },
       { to: '/dashboard/ats-checker', label: 'ATS checker', icon: ScanSearch },
+      { to: '/dashboard/cover-letter', label: 'Cover letter', icon: Mail },
+    ],
+  },
+  {
+    title: 'Jobs',
+    links: [
+      { to: '/dashboard/jobs', label: 'Smart matching', icon: Briefcase },
     ],
   },
   {

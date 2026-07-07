@@ -30,7 +30,8 @@ class Settings(BaseSettings):
     PROJECT_FINDER_API_KEY: str = ""
     INTERVIEW_EVAL_API_KEY: str = ""
 
-
+    # ── RapidAPI (JSearch) ──
+    RAPIDAPI_KEY: str = ""
 
     # ── Cloudflare R2 (Storage) ──
     R2_ACCOUNT_ID: str = ""
