@@ -1,16 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Mic, PhoneOff, Video, MicOff, Code2, Send } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import { Loader2, Mic, PhoneOff, Video, MicOff, Code2 } from 'lucide-react';
 
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { useFaceAnalyzer } from '../../hooks/useFaceAnalyzer';
+import { useVAD } from '../../hooks/useVAD';
+import InterviewConfigModal, { type InterviewConfig } from '../../components/InterviewConfigModal';
+import InterviewerAvatar, { type AvatarState } from '../../components/InterviewerAvatar';
+import CodeExecutionPanel from '../../components/CodeExecutionPanel';
 
-// The Web Speech API's SpeechRecognition constructor itself has no official
-// TS lib types yet. Its event types may or may not be in lib.dom.d.ts
-// depending on the environment, so we use 'any' for the events to avoid conflicts.
+// ── Web Speech API types ──
 declare global {
   interface Window {
     SpeechRecognition: new () => SpeechRecognitionInstance;
@@ -31,9 +32,19 @@ declare global {
 
 type TranscriptEntry = { role: 'user' | 'assistant'; content: string };
 
-/** A tiny live bar-graph — reads either real mic frequency data or, for the
- * agent's TTS (which has no accessible audio stream), a randomized shimmer. */
-function AudioVisualizer({ stream, isSpeaking, maxHeight = 64 }: { stream?: MediaStream | null; isSpeaking?: boolean; maxHeight?: number }) {
+/* ────────────────────────────────────────────────────────────
+ * AudioVisualizer — tiny bar-graph for the user's mic input
+ * ──────────────────────────────────────────────────────────── */
+
+function AudioVisualizer({
+  stream,
+  isSpeaking,
+  maxHeight = 64,
+}: {
+  stream?: MediaStream | null;
+  isSpeaking?: boolean;
+  maxHeight?: number;
+}) {
   const barsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -109,29 +120,67 @@ function AudioVisualizer({ stream, isSpeaking, maxHeight = 64 }: { stream?: Medi
   );
 }
 
+/* ────────────────────────────────────────────────────────────
+ * LiveInterview — main page component
+ * ──────────────────────────────────────────────────────────── */
+
 export default function LiveInterview() {
-  const [isActive, setIsActive] = useState(false);
+  // ── Connection & interview state ──
+  const [phase, setPhase] = useState<'config' | 'active'>('config');
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'waiting'>('disconnected');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [agentSpeaking, setAgentSpeaking] = useState(false);
 
+  // ── Coding mode ──
   const [isCodingMode, setIsCodingMode] = useState(false);
-  const [codeLanguage, setCodeLanguage] = useState('javascript');
-  const [codeContent, setCodeContent] = useState('// Write your solution here\n');
 
+  // ── Auth & navigation ──
   const { user, token } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
+  // ── Refs ──
   const videoRef = useRef<HTMLVideoElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
 
-  const { modelsLoaded, getTelemetrySummary } = useFaceAnalyzer(videoRef, isActive);
+  // ── Face analyzer ──
+  const { modelsLoaded, getTelemetrySummary } = useFaceAnalyzer(videoRef, phase === 'active');
 
+  // ── VAD (Voice Activity Detection) ──
+  const { isSpeaking: vadSpeaking, rmsLevel } = useVAD(
+    localStreamRef.current,
+    phase === 'active' && status === 'connected',
+  );
+
+  // ── VAD-based interruption ──
+  // When the user starts speaking while the agent is still speaking,
+  // immediately cancel TTS and switch to listening mode.
+  const agentSpeakingRef = useRef(agentSpeaking);
+  agentSpeakingRef.current = agentSpeaking;
+
+  useEffect(() => {
+    if (vadSpeaking && agentSpeakingRef.current) {
+      // User interrupted the AI — cancel TTS immediately
+      window.speechSynthesis?.cancel();
+      setAgentSpeaking(false);
+
+      // Start recognition to capture what they're saying
+      if (recognitionRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+        try {
+          recognitionRef.current.start();
+          setIsRecording(true);
+        } catch {
+          // Recognition may already be running
+        }
+      }
+    }
+  }, [vadSpeaking]);
+
+  // ── Speech recognition setup ──
   useEffect(() => {
     if (window.speechSynthesis) {
       window.speechSynthesis.getVoices();
@@ -170,6 +219,8 @@ export default function LiveInterview() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Handlers ──
 
   const handleUserSpeech = (text: string) => {
     setTranscript((prev) => [...prev, { role: 'user', content: text }]);
@@ -255,7 +306,7 @@ export default function LiveInterview() {
         try {
           recognitionRef.current?.abort();
         } catch {
-          // no-op — recognition may not have been running
+          // no-op
         }
         setIsRecording(false);
       };
@@ -278,7 +329,8 @@ export default function LiveInterview() {
     }
   };
 
-  const handleStartInterview = async () => {
+  // ── Start interview (called from config modal) ──
+  const handleStartInterview = useCallback(async (config: InterviewConfig) => {
     if (!modelsLoaded) {
       showToast('info', 'Please wait for the AI models to finish loading…');
       return;
@@ -287,7 +339,7 @@ export default function LiveInterview() {
     const roomName = `interview-${user?.id}-${Date.now()}`;
     setCurrentRoom(roomName);
     setStatus('connecting');
-    setIsActive(true);
+    setPhase('active');
 
     await startLocalMedia();
 
@@ -301,6 +353,17 @@ export default function LiveInterview() {
 
     ws.onopen = () => {
       setStatus('connected');
+
+      // Send config as the first message
+      ws.send(JSON.stringify({
+        type: 'config',
+        interview_type: config.interviewType,
+        custom_type: config.customType,
+        job_description: config.jobDescription,
+        persona: config.persona,
+      }));
+
+      // Speak the greeting (the backend sends a config_ack, not a text greeting)
       const greeting = 'Hello, I am Ryan, your interviewer. Please introduce yourself when you are ready.';
       setTranscript((prev) => [...prev, { role: 'assistant', content: greeting }]);
       speakText(greeting);
@@ -309,6 +372,10 @@ export default function LiveInterview() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+
+        // Skip config acknowledgement messages
+        if (data.type === 'config_ack') return;
+
         if (data.text) {
           setStatus('connected');
           let textToSpeak: string = data.text;
@@ -332,23 +399,35 @@ export default function LiveInterview() {
     ws.onclose = () => setStatus('disconnected');
 
     wsRef.current = ws;
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelsLoaded, user, token]);
 
-  const handleCodeSubmit = () => {
-    const formattedMessage = `I have submitted code in ${codeLanguage}:\n\n\`\`\`${codeLanguage}\n${codeContent}\n\`\`\``;
+  // ── Code submission from CodeExecutionPanel ──
+  const handleCodeSubmit = useCallback((language: string, code: string, result: { stdout: string; stderr: string; exit_code: number } | null) => {
+    let formattedMessage = `I have submitted code in ${language}:\n\n\`\`\`${language}\n${code}\n\`\`\``;
+
+    if (result) {
+      formattedMessage += `\n\n**Execution Output (exit code ${result.exit_code}):**\n`;
+      if (result.stdout) formattedMessage += `\`\`\`\nSTDOUT:\n${result.stdout}\n\`\`\`\n`;
+      if (result.stderr) formattedMessage += `\`\`\`\nSTDERR:\n${result.stderr}\n\`\`\`\n`;
+      if (!result.stdout && !result.stderr) formattedMessage += '(no output)\n';
+    }
+
     setTranscript((prev) => [...prev, { role: 'user', content: formattedMessage }]);
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ text: formattedMessage }));
       setStatus('waiting');
     }
-  };
+  }, []);
 
+  // ── Disconnect ──
   const handleDisconnect = async () => {
-    setIsActive(false);
+    setPhase('config');
     stopLocalMedia();
     wsRef.current?.close();
     window.speechSynthesis?.cancel();
     recognitionRef.current?.abort();
+    setIsCodingMode(false);
 
     if (currentRoom) {
       try {
@@ -368,51 +447,45 @@ export default function LiveInterview() {
     }
   };
 
+  // ── Derived state ──
   const lastUserLine = transcript.length > 0 && transcript[transcript.length - 1].role === 'user' ? transcript[transcript.length - 1].content : null;
 
   const statusLabel =
-    status === 'disconnected' ? 'Agent offline' : status === 'connecting' ? 'Connecting to agent…' : agentSpeaking ? 'Agent is speaking…' : status === 'waiting' ? 'Agent is thinking…' : 'Agent is listening…';
+    status === 'disconnected' ? 'Agent offline'
+    : status === 'connecting' ? 'Connecting to agent…'
+    : agentSpeaking ? 'Agent is speaking…'
+    : status === 'waiting' ? 'Agent is thinking…'
+    : 'Agent is listening…';
 
+  const avatarState: AvatarState =
+    agentSpeaking ? 'speaking'
+    : status === 'waiting' ? 'thinking'
+    : isRecording ? 'listening'
+    : 'idle';
+
+  // Simulated RMS for avatar lip-sync (we don't have access to TTS audio stream
+  // from speechSynthesis, so we generate a convincing random value while speaking)
+  const avatarRmsRef = useRef(0);
+  useEffect(() => {
+    if (!agentSpeaking) {
+      avatarRmsRef.current = 0;
+      return;
+    }
+    const interval = setInterval(() => {
+      avatarRmsRef.current = 0.05 + Math.random() * 0.12;
+    }, 80);
+    return () => clearInterval(interval);
+  }, [agentSpeaking]);
+
+  // ── Render ──
   return (
     <div style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
-      {!isActive ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ textAlign: 'center', maxWidth: 460, width: '100%' }}>
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                background: 'var(--accent-soft)',
-                color: 'var(--accent)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
-              }}
-            >
-              <Video size={26} />
-            </div>
-            <h2 style={{ fontSize: 20, marginBottom: 10 }}>Ready for your live interview?</h2>
-            <p className="text-muted" style={{ fontSize: 14, marginBottom: 26, lineHeight: 1.6 }}>
-              You're about to start a real-time video interview with an AI interviewer that reads your expressions. Make sure your
-              camera and microphone are connected, and find a quiet, well-lit spot.
-            </p>
-            <button className="btn btn-primary btn-lg btn-block" onClick={handleStartInterview} disabled={status === 'connecting' || !modelsLoaded}>
-              {status === 'connecting' ? (
-                <>
-                  <Loader2 size={18} className="spin" /> Connecting…
-                </>
-              ) : !modelsLoaded ? (
-                <>
-                  <Loader2 size={18} className="spin" /> Loading AI models…
-                </>
-              ) : (
-                'Connect to agent'
-              )}
-            </button>
-          </div>
-        </div>
+      {phase === 'config' ? (
+        <InterviewConfigModal
+          onStart={handleStartInterview}
+          modelsLoaded={modelsLoaded}
+          isConnecting={status === 'connecting'}
+        />
       ) : (
         <div
           className="live-interview-layout"
@@ -429,30 +502,28 @@ export default function LiveInterview() {
             transition: 'max-width var(--transition-slow)',
           }}
         >
+          {/* ── Left: Avatar + Controls ── */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ marginBottom: 28, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {agentSpeaking ? (
-                    <AudioVisualizer isSpeaking />
-                  ) : status === 'waiting' ? (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {[0, 0.2, 0.4].map((delay) => (
-                        <span key={delay} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', animation: `pulseDot 1.2s ${delay}s ease-in-out infinite` }} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ width: 90, height: 5, borderRadius: 999, background: 'var(--accent)', opacity: 0.7 }} />
-                  )}
+                {/* Avatar */}
+                <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <InterviewerAvatar
+                    state={avatarState}
+                    rmsLevel={agentSpeaking ? avatarRmsRef.current : rmsLevel}
+                    size={isCodingMode ? 180 : 260}
+                  />
                 </div>
+
                 <h3 style={{ fontSize: 16 }}>{statusLabel}</h3>
                 {lastUserLine && (
                   <p className="text-muted" style={{ marginTop: 12, fontSize: 13.5, fontStyle: 'italic', maxWidth: 380 }}>
-                    You: "{lastUserLine}"
+                    You: "{lastUserLine.length > 120 ? lastUserLine.slice(0, 120) + '…' : lastUserLine}"
                   </p>
                 )}
               </div>
 
+              {/* Self-view camera */}
               <div
                 className="live-interview-video-container"
                 style={{
@@ -473,6 +544,7 @@ export default function LiveInterview() {
               </div>
             </div>
 
+            {/* ── Controls bar ── */}
             <div className="controls-bar" style={{ padding: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, position: 'relative' }}>
               {isRecording && localStreamRef.current && (
                 <div className="local-visualizer" style={{ position: 'absolute', left: 24 }}>
@@ -543,35 +615,9 @@ export default function LiveInterview() {
             </div>
           </div>
 
+          {/* ── Right: Code editor (when active) ── */}
           {isCodingMode && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border)', background: '#1a1c22', minWidth: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid #2b2d33' }}>
-                <select
-                  value={codeLanguage}
-                  onChange={(e) => setCodeLanguage(e.target.value)}
-                  style={{ background: '#26282f', color: '#e4e5e9', border: '1px solid #3a3d45', padding: '5px 10px', borderRadius: 6, fontSize: 13 }}
-                >
-                  <option value="javascript">JavaScript</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                  <option value="cpp">C++</option>
-                </select>
-                <button onClick={handleCodeSubmit} className="btn btn-primary btn-sm">
-                  <Send size={13} /> Submit code
-                </button>
-              </div>
-              <div style={{ flex: 1 }}>
-                <Editor
-                  height="100%"
-                  language={codeLanguage}
-                  theme="vs-dark"
-                  value={codeContent}
-                  onChange={(val) => setCodeContent(val || '')}
-                  options={{ minimap: { enabled: false }, fontSize: 14 }}
-                />
-              </div>
-            </div>
+            <CodeExecutionPanel onSubmit={handleCodeSubmit} />
           )}
         </div>
       )}
