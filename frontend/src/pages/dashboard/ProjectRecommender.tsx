@@ -7,6 +7,68 @@ import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import type { Project, RoadmapPhase } from '../../api/types';
 
+const loadingMessagesStep1 = [
+  "Analyzing your unique skills...",
+  "Brainstorming perfect project ideas...",
+  "Applying AI matching algorithms...",
+  "Tailoring recommendations for you...",
+  "Putting on the finishing touches..."
+];
+
+const loadingMessagesStep3 = [
+  "Reading your custom preferences...",
+  "Drafting a step-by-step plan...",
+  "Structuring phases and tasks...",
+  "Adding industry best practices...",
+  "Finalizing your personalized roadmap..."
+];
+
+function LoadingView({ messages }: { messages: string[] }) {
+  const [msgIndex, setMsgIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMsgIndex((i) => (i + 1) % messages.length);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [messages]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center' }}>
+      <div style={{ position: 'relative', marginBottom: 30 }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            border: '3px solid var(--accent-soft-border)',
+            borderTopColor: 'var(--accent)',
+          }}
+        />
+        <Lightbulb
+          size={24}
+          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'var(--accent)' }}
+        />
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.h3
+          key={msgIndex}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          style={{ fontSize: 18, margin: 0, color: 'var(--ink)' }}
+        >
+          {messages[msgIndex]}
+        </motion.h3>
+      </AnimatePresence>
+      <p className="text-muted" style={{ marginTop: 12, fontSize: 14 }}>This usually takes 10-15 seconds</p>
+    </div>
+  );
+}
+
 export default function ProjectRecommender() {
   const { showToast } = useToast();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -103,55 +165,53 @@ export default function ProjectRecommender() {
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="card">
-            <span className="eyebrow">Step 1 of 2</span>
-            <h2 style={{ fontSize: 19, marginTop: 6, marginBottom: 22 }}>Tell us about yourself</h2>
-            <form onSubmit={handleGetRecommendations} style={{ display: 'flex', flexDirection: 'column' }}>
-              <div className="input-group">
-                <label>Current skills &amp; technologies</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="e.g. React, Python basics, Tailwind"
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="input-group">
-                <label>Available time</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="e.g. 10 hours a week, or 1 month total"
-                  value={timeCommitment}
-                  onChange={(e) => setTimeCommitment(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="input-group">
-                <label>Interests &amp; goals</label>
-                <textarea
-                  className="input-field"
-                  rows={3}
-                  placeholder="e.g. I want to build a SaaS, I like AI, I want to learn databases…"
-                  value={interests}
-                  onChange={(e) => setInterests(e.target.value)}
-                  required
-                />
-              </div>
+            {loading ? (
+              <LoadingView messages={loadingMessagesStep1} />
+            ) : (
+              <>
+                <span className="eyebrow">Step 1 of 2</span>
+                <h2 style={{ fontSize: 19, marginTop: 6, marginBottom: 22 }}>Tell us about yourself</h2>
+                <form onSubmit={handleGetRecommendations} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className="input-group">
+                    <label>Current skills &amp; technologies</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. React, Python basics, Tailwind"
+                      value={skills}
+                      onChange={(e) => setSkills(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Available time</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. 10 hours a week, or 1 month total"
+                      value={timeCommitment}
+                      onChange={(e) => setTimeCommitment(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Interests &amp; goals</label>
+                    <textarea
+                      className="input-field"
+                      rows={3}
+                      placeholder="e.g. I want to build a SaaS, I like AI, I want to learn databases…"
+                      value={interests}
+                      onChange={(e) => setInterests(e.target.value)}
+                      required
+                    />
+                  </div>
 
-              <button type="submit" className="btn btn-primary btn-lg" style={{ alignSelf: 'flex-start' }} disabled={loading}>
-                {loading ? (
-                  <>
-                    <ButtonSpinner /> Analyzing…
-                  </>
-                ) : (
-                  <>
+                  <button type="submit" className="btn btn-primary btn-lg" style={{ alignSelf: 'flex-start' }} disabled={loading}>
                     Find projects <ArrowRight size={17} />
-                  </>
-                )}
-              </button>
-            </form>
+                  </button>
+                </form>
+              </>
+            )}
           </motion.div>
         )}
 
@@ -209,55 +269,53 @@ export default function ProjectRecommender() {
 
         {step === 3 && selectedProject && (
           <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="card">
-            <button className="btn btn-secondary btn-sm" style={{ marginBottom: 20 }} onClick={() => setStep(2)} disabled={loading}>
-              <ChevronLeft size={15} /> Back to projects
-            </button>
+            {loading ? (
+              <LoadingView messages={loadingMessagesStep3} />
+            ) : (
+              <>
+                <button className="btn btn-secondary btn-sm" style={{ marginBottom: 20 }} onClick={() => setStep(2)} disabled={loading}>
+                  <ChevronLeft size={15} /> Back to projects
+                </button>
 
-            <span className="eyebrow">Step 2 of 2</span>
-            <h2 style={{ fontSize: 19, marginTop: 6, marginBottom: 10 }}>Customize your roadmap</h2>
-            <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 22 }}>
-              Before generating the plan for <strong style={{ color: 'var(--ink)' }}>{selectedProject.title}</strong>, add any
-              preferences — all optional.
-            </p>
+                <span className="eyebrow">Step 2 of 2</span>
+                <h2 style={{ fontSize: 19, marginTop: 6, marginBottom: 10 }}>Customize your roadmap</h2>
+                <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 22 }}>
+                  Before generating the plan for <strong style={{ color: 'var(--ink)' }}>{selectedProject.title}</strong>, add any
+                  preferences — all optional.
+                </p>
 
-            <form onSubmit={handleGenerateRoadmap} style={{ display: 'flex', flexDirection: 'column' }}>
-              <div className="input-group">
-                <label>Preferred database</label>
-                <input type="text" className="input-field" placeholder="e.g. PostgreSQL, MongoDB, Firebase" value={dbPref} onChange={(e) => setDbPref(e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label>Preferred hosting / deployment</label>
-                <input type="text" className="input-field" placeholder="e.g. Vercel, AWS, Render" value={hostingPref} onChange={(e) => setHostingPref(e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label>Team size</label>
-                <input type="text" className="input-field" placeholder="e.g. Solo, 2–3 people" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label>Target audience</label>
-                <input type="text" className="input-field" placeholder="e.g. Developers, students, enterprise" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label>Monetization strategy</label>
-                <input type="text" className="input-field" placeholder="e.g. Open source, SaaS, ads" value={monetization} onChange={(e) => setMonetization(e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label>Additional requirements</label>
-                <textarea className="input-field" rows={3} placeholder="e.g. Focus on testing, use TypeScript" value={extraPref} onChange={(e) => setExtraPref(e.target.value)} />
-              </div>
+                <form onSubmit={handleGenerateRoadmap} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className="input-group">
+                    <label>Preferred database</label>
+                    <input type="text" className="input-field" placeholder="e.g. PostgreSQL, MongoDB, Firebase" value={dbPref} onChange={(e) => setDbPref(e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label>Preferred hosting / deployment</label>
+                    <input type="text" className="input-field" placeholder="e.g. Vercel, AWS, Render" value={hostingPref} onChange={(e) => setHostingPref(e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label>Team size</label>
+                    <input type="text" className="input-field" placeholder="e.g. Solo, 2–3 people" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label>Target audience</label>
+                    <input type="text" className="input-field" placeholder="e.g. Developers, students, enterprise" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label>Monetization strategy</label>
+                    <input type="text" className="input-field" placeholder="e.g. Open source, SaaS, ads" value={monetization} onChange={(e) => setMonetization(e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label>Additional requirements</label>
+                    <textarea className="input-field" rows={3} placeholder="e.g. Focus on testing, use TypeScript" value={extraPref} onChange={(e) => setExtraPref(e.target.value)} />
+                  </div>
 
-              <button type="submit" className="btn btn-primary btn-lg" style={{ alignSelf: 'flex-start' }} disabled={loading}>
-                {loading ? (
-                  <>
-                    <ButtonSpinner /> Generating…
-                  </>
-                ) : (
-                  <>
+                  <button type="submit" className="btn btn-primary btn-lg" style={{ alignSelf: 'flex-start' }} disabled={loading}>
                     Generate roadmap <ArrowRight size={17} />
-                  </>
-                )}
-              </button>
-            </form>
+                  </button>
+                </form>
+              </>
+            )}
           </motion.div>
         )}
 
