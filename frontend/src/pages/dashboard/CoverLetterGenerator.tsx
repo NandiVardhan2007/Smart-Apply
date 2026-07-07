@@ -235,9 +235,15 @@ export default function CoverLetterGenerator() {
                   </button>
                 </div>
                 
-                <div style={{ flex: 1, minHeight: 350, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                <div style={{ minHeight: 400, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                  <textarea 
+                    value={coverLetter} 
+                    readOnly 
+                    style={{ width: '100%', height: 100, color: 'red', marginBottom: 10, padding: 10, fontFamily: 'monospace' }} 
+                    placeholder="DEBUG: If this is empty, the state is empty." 
+                  />
                   <Editor
-                    height="100%"
+                    height="400px"
                     defaultLanguage="markdown"
                     value={coverLetter}
                     onChange={(val) => setCoverLetter(val || '')}
