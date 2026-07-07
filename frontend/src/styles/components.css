@@ -167,7 +167,7 @@ textarea.input-field {
   align-items: center;
 }
 
-.input-icon-wrap svg:first-child {
+.input-icon-wrap > svg:first-child {
   position: absolute;
   top: 50%;
   left: 14px;
