@@ -29,7 +29,7 @@ async def search_jobs(query: str, location: str = "us") -> List[Dict[str, Any]]:
     }
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(url, headers=headers, params=querystring)
             response.raise_for_status()
             data = response.json()
