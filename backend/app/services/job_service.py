@@ -43,9 +43,9 @@ async def search_jobs(query: str, location: str = "us") -> List[Dict[str, Any]]:
                 formatted_jobs.append({
                     "job_id": job.get("job_id"),
                     "title": job.get("job_title"),
-                    "company": job.get("employer_name"),
-                    "location": job.get("job_city", "") + ", " + job.get("job_country", ""),
-                    "description": job.get("job_description", ""),
+                    "company": job.get("employer_name") or "Unknown Company",
+                    "location": f"{job.get('job_city') or ''}, {job.get('job_country') or ''}".strip(", "),
+                    "description": job.get("job_description") or "",
                     "url": job.get("job_apply_link") or job.get("job_google_link"),
                     "date_posted": job.get("job_posted_at_datetime_utc"),
                     "employment_type": job.get("job_employment_type"),
