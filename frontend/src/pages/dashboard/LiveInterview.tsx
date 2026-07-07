@@ -136,6 +136,9 @@ export default function LiveInterview() {
   // ── Coding mode ──
   const [isCodingMode, setIsCodingMode] = useState(false);
 
+  // ── Selected persona (drives avatar character) ──
+  const [selectedPersona, setSelectedPersona] = useState('faang');
+
   // ── Auth & navigation ──
   const { user, token } = useAuth();
   const { showToast } = useToast();
@@ -362,6 +365,7 @@ export default function LiveInterview() {
         job_description: config.jobDescription,
         persona: config.persona,
       }));
+      setSelectedPersona(config.persona);
 
       // Speak the greeting (the backend sends a config_ack, not a text greeting)
       const greeting = 'Hello, I am Ryan, your interviewer. Please introduce yourself when you are ready.';
@@ -510,6 +514,7 @@ export default function LiveInterview() {
                 <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <InterviewerAvatar
                     state={avatarState}
+                    persona={selectedPersona}
                     rmsLevel={agentSpeaking ? avatarRmsRef.current : rmsLevel}
                     size={isCodingMode ? 180 : 260}
                   />

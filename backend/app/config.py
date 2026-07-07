@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     # ── Groq (Voice Interview) ──
     GROQ_API_KEY: str = ""
 
+    # ── Judge0 CE (Code Execution Sandbox) ──
+    JUDGE0_API_KEY: str = ""
+    JUDGE0_API_HOST: str = "judge0-ce.p.rapidapi.com"
+    JUDGE0_API_URL: str = "https://judge0-ce.p.rapidapi.com"
+
     # ── App URLs ──
     FRONTEND_URL: str = "https://smartapplies.app"
     ENVIRONMENT: str = "development"

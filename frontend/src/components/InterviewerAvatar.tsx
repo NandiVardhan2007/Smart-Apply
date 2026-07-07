@@ -1,4 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 
 /* ────────────────────────────────────────────────────────────
  * Types
@@ -8,298 +9,289 @@ export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
 export interface InterviewerAvatarProps {
   state: AvatarState;
+  /** Persona key — maps to a specific character image. */
+  persona?: string;
   /** 0–1 RMS level used for lip-sync amplitude while speaking. */
   rmsLevel?: number;
-  /** CSS width for the canvas. Height is set automatically (1:1). */
+  /** CSS width/height for the avatar container. */
   size?: number;
 }
 
 /* ────────────────────────────────────────────────────────────
- * Helpers
+ * Persona → Character mapping
  * ──────────────────────────────────────────────────────────── */
 
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
+const PERSONA_IMAGES: Record<string, { src: string; name: string }> = {
+  friendly_hr: { src: '/avatars/friendly_hr.png', name: 'Sarah' },
+  strict_tech: { src: '/avatars/strict_tech.png', name: 'Ryan' },
+  senior_em:   { src: '/avatars/senior_em.png',   name: 'Michael' },
+  startup:     { src: '/avatars/startup.png',     name: 'Alex' },
+  faang:       { src: '/avatars/faang.png',       name: 'Emily' },
+  mentor:      { src: '/avatars/mentor.png',      name: 'David' },
+};
 
-/** Read a CSS custom property from :root. Falls back to `fallback`. */
-function cssVar(name: string, fallback: string): string {
-  if (typeof document === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-}
+const DEFAULT_PERSONA = 'faang';
 
 /* ────────────────────────────────────────────────────────────
  * Component
  *
- * A lightweight, canvas-based 2D avatar that reacts to the
- * interview state (idle / listening / thinking / speaking).
- *
- * Everything is drawn procedurally — no sprites, no images,
- * no external 3D libraries — so it adds zero network requests
- * and minimal JS to the bundle.
+ * Renders a photorealistic character portrait with layered
+ * CSS/canvas animations for each interview state:
+ *   idle     → subtle breathing + periodic soft pulse
+ *   listening → glowing accent ring, gentle scale
+ *   thinking → pulsing ring + orbiting dots
+ *   speaking → audio-reactive glow ring + subtle bounce
  * ──────────────────────────────────────────────────────────── */
 
 export default function InterviewerAvatar({
   state,
+  persona,
   rmsLevel = 0,
   size = 260,
 }: InterviewerAvatarProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
+  const personaKey = persona && PERSONA_IMAGES[persona] ? persona : DEFAULT_PERSONA;
+  const character = PERSONA_IMAGES[personaKey];
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Mutable animation state (lerped each frame for smooth transitions)
-  const anim = useRef({
-    // Mouth openness (0 = closed, 1 = fully open)
-    mouthOpen: 0,
-    // Blink (0 = eyes open, 1 = eyes fully closed)
-    blink: 0,
-    // When the next blink should happen (ms timestamp)
-    nextBlink: performance.now() + 2000 + Math.random() * 3000,
-    // Head sway angle (radians, subtle)
-    headSway: 0,
-    // Glow ring opacity (listening indicator)
-    glowRing: 0,
-    // Thinking eye offset (eyes glance sideways)
-    eyeOffsetX: 0,
-    // Breathing scale factor
-    breathScale: 1,
-    // Subtle nodding
-    nodOffset: 0,
-  });
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.width / dpr;
-    const h = canvas.height / dpr;
-    const cx = w / 2;
-    const cy = h / 2;
-    const now = performance.now();
-    const a = anim.current;
-    const dt = 0.07; // lerp speed per frame (~60fps)
-
-    // ── Resolve theme colors ──
-    const accent = cssVar('--accent', '#6c85ff');
-    const accentSoft = cssVar('--accent-soft', '#1c2340');
-    const ink = cssVar('--ink', '#f1f1f3');
-    const inkFaint = cssVar('--ink-faint', '#6d7078');
-    const surface = cssVar('--surface-sunken', '#212328');
-
-    // ── Target values based on state ──
-    const targetMouth = state === 'speaking' ? Math.min(1, rmsLevel * 8 + 0.15) : 0;
-    const targetGlow = state === 'listening' ? 1 : 0;
-    const targetEyeOffsetX = state === 'thinking' ? Math.sin(now * 0.001) * 6 : 0;
-
-    // ── Lerp towards targets ──
-    a.mouthOpen = lerp(a.mouthOpen, targetMouth, dt * 2);
-    a.glowRing = lerp(a.glowRing, targetGlow, dt);
-    a.eyeOffsetX = lerp(a.eyeOffsetX, targetEyeOffsetX, dt);
-
-    // ── Breathing ──
-    a.breathScale = 1 + Math.sin(now * 0.0015) * 0.008;
-
-    // ── Head sway ──
-    const swaySpeed = state === 'speaking' ? 0.0012 : 0.0006;
-    const swayAmp = state === 'speaking' ? 0.03 : 0.015;
-    a.headSway = Math.sin(now * swaySpeed) * swayAmp;
-
-    // ── Nodding (subtle, during speaking) ──
-    a.nodOffset = state === 'speaking'
-      ? Math.sin(now * 0.003) * 2 * Math.min(1, rmsLevel * 5)
-      : lerp(a.nodOffset, 0, dt);
-
-    // ── Blinking ──
-    if (now >= a.nextBlink) {
-      a.blink = 1;
-      a.nextBlink = now + 150; // blink lasts ~150ms, next random blink after
-    }
-    if (a.blink > 0) {
-      a.blink = lerp(a.blink, 0, 0.15);
-      if (a.blink < 0.05) {
-        a.blink = 0;
-        a.nextBlink = now + 2500 + Math.random() * 4000;
-      }
-    }
-
-    // ── Clear ──
-    ctx.clearRect(0, 0, w, h);
-    ctx.save();
-    ctx.translate(cx, cy + a.nodOffset);
-    ctx.rotate(a.headSway);
-    ctx.scale(a.breathScale, a.breathScale);
-
-    const headRadius = Math.min(w, h) * 0.3;
-
-    // ── Glow ring (listening state) ──
-    if (a.glowRing > 0.01) {
-      const pulseRadius = headRadius + 20 + Math.sin(now * 0.004) * 6;
-      ctx.beginPath();
-      ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = accent;
-      ctx.globalAlpha = a.glowRing * (0.25 + Math.sin(now * 0.003) * 0.1);
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // ── Head ──
-    ctx.beginPath();
-    ctx.ellipse(0, 0, headRadius, headRadius * 1.15, 0, 0, Math.PI * 2);
-    ctx.fillStyle = surface;
-    ctx.fill();
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-
-    // ── Eyes ──
-    const eyeY = -headRadius * 0.15;
-    const eyeSpacing = headRadius * 0.35;
-    const eyeRadius = headRadius * 0.1;
-
-    for (const side of [-1, 1]) {
-      const ex = side * eyeSpacing + a.eyeOffsetX;
-      const ey = eyeY;
-
-      if (a.blink > 0.3) {
-        // Blink — draw a horizontal line
-        ctx.beginPath();
-        ctx.moveTo(ex - eyeRadius, ey);
-        ctx.lineTo(ex + eyeRadius, ey);
-        ctx.strokeStyle = ink;
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-      } else {
-        // Open eye
-        ctx.beginPath();
-        ctx.arc(ex, ey, eyeRadius, 0, Math.PI * 2);
-        ctx.fillStyle = ink;
-        ctx.fill();
-
-        // Pupil
-        const pupilRadius = eyeRadius * 0.5;
-        ctx.beginPath();
-        ctx.arc(ex + a.eyeOffsetX * 0.3, ey, pupilRadius, 0, Math.PI * 2);
-        ctx.fillStyle = accent;
-        ctx.fill();
-      }
-    }
-
-    // ── Eyebrows ──
-    const browY = eyeY - eyeRadius - headRadius * 0.1;
-    const browThinking = state === 'thinking' ? -3 : 0;
-    for (const side of [-1, 1]) {
-      const bx = side * eyeSpacing;
-      ctx.beginPath();
-      ctx.moveTo(bx - eyeRadius * 1.2, browY + browThinking + (side === -1 && state === 'thinking' ? -2 : 0));
-      ctx.lineTo(bx + eyeRadius * 1.2, browY + browThinking + (side === 1 && state === 'thinking' ? -2 : 0));
-      ctx.strokeStyle = inkFaint;
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    }
-
-    // ── Nose ──
-    const noseY = headRadius * 0.05;
-    ctx.beginPath();
-    ctx.moveTo(-3, noseY - 4);
-    ctx.quadraticCurveTo(0, noseY + 4, 3, noseY - 4);
-    ctx.strokeStyle = inkFaint;
-    ctx.lineWidth = 1.5;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    // ── Mouth ──
-    const mouthY = headRadius * 0.35;
-    const mouthWidth = headRadius * 0.4;
-    const openAmount = a.mouthOpen * headRadius * 0.2;
-
-    if (openAmount > 1) {
-      // Open mouth — ellipse
-      ctx.beginPath();
-      ctx.ellipse(0, mouthY, mouthWidth * (0.5 + a.mouthOpen * 0.3), openAmount, 0, 0, Math.PI * 2);
-      ctx.fillStyle = accent;
-      ctx.globalAlpha = 0.6;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = ink;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    } else {
-      // Closed — slight smile
-      ctx.beginPath();
-      ctx.moveTo(-mouthWidth * 0.6, mouthY);
-      ctx.quadraticCurveTo(0, mouthY + 8, mouthWidth * 0.6, mouthY);
-      ctx.strokeStyle = ink;
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    }
-
-    ctx.restore();
-
-    // ── Thinking dots (below avatar) ──
-    if (state === 'thinking') {
-      for (let i = 0; i < 3; i++) {
-        const dotX = cx - 16 + i * 16;
-        const dotY = cy + headRadius * 1.15 + 28;
-        const bounce = Math.sin(now * 0.005 + i * 0.7) * 4;
-        ctx.beginPath();
-        ctx.arc(dotX, dotY + bounce, 4, 0, Math.PI * 2);
-        ctx.fillStyle = accent;
-        ctx.globalAlpha = 0.5 + Math.sin(now * 0.004 + i * 0.8) * 0.3;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-    }
-
-    // ── Status ring color (subtle ring around head for each state) ──
-    if (state === 'speaking') {
-      const pulse = 0.15 + Math.sin(now * 0.005) * 0.08;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.beginPath();
-      ctx.arc(0, 0, headRadius + 14, 0, Math.PI * 2);
-      ctx.strokeStyle = accent;
-      ctx.globalAlpha = pulse;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    animRef.current = requestAnimationFrame(draw);
-  }, [state, rmsLevel]);
-
-  // ── Canvas setup ──
+  // For the speaking glow intensity — use a smoothed version of rmsLevel
+  const smoothedRms = useRef(0);
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const interval = setInterval(() => {
+      smoothedRms.current += (rmsLevel - smoothedRms.current) * 0.3;
+    }, 30);
+    return () => clearInterval(interval);
+  }, [rmsLevel]);
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.scale(dpr, dpr);
+  // Ring animation for speaking — pulsing glow driven by RMS
+  const glowIntensity = state === 'speaking'
+    ? 8 + rmsLevel * 40
+    : state === 'listening' ? 6 : 0;
 
-    animRef.current = requestAnimationFrame(draw);
+  const ringColor = state === 'speaking'
+    ? 'var(--accent)'
+    : state === 'listening'
+      ? 'var(--success)'
+      : state === 'thinking'
+        ? 'var(--warning)'
+        : 'transparent';
 
-    return () => {
-      cancelAnimationFrame(animRef.current);
-    };
-  }, [size, draw]);
+  const borderWidth = state === 'idle' ? 3 : 4;
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       style={{
+        position: 'relative',
         width: size,
         height: size,
-        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
-    />
+    >
+      {/* ── Outer pulsing ring ── */}
+      <motion.div
+        animate={{
+          scale: state === 'listening'
+            ? [1, 1.08, 1]
+            : state === 'speaking'
+              ? [1, 1.04 + rmsLevel * 0.1, 1]
+              : state === 'thinking'
+                ? [1, 1.05, 1]
+                : [1, 1.02, 1],
+          opacity: state === 'idle' ? [0.3, 0.5, 0.3] : [0.5, 0.8, 0.5],
+        }}
+        transition={{
+          duration: state === 'speaking' ? 0.6 : state === 'thinking' ? 1.8 : 2.5,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        style={{
+          position: 'absolute',
+          inset: -8,
+          borderRadius: '50%',
+          border: `2px solid ${ringColor}`,
+          boxShadow: glowIntensity > 0 ? `0 0 ${glowIntensity}px ${ringColor}` : 'none',
+          transition: 'border-color 300ms ease, box-shadow 300ms ease',
+        }}
+      />
+
+      {/* ── Second outer ring (speaking only — audio-reactive) ── */}
+      {state === 'speaking' && (
+        <motion.div
+          animate={{
+            scale: [1, 1.12 + rmsLevel * 0.15, 1],
+            opacity: [0.15, 0.35, 0.15],
+          }}
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            position: 'absolute',
+            inset: -16,
+            borderRadius: '50%',
+            border: '1.5px solid var(--accent)',
+            boxShadow: `0 0 ${12 + rmsLevel * 30}px var(--accent)`,
+          }}
+        />
+      )}
+
+      {/* ── Thinking orbiting dots ── */}
+      {state === 'thinking' && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: -12,
+            borderRadius: '50%',
+            animation: 'avatarOrbit 3s linear infinite',
+          }}
+        >
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              animate={{ opacity: [0.3, 0.9, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.5 }}
+              style={{
+                position: 'absolute',
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: 'var(--warning)',
+                top: '50%',
+                left: '50%',
+                transform: `rotate(${i * 120}deg) translateX(${size / 2 + 10}px) translateY(-50%)`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Main avatar image ── */}
+      <motion.div
+        animate={{
+          scale: state === 'speaking'
+            ? [1, 1.01 + rmsLevel * 0.02, 1]
+            : state === 'idle'
+              ? [1, 1.005, 1]
+              : 1,
+          y: state === 'speaking'
+            ? [0, -1 - rmsLevel * 3, 0]
+            : 0,
+        }}
+        transition={{
+          duration: state === 'speaking' ? 0.4 : 3,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        style={{
+          width: size * 0.85,
+          height: size * 0.85,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: `${borderWidth}px solid ${state === 'idle' ? 'var(--border-strong)' : ringColor}`,
+          boxShadow: `var(--shadow-md), 0 0 ${glowIntensity * 0.5}px ${ringColor}`,
+          transition: 'border-color 300ms ease, box-shadow 300ms ease',
+          position: 'relative',
+          background: 'var(--surface-sunken)',
+        }}
+      >
+        {/* Placeholder while image loads */}
+        {!imageLoaded && (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'var(--surface-sunken)',
+              color: 'var(--ink-faint)',
+              fontSize: size * 0.2,
+              fontWeight: 700,
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            {character.name[0]}
+          </div>
+        )}
+
+        <img
+          src={character.src}
+          alt={`${character.name} — AI Interviewer`}
+          onLoad={() => setImageLoaded(true)}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center top',
+            display: imageLoaded ? 'block' : 'none',
+          }}
+        />
+
+        {/* ── Speaking overlay — subtle mouth-area glow ── */}
+        {state === 'speaking' && (
+          <motion.div
+            animate={{ opacity: [0.05, 0.15 + rmsLevel * 0.2, 0.05] }}
+            transition={{ duration: 0.3, repeat: Infinity }}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '40%',
+              background: `linear-gradient(to top, var(--accent), transparent)`,
+              borderRadius: '0 0 50% 50%',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+
+        {/* ── Listening overlay — soft green tint ── */}
+        {state === 'listening' && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'var(--success)',
+              opacity: 0.06,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </motion.div>
+
+      {/* ── Name badge ── */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -4,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 999,
+          padding: '3px 14px',
+          fontSize: 12,
+          fontWeight: 700,
+          color: 'var(--ink)',
+          whiteSpace: 'nowrap',
+          boxShadow: 'var(--shadow-sm)',
+          fontFamily: 'var(--font-mono)',
+          letterSpacing: '0.03em',
+        }}
+      >
+        {character.name}
+      </div>
+
+      {/* ── Keyframes ── */}
+      <style>{`
+        @keyframes avatarOrbit {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
   );
 }
