@@ -477,3 +477,50 @@ Do not include markdown blocks or conversational text.
     # Sort jobs by match_score descending
     jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
     return jobs
+
+async def optimize_linkedin_profile(profile_text: str) -> Dict[str, Any]:
+    """Analyze a LinkedIn profile and provide optimization suggestions."""
+    client = _get_client()
+    prompt = f"""You are an expert LinkedIn profile optimization coach and recruiter.
+Analyze the provided LinkedIn profile text (extracted from a PDF) and provide highly actionable recommendations to improve it.
+
+PROFILE TEXT:
+{profile_text}
+
+Return your analysis as a valid JSON object matching the exact schema below. Do not include markdown code blocks (like ```json), conversational text, or any other formatting.
+
+{{
+  "headline_suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
+  "summary_rewrite": "A professionally written, engaging summary paragraph tailored to their experience.",
+  "experience_improvements": [
+    {{
+      "role": "Role Name",
+      "suggestion": "How to improve the bullet points for this specific role."
+    }}
+  ]
+}}
+"""
+
+    completion = await client.chat.completions.create(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.6,
+        max_tokens=2000,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return {
+            "headline_suggestions": ["Unable to parse suggestions."],
+            "summary_rewrite": "Unable to parse summary rewrite. Please try again.",
+            "experience_improvements": []
+        }

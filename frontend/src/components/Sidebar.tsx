@@ -11,7 +11,9 @@ import {
   LogOut,
   Mail,
   Briefcase,
+  Code
 } from 'lucide-react';
+import { FiLinkedin as Linkedin } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
 import '../styles/dashboard.css';
@@ -27,6 +29,7 @@ const NAV_SECTIONS = [
       { to: '/dashboard/resumes', label: 'My resumes', icon: FileText },
       { to: '/dashboard/ats-checker', label: 'ATS checker', icon: ScanSearch },
       { to: '/dashboard/cover-letter', label: 'Cover letter', icon: Mail },
+      { to: '/dashboard/linkedin', label: 'LinkedIn Optimizer', icon: Linkedin },
     ],
   },
   {

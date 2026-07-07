@@ -28,6 +28,7 @@ const LiveInterview = lazy(() => import('./pages/dashboard/LiveInterview'));
 const InterviewReport = lazy(() => import('./pages/dashboard/InterviewReport'));
 const Profile = lazy(() => import('./pages/dashboard/Profile'));
 const Settings = lazy(() => import('./pages/dashboard/Settings'));
+const LinkedInOptimizer = lazy(() => import('./pages/dashboard/LinkedInOptimizer'));
 
 function PageFallback() {
   return <InlineLoader title="Loading…" />;
@@ -101,6 +102,7 @@ export default function App() {
         <Route path="/dashboard/live-interview/report/:roomName" element={<Protected><InterviewReport /></Protected>} />
         <Route path="/dashboard/profile" element={<Protected><Profile /></Protected>} />
         <Route path="/dashboard/settings" element={<Protected><Settings /></Protected>} />
+        <Route path="/dashboard/linkedin" element={<Protected><LinkedInOptimizer /></Protected>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
