@@ -9,19 +9,9 @@ import { useToast } from '../../components/Toast';
 import { useFaceAnalyzer } from '../../hooks/useFaceAnalyzer';
 
 // The Web Speech API's SpeechRecognition constructor itself has no official
-// TS lib types yet. Some environments also lack its event types,
-// so we declare a minimal shape for the parts this page actually uses.
+// TS lib types yet. Its event types may or may not be in lib.dom.d.ts
+// depending on the environment, so we use 'any' for the events to avoid conflicts.
 declare global {
-  interface SpeechRecognitionEvent {
-    resultIndex: number;
-    results: {
-      isFinal: boolean;
-      [index: number]: { transcript: string };
-    }[];
-  }
-  interface SpeechRecognitionErrorEvent {
-    error: string;
-  }
   interface Window {
     SpeechRecognition: new () => SpeechRecognitionInstance;
     webkitSpeechRecognition: new () => SpeechRecognitionInstance;
@@ -33,9 +23,9 @@ declare global {
     start: () => void;
     stop: () => void;
     abort: () => void;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+    onresult: ((event: any) => void) | null;
     onend: (() => void) | null;
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+    onerror: ((event: any) => void) | null;
   }
 }
 
