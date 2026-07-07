@@ -235,13 +235,13 @@ export default function CoverLetterGenerator() {
                   </button>
                 </div>
                 
-                <div style={{ flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                <div style={{ flex: 1, minHeight: 350, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
                   <Editor
                     height="100%"
                     defaultLanguage="markdown"
                     value={coverLetter}
                     onChange={(val) => setCoverLetter(val || '')}
-                    theme="vs-light"
+                    theme="vs-dark"
                     options={{
                       minimap: { enabled: false },
                       wordWrap: 'on',
