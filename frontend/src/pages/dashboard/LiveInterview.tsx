@@ -473,9 +473,9 @@ export default function LiveInterview() {
               </div>
             </div>
 
-            <div style={{ padding: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, position: 'relative' }}>
+            <div className="controls-bar" style={{ padding: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, position: 'relative' }}>
               {isRecording && localStreamRef.current && (
-                <div style={{ position: 'absolute', left: 24 }}>
+                <div className="local-visualizer" style={{ position: 'absolute', left: 24 }}>
                   <AudioVisualizer stream={localStreamRef.current} isSpeaking maxHeight={32} />
                 </div>
               )}
@@ -582,17 +582,35 @@ export default function LiveInterview() {
         @media (max-width: 900px) {
           .live-interview-layout {
             flex-direction: column !important;
-            overflow-y: auto !important;
           }
-          .live-interview-layout > div {
-            min-height: 50vh;
+          .live-interview-layout > div:first-child {
+            flex: ${isCodingMode ? '0 0 40%' : '1'} !important;
+            min-height: ${isCodingMode ? '250px' : 'auto'};
+          }
+          .live-interview-layout > div:nth-child(2) {
+            flex: 1 !important;
             border-left: none !important;
             border-top: 1px solid var(--border);
           }
           .live-interview-video-container {
-            width: 140px !important;
-            bottom: 16px !important;
+            width: 110px !important;
+            bottom: auto !important;
+            top: 16px !important;
             right: 16px !important;
+            z-index: 10;
+          }
+        }
+        @media (max-width: 450px) {
+          .controls-bar {
+            gap: 12px !important;
+            padding: 12px 8px !important;
+          }
+          .controls-bar .btn-icon {
+            width: 44px !important;
+            height: 44px !important;
+          }
+          .local-visualizer {
+            display: none !important;
           }
         }
       `}</style>
