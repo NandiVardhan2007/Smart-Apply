@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeSwitcher from './ThemeSwitcher';
 
 const LINKS = [
   { href: '#features', label: 'Features' },
@@ -28,7 +29,7 @@ export default function Navbar() {
         zIndex: 100,
         background: scrolled ? 'var(--surface)' : 'transparent',
         borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
-        transition: 'background-color 0.2s ease, border-color 0.2s ease',
+        transition: `background-color var(--transition-slow), border-color var(--transition-slow)`,
       }}
     >
       <div
@@ -52,7 +53,8 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="desktop-nav-actions">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} className="desktop-nav-actions">
+          <ThemeSwitcher variant="compact" />
           {isAuthenticated ? (
             <button className="btn btn-primary btn-sm" onClick={() => navigate('/dashboard')}>
               Go to dashboard
@@ -95,6 +97,7 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          <ThemeSwitcher />
           <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
             {isAuthenticated ? (
               <button className="btn btn-primary btn-block" onClick={() => navigate('/dashboard')}>

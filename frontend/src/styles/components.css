@@ -19,12 +19,13 @@
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast),
+    transform 80ms var(--ease);
   text-decoration: none;
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.99);
 }
 
 .btn:disabled {
@@ -130,7 +131,7 @@
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-slow);
 }
 
 .input-field::placeholder {
@@ -153,6 +154,13 @@ textarea.input-field {
   line-height: 1.5;
 }
 
+/* Icon-decorated inputs (email/password fields etc).
+   The wrapper's `align-items: center` only affects elements still in
+   normal flow — both the leading icon and the trailing button are
+   absolutely positioned so they can overlay the input, which takes
+   them out of flow. They're centered explicitly with `top: 50%` +
+   `translateY(-50%)` instead, which is what actually keeps them
+   vertically centered regardless of the input's height or padding. */
 .input-icon-wrap {
   position: relative;
   display: flex;
@@ -161,7 +169,9 @@ textarea.input-field {
 
 .input-icon-wrap svg:first-child {
   position: absolute;
+  top: 50%;
   left: 14px;
+  transform: translateY(-50%);
   color: var(--ink-faint);
   pointer-events: none;
 }
@@ -171,22 +181,28 @@ textarea.input-field {
 }
 
 .input-icon-wrap .input-field.has-trailing {
-  padding-right: 42px;
+  padding-right: 44px;
 }
 
 .input-icon-trailing {
   position: absolute;
-  right: 12px;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
   background: transparent;
   border: none;
   cursor: pointer;
   color: var(--ink-faint);
-  padding: 4px;
   border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 .input-icon-trailing:hover {
   color: var(--ink);
+  background: var(--surface-sunken);
 }
 
 /* ── Cards ── */
@@ -204,7 +220,8 @@ textarea.input-field {
 
 .card-interactive {
   cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
+  will-change: transform;
 }
 .card-interactive:hover {
   border-color: var(--ink-faint);
@@ -268,6 +285,7 @@ textarea.input-field {
   color: var(--ink-faint);
   padding: 2px;
   border-radius: 999px;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 .chip button:hover {
   color: var(--danger);
@@ -308,7 +326,7 @@ textarea.input-field {
   cursor: pointer;
   inset: 0;
   background: var(--border-strong);
-  transition: 0.2s;
+  transition: background-color var(--transition-base);
   border-radius: 999px;
 }
 .toggle-switch .slider::before {
@@ -319,7 +337,8 @@ textarea.input-field {
   left: 3px;
   bottom: 3px;
   background: #fff;
-  transition: 0.2s;
+  transition: transform var(--transition-base);
+  will-change: transform;
   border-radius: 50%;
   box-shadow: var(--shadow-sm);
 }
@@ -396,5 +415,69 @@ textarea.input-field {
   }
   100% {
     background-position: 0 50%;
+  }
+}
+
+/* ── Theme switcher ── */
+.theme-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.theme-switcher-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.theme-switcher-option.active {
+  color: var(--ink);
+}
+
+.theme-switcher-pill {
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  z-index: -1;
+}
+
+.theme-switcher-option svg {
+  position: relative;
+  z-index: 1;
+}
+.theme-switcher-option span {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-toggle-floating {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 50;
+}
+
+@media (max-width: 640px) {
+  .theme-toggle-floating {
+    top: 14px;
+    right: 14px;
   }
 }

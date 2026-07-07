@@ -170,7 +170,7 @@ export default function AtsChecker() {
                   padding: 32,
                   textAlign: 'center',
                   cursor: 'pointer',
-                  transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                  transition: 'border-color var(--transition-fast), background-color var(--transition-fast)',
                 }}
               >
                 <input

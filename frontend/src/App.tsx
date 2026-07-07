@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import { InlineLoader } from './components/LoadingSpinner';
@@ -30,11 +31,35 @@ function PageFallback() {
   return <InlineLoader title="Loading…" />;
 }
 
+/**
+ * Fades and lifts each dashboard page in on navigation, keyed by pathname.
+ * This lives *inside* DashboardLayout (below the Suspense boundary) so only
+ * the page content transitions — the sidebar never re-animates or flickers
+ * when moving between dashboard routes. Kept to a single quick enter
+ * animation (no exit) so it never fights with Suspense while a lazy chunk
+ * is still loading.
+ */
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  return (
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function Protected({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <Suspense fallback={<PageFallback />}>{children}</Suspense>
+        <Suspense fallback={<PageFallback />}>
+          <PageTransition>{children}</PageTransition>
+        </Suspense>
       </DashboardLayout>
     </ProtectedRoute>
   );

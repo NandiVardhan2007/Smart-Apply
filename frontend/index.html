@@ -8,7 +8,27 @@
     <meta name="theme-color" content="#faf9f7" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // Applied before first paint so the stored theme (or the OS
+      // preference, for a first-time visit) renders immediately —
+      // without this, the app would flash the light theme for a
+      // frame before React mounts and ThemeProvider corrects it.
+      (function () {
+        try {
+          var stored = localStorage.getItem('sa_theme');
+          var theme =
+            stored === 'light' || stored === 'dark' || stored === 'ice'
+              ? stored
+              : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
     <title>Smart Apply — AI Job Application Platform</title>
   </head>
   <body>

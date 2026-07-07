@@ -6,6 +6,7 @@ import { Upload, ArrowRight, Plus, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { ButtonSpinner } from '../components/LoadingSpinner';
+import ThemeToggleFloating from '../components/ThemeToggleFloating';
 import { apiFetch } from '../api/client';
 import type { ResumeParseResult, User } from '../api/types';
 import '../styles/auth.css';
@@ -117,6 +118,7 @@ export default function Onboarding() {
 
   return (
     <div className="auth-page">
+      <ThemeToggleFloating />
       <motion.div
         className="auth-card"
         style={{ maxWidth: 560, width: '100%' }}

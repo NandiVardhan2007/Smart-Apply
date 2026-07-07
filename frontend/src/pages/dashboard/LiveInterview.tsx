@@ -425,7 +425,7 @@ export default function LiveInterview() {
             borderRadius: 'var(--radius-lg)',
             border: '1px solid var(--border)',
             overflow: 'hidden',
-            transition: 'max-width 0.25s ease',
+            transition: 'max-width var(--transition-slow)',
           }}
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
@@ -463,7 +463,7 @@ export default function LiveInterview() {
                   overflow: 'hidden',
                   border: '2px solid var(--border)',
                   boxShadow: 'var(--shadow-md)',
-                  transition: 'width 0.25s ease',
+                  transition: 'width var(--transition-slow)',
                   background: 'var(--surface-sunken)',
                 }}
               >

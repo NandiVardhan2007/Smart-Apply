@@ -99,7 +99,7 @@ export default function Resumes() {
             borderRadius: 'var(--radius)',
             textAlign: 'center',
             cursor: uploading ? 'default' : 'pointer',
-            transition: 'border-color 0.15s ease, background-color 0.15s ease',
+            transition: 'border-color var(--transition-fast), background-color var(--transition-fast)',
           }}
         >
           <input type="file" accept=".pdf" ref={fileInputRef} style={{ display: 'none' }} onChange={handleUpload} />

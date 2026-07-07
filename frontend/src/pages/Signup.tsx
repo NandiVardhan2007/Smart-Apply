@@ -5,6 +5,7 @@ import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 
 import { useToast } from '../components/Toast';
 import { ButtonSpinner } from '../components/LoadingSpinner';
+import ThemeToggleFloating from '../components/ThemeToggleFloating';
 import { apiFetch, apiErrorMessage } from '../api/client';
 import '../styles/auth.css';
 
@@ -76,6 +77,7 @@ export default function Signup() {
 
   return (
     <div className="auth-page">
+      <ThemeToggleFloating />
       <motion.div
         className="auth-card"
         initial={{ opacity: 0, y: 16 }}

@@ -5,18 +5,34 @@ application platform. Built from scratch with React 19, TypeScript, and Vite.
 
 ## Design system
 
-The visual language is intentionally restrained: one accent color (a signal
-blue), ink-on-paper neutrals, and hairline borders instead of shadows. Type
-pairs **Fraunces** (a quiet serif) for display moments with **Inter** for
-interface text and **JetBrains Mono** for anything numeric or technical —
-ATS scores, timestamps, stat counters — a small nod to the engineering
-audience the product serves.
+The visual language is intentionally restrained: one accent color, ink-on-paper
+neutrals, and hairline borders instead of shadows. Type pairs a display face
+for headings with **Inter** for interface text and **JetBrains Mono** for
+anything numeric or technical — ATS scores, timestamps, stat counters — a
+small nod to the engineering audience the product serves.
 
-All design tokens live in `src/styles/tokens.css` as CSS custom properties,
-including a `[data-theme="dark"]` variant used by the dashboard's dark-mode
-toggle. Component classes (`.btn`, `.card`, `.input-field`, `.badge`, etc.)
-are defined once in `src/styles/components.css` and reused across every
-page — no per-page style duplication.
+All design tokens live in `src/styles/tokens.css` as CSS custom properties.
+Motion also has shared tokens (`--transition-fast/base/slow`, `--ease`,
+`--ease-out`) so every hover, focus, and theme change decelerates the same
+way — that consistency is a large part of what makes an interface feel
+smooth rather than just "animated."
+
+### Themes
+
+Three themes ship out of the box — **Light**, **Dark**, and **Ice** — switchable
+from the segmented control in Settings, the sidebar footer, or the public
+navbar. `ThemeContext` persists the choice to `localStorage` and applies it
+via a `data-theme` attribute on `<html>`; a small inline script in
+`index.html` reads that value before React even mounts, so there's no flash
+of the wrong theme on load.
+
+Each theme only ever redefines the same variable names, so no page needs
+theme-specific code. **Ice** is the one theme that also swaps
+`--font-display` to Space Grotesk for a distinct, modern-geometric heading
+style, while body copy stays on Inter like every other theme — consistent
+interface text everywhere, with just the display type carrying each theme's
+personality. Every theme's palette is checked against WCAG's contrast
+formula to stay at or above the ~4.5:1 bar for normal text.
 
 Icons are from [lucide-react](https://lucide.dev) throughout the interface,
 with [react-icons](https://react-icons.github.io/react-icons/) (Font Awesome
@@ -76,5 +92,5 @@ npm run preview   # preview the production build locally
   WYSIWYG visual editor) against the same `/api/tailor/*` endpoints, with an
   in-browser LaTeX-to-PDF compile step and a contenteditable iframe for the
   visual mode.
-- **Dark mode** is a working, real theme (not just a placeholder) driven by
-  the `[data-theme="dark"]` tokens in `tokens.css`.
+- **Theming** is a real, working system (not a placeholder) — see the
+  "Themes" section above for how it's wired.

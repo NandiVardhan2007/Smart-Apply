@@ -11,6 +11,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeSwitcher from './ThemeSwitcher';
 import '../styles/dashboard.css';
 
 const NAV_SECTIONS = [
@@ -88,6 +89,9 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
                 Settings
               </span>
             </NavLink>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 10px' }}>
+            <ThemeSwitcher variant="compact" />
           </div>
           <div className="sidebar-divider" />
           <div className="sidebar-user">

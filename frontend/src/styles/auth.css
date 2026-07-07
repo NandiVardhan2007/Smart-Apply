@@ -12,6 +12,7 @@
     linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 48px 48px;
   background-position: center;
+  transition: background-color var(--transition-slow);
 }
 
 .auth-card {
@@ -65,6 +66,7 @@
 .auth-links a {
   color: var(--accent);
   font-weight: 600;
+  transition: color var(--transition-fast);
 }
 .auth-links a:hover {
   text-decoration: underline;
@@ -72,10 +74,12 @@
 
 .forgot-link {
   display: inline-block;
+  align-self: flex-end;
   font-size: 13px;
   font-weight: 600;
   color: var(--accent);
-  margin: -8px 0 20px;
+  margin: -10px 0 20px;
+  transition: color var(--transition-fast);
 }
 .forgot-link:hover {
   text-decoration: underline;
@@ -98,6 +102,7 @@
 .strength-fill {
   height: 100%;
   border-radius: 999px;
+  transition: background-color var(--transition-base);
 }
 .strength-label {
   font-size: 12px;
@@ -124,7 +129,7 @@
   background: var(--surface);
   color: var(--ink);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 .otp-input:focus {
   border-color: var(--accent);
@@ -148,6 +153,7 @@
   font-weight: 600;
   cursor: pointer;
   font-size: 13.5px;
+  transition: color var(--transition-fast);
 }
 .resend-btn:hover {
   text-decoration: underline;
@@ -166,7 +172,7 @@
   height: 9px;
   border-radius: 50%;
   background: var(--border-strong);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-base);
 }
 .step-dot.active {
   background: var(--accent);
@@ -178,8 +184,36 @@
   width: 32px;
   height: 2px;
   background: var(--border-strong);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-base);
 }
 .step-line.active {
   background: var(--accent);
+}
+
+/* ── Small-screen refinements ──
+   The card's generous padding and the OTP grid's fixed box widths
+   were sized for tablet/desktop; without this, a 6-box OTP row can
+   overflow a ~360px phone screen and the card padding eats into
+   already-scarce width. */
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 20px 14px;
+  }
+  .auth-card {
+    padding: 30px 22px;
+  }
+  .auth-header h2 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 380px) {
+  .otp-inputs {
+    gap: 7px;
+  }
+  .otp-input {
+    width: 40px;
+    height: 48px;
+    font-size: 19px;
+  }
 }

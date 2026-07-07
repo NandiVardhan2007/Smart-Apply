@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Lock, AlertTriangle, Shield, Eye, EyeOff, Moon } from 'lucide-react';
+import { Bell, Lock, AlertTriangle, Shield, Eye, EyeOff, Palette } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { apiFetch, apiErrorMessage } from '../../api/client';
 import { ButtonSpinner } from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 
 export default function Settings() {
   const { user, logout } = useAuth();
@@ -18,7 +19,6 @@ export default function Settings() {
   const [updatingPw, setUpdatingPw] = useState(false);
 
   const [notifications, setNotifications] = useState(() => localStorage.getItem('sa_notifications') !== 'false');
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('sa_theme') === 'dark');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -56,17 +56,6 @@ export default function Settings() {
       await apiFetch('/user/profile', { method: 'PUT', body: JSON.stringify({ notifications_enabled: checked }) });
     } catch {
       // Best-effort — local preference already applied.
-    }
-  };
-
-  const handleToggleDarkMode = (checked: boolean) => {
-    setDarkMode(checked);
-    if (checked) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('sa_theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.removeItem('sa_theme');
     }
   };
 
@@ -152,29 +141,29 @@ export default function Settings() {
 
       <div className="card" style={{ marginBottom: 22 }}>
         <h3 style={{ fontSize: 15.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Palette size={16} style={{ color: 'var(--accent)' }} /> Appearance
+        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', flexWrap: 'wrap', gap: 14 }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>Theme</div>
+            <div className="text-muted" style={{ fontSize: 13 }}>Choose how Smart Apply looks on this device</div>
+          </div>
+          <ThemeSwitcher />
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 22 }}>
+        <h3 style={{ fontSize: 15.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Bell size={16} style={{ color: 'var(--accent)' }} /> Preferences
         </h3>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>Email notifications</div>
             <div className="text-muted" style={{ fontSize: 13 }}>Receive updates on product features and career tips</div>
           </div>
           <label className="toggle-switch">
             <input type="checkbox" checked={notifications} onChange={(e) => handleToggleNotifications(e.target.checked)} />
-            <span className="slider" />
-          </label>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Moon size={13} /> Dark mode
-            </div>
-            <div className="text-muted" style={{ fontSize: 13 }}>Use a darker theme across the dashboard</div>
-          </div>
-          <label className="toggle-switch">
-            <input type="checkbox" checked={darkMode} onChange={(e) => handleToggleDarkMode(e.target.checked)} />
             <span className="slider" />
           </label>
         </div>
