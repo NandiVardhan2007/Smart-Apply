@@ -20,8 +20,11 @@ async def search_jobs(query: str, location: str = "us") -> List[Dict[str, Any]]:
         "num_pages": "1"
     }
 
+    # Fallback to hardcoded key if settings is empty or not loaded properly
+    api_key = settings.RAPIDAPI_KEY.strip() if settings.RAPIDAPI_KEY else "fa07d89f58msh04e859394cc9d75p191797jsn14a1d0492bd2"
+
     headers = {
-        "x-rapidapi-key": settings.RAPIDAPI_KEY,
+        "x-rapidapi-key": api_key,
         "x-rapidapi-host": "jsearch.p.rapidapi.com"
     }
 
@@ -50,7 +53,11 @@ async def search_jobs(query: str, location: str = "us") -> List[Dict[str, Any]]:
                 })
             
             return formatted_jobs
+    except httpx.HTTPStatusError as e:
+        import traceback
+        logger.error(f"JSearch HTTP Error {e.response.status_code}: {e.response.text}\n{traceback.format_exc()}")
+        return []
     except Exception as e:
-        logger.error(f"Error fetching jobs from JSearch: {str(e)}")
-        # Return mock data if API fails to prevent breaking the UI entirely
+        import traceback
+        logger.error(f"Error fetching jobs from JSearch: {str(e)}\n{traceback.format_exc()}")
         return []
