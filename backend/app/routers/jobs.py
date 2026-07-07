@@ -5,7 +5,7 @@ from beanie import PydanticObjectId
 from app.models.resume import Resume
 from app.models.user import User
 from app.services import job_service, ai_service
-from app.routers.auth import get_current_user
+from app.middleware.auth_middleware import get_current_user
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 
