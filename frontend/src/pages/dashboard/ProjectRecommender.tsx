@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Code2, Clock, Star, ArrowRight, ChevronLeft, CheckCircle2, Lightbulb } from 'lucide-react';
 
