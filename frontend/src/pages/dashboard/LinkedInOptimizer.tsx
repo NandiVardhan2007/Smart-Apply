@@ -15,7 +15,6 @@ interface OptimizationResult {
 
 export default function LinkedInOptimizer() {
   const [file, setFile] = useState<File | null>(null);
-  const [url, setUrl] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<OptimizationResult | null>(null);
@@ -26,7 +25,6 @@ export default function LinkedInOptimizer() {
   const acceptFile = (f: File) => {
     if (f.type === 'application/pdf' || f.name.endsWith('.pdf')) {
       setFile(f);
-      setUrl(''); // clear url if file is selected
       setResult(null); // Reset previous results on new upload
     } else {
       showToast('error', 'Please upload a PDF file.');
@@ -34,8 +32,8 @@ export default function LinkedInOptimizer() {
   };
 
   const handleAnalyze = async () => {
-    if (!file && !url.trim()) {
-      showToast('error', 'Please provide a LinkedIn profile URL or upload a PDF.');
+    if (!file) {
+      showToast('error', 'Please upload a PDF of your LinkedIn profile.');
       return;
     }
 
@@ -44,11 +42,7 @@ export default function LinkedInOptimizer() {
 
     try {
       const formData = new FormData();
-      if (url.trim()) {
-        formData.append('profile_url', url.trim());
-      } else if (file) {
-        formData.append('profile_file', file);
-      }
+      formData.append('profile_file', file);
 
       const res = await apiFetch<OptimizationResult>('/linkedin/optimize', { 
         method: 'POST', 
@@ -72,7 +66,7 @@ export default function LinkedInOptimizer() {
     <div className="container">
       <PageHeader 
         title="LinkedIn Profile Optimizer" 
-        subtitle="Provide your LinkedIn URL or a PDF export to get AI-driven optimization suggestions." 
+        subtitle="Upload a PDF export of your LinkedIn profile to get AI-driven optimization suggestions." 
       />
 
       <PageLoader 
@@ -86,27 +80,8 @@ export default function LinkedInOptimizer() {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
             <span className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Linkedin size={16} /> Connect Profile
+              <Linkedin size={16} /> Upload Profile PDF
             </span>
-            <div style={{ marginTop: 12, padding: 16, background: 'var(--surface-sunken)', borderRadius: 'var(--radius)', fontSize: 14, color: 'var(--ink-secondary)' }}>
-              <p style={{ marginBottom: 8 }}>Paste your public LinkedIn URL below, and we will extract the details automatically!</p>
-              <input 
-                type="text" 
-                className="input-field" 
-                placeholder="https://www.linkedin.com/in/johndoe"
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  if (e.target.value) setFile(null); // clear file if url is typed
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', color: 'var(--ink-faint)', fontSize: 13, fontWeight: 600 }}>OR</div>
-
-          <div>
-            <span className="eyebrow">Upload Profile PDF (Fallback)</span>
             <div
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => {
@@ -155,7 +130,7 @@ export default function LinkedInOptimizer() {
           <button 
             className="btn btn-primary btn-lg btn-block" 
             onClick={handleAnalyze} 
-            disabled={analyzing || (!file && !url.trim())}
+            disabled={analyzing || !file}
           >
             {analyzing ? (
               <><ButtonSpinner /> Analyzing...</>
