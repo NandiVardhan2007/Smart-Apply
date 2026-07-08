@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, FileText, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { client } from '../../api/client';
+import { apiFetch } from '../../api/client';
 import '../../styles/dashboard.css';
 
 interface AdminStats {
@@ -36,15 +36,13 @@ export default function AdminPanel() {
     const fetchAdminData = async () => {
       try {
         const [statsRes, usersRes] = await Promise.all([
-          client.get('/admin/stats'),
-          client.get('/admin/users')
+          apiFetch<AdminStats>('/admin/stats'),
+          apiFetch<{ users: AdminUser[] }>('/admin/users')
         ]);
         
         if (statsRes.ok && usersRes.ok) {
-          const statsData = await statsRes.json();
-          const usersData = await usersRes.json();
-          setStats(statsData);
-          setUsers(usersData.users);
+          setStats(statsRes.data);
+          setUsers(usersRes.data.users);
         } else {
           setError("Failed to fetch admin data.");
         }
