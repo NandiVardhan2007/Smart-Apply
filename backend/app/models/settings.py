@@ -15,8 +15,6 @@ class SystemSettings(Document):
     announcement_message: str = ""
     announcement_type: str = "info"
     
-    prompts: dict[str, str] = Field(default_factory=dict)
-    
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:

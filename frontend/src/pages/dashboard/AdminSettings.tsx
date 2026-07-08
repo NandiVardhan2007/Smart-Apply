@@ -12,7 +12,6 @@ interface SystemSettings {
   announcement_active: boolean;
   announcement_message: string;
   announcement_type: string;
-  prompts?: Record<string, string>;
 }
 
 export default function AdminSettings() {
@@ -23,8 +22,7 @@ export default function AdminSettings() {
     nvidia_nim_api_key: '',
     announcement_active: false,
     announcement_message: '',
-    announcement_type: 'info',
-    prompts: {}
+    announcement_type: 'info'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,8 +46,7 @@ export default function AdminSettings() {
             nvidia_nim_api_key: res.data.nvidia_nim_api_key || '',
             announcement_active: res.data.announcement_active || false,
             announcement_message: res.data.announcement_message || '',
-            announcement_type: res.data.announcement_type || 'info',
-            prompts: res.data.prompts || {}
+            announcement_type: res.data.announcement_type || 'info'
           });
         } else {
           setError("Failed to fetch settings.");
@@ -241,66 +238,6 @@ export default function AdminSettings() {
               </div>
             </div>
           )}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-            <button 
-              onClick={handleSave}
-              disabled={saving}
-              style={{ 
-                display: 'flex', alignItems: 'center', gap: 8, 
-                padding: '10px 20px', borderRadius: 8, 
-                background: 'var(--primary)', color: 'white', 
-                fontWeight: 600, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.7 : 1
-              }}
-            >
-              <Save size={18} />
-              {saving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', marginTop: 24, marginBottom: 40 }}
-      >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-sunken)' }}>
-          <h3 style={{ margin: 0 }}>Prompt Library</h3>
-        </div>
-        
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div>
-            <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
-              ATS Checker System Prompt
-            </label>
-            <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginBottom: 8 }}>
-              Instructions for the AI when evaluating a resume without a Job Description.
-            </div>
-            <textarea 
-              placeholder="Leave blank to use default ATS instructions..."
-              value={settings.prompts?.ats_prompt_no_jd || ''}
-              onChange={(e) => setSettings({...settings, prompts: {...(settings.prompts || {}), ats_prompt_no_jd: e.target.value}})}
-              rows={5}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)', resize: 'vertical' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
-              Smart Apply Chatbot Prompt
-            </label>
-            <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginBottom: 8 }}>
-              The core persona and instructions for the Career Advisor AI Chatbot.
-            </div>
-            <textarea 
-              placeholder="Leave blank to use default Chatbot persona..."
-              value={settings.prompts?.chatbot_prompt || ''}
-              onChange={(e) => setSettings({...settings, prompts: {...(settings.prompts || {}), chatbot_prompt: e.target.value}})}
-              rows={5}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)', resize: 'vertical' }}
-            />
-          </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <button 

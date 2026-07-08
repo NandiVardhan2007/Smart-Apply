@@ -7,7 +7,6 @@ import openai
 
 from app.config import settings
 from app.models.api_metrics import APILog
-from app.models.settings import SystemSettings
 
 _client: Optional[AsyncOpenAI] = None
 
@@ -74,24 +73,21 @@ async def analyze_resume_ats(
 ) -> Dict[str, Any]:
     """Analyze a resume against a job description for ATS compatibility."""
     client = _get_client()
-    settings_doc = await SystemSettings.find_one()
-    custom_prompts = settings_doc.prompts if settings_doc and hasattr(settings_doc, 'prompts') else {}
-
     if job_description and job_description.strip():
         jd_section = f"\nJOB DESCRIPTION:\n{job_description}\n"
-        instruction = custom_prompts.get("ats_prompt_with_jd", """
+        instruction = """
 Evaluate the provided RESUME against the provided JOB DESCRIPTION. 
 Calculate an ATS match score based strictly on keyword overlaps, required experience, and skills alignment.
 Do not hallucinate keywords. Only list keywords present in the JD as missing if the resume lacks them.
-""")
+"""
     else:
         jd_section = ""
-        instruction = custom_prompts.get("ats_prompt_no_jd", """
+        instruction = """
 Evaluate the provided RESUME on general industry best practices since no Job Description was provided.
 Calculate a general quality score based on: actionable verbs, quantifiable achievements, clear formatting, and standard industry skills.
 For "missing_keywords", provide 3-5 highly sought-after industry skills that the candidate might consider adding based on their current profile.
 Do not hallucinate skills they already have.
-""")
+"""
 
     prompt = f"""You are a strict and highly accurate Applicant Tracking System (ATS) evaluator.
 
@@ -186,19 +182,14 @@ async def chat_completion(messages: List[Dict[str, str]]) -> str:
         base_url=settings.NVIDIA_BASE_URL,
         api_key=settings.CHATBOT_API_KEY or settings.NVIDIA_API_KEY,
     )
-    settings_doc = await SystemSettings.find_one()
-    custom_prompts = settings_doc.prompts if settings_doc and hasattr(settings_doc, 'prompts') else {}
-    
-    chatbot_prompt = custom_prompts.get("chatbot_prompt", (
-        "You are Smart Apply AI, a friendly and helpful career advisor for "
-        "students and job seekers. Help with resume tips, cover letters, "
-        "interview preparation, job search strategies, and career guidance. "
-        "Keep responses concise, actionable, and encouraging."
-    ))
-
     system_msg = {
         "role": "system",
-        "content": chatbot_prompt,
+        "content": (
+            "You are Smart Apply AI, a friendly and helpful career advisor for "
+            "students and job seekers. Help with resume tips, cover letters, "
+            "interview preparation, job search strategies, and career guidance. "
+            "Keep responses concise, actionable, and encouraging."
+        ),
     }
 
     completion = await _call_llm_with_tracking(
