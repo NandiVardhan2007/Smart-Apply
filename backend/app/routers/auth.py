@@ -34,6 +34,7 @@ def _user_dict(user: User) -> dict:
         "email": user.email,
         "full_name": user.full_name,
         "is_verified": user.is_verified,
+        "is_admin": user.is_admin,
         "profile_pic_url": user.profile_pic_url,
         "has_onboarded": bool(user.bio or user.skills or user.education or user.experience),
     }

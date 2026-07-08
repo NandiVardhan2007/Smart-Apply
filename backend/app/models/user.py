@@ -12,6 +12,7 @@ class User(Document):
     hashed_password: str = ""
     full_name: str = ""
     is_verified: bool = False
+    is_admin: bool = False
 
     # OTP fields
     otp_code: Optional[str] = None

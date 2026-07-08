@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: (data.email as string) || '',
               full_name: (data.full_name as string) || '',
               is_verified: true,
+              is_admin: Boolean(data.is_admin),
               profile_pic_url: (data.profile_pic_url as string) || null,
               has_onboarded: Boolean(data.has_onboarded),
             };

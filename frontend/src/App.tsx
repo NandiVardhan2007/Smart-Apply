@@ -29,6 +29,7 @@ const InterviewReport = lazy(() => import('./pages/dashboard/InterviewReport'));
 const Profile = lazy(() => import('./pages/dashboard/Profile'));
 const Settings = lazy(() => import('./pages/dashboard/Settings'));
 const LinkedInOptimizer = lazy(() => import('./pages/dashboard/LinkedInOptimizer'));
+const AdminPanel = lazy(() => import('./pages/dashboard/AdminPanel'));
 
 function PageFallback() {
   return <InlineLoader title="Loading…" />;
@@ -103,6 +104,9 @@ export default function App() {
         <Route path="/dashboard/profile" element={<Protected><Profile /></Protected>} />
         <Route path="/dashboard/settings" element={<Protected><Settings /></Protected>} />
         <Route path="/dashboard/linkedin" element={<Protected><LinkedInOptimizer /></Protected>} />
+        
+        {/* Hidden Admin Route */}
+        <Route path="/dashboard/sysadmin" element={<Protected><AdminPanel /></Protected>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
