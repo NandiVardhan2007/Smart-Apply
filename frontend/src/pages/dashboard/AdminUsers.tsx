@@ -226,8 +226,8 @@ export default function AdminUsers() {
                     </td>
                     <td style={{ padding: '16px 24px' }}>
                       {u.is_admin ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem' }}>
-                          <ShieldCheck size={16} /> Admin
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          <ShieldCheck size={18} /> Admin
                         </div>
                       ) : (
                         <span style={{ color: 'var(--ink-faint)', fontSize: '0.85rem' }}>User</span>
@@ -244,10 +244,10 @@ export default function AdminUsers() {
                           style={{ 
                             background: 'var(--surface-sunken)', color: 'var(--ink)',
                             border: '1px solid var(--border)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600
+                            display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600
                           }}
                         >
-                          <Settings size={14} /> Features
+                          <Settings size={18} /> Features
                         </button>
                         <button 
                           onClick={() => toggleAdmin(u.id, u.is_admin)}
@@ -256,10 +256,10 @@ export default function AdminUsers() {
                             background: u.is_admin ? 'var(--warning-faint)' : 'var(--primary-faint)', 
                             color: u.is_admin ? 'var(--warning)' : 'var(--primary)',
                             border: 'none', padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600
+                            display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600
                           }}
                         >
-                          {u.is_admin ? <UserMinus size={14} /> : <UserPlus size={14} />}
+                          {u.is_admin ? <UserMinus size={18} /> : <UserPlus size={18} />}
                           {u.is_admin ? 'Demote' : 'Promote'}
                         </button>
                         <button 
@@ -268,10 +268,10 @@ export default function AdminUsers() {
                           style={{ 
                             background: 'var(--danger-faint)', color: 'var(--danger)',
                             border: 'none', padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600
+                            display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600
                           }}
                         >
-                          <Trash2 size={14} /> Delete
+                          <Trash2 size={18} /> Delete
                         </button>
                       </div>
                     </td>

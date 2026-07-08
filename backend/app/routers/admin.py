@@ -205,6 +205,7 @@ class SettingsUpdateRequest(BaseModel):
     announcement_active: bool = False
     announcement_message: str = ""
     announcement_type: str = "info"
+    prompts: Optional[Dict[str, str]] = None
 
 @router.get("/settings")
 async def get_settings(admin: User = Depends(get_admin_user)):
@@ -228,6 +229,8 @@ async def update_settings(req: SettingsUpdateRequest, admin: User = Depends(get_
     settings.announcement_active = req.announcement_active
     settings.announcement_message = req.announcement_message
     settings.announcement_type = req.announcement_type
+    if req.prompts is not None:
+        settings.prompts = req.prompts
     settings.updated_at = datetime.utcnow()
     await settings.save()
     
