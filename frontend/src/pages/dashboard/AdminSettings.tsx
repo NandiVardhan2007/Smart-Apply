@@ -8,7 +8,7 @@ import '../../styles/dashboard.css';
 interface SystemSettings {
   maintenance_mode: boolean;
   allow_new_signups: boolean;
-  openai_api_key?: string;
+  nvidia_nim_api_key?: string;
   announcement_active: boolean;
   announcement_message: string;
   announcement_type: string;
@@ -19,7 +19,7 @@ export default function AdminSettings() {
   const [settings, setSettings] = useState<SystemSettings>({
     maintenance_mode: false,
     allow_new_signups: true,
-    openai_api_key: '',
+    nvidia_nim_api_key: '',
     announcement_active: false,
     announcement_message: '',
     announcement_type: 'info'
@@ -43,7 +43,7 @@ export default function AdminSettings() {
           setSettings({
             maintenance_mode: res.data.maintenance_mode || false,
             allow_new_signups: res.data.allow_new_signups !== false, // default true
-            openai_api_key: res.data.openai_api_key || '',
+            nvidia_nim_api_key: res.data.nvidia_nim_api_key || '',
             announcement_active: res.data.announcement_active || false,
             announcement_message: res.data.announcement_message || '',
             announcement_type: res.data.announcement_type || 'info'
@@ -166,16 +166,16 @@ export default function AdminSettings() {
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24 }}>
             <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
-              OpenAI API Key
+              NVIDIA NIM API Key
             </label>
             <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginBottom: 8 }}>
-              Overrides the environment variable if provided. Used for ATS checking and AI features.
+              Overrides the environment variable if provided. Used for ATS checking and AI features via NVIDIA NIM.
             </div>
             <input 
               type="password" 
-              placeholder="sk-..."
-              value={settings.openai_api_key || ''}
-              onChange={(e) => setSettings({...settings, openai_api_key: e.target.value})}
+              placeholder="nvapi-..."
+              value={settings.nvidia_nim_api_key || ''}
+              onChange={(e) => setSettings({...settings, nvidia_nim_api_key: e.target.value})}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)' }}
             />
           </div>

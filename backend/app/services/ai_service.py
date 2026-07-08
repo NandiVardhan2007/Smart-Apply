@@ -1,9 +1,12 @@
 import json
+import time
 from typing import Any, Dict, List, Optional
 
 from openai import AsyncOpenAI
+import openai
 
 from app.config import settings
+from app.models.api_metrics import APILog
 
 _client: Optional[AsyncOpenAI] = None
 
@@ -17,6 +20,52 @@ def _get_client() -> AsyncOpenAI:
             api_key=settings.NVIDIA_API_KEY,
         )
     return _client
+
+
+import inspect
+
+async def _call_llm_with_tracking(**kwargs):
+    """Wraps client.chat.completions.create to track API latency and success rates."""
+    client = _get_client()
+    start_time = time.time()
+    
+    # Auto-detect caller function name
+    try:
+        endpoint_name = inspect.currentframe().f_back.f_code.co_name
+    except Exception:
+        endpoint_name = "unknown"
+        
+    
+    try:
+        completion = await client.chat.completions.create(**kwargs)
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        # Fire and forget logging
+        await APILog(
+            endpoint=endpoint_name,
+            response_time_ms=duration_ms,
+            success=True,
+            status_code=200
+        ).insert()
+        
+        return completion
+        
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        status_code = 500
+        
+        if isinstance(e, openai.APIError):
+            status_code = e.status_code if hasattr(e, 'status_code') and e.status_code else 500
+            
+        await APILog(
+            endpoint=endpoint_name,
+            response_time_ms=duration_ms,
+            success=False,
+            status_code=status_code,
+            error_message=str(e)
+        ).insert()
+        
+        raise e
 
 
 async def analyze_resume_ats(
@@ -58,7 +107,7 @@ You MUST return your analysis as a valid JSON object matching the exact schema b
 }}
 """
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -102,7 +151,7 @@ RESUME:
 
 Return ONLY valid JSON, matching the keys above. No markdown or extra text."""
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1,
@@ -143,7 +192,7 @@ async def chat_completion(messages: List[Dict[str, str]]) -> str:
         ),
     }
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[system_msg] + messages,
         temperature=0.7,
@@ -167,7 +216,7 @@ Return a JSON object with:
 
 Return ONLY valid JSON."""
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.8,
@@ -212,7 +261,7 @@ Return a JSON object with:
 
 Return ONLY valid JSON."""
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,
@@ -257,7 +306,7 @@ For each project, provide:
 
 Return a JSON array of project objects. Return ONLY valid JSON, no markdown formatting."""
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
@@ -304,7 +353,7 @@ Return a JSON object with a "phases" array. Each phase should have:
 Ensure the roadmap strictly adheres to the user's preferences if provided.
 Return ONLY valid JSON, no markdown formatting."""
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
@@ -355,7 +404,7 @@ Instructions:
 6. Output ONLY the raw updated LaTeX code. Do NOT wrap it in markdown blocks (e.g. ```latex). Do NOT add any conversational text.
 """
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -400,7 +449,7 @@ Instructions:
 4. Output ONLY the raw cover letter text. Do not include markdown blocks or conversational text. Use placeholders like [Your Name] or [Company Name] if information is missing.
 """
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.6,
@@ -440,7 +489,7 @@ Return ONLY a valid JSON array of objects, where each object has:
 Do not include markdown blocks or conversational text.
 """
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -501,7 +550,7 @@ Return your analysis as a valid JSON object matching the exact schema below. Do 
 }}
 """
 
-    completion = await client.chat.completions.create(
+    completion = await _call_llm_with_tracking(
         model=settings.NVIDIA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.6,

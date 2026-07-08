@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, FileText, AlertTriangle, ShieldCheck, Trash2, UserPlus, UserMinus } from 'lucide-react';
+import { Users, FileText, AlertTriangle, ShieldCheck, Trash2, UserPlus, UserMinus, Activity } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../api/client';
@@ -25,11 +25,26 @@ interface ResumeStatsData {
   distribution: { range: string; count: number }[];
 }
 
+interface ApiTimelineData {
+  date: string;
+  total: number;
+  failed: number;
+  avg_ms: number;
+}
+
+interface ApiStatsData {
+  total_calls: number;
+  failed_calls: number;
+  overall_avg_ms: number;
+  timeline: ApiTimelineData[];
+}
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [timeline, setTimeline] = useState<TimelineData[]>([]);
   const [resumeStats, setResumeStats] = useState<ResumeStatsData | null>(null);
+  const [apiStats, setApiStats] = useState<ApiStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,16 +57,18 @@ export default function AdminPanel() {
 
     const fetchAdminData = async () => {
       try {
-        const [statsRes, timelineRes, resumeStatsRes] = await Promise.all([
+        const [statsRes, timelineRes, resumeStatsRes, apiStatsRes] = await Promise.all([
           apiFetch<AdminStats>('/admin/stats'),
           apiFetch<{ timeline: TimelineData[] }>('/admin/stats/timeline'),
-          apiFetch<ResumeStatsData>('/admin/stats/resumes')
+          apiFetch<ResumeStatsData>('/admin/stats/resumes'),
+          apiFetch<ApiStatsData>('/admin/stats/api')
         ]);
         
-        if (statsRes.ok && timelineRes.ok && resumeStatsRes.ok) {
+        if (statsRes.ok && timelineRes.ok && resumeStatsRes.ok && apiStatsRes.ok) {
           setStats(statsRes.data);
           setTimeline(timelineRes.data.timeline);
           setResumeStats(resumeStatsRes.data);
+          setApiStats(apiStatsRes.data);
         } else {
           setError("Failed to fetch admin data.");
         }
@@ -129,6 +146,45 @@ export default function AdminPanel() {
         </motion.div>
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, marginBottom: 32 }}>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-faint)', fontWeight: 600 }}>
+            <Activity size={18} />
+            Total API Calls
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--ink)' }}>
+            {apiStats?.total_calls || 0}
+          </div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-faint)', fontWeight: 600 }}>
+            <AlertTriangle size={18} />
+            Failed API Calls
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--ink)' }}>
+            {apiStats?.failed_calls || 0}
+          </div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-faint)', fontWeight: 600 }}>
+            <Activity size={18} />
+            Avg Response Time
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--ink)' }}>
+            {apiStats?.overall_avg_ms || 0} ms
+          </div>
+        </motion.div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--border)', marginBottom: 32 }}
@@ -164,6 +220,55 @@ export default function AdminPanel() {
           </ResponsiveContainer>
         </div>
       </motion.div>
+
+      {apiStats && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--border)', marginBottom: 32 }}
+        >
+          <h3 style={{ margin: '0 0 24px' }}>NVIDIA NIM API Analytics (Last 14 Days)</h3>
+          <div style={{ height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={apiStats.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: 'var(--ink-faint)', fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--border)' }}
+                  tickFormatter={(val) => {
+                    const d = new Date(val);
+                    return `${d.getMonth()+1}/${d.getDate()}`;
+                  }}
+                />
+                <YAxis 
+                  yAxisId="left"
+                  tick={{ fill: 'var(--ink-faint)', fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--border)' }}
+                  label={{ value: 'Avg Time (ms)', angle: -90, position: 'insideLeft', fill: 'var(--ink-faint)', fontSize: 12 }}
+                />
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fill: 'var(--ink-faint)', fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--border)' }}
+                  label={{ value: 'Calls', angle: 90, position: 'insideRight', fill: 'var(--ink-faint)', fontSize: 12 }}
+                />
+                <Tooltip 
+                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)' }}
+                  itemStyle={{ fontWeight: 600 }}
+                />
+                <Legend wrapperStyle={{ paddingTop: 20 }} />
+                <Line yAxisId="left" type="monotone" name="Avg Response Time (ms)" dataKey="avg_ms" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                <Bar yAxisId="right" name="Total Calls" dataKey="total" fill="#8884d8" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar yAxisId="right" name="Failed Calls" dataKey="failed" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      )}
 
       {resumeStats && (
         <motion.div

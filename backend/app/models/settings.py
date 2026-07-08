@@ -9,7 +9,7 @@ class SystemSettings(Document):
 
     maintenance_mode: bool = False
     allow_new_signups: bool = True
-    openai_api_key: Optional[str] = None
+    nvidia_nim_api_key: Optional[str] = None
     
     announcement_active: bool = False
     announcement_message: str = ""

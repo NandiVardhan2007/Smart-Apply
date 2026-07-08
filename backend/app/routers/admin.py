@@ -7,6 +7,7 @@ from app.middleware.admin_middleware import get_admin_user
 from app.models.user import User
 from app.models.resume import Resume
 from app.models.settings import SystemSettings
+from app.models.api_metrics import APILog
 from pydantic import BaseModel
 from beanie import PydanticObjectId
 from datetime import datetime, timedelta
@@ -184,7 +185,7 @@ async def get_stats_timeline(admin: User = Depends(get_admin_user)):
 class SettingsUpdateRequest(BaseModel):
     maintenance_mode: bool
     allow_new_signups: bool
-    openai_api_key: Optional[str] = None
+    nvidia_nim_api_key: Optional[str] = None
     announcement_active: bool = False
     announcement_message: str = ""
     announcement_type: str = "info"
@@ -207,7 +208,7 @@ async def update_settings(req: SettingsUpdateRequest, admin: User = Depends(get_
     
     settings.maintenance_mode = req.maintenance_mode
     settings.allow_new_signups = req.allow_new_signups
-    settings.openai_api_key = req.openai_api_key
+    settings.nvidia_nim_api_key = req.nvidia_nim_api_key
     settings.announcement_active = req.announcement_active
     settings.announcement_message = req.announcement_message
     settings.announcement_type = req.announcement_type
@@ -254,4 +255,50 @@ async def get_resume_stats(admin: User = Depends(get_admin_user)):
         "scored_resumes": scored_count,
         "unscored_resumes": unscored_count,
         "distribution": distribution
+    }
+
+@router.get("/stats/api")
+async def get_api_stats(admin: User = Depends(get_admin_user)):
+    """Get real-time API analytics (NVIDIA NIM)."""
+    fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
+    
+    logs = await APILog.find({"timestamp": {"$gte": fourteen_days_ago}}).to_list()
+    
+    total_calls = len(logs)
+    failed_calls = sum(1 for log in logs if not log.success)
+    total_response_time = sum(log.response_time_ms for log in logs if log.success)
+    overall_avg_ms = int(total_response_time / (total_calls - failed_calls)) if (total_calls - failed_calls) > 0 else 0
+    
+    # Group by date
+    timeline_dict = {}
+    for i in range(15):
+        d = (fourteen_days_ago + timedelta(days=i)).strftime("%Y-%m-%d")
+        timeline_dict[d] = {"date": d, "total": 0, "failed": 0, "total_ms": 0}
+        
+    for log in logs:
+        d_str = log.timestamp.strftime("%Y-%m-%d")
+        if d_str in timeline_dict:
+            timeline_dict[d_str]["total"] += 1
+            if not log.success:
+                timeline_dict[d_str]["failed"] += 1
+            else:
+                timeline_dict[d_str]["total_ms"] += log.response_time_ms
+                
+    timeline = []
+    for d_str in sorted(timeline_dict.keys()):
+        data = timeline_dict[d_str]
+        successful = data["total"] - data["failed"]
+        avg_ms = int(data["total_ms"] / successful) if successful > 0 else 0
+        timeline.append({
+            "date": data["date"],
+            "total": data["total"],
+            "failed": data["failed"],
+            "avg_ms": avg_ms
+        })
+        
+    return {
+        "total_calls": total_calls,
+        "failed_calls": failed_calls,
+        "overall_avg_ms": overall_avg_ms,
+        "timeline": timeline
     }
