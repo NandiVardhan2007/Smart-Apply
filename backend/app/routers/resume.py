@@ -10,6 +10,8 @@ from app.middleware.auth_middleware import get_current_user
 from app.models.resume import Resume
 from app.models.user import User
 from app.services import storage_service
+import filetype
+import urllib.parse
 
 router = APIRouter(prefix="/api/resumes", tags=["resumes"])
 
@@ -30,6 +32,10 @@ async def upload_new_resume(
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
 
+    kind = filetype.guess(contents)
+    if kind is None or kind.mime not in ALLOWED_RESUME_TYPES:
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed based on file content")
+
     # Extract text from PDF
     try:
         doc = fitz.open(stream=contents, filetype="pdf")
@@ -45,13 +51,15 @@ async def upload_new_resume(
             status_code=400, detail="Could not extract text from the PDF. It may be an image."
         )
 
+    safe_filename = urllib.parse.quote(file.filename or "resume.pdf")
+
     # Upload to R2 (runs the blocking boto3 call off the event loop)
     key = await run_in_threadpool(
         storage_service.upload_file,
         file_bytes=contents,
-        original_filename=file.filename or "resume.pdf",
+        original_filename=safe_filename,
         folder=f"resumes/{user.id}",
-        content_type=file.content_type or "application/pdf",
+        content_type=kind.mime,
     )
     url = storage_service.get_file_url(key)
 
@@ -62,7 +70,7 @@ async def upload_new_resume(
     # Save to Resume collection
     resume = Resume(
         user_id=user.id,
-        filename=file.filename or "resume.pdf",
+        filename=safe_filename,
         file_url=url,
         file_key=key,
         extracted_text=resume_text,

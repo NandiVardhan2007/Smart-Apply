@@ -5,6 +5,8 @@ from starlette.concurrency import run_in_threadpool
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 from app.services import storage_service
+import filetype
+import urllib.parse
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
@@ -31,12 +33,20 @@ async def upload_avatar(
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
 
+    kind = filetype.guess(contents)
+    if kind is None or kind.mime not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400, detail="Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed."
+        )
+
+    safe_filename = urllib.parse.quote(file.filename or "avatar.png")
+
     key = await run_in_threadpool(
         storage_service.upload_file,
         file_bytes=contents,
-        original_filename=file.filename or "avatar.png",
+        original_filename=safe_filename,
         folder=f"avatars/{user.id}",
-        content_type=file.content_type or "image/png",
+        content_type=kind.mime,
     )
     url = storage_service.get_file_url(key)
 

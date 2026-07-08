@@ -13,3 +13,5 @@ openai==1.82.0
 websockets==15.0.1
 email-validator>=2.2.0
 slowapi==0.1.9
+filetype==1.2.0
+secure==0.3.0

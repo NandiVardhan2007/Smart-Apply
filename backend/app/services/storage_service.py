@@ -49,9 +49,11 @@ def upload_file(
 
 def get_file_url(key: str) -> str:
     """Get the public URL for a stored file."""
+    import urllib.parse
+    safe_key = urllib.parse.quote(key)
     if settings.R2_PUBLIC_URL:
-        return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{key}"
-    return f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/{settings.R2_BUCKET_NAME}/{key}"
+        return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{safe_key}"
+    return f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/{settings.R2_BUCKET_NAME}/{safe_key}"
 
 
 def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
