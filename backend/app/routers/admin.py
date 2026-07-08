@@ -37,7 +37,8 @@ async def get_users(admin: User = Depends(get_admin_user)):
             "full_name": user.full_name,
             "is_verified": user.is_verified,
             "is_admin": user.is_admin,
-            "created_at": user.created_at
+            "created_at": user.created_at,
+            "features": user.features
         })
     return {"users": safe_users}
 
@@ -108,6 +109,21 @@ async def update_user_role(user_id: PydanticObjectId, req: RoleUpdateRequest, ad
     await user.save()
     
     return {"ok": True, "detail": "User role updated successfully"}
+
+class FeatureUpdateRequest(BaseModel):
+    features: Dict[str, bool]
+
+@router.put("/users/{user_id}/features")
+async def update_user_features(user_id: PydanticObjectId, req: FeatureUpdateRequest, admin: User = Depends(get_admin_user)):
+    """Update a user's feature entitlements."""
+    user = await User.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.features = req.features
+    await user.save()
+    
+    return {"ok": True, "detail": "User features updated successfully"}
 
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: PydanticObjectId, admin: User = Depends(get_admin_user)):

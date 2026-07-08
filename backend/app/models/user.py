@@ -31,6 +31,14 @@ class User(Document):
     experience: List[str] = Field(default_factory=list)
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    features: dict[str, bool] = Field(default_factory=lambda: {
+        "ats_checker": True,
+        "ai_chatbot": True,
+        "cover_letter_writer": True,
+        "interview_prep": True,
+        "roadmap_generator": True
+    })
 
     class Settings:
         name = "users"

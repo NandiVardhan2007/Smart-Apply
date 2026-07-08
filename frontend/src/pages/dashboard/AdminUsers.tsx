@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, AlertTriangle, Trash2, UserPlus, UserMinus, ShieldCheck, Download } from 'lucide-react';
+import { Users, AlertTriangle, Trash2, UserPlus, UserMinus, ShieldCheck, Download, Settings, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch, getApiBaseUrl } from '../../api/client';
 import '../../styles/dashboard.css';
@@ -12,6 +12,7 @@ interface AdminUser {
   is_verified: boolean;
   is_admin: boolean;
   created_at: string;
+  features: Record<string, boolean>;
 }
 
 export default function AdminUsers() {
@@ -19,6 +20,10 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [editingFeaturesUser, setEditingFeaturesUser] = useState<AdminUser | null>(null);
+  const [tempFeatures, setTempFeatures] = useState<Record<string, boolean>>({});
+  const [savingFeatures, setSavingFeatures] = useState(false);
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -107,6 +112,39 @@ export default function AdminUsers() {
     } catch (err) {
       console.error(err);
       alert("Failed to export users");
+    }
+  };
+
+  const handleEditFeatures = (user: AdminUser) => {
+    setEditingFeaturesUser(user);
+    setTempFeatures(user.features || {
+      "ats_checker": true,
+      "ai_chatbot": true,
+      "cover_letter_writer": true,
+      "interview_prep": true,
+      "roadmap_generator": true
+    });
+  };
+
+  const saveFeatures = async () => {
+    if (!editingFeaturesUser) return;
+    setSavingFeatures(true);
+    try {
+      const res = await apiFetch(`/admin/users/${editingFeaturesUser.id}/features`, {
+        method: 'PUT',
+        body: JSON.stringify({ features: tempFeatures })
+      });
+      if (res.ok) {
+        setUsers(users.map(u => u.id === editingFeaturesUser.id ? { ...u, features: tempFeatures } : u));
+        setEditingFeaturesUser(null);
+      } else {
+        alert("Failed to update features.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update features.");
+    } finally {
+      setSavingFeatures(false);
     }
   };
 
@@ -201,6 +239,17 @@ export default function AdminUsers() {
                     <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                         <button 
+                          onClick={() => handleEditFeatures(u)}
+                          title="Manage Features"
+                          style={{ 
+                            background: 'var(--surface-sunken)', color: 'var(--ink)',
+                            border: '1px solid var(--border)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600
+                          }}
+                        >
+                          <Settings size={14} /> Features
+                        </button>
+                        <button 
                           onClick={() => toggleAdmin(u.id, u.is_admin)}
                           title={u.is_admin ? "Remove Admin" : "Make Admin"}
                           style={{ 
@@ -239,6 +288,69 @@ export default function AdminUsers() {
             </table>
           </div>
         </motion.div>
+      )}
+
+      {editingFeaturesUser && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 100
+        }}>
+          <div style={{
+            background: 'var(--surface)', padding: 32, borderRadius: 16, width: '100%', maxWidth: 450,
+            border: '1px solid var(--border)', boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Manage Entitlements</h2>
+              <button 
+                onClick={() => setEditingFeaturesUser(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <p style={{ margin: '0 0 24px', color: 'var(--ink-faint)', fontSize: '0.9rem' }}>
+              Toggle features for <strong>{editingFeaturesUser.email}</strong>. 
+              These changes take effect immediately on their next page load.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+              {Object.keys(tempFeatures).map(feat => (
+                <div key={feat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ textTransform: 'capitalize', fontWeight: 500, color: 'var(--ink)' }}>
+                    {feat.replace(/_/g, ' ')}
+                  </div>
+                  <label className="switch">
+                    <input 
+                      type="checkbox" 
+                      checked={tempFeatures[feat]}
+                      onChange={(e) => setTempFeatures({...tempFeatures, [feat]: e.target.checked})}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button 
+                onClick={() => setEditingFeaturesUser(null)}
+                style={{ padding: '10px 16px', borderRadius: 8, background: 'var(--surface-sunken)', color: 'var(--ink)', border: '1px solid var(--border)', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={saveFeatures}
+                disabled={savingFeatures}
+                style={{ padding: '10px 16px', borderRadius: 8, background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 600, cursor: savingFeatures ? 'not-allowed' : 'pointer', opacity: savingFeatures ? 0.7 : 1 }}
+              >
+                {savingFeatures ? 'Saving...' : 'Save Features'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
