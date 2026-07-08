@@ -9,7 +9,7 @@ export default function AdminSidebar({ mobileOpen, onCloseMobile }: { mobileOpen
 
   return (
     <>
-      <div className={`sidebar-overlay ${mobileOpen ? 'open' : ''}`} onClick={onCloseMobile} />
+      {mobileOpen && <div className="sidebar-overlay" onClick={onCloseMobile} />}
       <aside className={`sidebar-container ${mobileOpen ? 'open' : ''}`}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div className="sidebar-header" style={{ padding: '24px 20px 16px' }}>
