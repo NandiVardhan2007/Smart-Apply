@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Menu } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import AdminSpotlight from './AdminSpotlight';
 import '../styles/dashboard.css';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -8,6 +9,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="dashboard-layout">
+      <AdminSpotlight />
       <AdminSidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>

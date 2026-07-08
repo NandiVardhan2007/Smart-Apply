@@ -25,9 +25,8 @@ async def get_system_stats(admin: User = Depends(get_admin_user)) -> Dict[str, A
     }
 
 @router.get("/users")
-async def get_all_users(admin: User = Depends(get_admin_user)) -> Dict[str, Any]:
-    """Get a list of all registered users."""
-    # We will exclude password hashes
+async def get_users(admin: User = Depends(get_admin_user)):
+    """Get all users (admin only)."""
     users = await User.find_all().to_list()
     safe_users = []
     for user in users:
@@ -38,6 +37,28 @@ async def get_all_users(admin: User = Depends(get_admin_user)) -> Dict[str, Any]
             "is_verified": user.is_verified,
             "is_admin": user.is_admin,
             "created_at": user.created_at
+        })
+    return {"users": safe_users}
+
+@router.get("/search")
+async def search_users(q: str = "", admin: User = Depends(get_admin_user)):
+    """Search users globally by name or email."""
+    if not q or len(q) < 2:
+        return {"users": []}
+    
+    query = {"$or": [
+        {"email": {"$regex": q, "$options": "i"}},
+        {"full_name": {"$regex": q, "$options": "i"}}
+    ]}
+    
+    users = await User.find(query).limit(10).to_list()
+    safe_users = []
+    for user in users:
+        safe_users.append({
+            "id": str(user.id),
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_admin": user.is_admin
         })
     return {"users": safe_users}
 
