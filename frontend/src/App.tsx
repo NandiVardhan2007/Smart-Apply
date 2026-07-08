@@ -1,10 +1,13 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AdminLayout from './components/AdminLayout';
 import { InlineLoader } from './components/LoadingSpinner';
+import { useAuth } from './context/AuthContext';
+import { apiFetch } from './api/client';
+import { AlertTriangle } from 'lucide-react';
 
 // Route-level code splitting: each page (and its dependencies — Monaco,
 // face-api, etc.) loads only when the person actually navigates there,
@@ -84,6 +87,34 @@ function AdminProtected({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { user } = useAuth();
+  const [maintenance, setMaintenance] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<{ maintenance_mode: boolean }>('/auth/public-settings')
+      .then(res => {
+        if (res.ok) {
+          setMaintenance(res.data.maintenance_mode);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <PageFallback />;
+
+  if (maintenance && !user?.is_admin) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: 'var(--surface)' }}>
+        <AlertTriangle size={64} color="var(--danger)" />
+        <h1 style={{ margin: 0, color: 'var(--ink)' }}>System Under Maintenance</h1>
+        <p style={{ margin: 0, color: 'var(--ink-faint)' }}>We're currently performing some upgrades. Please check back later!</p>
+      </div>
+    );
+  }
+
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>

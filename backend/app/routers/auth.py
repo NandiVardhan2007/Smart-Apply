@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from app.rate_limiter import limiter
 
 from app.models.user import User
+from app.models.settings import SystemSettings
 from app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -40,10 +41,29 @@ def _user_dict(user: User) -> dict:
     }
 
 
+@router.get("/public-settings")
+async def get_public_settings():
+    """Get public settings like maintenance mode."""
+    settings = await SystemSettings.find_one()
+    if not settings:
+        return {"maintenance_mode": False, "allow_new_signups": True}
+    return {
+        "maintenance_mode": settings.maintenance_mode,
+        "allow_new_signups": settings.allow_new_signups
+    }
+
+
 @router.post("/signup", response_model=MessageResponse)
 @limiter.limit("5/minute")
 async def signup(request: Request, body: SignupRequest):
     """Register a new user and send OTP email."""
+    settings = await SystemSettings.find_one()
+    if settings and not settings.allow_new_signups:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="New signups are currently disabled by the administrator."
+        )
+
     existing = await User.find_one(User.email == body.email)
     if existing:
         raise HTTPException(
