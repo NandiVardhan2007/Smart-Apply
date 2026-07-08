@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, BarChart3, LogOut, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, LogOut, ArrowLeft, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
 import '../styles/dashboard.css';
@@ -24,6 +24,9 @@ export default function AdminSidebar({ mobileOpen, onCloseMobile }: { mobileOpen
               <div className="sidebar-section-title">Navigation</div>
               <NavLink to="/dashboard/sysadmin" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onCloseMobile}>
                 <LayoutDashboard size={18} /> Overview
+              </NavLink>
+              <NavLink to="/dashboard/sysadmin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onCloseMobile}>
+                <SettingsIcon size={18} /> Settings
               </NavLink>
             </div>
           </nav>

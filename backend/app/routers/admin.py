@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.middleware.admin_middleware import get_admin_user
 from app.models.user import User
 from app.models.resume import Resume
+from app.models.settings import SystemSettings
 from pydantic import BaseModel
 from beanie import PydanticObjectId
 from datetime import datetime, timedelta
@@ -127,3 +128,72 @@ async def get_stats_timeline(admin: User = Depends(get_admin_user)):
             final_timeline.append({"date": date_str, "users": 0, "resumes": 0})
             
     return {"timeline": final_timeline}
+
+class SettingsUpdateRequest(BaseModel):
+    maintenance_mode: bool
+    allow_new_signups: bool
+    openai_api_key: Optional[str] = None
+
+@router.get("/settings")
+async def get_settings(admin: User = Depends(get_admin_user)):
+    """Get global system settings."""
+    settings = await SystemSettings.find_one()
+    if not settings:
+        settings = SystemSettings()
+        await settings.insert()
+    return settings
+
+@router.put("/settings")
+async def update_settings(req: SettingsUpdateRequest, admin: User = Depends(get_admin_user)):
+    """Update global system settings."""
+    settings = await SystemSettings.find_one()
+    if not settings:
+        settings = SystemSettings()
+    
+    settings.maintenance_mode = req.maintenance_mode
+    settings.allow_new_signups = req.allow_new_signups
+    settings.openai_api_key = req.openai_api_key
+    settings.updated_at = datetime.utcnow()
+    await settings.save()
+    
+    return {"ok": True, "detail": "Settings updated successfully"}
+
+@router.get("/stats/resumes")
+async def get_resume_stats(admin: User = Depends(get_admin_user)):
+    """Get detailed ATS score distribution."""
+    scored_count = await Resume.find({"ats_score": {"$ne": None}}).count()
+    unscored_count = await Resume.find({"ats_score": None}).count()
+    
+    pipeline = [
+        {"$match": {"ats_score": {"$ne": None}}},
+        {"$project": {
+            "bucket": {
+                "$switch": {
+                    "branches": [
+                        {"case": {"$lte": ["$ats_score", 20]}, "then": "0-20"},
+                        {"case": {"$lte": ["$ats_score", 40]}, "then": "21-40"},
+                        {"case": {"$lte": ["$ats_score", 60]}, "then": "41-60"},
+                        {"case": {"$lte": ["$ats_score", 80]}, "then": "61-80"},
+                        {"case": {"$lte": ["$ats_score", 100]}, "then": "81-100"}
+                    ],
+                    "default": "Unknown"
+                }
+            }
+        }},
+        {"$group": {"_id": "$bucket", "count": {"$sum": 1}}}
+    ]
+    
+    distribution_results = await Resume.aggregate(pipeline).to_list()
+    
+    buckets = {"0-20": 0, "21-40": 0, "41-60": 0, "61-80": 0, "81-100": 0}
+    for item in distribution_results:
+        if item["_id"] in buckets:
+            buckets[item["_id"]] = item["count"]
+            
+    distribution = [{"range": k, "count": v} for k, v in buckets.items()]
+    
+    return {
+        "scored_resumes": scored_count,
+        "unscored_resumes": unscored_count,
+        "distribution": distribution
+    }

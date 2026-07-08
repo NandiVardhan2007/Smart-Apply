@@ -31,6 +31,7 @@ const Profile = lazy(() => import('./pages/dashboard/Profile'));
 const Settings = lazy(() => import('./pages/dashboard/Settings'));
 const LinkedInOptimizer = lazy(() => import('./pages/dashboard/LinkedInOptimizer'));
 const AdminPanel = lazy(() => import('./pages/dashboard/AdminPanel'));
+const AdminSettings = lazy(() => import('./pages/dashboard/AdminSettings'));
 
 function PageFallback() {
   return <InlineLoader title="Loading…" />;
@@ -120,6 +121,7 @@ export default function App() {
         
         {/* Hidden Admin Route */}
         <Route path="/dashboard/sysadmin" element={<AdminProtected><AdminPanel /></AdminProtected>} />
+        <Route path="/dashboard/sysadmin/settings" element={<AdminProtected><AdminSettings /></AdminProtected>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

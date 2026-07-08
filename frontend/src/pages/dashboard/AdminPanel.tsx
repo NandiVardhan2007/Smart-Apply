@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, FileText, AlertTriangle, ShieldCheck, Trash2, UserPlus, UserMinus } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../api/client';
 import '../../styles/dashboard.css';
@@ -26,11 +26,18 @@ interface TimelineData {
   resumes: number;
 }
 
+interface ResumeStatsData {
+  scored_resumes: number;
+  unscored_resumes: number;
+  distribution: { range: string; count: number }[];
+}
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [timeline, setTimeline] = useState<TimelineData[]>([]);
+  const [resumeStats, setResumeStats] = useState<ResumeStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,16 +50,18 @@ export default function AdminPanel() {
 
     const fetchAdminData = async () => {
       try {
-        const [statsRes, usersRes, timelineRes] = await Promise.all([
+        const [statsRes, usersRes, timelineRes, resumeStatsRes] = await Promise.all([
           apiFetch<AdminStats>('/admin/stats'),
           apiFetch<{ users: AdminUser[] }>('/admin/users'),
-          apiFetch<{ timeline: TimelineData[] }>('/admin/stats/timeline')
+          apiFetch<{ timeline: TimelineData[] }>('/admin/stats/timeline'),
+          apiFetch<ResumeStatsData>('/admin/stats/resumes')
         ]);
         
-        if (statsRes.ok && usersRes.ok && timelineRes.ok) {
+        if (statsRes.ok && usersRes.ok && timelineRes.ok && resumeStatsRes.ok) {
           setStats(statsRes.data);
           setUsers(usersRes.data.users);
           setTimeline(timelineRes.data.timeline);
+          setResumeStats(resumeStatsRes.data);
         } else {
           setError("Failed to fetch admin data.");
         }
@@ -203,6 +212,42 @@ export default function AdminPanel() {
           </ResponsiveContainer>
         </div>
       </motion.div>
+
+      {resumeStats && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--border)', marginBottom: 32 }}
+        >
+          <h3 style={{ margin: '0 0 8px' }}>ATS Score Distribution</h3>
+          <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--ink-faint)' }}>
+            Based on {resumeStats.scored_resumes} scored resumes (and {resumeStats.unscored_resumes} unscored).
+          </p>
+          <div style={{ height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={resumeStats.distribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis 
+                  dataKey="range" 
+                  tick={{ fill: 'var(--ink-faint)', fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--border)' }}
+                />
+                <YAxis 
+                  tick={{ fill: 'var(--ink-faint)', fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--border)' }}
+                />
+                <Tooltip 
+                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)' }}
+                  itemStyle={{ fontWeight: 600 }}
+                  cursor={{ fill: 'var(--surface-sunken)' }}
+                />
+                <Bar name="Number of Resumes" dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div 
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
