@@ -1,4 +1,7 @@
+import csv
+import io
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import StreamingResponse
 from typing import List, Dict, Any, Optional
 from app.middleware.admin_middleware import get_admin_user
 from app.models.user import User
@@ -37,6 +40,34 @@ async def get_all_users(admin: User = Depends(get_admin_user)) -> Dict[str, Any]
             "created_at": user.created_at
         })
     return {"users": safe_users}
+
+@router.get("/export/users")
+async def export_users_csv(admin: User = Depends(get_admin_user)):
+    """Export all users as a CSV file."""
+    users = await User.find_all().to_list()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow(["ID", "Email", "Full Name", "Is Verified", "Is Admin", "Created At"])
+    
+    for user in users:
+        writer.writerow([
+            str(user.id),
+            user.email,
+            user.full_name or "",
+            "Yes" if user.is_verified else "No",
+            "Yes" if user.is_admin else "No",
+            user.created_at.isoformat() if user.created_at else ""
+        ])
+        
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=smartapply_users_{datetime.utcnow().strftime('%Y%m%d')}.csv"}
+    )
 
 class RoleUpdateRequest(BaseModel):
     is_admin: bool

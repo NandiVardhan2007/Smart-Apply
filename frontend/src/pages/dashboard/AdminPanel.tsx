@@ -11,14 +11,7 @@ interface AdminStats {
   total_resumes: number;
 }
 
-interface AdminUser {
-  id: string;
-  email: string;
-  full_name: string;
-  is_verified: boolean;
-  is_admin: boolean;
-  created_at: string;
-}
+
 
 interface TimelineData {
   date: string;
@@ -35,7 +28,6 @@ interface ResumeStatsData {
 export default function AdminPanel() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
-  const [users, setUsers] = useState<AdminUser[]>([]);
   const [timeline, setTimeline] = useState<TimelineData[]>([]);
   const [resumeStats, setResumeStats] = useState<ResumeStatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,16 +42,14 @@ export default function AdminPanel() {
 
     const fetchAdminData = async () => {
       try {
-        const [statsRes, usersRes, timelineRes, resumeStatsRes] = await Promise.all([
+        const [statsRes, timelineRes, resumeStatsRes] = await Promise.all([
           apiFetch<AdminStats>('/admin/stats'),
-          apiFetch<{ users: AdminUser[] }>('/admin/users'),
           apiFetch<{ timeline: TimelineData[] }>('/admin/stats/timeline'),
           apiFetch<ResumeStatsData>('/admin/stats/resumes')
         ]);
         
-        if (statsRes.ok && usersRes.ok && timelineRes.ok && resumeStatsRes.ok) {
+        if (statsRes.ok && timelineRes.ok && resumeStatsRes.ok) {
           setStats(statsRes.data);
-          setUsers(usersRes.data.users);
           setTimeline(timelineRes.data.timeline);
           setResumeStats(resumeStatsRes.data);
         } else {
@@ -75,45 +65,7 @@ export default function AdminPanel() {
     fetchAdminData();
   }, [user]);
 
-  const toggleAdmin = async (userId: string, currentStatus: boolean) => {
-    if (userId === user?.id) {
-      alert("You cannot change your own admin role.");
-      return;
-    }
-    try {
-      const res = await apiFetch(`/admin/users/${userId}/role`, {
-        method: 'PUT',
-        body: JSON.stringify({ is_admin: !currentStatus })
-      });
-      if (res.ok) {
-        setUsers(users.map(u => u.id === userId ? { ...u, is_admin: !currentStatus } : u));
-      } else {
-        alert("Failed to update role");
-      }
-    } catch (err) {
-      console.error("Failed to toggle admin role", err);
-    }
-  };
 
-  const deleteUser = async (userId: string) => {
-    if (userId === user?.id) {
-      alert("You cannot delete yourself.");
-      return;
-    }
-    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
-    try {
-      const res = await apiFetch(`/admin/users/${userId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        setUsers(users.filter(u => u.id !== userId));
-      } else {
-        alert("Failed to delete user");
-      }
-    } catch (err) {
-      console.error("Failed to delete user", err);
-    }
-  };
 
   if (!user?.is_admin) {
     return (
@@ -248,77 +200,6 @@ export default function AdminPanel() {
           </div>
         </motion.div>
       )}
-
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}
-      >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-sunken)' }}>
-          <h3 style={{ margin: 0 }}>User Management</h3>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ padding: '12px 24px', color: 'var(--ink-faint)', fontWeight: 600, fontSize: '0.85rem' }}>Name</th>
-                <th style={{ padding: '12px 24px', color: 'var(--ink-faint)', fontWeight: 600, fontSize: '0.85rem' }}>Email</th>
-                <th style={{ padding: '12px 24px', color: 'var(--ink-faint)', fontWeight: 600, fontSize: '0.85rem' }}>Status</th>
-                <th style={{ padding: '12px 24px', color: 'var(--ink-faint)', fontWeight: 600, fontSize: '0.85rem' }}>Admin</th>
-                <th style={{ padding: '12px 24px', color: 'var(--ink-faint)', fontWeight: 600, fontSize: '0.85rem' }}>Joined</th>
-                <th style={{ padding: '12px 24px', color: 'var(--ink-faint)', fontWeight: 600, fontSize: '0.85rem', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '16px 24px', fontWeight: 500 }}>{u.full_name || '—'}</td>
-                  <td style={{ padding: '16px 24px', color: 'var(--ink-faint)' }}>{u.email}</td>
-                  <td style={{ padding: '16px 24px' }}>
-                    <span style={{ 
-                      padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem', fontWeight: 600,
-                      background: u.is_verified ? 'var(--success-faint)' : 'var(--danger-faint)',
-                      color: u.is_verified ? 'var(--success)' : 'var(--danger)'
-                    }}>
-                      {u.is_verified ? 'Verified' : 'Unverified'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px 24px' }}>
-                    {u.is_admin ? (
-                      <span style={{ background: 'var(--primary-faint)', color: 'var(--primary)', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem', fontWeight: 600 }}>Admin</span>
-                    ) : '—'}
-                  </td>
-                  <td style={{ padding: '16px 24px', color: 'var(--ink-faint)', fontSize: '0.9rem' }}>
-                    {new Date(u.created_at).toLocaleDateString()}
-                  </td>
-                  <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button 
-                        onClick={() => toggleAdmin(u.id, u.is_admin)} 
-                        title={u.is_admin ? "Remove Admin" : "Make Admin"}
-                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink)' }}
-                      >
-                        {u.is_admin ? <UserMinus size={16} /> : <UserPlus size={16} />}
-                      </button>
-                      <button 
-                        onClick={() => deleteUser(u.id)} 
-                        title="Delete User"
-                        style={{ background: 'var(--danger-faint)', border: '1px solid transparent', borderRadius: 6, padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: 'var(--ink-faint)' }}>No users found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
     </div>
   );
 }
