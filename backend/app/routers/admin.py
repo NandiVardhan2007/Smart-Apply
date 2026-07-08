@@ -164,6 +164,9 @@ class SettingsUpdateRequest(BaseModel):
     maintenance_mode: bool
     allow_new_signups: bool
     openai_api_key: Optional[str] = None
+    announcement_active: bool = False
+    announcement_message: str = ""
+    announcement_type: str = "info"
 
 @router.get("/settings")
 async def get_settings(admin: User = Depends(get_admin_user)):
@@ -184,6 +187,9 @@ async def update_settings(req: SettingsUpdateRequest, admin: User = Depends(get_
     settings.maintenance_mode = req.maintenance_mode
     settings.allow_new_signups = req.allow_new_signups
     settings.openai_api_key = req.openai_api_key
+    settings.announcement_active = req.announcement_active
+    settings.announcement_message = req.announcement_message
+    settings.announcement_type = req.announcement_type
     settings.updated_at = datetime.utcnow()
     await settings.save()
     

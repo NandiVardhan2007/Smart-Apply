@@ -10,6 +10,11 @@ class SystemSettings(Document):
     maintenance_mode: bool = False
     allow_new_signups: bool = True
     openai_api_key: Optional[str] = None
+    
+    announcement_active: bool = False
+    announcement_message: str = ""
+    announcement_type: str = "info"
+    
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:

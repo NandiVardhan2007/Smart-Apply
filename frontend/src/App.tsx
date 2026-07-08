@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AdminLayout from './components/AdminLayout';
+import AnnouncementBanner from './components/AnnouncementBanner';
 import { InlineLoader } from './components/LoadingSpinner';
 import { useAuth } from './context/AuthContext';
 import { apiFetch } from './api/client';
@@ -117,8 +118,10 @@ export default function App() {
   }
 
   return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
+    <>
+      <AnnouncementBanner />
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -159,5 +162,6 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
+    </>
   );
 }

@@ -46,10 +46,19 @@ async def get_public_settings():
     """Get public settings like maintenance mode."""
     settings = await SystemSettings.find_one()
     if not settings:
-        return {"maintenance_mode": False, "allow_new_signups": True}
+        return {
+            "maintenance_mode": False, 
+            "allow_new_signups": True,
+            "announcement_active": False,
+            "announcement_message": "",
+            "announcement_type": "info"
+        }
     return {
         "maintenance_mode": settings.maintenance_mode,
-        "allow_new_signups": settings.allow_new_signups
+        "allow_new_signups": settings.allow_new_signups,
+        "announcement_active": settings.announcement_active,
+        "announcement_message": settings.announcement_message,
+        "announcement_type": settings.announcement_type
     }
 
 

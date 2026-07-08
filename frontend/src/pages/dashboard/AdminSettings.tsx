@@ -9,6 +9,9 @@ interface SystemSettings {
   maintenance_mode: boolean;
   allow_new_signups: boolean;
   openai_api_key?: string;
+  announcement_active: boolean;
+  announcement_message: string;
+  announcement_type: string;
 }
 
 export default function AdminSettings() {
@@ -16,7 +19,10 @@ export default function AdminSettings() {
   const [settings, setSettings] = useState<SystemSettings>({
     maintenance_mode: false,
     allow_new_signups: true,
-    openai_api_key: ''
+    openai_api_key: '',
+    announcement_active: false,
+    announcement_message: '',
+    announcement_type: 'info'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,7 +43,10 @@ export default function AdminSettings() {
           setSettings({
             maintenance_mode: res.data.maintenance_mode || false,
             allow_new_signups: res.data.allow_new_signups !== false, // default true
-            openai_api_key: res.data.openai_api_key || ''
+            openai_api_key: res.data.openai_api_key || '',
+            announcement_active: res.data.announcement_active || false,
+            announcement_message: res.data.announcement_message || '',
+            announcement_type: res.data.announcement_type || 'info'
           });
         } else {
           setError("Failed to fetch settings.");
@@ -170,6 +179,65 @@ export default function AdminSettings() {
               style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)' }}
             />
           </div>
+
+        </div>
+      </motion.div>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', marginTop: 24 }}
+      >
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-sunken)' }}>
+          <h3 style={{ margin: 0 }}>System Announcement</h3>
+        </div>
+        
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>Enable Global Announcement</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-faint)' }}>Shows a banner at the top of every page.</div>
+            </div>
+            <label className="switch">
+              <input 
+                type="checkbox" 
+                checked={settings.announcement_active}
+                onChange={(e) => setSettings({...settings, announcement_active: e.target.checked})}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
+
+          {settings.announcement_active && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+                  Announcement Message
+                </label>
+                <textarea 
+                  placeholder="E.g., Welcome to the new version!"
+                  value={settings.announcement_message}
+                  onChange={(e) => setSettings({...settings, announcement_message: e.target.value})}
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)', resize: 'vertical' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+                  Banner Type (Color)
+                </label>
+                <select 
+                  value={settings.announcement_type}
+                  onChange={(e) => setSettings({...settings, announcement_type: e.target.value})}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)' }}
+                >
+                  <option value="info">Info (Blue)</option>
+                  <option value="success">Success (Green)</option>
+                  <option value="warning">Warning (Yellow)</option>
+                  <option value="danger">Danger (Red)</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <button 
