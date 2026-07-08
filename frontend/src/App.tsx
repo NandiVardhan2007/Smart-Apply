@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import AdminLayout from './components/AdminLayout';
 import { InlineLoader } from './components/LoadingSpinner';
 
 // Route-level code splitting: each page (and its dependencies — Monaco,
@@ -69,6 +70,18 @@ function Protected({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AdminProtected({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <AdminLayout>
+        <Suspense fallback={<PageFallback />}>
+          <PageTransition>{children}</PageTransition>
+        </Suspense>
+      </AdminLayout>
+    </ProtectedRoute>
+  );
+}
+
 export default function App() {
   return (
     <Suspense fallback={<PageFallback />}>
@@ -106,7 +119,7 @@ export default function App() {
         <Route path="/dashboard/linkedin" element={<Protected><LinkedInOptimizer /></Protected>} />
         
         {/* Hidden Admin Route */}
-        <Route path="/dashboard/sysadmin" element={<Protected><AdminPanel /></Protected>} />
+        <Route path="/dashboard/sysadmin" element={<AdminProtected><AdminPanel /></AdminProtected>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
