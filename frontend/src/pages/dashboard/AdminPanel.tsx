@@ -64,12 +64,12 @@ export default function AdminPanel() {
           apiFetch<ApiStatsData>('/admin/stats/api')
         ]);
         
-        if (statsRes.ok && timelineRes.ok && resumeStatsRes.ok && apiStatsRes.ok) {
-          setStats(statsRes.data);
-          setTimeline(timelineRes.data.timeline);
-          setResumeStats(resumeStatsRes.data);
-          setApiStats(apiStatsRes.data);
-        } else {
+        if (statsRes.ok) setStats(statsRes.data);
+        if (timelineRes.ok) setTimeline(timelineRes.data.timeline);
+        if (resumeStatsRes.ok) setResumeStats(resumeStatsRes.data);
+        if (apiStatsRes.ok) setApiStats(apiStatsRes.data);
+        
+        if (!statsRes.ok && !timelineRes.ok && !resumeStatsRes.ok && !apiStatsRes.ok) {
           setError("Failed to fetch admin data.");
         }
       } catch (err: any) {
