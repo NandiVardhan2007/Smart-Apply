@@ -10,7 +10,7 @@ export default function AdminSidebar({ mobileOpen, onCloseMobile }: { mobileOpen
   return (
     <>
       {mobileOpen && <div className="sidebar-overlay" onClick={onCloseMobile} />}
-      <aside className={`sidebar-container ${mobileOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div className="sidebar-header" style={{ padding: '24px 20px 16px' }}>
             <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 28, marginBottom: 4 }} />
