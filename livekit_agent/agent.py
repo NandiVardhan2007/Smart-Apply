@@ -3,7 +3,7 @@ import asyncio
 import logging
 from dotenv import load_dotenv
 
-from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm
+from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm, AgentSession
 from livekit.agents.voice import Agent as VoicePipelineAgent
 from livekit.plugins import cartesia, openai, silero
 import aiohttp
@@ -54,15 +54,24 @@ async def entrypoint(ctx: JobContext):
 
     agent = VoicePipelineAgent(
         instructions=instructions,
-        vad=vad,
         stt=openai.STT(), # Using OpenAI Whisper for Speech-to-Text (can be swapped)
         llm=llm_instance,
         tts=tts,
     )
 
-    agent.start(ctx.room)
+    logger = logging.getLogger("livekit.agents")
+    logger.info(f"connecting to room {ctx.room.name}")
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
+
+    session = AgentSession(vad=vad)
+    
+    await session.start(
+        room=ctx.room,
+        agent=agent,
+    )
+    
     await asyncio.sleep(1)
-    await agent.say("Hello! I am your AI interviewer. Shall we begin the interview?", allow_interruptions=True)
+    await session.say("Hello! I am your AI interviewer. Shall we begin the interview?", allow_interruptions=True)
 
 
 if __name__ == "__main__":
