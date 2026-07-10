@@ -54,18 +54,20 @@ function LiveSubtitles() {
     }}>
       {activeSegments.map(seg => (
         <div key={seg.id} style={{
-          background: 'rgba(0,0,0,0.8)',
+          background: 'linear-gradient(135deg, rgba(20, 21, 31, 0.9), rgba(0, 0, 0, 0.9))',
           color: '#fff',
-          padding: '12px 24px',
-          borderRadius: '12px',
-          marginBottom: '8px',
-          fontSize: '20px',
-          fontWeight: 500,
-          backdropFilter: 'blur(4px)',
+          padding: '16px 32px',
+          borderRadius: '24px',
+          marginBottom: '12px',
+          fontSize: '22px',
+          fontWeight: 600,
+          backdropFilter: 'blur(12px)',
           display: 'inline-block',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-          maxWidth: '100%',
-          wordWrap: 'break-word'
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0, 255, 204, 0.3)',
+          maxWidth: '90%',
+          wordWrap: 'break-word',
+          letterSpacing: '0.5px',
+          animation: 'fadeInUp 0.3s ease-out forwards'
         }}>
           {seg.text}
         </div>
@@ -339,25 +341,29 @@ export default function LiveKitInterview() {
 
            {/* Mic / Cam Selectors */}
            <div style={{ background: 'var(--background)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border)' }}>
-             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Device Settings</h3>
+             <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>Device Settings</h3>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Camera:</span>
-                  <div style={{ background: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)', padding: '2px 8px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: '15px', color: '#e5e7eb', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
+                    📷 Camera
+                  </span>
+                  <div style={{ background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)', padding: '4px 8px', overflow: 'hidden' }}>
                      <MediaDeviceMenu kind="videoinput" />
                   </div>
                </div>
-               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Microphone:</span>
-                  <div style={{ background: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)', padding: '2px 8px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: '15px', color: '#e5e7eb', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
+                    🎤 Microphone
+                  </span>
+                  <div style={{ background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)', padding: '4px 8px', overflow: 'hidden' }}>
                      <MediaDeviceMenu kind="audioinput" />
                   </div>
                </div>
                <button 
                  onClick={handleDisconnect}
-                 style={{ marginTop: '8px', padding: '12px', background: 'var(--error, #ef4444)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, width: '100%' }}
+                 style={{ marginTop: '16px', padding: '14px', background: 'var(--error, #ef4444)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '15px', width: '100%', transition: 'all 0.2s ease', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)' }}
                >
-                 End Interview
+                 🚪 End Interview
                </button>
              </div>
            </div>
