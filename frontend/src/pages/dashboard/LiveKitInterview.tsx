@@ -190,33 +190,73 @@ export default function LiveKitInterview() {
 
   if (status === 'idle' || status === 'connecting') {
     return (
-      <div style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', padding: '40px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)' }}>
-          <h2>AI Voice Interview</h2>
-          <p style={{ marginTop: '12px', color: 'var(--text-muted)' }}>
-            Start a realistic voice-to-voice interview with the AI Agent.
+      <div style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, var(--surface), var(--background))' }}>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '48px', 
+          background: 'rgba(20, 21, 31, 0.7)', 
+          backdropFilter: 'blur(16px)',
+          borderRadius: '24px', 
+          border: '1px solid rgba(0, 255, 204, 0.2)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+          maxWidth: '500px',
+          width: '100%'
+        }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, var(--accent), #00ffcc)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,255,204,0.4)' }}>
+             <span style={{ fontSize: '32px' }}>🎙️</span>
+          </div>
+          <h2 style={{ fontSize: '28px', marginBottom: '8px', background: 'linear-gradient(to right, #fff, #00ffcc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI Interview Coach</h2>
+          <p style={{ marginTop: '12px', color: '#9ca3af', fontSize: '16px', lineHeight: 1.5 }}>
+            Start a realistic, voice-to-voice interview with our advanced AI agent featuring real-time facial analysis and transcription.
           </p>
-          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <label htmlFor="themeSelect" style={{ fontWeight: 500 }}>Select Theme:</label>
+          <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+              <label htmlFor="themeSelect" style={{ fontWeight: 600, fontSize: '14px', color: '#e5e7eb', marginLeft: '4px' }}>Interview Theme</label>
               <select 
                 id="themeSelect" 
                 value={theme} 
                 onChange={(e) => setTheme(e.target.value)}
-                style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text)' }}
+                style={{ 
+                  padding: '14px 16px', 
+                  borderRadius: '12px', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  background: '#1a1b26', 
+                  color: '#ffffff',
+                  fontSize: '16px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300ffcc%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 16px top 50%',
+                  backgroundSize: '12px auto'
+                }}
               >
-                <option value="HR">HR / General (Friendly Female)</option>
-                <option value="Technical">Technical (Deep Male)</option>
-                <option value="Behavioral">Behavioral (Professional British)</option>
+                <option value="HR" style={{ background: '#1a1b26', color: '#fff' }}>HR / General (Friendly Female)</option>
+                <option value="Technical" style={{ background: '#1a1b26', color: '#fff' }}>Technical (Deep Male)</option>
+                <option value="Behavioral" style={{ background: '#1a1b26', color: '#fff' }}>Behavioral (Professional British)</option>
               </select>
             </div>
             
             <button 
               onClick={handleStart}
               disabled={status === 'connecting'}
-              style={{ padding: '12px 24px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', cursor: status === 'connecting' ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: status === 'connecting' ? 0.7 : 1 }}
+              style={{ 
+                padding: '16px', 
+                background: 'linear-gradient(135deg, var(--accent), #00ffcc)', 
+                color: '#000', 
+                border: 'none', 
+                borderRadius: '12px', 
+                cursor: status === 'connecting' ? 'not-allowed' : 'pointer', 
+                fontWeight: 700, 
+                fontSize: '16px',
+                opacity: status === 'connecting' ? 0.7 : 1,
+                boxShadow: '0 4px 14px rgba(0,255,204,0.3)',
+                transition: 'all 0.2s ease',
+                marginTop: '8px'
+              }}
             >
-              {status === 'connecting' ? 'Connecting...' : 'Start Interview'}
+              {status === 'connecting' ? 'Connecting to Secure Room...' : 'Start Live Interview'}
             </button>
           </div>
         </div>
