@@ -38,36 +38,43 @@ function LiveSubtitles() {
 
   const activeSegments = Object.values(segments)
     .sort((a, b) => a.firstReceivedTime - b.firstReceivedTime)
-    .slice(-2);
+    .slice(-1); // Only show the most recent segment to save screen space!
 
   if (activeSegments.length === 0) return null;
 
   return (
     <div style={{
       position: 'absolute',
-      bottom: '40px',
+      bottom: '24px',
       left: '50%',
       transform: 'translateX(-50%)',
-      width: '80%',
+      width: '85%',
       textAlign: 'center',
       zIndex: 20,
-      pointerEvents: 'none'
+      pointerEvents: 'none',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      maxHeight: '35%',
+      overflow: 'hidden'
     }}>
       {activeSegments.map(seg => (
         <div key={seg.id} style={{
-          background: 'linear-gradient(135deg, rgba(20, 21, 31, 0.9), rgba(0, 0, 0, 0.9))',
+          background: 'linear-gradient(135deg, rgba(20, 21, 31, 0.85), rgba(0, 0, 0, 0.85))',
           color: '#fff',
-          padding: '16px 32px',
-          borderRadius: '24px',
-          marginBottom: '12px',
-          fontSize: '22px',
-          fontWeight: 600,
-          backdropFilter: 'blur(12px)',
+          padding: '12px 20px',
+          borderRadius: '16px',
+          marginBottom: '8px',
+          fontSize: '15px',
+          fontWeight: 500,
+          backdropFilter: 'blur(8px)',
           display: 'inline-block',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0, 255, 204, 0.3)',
-          maxWidth: '90%',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(0, 255, 204, 0.25)',
+          maxWidth: '100%',
           wordWrap: 'break-word',
-          letterSpacing: '0.5px',
+          letterSpacing: '0.3px',
+          lineHeight: '1.4',
           animation: 'fadeInUp 0.3s ease-out forwards'
         }}>
           {seg.text}
