@@ -20,7 +20,7 @@ async def get_livekit_token(current_user: User = Depends(get_current_user)):
     # The room name will be unique per user for their interview
     room_name = f"interview-{current_user.id}"
     participant_identity = f"user-{current_user.id}"
-    participant_name = current_user.name or "Candidate"
+    participant_name = current_user.full_name or "Candidate"
 
     try:
         # Create an access token for the user
