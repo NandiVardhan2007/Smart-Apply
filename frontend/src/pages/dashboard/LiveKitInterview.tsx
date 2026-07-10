@@ -3,6 +3,7 @@ import { LiveKitRoom, RoomAudioRenderer, VoiceAssistantControlBar, MediaDeviceMe
 import '@livekit/components-styles';
 import { RoomEvent, Track } from 'livekit-client';
 import type { TranscriptionSegment, Participant, TrackPublication } from 'livekit-client';
+import * as faceapi from '@vladmandic/face-api';
 
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
@@ -74,24 +75,64 @@ function LiveSubtitles() {
 }
 
 function FacialAnalysisHUD() {
-  const [focus, setFocus] = useState(85);
-  const [expression, setExpression] = useState('Analyzing...');
+  const [focus, setFocus] = useState(0);
+  const [expression, setExpression] = useState('Loading Models...');
   const [posture, setPosture] = useState('Tracking...');
 
-  // Listen to the backend's NVIDIA Vision Data Channel
-  const handleData = (msg: any) => {
-    try {
-      const dataStr = new TextDecoder().decode(msg.payload);
-      const data = JSON.parse(dataStr);
-      if (data.focus !== undefined) setFocus(data.focus);
-      if (data.expression !== undefined) setExpression(data.expression);
-      if (data.posture !== undefined) setPosture(data.posture);
-    } catch (e) {
-      console.error('Failed to parse facial analysis payload', e);
-    }
-  };
+  useEffect(() => {
+    let active = true;
+    let interval: any;
 
-  useDataChannel('facial_analysis', handleData);
+    const startVision = async () => {
+      try {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceExpressionNet.loadFromUri('/models')
+        ]);
+        
+        if (!active) return;
+        setExpression('Detecting Face...');
+
+        interval = setInterval(async () => {
+          // Find the only video element (the local camera)
+          const video = document.querySelector('video');
+          if (!video || video.paused || video.ended || video.readyState < 2) return;
+
+          try {
+            const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+            
+            if (detections) {
+              setFocus(detections.detection.score * 100);
+              
+              const sorted = Object.entries(detections.expressions).sort((a, b) => b[1] - a[1]);
+              if (sorted.length > 0) {
+                let topExpr = sorted[0][0];
+                topExpr = topExpr.charAt(0).toUpperCase() + topExpr.slice(1);
+                setExpression(topExpr);
+              }
+              setPosture('Upright / Focused');
+            } else {
+              setFocus(0);
+              setExpression('No Face Detected');
+              setPosture('Unknown');
+            }
+          } catch (err) {
+            console.error("Face detection error:", err);
+          }
+        }, 150); // ~6-7 FPS to save battery but still feel real-time
+      } catch (err) {
+        console.error("Failed to load FaceAPI models", err);
+      }
+    };
+
+    startVision();
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <div style={{
@@ -108,11 +149,11 @@ function FacialAnalysisHUD() {
       zIndex: 10
     }}>
       <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', borderBottom: '1px solid rgba(0,255,204,0.3)', paddingBottom: '8px', color: '#fff' }}>
-        NVIDIA VISION ACTIVE
+        CLIENT-SIDE ML ACTIVE
       </h3>
       <div style={{ marginBottom: '8px' }}>
         <div style={{ fontSize: '12px', color: '#aaa' }}>FOCUS LEVEL</div>
-        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{typeof focus === 'number' ? focus.toFixed(1) : focus}%</div>
+        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{focus.toFixed(1)}%</div>
       </div>
       <div style={{ marginBottom: '8px' }}>
         <div style={{ fontSize: '12px', color: '#aaa' }}>EXPRESSION</div>

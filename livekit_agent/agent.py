@@ -159,15 +159,7 @@ async def entrypoint(ctx: JobContext):
 
     logger = logging.getLogger("livekit.agents")
     logger.info(f"connecting to room {ctx.room.name}")
-    
-    @ctx.room.on("track_subscribed")
-    def on_track_subscribed(track: rtc.Track, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
-        if track.kind == rtc.TrackKind.KIND_VIDEO:
-            logging.info("Video track subscribed, starting vision analysis task")
-            video_stream = rtc.VideoStream(track)
-            asyncio.create_task(process_video(video_stream, ctx.room))
-
-    await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
     session = AgentSession(vad=vad)
     
