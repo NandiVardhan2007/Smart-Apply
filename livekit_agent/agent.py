@@ -141,20 +141,14 @@ async def entrypoint(ctx: JobContext):
     elif "-Creative" in room_name:
         theme = "Creative"
 
+    logger = logging.getLogger("livekit.agents")
+    logger.info(f"connecting to room {ctx.room.name}")
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
+
     participant_name = "Candidate"
     try:
-        if not ctx.room.remote_participants:
-            future = asyncio.Future()
-            @ctx.room.on("participant_connected")
-            def _on_participant_connected(p: rtc.RemoteParticipant):
-                if not future.done():
-                    future.set_result(p)
-            
-            participant = await asyncio.wait_for(future, timeout=15.0)
-            participant_name = participant.name or "Candidate"
-        else:
-            participant = list(ctx.room.remote_participants.values())[0]
-            participant_name = participant.name or "Candidate"
+        participant = await ctx.wait_for_participant()
+        participant_name = participant.name or "Candidate"
     except Exception as e:
         logging.warning(f"Failed to get participant name: {e}")
 
@@ -230,10 +224,6 @@ async def entrypoint(ctx: JobContext):
         tts=tts,
         fnc_ctx=fnc_ctx,
     )
-
-    logger = logging.getLogger("livekit.agents")
-    logger.info(f"connecting to room {ctx.room.name}")
-    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
     session = AgentSession(vad=vad)
     
