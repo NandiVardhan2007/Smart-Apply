@@ -141,7 +141,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     if theme == "Technical":
-        voice_id = "694f9389-aac1-45b6-b726-9d9369183238" # Deep Male
+        voice_id = "638efaaa-4d0c-442e-b701-3fae16aad012" # Deep Male
         instructions = (
             "You are a strict and highly technical engineering interviewer. "
             "You are conducting a technical interview with a candidate. "
