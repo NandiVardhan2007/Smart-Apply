@@ -4,7 +4,7 @@ import logging
 from dotenv import load_dotenv
 
 from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm
-from livekit.agents.pipeline import VoicePipelineAgent
+from livekit.agents.voice import Agent as VoicePipelineAgent
 from livekit.plugins import openai, silero
 
 from piper_tts import PiperTTS
@@ -28,26 +28,24 @@ async def entrypoint(ctx: JobContext):
     # Ensure you have OPENAI_API_KEY set in your .env
     llm_instance = openai.LLM(model="meta/llama-3.1-70b-instruct")
 
-    initial_ctx = llm.ChatContext().append(
-        role="system",
-        text=(
-            "You are a friendly and professional AI interviewer. "
-            "You are conducting a job interview with a candidate. "
-            "Keep your responses concise and conversational."
-        ),
+    instructions = (
+        "You are a friendly and professional AI interviewer. "
+        "You are conducting a job interview with a candidate. "
+        "Keep your responses concise and conversational."
     )
 
     agent = VoicePipelineAgent(
+        instructions=instructions,
         vad=vad,
         stt=openai.STT(), # Using OpenAI Whisper for Speech-to-Text (can be swapped)
         llm=llm_instance,
         tts=tts,
-        chat_ctx=initial_ctx,
     )
 
     agent.start(ctx.room)
     await asyncio.sleep(1)
     await agent.say("Hello! I am your AI interviewer. Shall we begin the interview?", allow_interruptions=True)
+
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
