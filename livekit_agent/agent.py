@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm, AgentSession
 from livekit.agents.voice import Agent as VoicePipelineAgent
-from livekit.plugins import cartesia, openai, silero
+from livekit.plugins import cartesia, openai, silero, deepgram
 import aiohttp
 
 async def get_working_cartesia_key() -> str:
@@ -54,7 +54,7 @@ async def entrypoint(ctx: JobContext):
 
     agent = VoicePipelineAgent(
         instructions=instructions,
-        stt=openai.STT(), # Using OpenAI Whisper for Speech-to-Text (can be swapped)
+        stt=deepgram.STT(), # Deepgram is ultra-fast and purpose-built for speech
         llm=llm_instance,
         tts=tts,
     )
