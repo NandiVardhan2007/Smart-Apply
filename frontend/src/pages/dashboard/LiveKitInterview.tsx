@@ -272,6 +272,12 @@ export default function LiveKitInterview() {
                      <MediaDeviceMenu kind="audioinput" />
                   </div>
                </div>
+               <button 
+                 onClick={handleDisconnect}
+                 style={{ marginTop: '8px', padding: '12px', background: 'var(--error, #ef4444)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, width: '100%' }}
+               >
+                 End Interview
+               </button>
              </div>
            </div>
         </div>
