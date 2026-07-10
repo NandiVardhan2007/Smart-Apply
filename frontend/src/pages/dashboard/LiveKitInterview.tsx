@@ -372,7 +372,7 @@ export default function LiveKitInterview() {
                 }}
               >
                 <option value="HR" style={{ color: '#000000', background: '#ffffff' }}>HR / General (Friendly Female)</option>
-                <option value="Technical" style={{ color: '#000000', background: '#ffffff' }}>Technical (Deep Male)</option>
+                <option value="Technical" style={{ color: '#000000', background: '#ffffff' }}>Technical (Female)</option>
                 <option value="Behavioral" style={{ color: '#000000', background: '#ffffff' }}>Behavioral (Professional British)</option>
                 <option value="Executive" style={{ color: '#000000', background: '#ffffff' }}>Executive (Stern & Demanding)</option>
                 <option value="Creative" style={{ color: '#000000', background: '#ffffff' }}>Creative (Enthusiastic & Casual)</option>
