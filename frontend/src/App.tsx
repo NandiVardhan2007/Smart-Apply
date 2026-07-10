@@ -29,7 +29,7 @@ const ResumeTailor = lazy(() => import('./pages/dashboard/ResumeTailor'));
 const AtsChecker = lazy(() => import('./pages/dashboard/AtsChecker'));
 const AiChatbot = lazy(() => import('./pages/dashboard/AiChatbot'));
 const ProjectRecommender = lazy(() => import('./pages/dashboard/ProjectRecommender'));
-const LiveInterview = lazy(() => import('./pages/dashboard/LiveInterview'));
+const LiveKitInterview = lazy(() => import('./pages/dashboard/LiveKitInterview'));
 const InterviewReport = lazy(() => import('./pages/dashboard/InterviewReport'));
 const Profile = lazy(() => import('./pages/dashboard/Profile'));
 const Settings = lazy(() => import('./pages/dashboard/Settings'));
@@ -150,7 +150,7 @@ export default function App() {
         <Route path="/dashboard/ats-checker" element={<Protected><AtsChecker /></Protected>} />
         <Route path="/dashboard/ai-chatbot" element={<Protected><AiChatbot /></Protected>} />
         <Route path="/dashboard/project-recommender" element={<Protected><ProjectRecommender /></Protected>} />
-        <Route path="/dashboard/live-interview" element={<Protected><LiveInterview /></Protected>} />
+        <Route path="/dashboard/live-interview" element={<Protected><LiveKitInterview /></Protected>} />
         <Route path="/dashboard/live-interview/report/:roomName" element={<Protected><InterviewReport /></Protected>} />
         <Route path="/dashboard/profile" element={<Protected><Profile /></Protected>} />
         <Route path="/dashboard/settings" element={<Protected><Settings /></Protected>} />
