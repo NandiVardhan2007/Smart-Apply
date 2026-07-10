@@ -33,7 +33,7 @@ export default function LiveKitInterview() {
     setStatus('idle');
   };
 
-  if (status === 'idle') {
+  if (status === 'idle' || status === 'connecting') {
     return (
       <div style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', padding: '40px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)' }}>
@@ -63,7 +63,7 @@ export default function LiveKitInterview() {
             >
               {status === 'connecting' ? 'Connecting...' : 'Start Interview'}
             </button>
-          </div>>
+          </div>
         </div>
       </div>
     );
