@@ -289,6 +289,10 @@ export default function LiveKitInterview() {
             >
               {status === 'connecting' ? 'Connecting to Secure Room...' : <><Play size={18} /> Start Live Interview</>}
             </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

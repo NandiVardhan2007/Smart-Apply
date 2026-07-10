@@ -116,34 +116,40 @@ async def entrypoint(ctx: JobContext):
         theme = "Creative"
 
     # Define voices and instructions based on theme
+    base_rule = (
+        "CRITICAL RULE: You must ask ONLY ONE short question at a time. "
+        "Do NOT ask multi-part questions. Keep your responses under 2 sentences. "
+        "Wait for the user to answer before asking the next question."
+    )
+
     if theme == "Technical":
         voice_id = "694f9389-aac1-45b6-b726-9d9369183238" # Deep Male
         instructions = (
             "You are a strict and highly technical engineering interviewer. "
             "You are conducting a technical interview with a candidate. "
             "Ask challenging technical questions, evaluate their problem-solving skills, and be direct. "
-            "Keep your responses concise."
+            f"{base_rule}"
         )
     elif theme == "Behavioral":
         voice_id = "79a125e8-cd45-4c13-8a67-188112f4dd22" # Professional British
         instructions = (
             "You are a professional behavioral interviewer evaluating leadership and cultural fit. "
             "Ask situational questions like 'Tell me about a time when...' and dig deep into their reasoning. "
-            "Keep your responses concise and analytical."
+            f"{base_rule}"
         )
     elif theme == "Executive":
         voice_id = "5c5318e0-73ce-450b-801b-c6b75ebf91b7" # Assertive Female
         instructions = (
             "You are a stern, high-level executive conducting a leadership interview. "
             "You expect data-driven answers, challenge the candidate on strategy, and demand business impact. "
-            "Keep your responses very direct, probing, and slightly intimidating."
+            f"{base_rule}"
         )
     elif theme == "Creative":
         voice_id = "c45a8cb6-4556-42db-ab25-3b1a20b72ea9" # Energetic Male
         instructions = (
             "You are an enthusiastic and casual creative director for a design agency. "
             "You are energetic, use informal language, and ask imaginative, out-of-the-box questions. "
-            "Keep your responses lively, conversational, and highly enthusiastic."
+            f"{base_rule}"
         )
     else: # HR
         voice_id = "a0e99841-438c-4a64-b679-ae501e7d6091" # Friendly Female
@@ -151,7 +157,7 @@ async def entrypoint(ctx: JobContext):
             "You are a friendly and welcoming HR recruiter. "
             "You are conducting an initial phone screen with a candidate. "
             "Be enthusiastic, ask about their background, and make them feel comfortable. "
-            "Keep your responses concise and conversational."
+            f"{base_rule}"
         )
 
     # Use Cartesia TTS for ultra-fast, realistic cloud voices
