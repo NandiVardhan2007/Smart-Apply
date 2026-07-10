@@ -110,6 +110,10 @@ async def entrypoint(ctx: JobContext):
         theme = "Technical"
     elif "-Behavioral" in room_name:
         theme = "Behavioral"
+    elif "-Executive" in room_name:
+        theme = "Executive"
+    elif "-Creative" in room_name:
+        theme = "Creative"
 
     # Define voices and instructions based on theme
     if theme == "Technical":
@@ -126,6 +130,20 @@ async def entrypoint(ctx: JobContext):
             "You are a professional behavioral interviewer evaluating leadership and cultural fit. "
             "Ask situational questions like 'Tell me about a time when...' and dig deep into their reasoning. "
             "Keep your responses concise and analytical."
+        )
+    elif theme == "Executive":
+        voice_id = "5c5318e0-73ce-450b-801b-c6b75ebf91b7" # Assertive Female
+        instructions = (
+            "You are a stern, high-level executive conducting a leadership interview. "
+            "You expect data-driven answers, challenge the candidate on strategy, and demand business impact. "
+            "Keep your responses very direct, probing, and slightly intimidating."
+        )
+    elif theme == "Creative":
+        voice_id = "c45a8cb6-4556-42db-ab25-3b1a20b72ea9" # Energetic Male
+        instructions = (
+            "You are an enthusiastic and casual creative director for a design agency. "
+            "You are energetic, use informal language, and ask imaginative, out-of-the-box questions. "
+            "Keep your responses lively, conversational, and highly enthusiastic."
         )
     else: # HR
         voice_id = "a0e99841-438c-4a64-b679-ae501e7d6091" # Friendly Female
