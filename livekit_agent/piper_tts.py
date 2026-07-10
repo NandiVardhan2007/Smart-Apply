@@ -76,12 +76,19 @@ class PiperTTSStream:
         return item
         
 
+from livekit.agents.tts import TTSCapabilities
+
 class PiperTTS(TTS):
     def __init__(self, model_path: str, config_path: str):
-        super().__init__()
-        # Load the voice model
+        # Load the voice model first to get sample rate
         self._voice = PiperVoice.load(model_path, config_path)
         self._sample_rate = self._voice.config.sample_rate
+        
+        super().__init__(
+            capabilities=TTSCapabilities(streaming=False),
+            sample_rate=self._sample_rate,
+            num_channels=1
+        )
 
     def synthesize(self, text: str) -> "PiperTTSStream":
         return PiperTTSStream(self, text)
