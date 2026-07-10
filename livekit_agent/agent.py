@@ -6,6 +6,28 @@ from dotenv import load_dotenv
 from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm
 from livekit.agents.voice import Agent as VoicePipelineAgent
 from livekit.plugins import cartesia, openai, silero
+import aiohttp
+
+async def get_working_cartesia_key() -> str:
+    keys_str = os.environ.get("CARTESIA_API_KEYS", "")
+    keys = [k.strip() for k in keys_str.split(",") if k.strip()]
+    if not keys:
+        return os.environ.get("CARTESIA_API_KEY", "")
+    
+    async with aiohttp.ClientSession() as session:
+        for key in keys:
+            try:
+                headers = {"X-API-Key": key, "Cartesia-Version": "2024-06-10"}
+                async with session.get("https://api.cartesia.ai/voices", headers=headers) as resp:
+                    if resp.status == 200:
+                        logging.info(f"Using Cartesia key: {key[:12]}...")
+                        return key
+                    else:
+                        logging.warning(f"Cartesia key {key[:12]}... failed with status {resp.status}")
+            except Exception as e:
+                logging.warning(f"Error checking Cartesia key {key[:12]}... : {e}")
+    
+    return keys[0] if keys else ""
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +37,9 @@ async def entrypoint(ctx: JobContext):
     vad = silero.VAD.load()
 
     # Use Cartesia TTS for ultra-fast, realistic cloud voices
-    tts = cartesia.TTS()
+    # Automatically rotate and check API keys
+    cartesia_key = await get_working_cartesia_key()
+    tts = cartesia.TTS(api_key=cartesia_key)
 
     # Use OpenAI plugin for LLM (You can point this to NVIDIA NIM by setting OPENAI_BASE_URL)
     # Default is OpenAI if OPENAI_BASE_URL is not set
