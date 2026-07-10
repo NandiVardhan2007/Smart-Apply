@@ -106,8 +106,12 @@ async def entrypoint(ctx: JobContext):
 
     room_name = ctx.room.name
     theme = "HR"
-    if "-Technical" in room_name:
-        theme = "Technical"
+    if "-Technical-Male" in room_name:
+        theme = "Technical-Male"
+    elif "-Technical-Female" in room_name:
+        theme = "Technical-Female"
+    elif "-Technical" in room_name: # fallback
+        theme = "Technical-Male"
     elif "-Behavioral" in room_name:
         theme = "Behavioral"
     elif "-Executive" in room_name:
@@ -140,8 +144,12 @@ async def entrypoint(ctx: JobContext):
         "Wait for the user to answer before asking the next question."
     )
 
-    if theme == "Technical":
-        voice_id = os.environ.get("VOICE_ID_TECHNICAL", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
+    if theme.startswith("Technical"):
+        if theme == "Technical-Female":
+            voice_id = os.environ.get("VOICE_ID_TECHNICAL_FEMALE", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
+        else:
+            voice_id = os.environ.get("VOICE_ID_TECHNICAL_MALE", "638efaaa-4d0c-442e-b701-3fae16aad012")
+            
         instructions = (
             "You are a strict and highly technical engineering interviewer. "
             "You are conducting a technical interview with a candidate. "

@@ -17,7 +17,7 @@ function CodeEditorFeature({ theme }: { theme: string }) {
   const [code, setCode] = useState('def solution():\n    pass');
   const [language, setLanguage] = useState('python');
 
-  if (theme !== 'Technical') return null;
+  if (!theme.startsWith('Technical')) return null;
 
   const handleSubmit = () => {
     if (localParticipant) {
@@ -372,7 +372,8 @@ export default function LiveKitInterview() {
                 }}
               >
                 <option value="HR" style={{ color: '#000000', background: '#ffffff' }}>HR / General</option>
-                <option value="Technical" style={{ color: '#000000', background: '#ffffff' }}>Technical</option>
+                <option value="Technical-Male" style={{ color: '#000000', background: '#ffffff' }}>Technical (Male)</option>
+                <option value="Technical-Female" style={{ color: '#000000', background: '#ffffff' }}>Technical (Female)</option>
                 <option value="Behavioral" style={{ color: '#000000', background: '#ffffff' }}>Behavioral</option>
                 <option value="Executive" style={{ color: '#000000', background: '#ffffff' }}>Executive</option>
                 <option value="Creative" style={{ color: '#000000', background: '#ffffff' }}>Creative</option>
