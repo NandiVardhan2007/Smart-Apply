@@ -1,7 +1,5 @@
 livekit-agents
 livekit-plugins-silero
 livekit-plugins-openai
-piper-tts
-onnxruntime
-huggingface-hub
+livekit-plugins-cartesia
 python-dotenv

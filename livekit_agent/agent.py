@@ -5,9 +5,7 @@ from dotenv import load_dotenv
 
 from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm
 from livekit.agents.voice import Agent as VoicePipelineAgent
-from livekit.plugins import openai, silero
-
-from piper_tts import PiperTTS
+from livekit.plugins import cartesia, openai, silero
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -16,12 +14,8 @@ async def entrypoint(ctx: JobContext):
     # Use Silero for Voice Activity Detection
     vad = silero.VAD.load()
 
-    # Use Piper TTS for local, lightweight voice generation
-    # Ensure the .onnx and .onnx.json files are in the same directory
-    tts = PiperTTS(
-        model_path="en_IN-dataset=spicor-english-base=ljspeech-epochs=1089.onnx",
-        config_path="en_IN-dataset=spicor-english-base=ljspeech-epochs=1089.onnx.json"
-    )
+    # Use Cartesia TTS for ultra-fast, realistic cloud voices
+    tts = cartesia.TTS()
 
     # Use OpenAI plugin for LLM (You can point this to NVIDIA NIM by setting OPENAI_BASE_URL)
     # Default is OpenAI if OPENAI_BASE_URL is not set
