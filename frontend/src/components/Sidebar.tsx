@@ -27,6 +27,7 @@ const NAV_SECTIONS = [
     title: 'Resume',
     links: [
       { to: '/dashboard/resumes', label: 'My resumes', icon: FileText },
+      { to: '/dashboard/resume-maker', label: 'Resume Maker', icon: FileText },
       { to: '/dashboard/ats-checker', label: 'ATS checker', icon: ScanSearch },
       { to: '/dashboard/cover-letter', label: 'Cover letter', icon: Mail },
       { to: '/dashboard/linkedin', label: 'LinkedIn Optimizer', icon: Linkedin },

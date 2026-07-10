@@ -10,8 +10,8 @@ import { useAuth } from './context/AuthContext';
 import { apiFetch } from './api/client';
 import { AlertTriangle } from 'lucide-react';
 
-// Route-level code splitting: each page (and its dependencies — Monaco,
-// face-api, etc.) loads only when the person actually navigates there,
+// Route-level code splitting: each page (and its dependencies) loads only when
+// the person actually navigates there, keeping the initial bundle small.
 // keeping the initial bundle small.
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
@@ -37,6 +37,8 @@ const LinkedInOptimizer = lazy(() => import('./pages/dashboard/LinkedInOptimizer
 const AdminPanel = lazy(() => import('./pages/dashboard/AdminPanel'));
 const AdminUsers = lazy(() => import('./pages/dashboard/AdminUsers'));
 const AdminSettings = lazy(() => import('./pages/dashboard/AdminSettings'));
+const ResumeMaker = lazy(() => import('./pages/dashboard/ResumeMaker'));
+const AdminResumeTemplates = lazy(() => import('./pages/dashboard/AdminResumeTemplates'));
 
 function PageFallback() {
   return <InlineLoader title="Loading…" />;
@@ -153,11 +155,13 @@ export default function App() {
         <Route path="/dashboard/profile" element={<Protected><Profile /></Protected>} />
         <Route path="/dashboard/settings" element={<Protected><Settings /></Protected>} />
         <Route path="/dashboard/linkedin" element={<Protected><LinkedInOptimizer /></Protected>} />
+        <Route path="/dashboard/resume-maker" element={<Protected><ResumeMaker /></Protected>} />
         
         {/* Hidden Admin Route */}
         <Route path="/dashboard/sysadmin" element={<AdminProtected><AdminPanel /></AdminProtected>} />
         <Route path="/dashboard/sysadmin/users" element={<AdminProtected><AdminUsers /></AdminProtected>} />
         <Route path="/dashboard/sysadmin/settings" element={<AdminProtected><AdminSettings /></AdminProtected>} />
+        <Route path="/dashboard/sysadmin/resume-templates" element={<AdminProtected><AdminResumeTemplates /></AdminProtected>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

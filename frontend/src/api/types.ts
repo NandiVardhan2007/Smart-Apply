@@ -33,6 +33,15 @@ export interface Resume {
   uploaded_at: string;
 }
 
+export interface ResumeTemplate {
+  _id: string;
+  name: string;
+  description: string;
+  image_url: string;
+  latex_code: string;
+  required_fields: string[];
+}
+
 export interface DashboardStats {
   total_resumes: number;
   total_interviews: number;

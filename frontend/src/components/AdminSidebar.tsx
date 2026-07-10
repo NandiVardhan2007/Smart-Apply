@@ -28,6 +28,9 @@ export default function AdminSidebar({ mobileOpen, onCloseMobile }: { mobileOpen
               <NavLink to="/dashboard/sysadmin/users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onCloseMobile}>
                 <Users size={18} /> Users
               </NavLink>
+              <NavLink to="/dashboard/sysadmin/resume-templates" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onCloseMobile}>
+                <LayoutDashboard size={18} /> Templates
+              </NavLink>
               <NavLink to="/dashboard/sysadmin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onCloseMobile}>
                 <SettingsIcon size={18} /> Settings
               </NavLink>
