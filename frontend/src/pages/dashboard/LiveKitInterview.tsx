@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LiveKitRoom, RoomAudioRenderer, VoiceAssistantControlBar, MediaDeviceMenu, ParticipantTile, useLocalParticipant, useRoomContext, useDataChannel, VideoTrack } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, VoiceAssistantControlBar, useMediaDeviceSelect, ParticipantTile, useLocalParticipant, useRoomContext, useDataChannel, VideoTrack } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { RoomEvent, Track } from 'livekit-client';
 import type { TranscriptionSegment, Participant, TrackPublication } from 'livekit-client';
@@ -8,6 +8,39 @@ import { Mic, Video, LogOut, Bot, Play } from 'lucide-react';
 
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
+
+function CustomDeviceSelect({ kind }: { kind: 'videoinput' | 'audioinput' }) {
+  const { devices, activeDeviceId, setActiveMediaDevice } = useMediaDeviceSelect({ kind });
+  
+  return (
+    <select 
+      value={activeDeviceId} 
+      onChange={(e) => setActiveMediaDevice(e.target.value)}
+      style={{ 
+        width: '100%',
+        padding: '12px 16px', 
+        borderRadius: 'var(--radius)', 
+        border: '1px solid var(--border-color)', 
+        background: 'var(--bg-input)', 
+        color: 'var(--text-primary)',
+        fontSize: '14px',
+        outline: 'none',
+        cursor: 'pointer',
+        appearance: 'none',
+        backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2338bdf8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 16px top 50%',
+        backgroundSize: '12px auto'
+      }}
+    >
+      {devices.map(device => (
+        <option key={device.deviceId} value={device.deviceId} style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>
+          {device.label || `Device ${device.deviceId}`}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function LiveSubtitles() {
   const room = useRoomContext();
@@ -335,22 +368,18 @@ export default function LiveKitInterview() {
                   <span style={{ fontSize: '15px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
                     <Video size={18} /> Camera
                   </span>
-                  <div className="glass-panel" style={{ padding: '8px', borderRadius: 'var(--radius)' }}>
-                     <MediaDeviceMenu kind="videoinput" />
-                  </div>
+                  <CustomDeviceSelect kind="videoinput" />
                </div>
                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span style={{ fontSize: '15px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
                     <Mic size={18} /> Microphone
                   </span>
-                  <div className="glass-panel" style={{ padding: '8px', borderRadius: 'var(--radius)' }}>
-                     <MediaDeviceMenu kind="audioinput" />
-                  </div>
+                  <CustomDeviceSelect kind="audioinput" />
                </div>
                <button 
                  onClick={handleDisconnect}
                  className="btn"
-                 style={{ marginTop: '8px', width: '100%', background: 'var(--error)', color: '#fff' }}
+                 style={{ marginTop: '8px', width: '100%', background: '#ef4444', color: '#ffffff', border: 'none' }}
                >
                  <LogOut size={18} /> End Interview
                </button>
