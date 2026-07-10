@@ -141,7 +141,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     if theme == "Technical":
-        voice_id = "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8" # Technical Female
+        voice_id = os.environ.get("VOICE_ID_TECHNICAL", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
         instructions = (
             "You are a strict and highly technical engineering interviewer. "
             "You are conducting a technical interview with a candidate. "
@@ -151,28 +151,28 @@ async def entrypoint(ctx: JobContext):
             f"{base_rule}"
         )
     elif theme == "Behavioral":
-        voice_id = "79a125e8-cd45-4c13-8a67-188112f4dd22" # Professional British
+        voice_id = os.environ.get("VOICE_ID_BEHAVIORAL", "79a125e8-cd45-4c13-8a67-188112f4dd22")
         instructions = (
             "You are a professional behavioral interviewer evaluating leadership and cultural fit. "
             "Ask situational questions like 'Tell me about a time when...' and dig deep into their reasoning. "
             f"{base_rule}"
         )
     elif theme == "Executive":
-        voice_id = "5c5318e0-73ce-450b-801b-c6b75ebf91b7" # Assertive Female
+        voice_id = os.environ.get("VOICE_ID_EXECUTIVE", "5c5318e0-73ce-450b-801b-c6b75ebf91b7")
         instructions = (
             "You are a stern, high-level executive conducting a leadership interview. "
             "You expect data-driven answers, challenge the candidate on strategy, and demand business impact. "
             f"{base_rule}"
         )
     elif theme == "Creative":
-        voice_id = "c45a8cb6-4556-42db-ab25-3b1a20b72ea9" # Energetic Male
+        voice_id = os.environ.get("VOICE_ID_CREATIVE", "c45a8cb6-4556-42db-ab25-3b1a20b72ea9")
         instructions = (
             "You are an enthusiastic and casual creative director for a design agency. "
             "You are energetic, use informal language, and ask imaginative, out-of-the-box questions. "
             f"{base_rule}"
         )
     else: # HR
-        voice_id = "a0e99841-438c-4a64-b679-ae501e7d6091" # Friendly Female
+        voice_id = os.environ.get("VOICE_ID_HR", "a0e99841-438c-4a64-b679-ae501e7d6091")
         instructions = (
             "You are a friendly and welcoming HR recruiter. "
             "You are conducting an initial phone screen with a candidate. "
