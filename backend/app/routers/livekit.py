@@ -7,7 +7,7 @@ from app.models.user import User
 router = APIRouter(prefix="/api/livekit", tags=["LiveKit"])
 
 @router.get("/token")
-async def get_livekit_token(current_user: User = Depends(get_current_user)):
+async def get_livekit_token(theme: str = "HR", current_user: User = Depends(get_current_user)):
     """
     Generate an access token for LiveKit to join a room.
     """
@@ -17,8 +17,8 @@ async def get_livekit_token(current_user: User = Depends(get_current_user)):
     if not livekit_api_key or not livekit_api_secret:
         raise HTTPException(status_code=500, detail="LiveKit credentials are not configured on the server")
 
-    # The room name will be unique per user for their interview
-    room_name = f"interview-{current_user.id}"
+    # The room name will be unique per user for their interview and includes the theme
+    room_name = f"interview-{current_user.id}-{theme}"
     participant_identity = f"user-{current_user.id}"
     participant_name = current_user.full_name or "Candidate"
 
