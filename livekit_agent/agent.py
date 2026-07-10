@@ -115,8 +115,26 @@ async def entrypoint(ctx: JobContext):
     elif "-Creative" in room_name:
         theme = "Creative"
 
+    participant_name = "Candidate"
+    try:
+        if not ctx.room.remote_participants:
+            future = asyncio.Future()
+            @ctx.room.on("participant_connected")
+            def _on_participant_connected(p: rtc.RemoteParticipant):
+                if not future.done():
+                    future.set_result(p)
+            
+            participant = await asyncio.wait_for(future, timeout=15.0)
+            participant_name = participant.name or "Candidate"
+        else:
+            participant = list(ctx.room.remote_participants.values())[0]
+            participant_name = participant.name or "Candidate"
+    except Exception as e:
+        logging.warning(f"Failed to get participant name: {e}")
+
     # Define voices and instructions based on theme
     base_rule = (
+        f"You are interviewing {participant_name}. Greet them by name and start with a brief self intro. "
         "CRITICAL RULE: You must ask ONLY ONE short question at a time. "
         "Do NOT ask multi-part questions. Keep your responses under 2 sentences. "
         "Wait for the user to answer before asking the next question."
@@ -128,6 +146,8 @@ async def entrypoint(ctx: JobContext):
             "You are a strict and highly technical engineering interviewer. "
             "You are conducting a technical interview with a candidate. "
             "Ask challenging technical questions, evaluate their problem-solving skills, and be direct. "
+            "Ask the candidate to write a solution to a coding question in their live editor. "
+            "When they submit code, evaluate it for correctness, time complexity, and readability. "
             f"{base_rule}"
         )
     elif theme == "Behavioral":
@@ -187,13 +207,25 @@ async def entrypoint(ctx: JobContext):
 
     session = AgentSession(vad=vad)
     
+    @ctx.room.on("data_received")
+    def on_data_received(data: rtc.DataPacket):
+        if data.topic == "code_submission":
+            try:
+                code_text = data.data.decode('utf-8')
+                logging.info(f"Received code submission:\n{code_text}")
+                msg = llm.ChatMessage(role="user", content=f"I have submitted my code:\n\n```\n{code_text}\n```\nPlease evaluate it.")
+                agent.chat_ctx.messages.append(msg)
+                asyncio.create_task(session.say("I have received your code submission.", allow_interruptions=True))
+            except Exception as e:
+                logging.error(f"Error processing code submission: {e}")
+                
     await session.start(
         room=ctx.room,
         agent=agent,
     )
     
     await asyncio.sleep(1)
-    await session.say("Hello! I am your AI interviewer. Shall we begin the interview?", allow_interruptions=True)
+    await session.say(f"Hello {participant_name}! I am your AI interviewer. Shall we begin?", allow_interruptions=True)
 
 
 if __name__ == "__main__":

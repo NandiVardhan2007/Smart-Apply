@@ -5,9 +5,60 @@ import { RoomEvent, Track } from 'livekit-client';
 import type { TranscriptionSegment, Participant, TrackPublication } from 'livekit-client';
 import * as faceapi from '@vladmandic/face-api';
 import { Mic, Video, LogOut, Bot, Play } from 'lucide-react';
+import Editor from '@monaco-editor/react';
 
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
+
+function CodeEditorFeature({ theme }: { theme: string }) {
+  const { localParticipant } = useLocalParticipant();
+  const { showToast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [code, setCode] = useState('def solution():\n    pass');
+
+  if (theme !== 'Technical') return null;
+
+  const handleSubmit = () => {
+    if (localParticipant) {
+      const payload = new TextEncoder().encode(code);
+      localParticipant.publishData(payload, { topic: 'code_submission' });
+      showToast('success', 'Code submitted to AI!');
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <>
+      <button className="btn btn-primary" style={{ width: '100%', marginTop: '16px' }} onClick={() => setIsOpen(true)}>
+        Open Code Editor
+      </button>
+      
+      {isOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card" style={{ width: '80%', height: '80%', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+               <h3 style={{ margin: 0 }}>Live Code Editor</h3>
+               <button onClick={() => setIsOpen(false)} className="btn btn-ghost" style={{ padding: '8px 16px' }}>Close</button>
+             </div>
+             <div style={{ flex: 1, border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+               <Editor
+                 height="100%"
+                 defaultLanguage="python"
+                 theme="vs-dark"
+                 value={code}
+                 onChange={(val) => setCode(val || '')}
+                 options={{ minimap: { enabled: false } }}
+               />
+             </div>
+             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+               <button className="btn btn-primary" onClick={handleSubmit}>Submit Code to AI</button>
+             </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 function CustomDeviceSelect({ kind }: { kind: 'videoinput' | 'audioinput' }) {
   const { devices, activeDeviceId, setActiveMediaDevice } = useMediaDeviceSelect({ kind });
@@ -357,6 +408,7 @@ export default function LiveKitInterview() {
               
               <div style={{ width: '100%', marginTop: '24px' }}>
                  <VoiceAssistantControlBar />
+                 <CodeEditorFeature theme={theme} />
               </div>
            </div>
 
