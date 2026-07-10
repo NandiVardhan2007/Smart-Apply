@@ -15,6 +15,7 @@ function CodeEditorFeature({ theme }: { theme: string }) {
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [code, setCode] = useState('def solution():\n    pass');
+  const [language, setLanguage] = useState('python');
 
   if (theme !== 'Technical') return null;
 
@@ -37,13 +38,26 @@ function CodeEditorFeature({ theme }: { theme: string }) {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card" style={{ width: '80%', height: '80%', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)' }}>
              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
-               <h3 style={{ margin: 0 }}>Live Code Editor</h3>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                 <h3 style={{ margin: 0 }}>Live Code Editor</h3>
+                 <select 
+                   value={language} 
+                   onChange={(e) => setLanguage(e.target.value)}
+                   style={{ padding: '6px 12px', borderRadius: 'var(--radius)', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}
+                 >
+                   <option value="python" style={{ color: '#000', background: '#fff' }}>Python</option>
+                   <option value="javascript" style={{ color: '#000', background: '#fff' }}>JavaScript</option>
+                   <option value="typescript" style={{ color: '#000', background: '#fff' }}>TypeScript</option>
+                   <option value="java" style={{ color: '#000', background: '#fff' }}>Java</option>
+                   <option value="cpp" style={{ color: '#000', background: '#fff' }}>C++</option>
+                 </select>
+               </div>
                <button onClick={() => setIsOpen(false)} className="btn btn-ghost" style={{ padding: '8px 16px' }}>Close</button>
              </div>
              <div style={{ flex: 1, border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
                <Editor
                  height="100%"
-                 defaultLanguage="python"
+                 language={language}
                  theme="vs-dark"
                  value={code}
                  onChange={(val) => setCode(val || '')}
