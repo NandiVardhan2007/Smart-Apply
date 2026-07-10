@@ -76,7 +76,11 @@ async def entrypoint(ctx: JobContext):
     # Use OpenAI plugin for LLM (You can point this to NVIDIA NIM by setting OPENAI_BASE_URL)
     # Default is OpenAI if OPENAI_BASE_URL is not set
     # Ensure you have OPENAI_API_KEY set in your .env
-    llm_instance = openai.LLM(model="meta/llama-3.1-70b-instruct")
+    llm_instance = openai.LLM(
+        model="meta/llama-3.1-70b-instruct",
+        base_url=os.environ.get("OPENAI_BASE_URL"),
+        api_key=os.environ.get("OPENAI_API_KEY")
+    )
 
     agent = VoicePipelineAgent(
         instructions=instructions,
