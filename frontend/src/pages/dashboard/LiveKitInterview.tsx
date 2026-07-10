@@ -13,9 +13,23 @@ import { useToast } from '../../components/Toast';
 function CodeEditorFeature({ theme }: { theme: string }) {
   const { localParticipant } = useLocalParticipant();
   const { showToast } = useToast();
+  const room = useRoomContext();
   const [isOpen, setIsOpen] = useState(false);
   const [code, setCode] = useState('def solution():\n    pass');
   const [language, setLanguage] = useState('python');
+
+  useEffect(() => {
+    if (!room) return;
+    const handleData = (payload: Uint8Array, participant: any, kind: any, topic?: string) => {
+      if (topic === 'open_code_editor') {
+        setIsOpen(true);
+      }
+    };
+    room.on(RoomEvent.DataReceived, handleData);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleData);
+    };
+  }, [room]);
 
   if (theme !== 'Technical') return null;
 
@@ -61,7 +75,13 @@ function CodeEditorFeature({ theme }: { theme: string }) {
                  theme="vs-dark"
                  value={code}
                  onChange={(val) => setCode(val || '')}
-                 options={{ minimap: { enabled: false } }}
+                 options={{ 
+                   minimap: { enabled: false },
+                   suggestOnTriggerCharacters: true,
+                   quickSuggestions: { other: true, comments: true, strings: true },
+                   wordBasedSuggestions: "currentDocument",
+                   acceptSuggestionOnEnter: "on"
+                 }}
                />
              </div>
              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>

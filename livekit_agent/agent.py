@@ -101,9 +101,10 @@ async def process_video(video_stream: rtc.VideoStream, room: rtc.Room):
                 logging.warning(f"Failed to process video frame: {e}")
 
 class AssistantFnc(llm.FunctionContext):
-    def __init__(self, tts: cartesia.TTS):
+    def __init__(self, tts: cartesia.TTS, room: rtc.Room):
         super().__init__()
         self.tts = tts
+        self.room = room
 
     @llm.ai_callable(description="Change the AI interviewer's voice to a specific gender if the user asks you to change your voice to male or female.")
     async def change_voice(self, gender: str = llm.TypeInfo(description="The gender to switch to. Must be 'male' or 'female'")):
@@ -116,6 +117,14 @@ class AssistantFnc(llm.FunctionContext):
             self.tts.update_options(voice=voice_id)
             return "Voice changed to female."
         return "Unknown gender."
+
+    @llm.ai_callable(description="Open the live code editor on the user's screen. Call this tool immediately when you ask the candidate a coding question.")
+    async def open_code_editor(self):
+        await self.room.local_participant.publish_data(
+            payload=b'open',
+            topic="open_code_editor"
+        )
+        return "Editor opened successfully on the user's screen."
 
 async def entrypoint(ctx: JobContext):
     # Use Silero for Voice Activity Detection
@@ -164,6 +173,7 @@ async def entrypoint(ctx: JobContext):
             "You are conducting a technical interview with a candidate. "
             "Ask challenging technical questions, evaluate their problem-solving skills, and be direct. "
             "Ask the candidate to write a solution to a coding question in their live editor. "
+            "Use the open_code_editor tool to instantly pop up the editor on their screen when you ask them to code. "
             "When they submit code, evaluate it for correctness, time complexity, and readability. "
             "If the user asks you to change your voice to male or female, use the change_voice tool. "
             f"{base_rule}"
@@ -202,7 +212,7 @@ async def entrypoint(ctx: JobContext):
     # Automatically rotate and check API keys
     cartesia_key = await get_working_cartesia_key()
     tts = cartesia.TTS(api_key=cartesia_key, voice=voice_id)
-    fnc_ctx = AssistantFnc(tts=tts)
+    fnc_ctx = AssistantFnc(tts=tts, room=ctx.room)
 
     # Use OpenAI plugin for LLM (You can point this to NVIDIA NIM by setting OPENAI_BASE_URL)
     # Default is OpenAI if OPENAI_BASE_URL is not set
