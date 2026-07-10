@@ -85,7 +85,7 @@ function CustomDeviceSelect({ kind }: { kind: 'videoinput' | 'audioinput' }) {
       }}
     >
       {devices.map(device => (
-        <option key={device.deviceId} value={device.deviceId} style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>
+        <option key={device.deviceId} value={device.deviceId} style={{ color: '#000000', background: '#ffffff' }}>
           {device.label || `Device ${device.deviceId}`}
         </option>
       ))}
@@ -357,11 +357,11 @@ export default function LiveKitInterview() {
                   backgroundSize: '12px auto'
                 }}
               >
-                <option value="HR" style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>HR / General (Friendly Female)</option>
-                <option value="Technical" style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>Technical (Deep Male)</option>
-                <option value="Behavioral" style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>Behavioral (Professional British)</option>
-                <option value="Executive" style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>Executive (Stern & Demanding)</option>
-                <option value="Creative" style={{ background: 'var(--bg-input)', color: 'var(--text-primary)' }}>Creative (Enthusiastic & Casual)</option>
+                <option value="HR" style={{ color: '#000000', background: '#ffffff' }}>HR / General (Friendly Female)</option>
+                <option value="Technical" style={{ color: '#000000', background: '#ffffff' }}>Technical (Deep Male)</option>
+                <option value="Behavioral" style={{ color: '#000000', background: '#ffffff' }}>Behavioral (Professional British)</option>
+                <option value="Executive" style={{ color: '#000000', background: '#ffffff' }}>Executive (Stern & Demanding)</option>
+                <option value="Creative" style={{ color: '#000000', background: '#ffffff' }}>Creative (Enthusiastic & Casual)</option>
               </select>
             </div>
             
