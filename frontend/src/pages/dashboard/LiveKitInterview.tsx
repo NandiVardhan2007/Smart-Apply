@@ -4,6 +4,7 @@ import '@livekit/components-styles';
 import { RoomEvent, Track } from 'livekit-client';
 import type { TranscriptionSegment, Participant, TrackPublication } from 'livekit-client';
 import * as faceapi from '@vladmandic/face-api';
+import { Mic, Video, LogOut, Bot, Play } from 'lucide-react';
 
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
@@ -97,7 +98,6 @@ function FacialAnalysisHUD() {
         setExpression('Detecting Face...');
 
         interval = setInterval(async () => {
-          // Find the only video element (the local camera)
           const video = document.querySelector('video');
           if (!video || video.paused || video.ended || video.readyState < 2) return;
 
@@ -122,7 +122,7 @@ function FacialAnalysisHUD() {
           } catch (err) {
             console.error("Face detection error:", err);
           }
-        }, 150); // ~6-7 FPS to save battery but still feel real-time
+        }, 150);
       } catch (err) {
         console.error("Failed to load FaceAPI models", err);
       }
@@ -184,7 +184,6 @@ function VideoView() {
       <FacialAnalysisHUD />
       <LiveSubtitles />
       
-      {/* Cool scanning box overlay */}
       <div style={{
         position: 'absolute',
         top: '20%', left: '30%', right: '30%', bottom: '20%',
@@ -245,8 +244,8 @@ export default function LiveKitInterview() {
           maxWidth: '500px',
           width: '100%'
         }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, var(--accent), #00ffcc)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,255,204,0.4)' }}>
-             <span style={{ fontSize: '32px' }}>🎙️</span>
+          <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, var(--accent), #00ffcc)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,255,204,0.4)', color: '#000' }}>
+             <Bot size={32} />
           </div>
           <h2 style={{ fontSize: '28px', marginBottom: '8px', background: 'linear-gradient(to right, #fff, #00ffcc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI Interview Coach</h2>
           <p style={{ marginTop: '12px', color: '#9ca3af', fontSize: '16px', lineHeight: 1.5 }}>
@@ -296,10 +295,14 @@ export default function LiveKitInterview() {
                 opacity: status === 'connecting' ? 0.7 : 1,
                 boxShadow: '0 4px 14px rgba(0,255,204,0.3)',
                 transition: 'all 0.2s ease',
-                marginTop: '8px'
+                marginTop: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
               }}
             >
-              {status === 'connecting' ? 'Connecting to Secure Room...' : 'Start Live Interview'}
+              {status === 'connecting' ? 'Connecting to Secure Room...' : <><Play size={18} /> Start Live Interview</>}
             </button>
           </div>
         </div>
@@ -325,16 +328,16 @@ export default function LiveKitInterview() {
         </div>
 
         {/* Right Side: AI Visualizer & Controls */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', overflowY: 'auto' }}>
            <div style={{ flex: 1, background: 'var(--background)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #00ffcc)', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,255,204,0.4)' }}>
-                 <span style={{ fontSize: '32px' }}>🤖</span>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #00ffcc)', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,255,204,0.4)', color: '#000' }}>
+                 <Bot size={40} />
               </div>
               <h2 style={{ marginBottom: 16 }}>AI Interviewer</h2>
               <p style={{ color: 'var(--text-muted)' }}>Room: {roomName}</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: 'auto' }}>Theme: {theme}</p>
               
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', marginTop: '24px' }}>
                  <VoiceAssistantControlBar />
               </div>
            </div>
@@ -342,28 +345,28 @@ export default function LiveKitInterview() {
            {/* Mic / Cam Selectors */}
            <div style={{ background: 'var(--background)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border)' }}>
              <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>Device Settings</h3>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span style={{ fontSize: '15px', color: '#e5e7eb', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                    📷 Camera
+                    <Video size={18} /> Camera
                   </span>
-                  <div style={{ background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)', padding: '4px 8px', overflow: 'hidden' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', padding: '8px' }}>
                      <MediaDeviceMenu kind="videoinput" />
                   </div>
                </div>
-               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span style={{ fontSize: '15px', color: '#e5e7eb', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                    🎤 Microphone
+                    <Mic size={18} /> Microphone
                   </span>
-                  <div style={{ background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)', padding: '4px 8px', overflow: 'hidden' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', padding: '8px' }}>
                      <MediaDeviceMenu kind="audioinput" />
                   </div>
                </div>
                <button 
                  onClick={handleDisconnect}
-                 style={{ marginTop: '16px', padding: '14px', background: 'var(--error, #ef4444)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '15px', width: '100%', transition: 'all 0.2s ease', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)' }}
+                 style={{ marginTop: '8px', padding: '14px', background: 'var(--error, #ef4444)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '15px', width: '100%', transition: 'all 0.2s ease', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                >
-                 🚪 End Interview
+                 <LogOut size={18} /> End Interview
                </button>
              </div>
            </div>
