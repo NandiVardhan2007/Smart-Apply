@@ -100,18 +100,31 @@ async def process_video(video_stream: rtc.VideoStream, room: rtc.Room):
             except Exception as e:
                 logging.warning(f"Failed to process video frame: {e}")
 
+class AssistantFnc(llm.FunctionContext):
+    def __init__(self, tts: cartesia.TTS):
+        super().__init__()
+        self.tts = tts
+
+    @llm.ai_callable(description="Change the AI interviewer's voice to a specific gender if the user asks you to change your voice to male or female.")
+    async def change_voice(self, gender: str = llm.TypeInfo(description="The gender to switch to. Must be 'male' or 'female'")):
+        if gender.lower() == "male":
+            voice_id = os.environ.get("VOICE_ID_TECHNICAL_MALE", "638efaaa-4d0c-442e-b701-3fae16aad012")
+            self.tts.update_options(voice=voice_id)
+            return "Voice changed to male."
+        elif gender.lower() == "female":
+            voice_id = os.environ.get("VOICE_ID_TECHNICAL_FEMALE", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
+            self.tts.update_options(voice=voice_id)
+            return "Voice changed to female."
+        return "Unknown gender."
+
 async def entrypoint(ctx: JobContext):
     # Use Silero for Voice Activity Detection
     vad = silero.VAD.load()
 
     room_name = ctx.room.name
     theme = "HR"
-    if "-Technical-Male" in room_name:
-        theme = "Technical-Male"
-    elif "-Technical-Female" in room_name:
-        theme = "Technical-Female"
-    elif "-Technical" in room_name: # fallback
-        theme = "Technical-Male"
+    if "-Technical" in room_name:
+        theme = "Technical"
     elif "-Behavioral" in room_name:
         theme = "Behavioral"
     elif "-Executive" in room_name:
@@ -144,18 +157,15 @@ async def entrypoint(ctx: JobContext):
         "Wait for the user to answer before asking the next question."
     )
 
-    if theme.startswith("Technical"):
-        if theme == "Technical-Female":
-            voice_id = os.environ.get("VOICE_ID_TECHNICAL_FEMALE", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
-        else:
-            voice_id = os.environ.get("VOICE_ID_TECHNICAL_MALE", "638efaaa-4d0c-442e-b701-3fae16aad012")
-            
+    if theme == "Technical":
+        voice_id = os.environ.get("VOICE_ID_TECHNICAL", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
         instructions = (
             "You are a strict and highly technical engineering interviewer. "
             "You are conducting a technical interview with a candidate. "
             "Ask challenging technical questions, evaluate their problem-solving skills, and be direct. "
             "Ask the candidate to write a solution to a coding question in their live editor. "
             "When they submit code, evaluate it for correctness, time complexity, and readability. "
+            "If the user asks you to change your voice to male or female, use the change_voice tool. "
             f"{base_rule}"
         )
     elif theme == "Behavioral":
@@ -192,6 +202,7 @@ async def entrypoint(ctx: JobContext):
     # Automatically rotate and check API keys
     cartesia_key = await get_working_cartesia_key()
     tts = cartesia.TTS(api_key=cartesia_key, voice=voice_id)
+    fnc_ctx = AssistantFnc(tts=tts)
 
     # Use OpenAI plugin for LLM (You can point this to NVIDIA NIM by setting OPENAI_BASE_URL)
     # Default is OpenAI if OPENAI_BASE_URL is not set
@@ -207,6 +218,7 @@ async def entrypoint(ctx: JobContext):
         stt=deepgram.STT(), # Deepgram is ultra-fast and purpose-built for speech
         llm=llm_instance,
         tts=tts,
+        fnc_ctx=fnc_ctx,
     )
 
     logger = logging.getLogger("livekit.agents")
