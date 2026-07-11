@@ -1,7 +1,7 @@
 from typing import List
 
 import fitz  # PyMuPDF
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request, BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from app.rate_limiter import limiter
 from beanie import PydanticObjectId
@@ -9,7 +9,7 @@ from beanie import PydanticObjectId
 from app.middleware.auth_middleware import get_current_user
 from app.models.resume import Resume
 from app.models.user import User
-from app.services import storage_service
+from app.services import storage_service, ai_service
 import filetype
 import urllib.parse
 
@@ -22,7 +22,10 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 @router.post("")
 @limiter.limit("5/minute")
 async def upload_new_resume(
-    request: Request, file: UploadFile = File(...), user: User = Depends(get_current_user)
+    request: Request, 
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...), 
+    user: User = Depends(get_current_user)
 ):
     """Upload a new resume, extract its text, and save it to the library."""
     if file.content_type not in ALLOWED_RESUME_TYPES:
@@ -82,6 +85,15 @@ async def upload_new_resume(
     if is_primary:
         user.resume_url = url
         await user.save()
+
+    async def _populate_parsed_data(r_id: PydanticObjectId, txt: str):
+        parsed = await ai_service.parse_resume_for_profile(txt)
+        r = await Resume.get(r_id)
+        if r:
+            r.parsed_data = parsed
+            await r.save()
+            
+    background_tasks.add_task(_populate_parsed_data, resume.id, resume_text)
 
     return {"message": "Resume uploaded successfully", "resume": resume}
 

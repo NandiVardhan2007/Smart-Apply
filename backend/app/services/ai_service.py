@@ -140,8 +140,8 @@ async def parse_resume_for_profile(resume_text: str) -> Dict[str, Any]:
 - "full_name": The candidate's full name
 - "bio": A short professional summary or objective
 - "skills": A list of technical and soft skills
-- "education": A list of strings describing educational degrees/institutions
-- "experience": A list of strings describing work history
+- "education": A list of objects with keys: "institution", "degree", "start_date" (optional string), "end_date" (optional string), "description" (optional string)
+- "experience": A list of objects with keys: "company", "role", "start_date" (optional string), "end_date" (optional string), "description" (optional string)
 - "linkedin_url": LinkedIn profile URL if present, else null
 - "github_url": GitHub profile URL if present, else null
 - "portfolio_url": Portfolio or personal website URL if present, else null
@@ -759,16 +759,18 @@ Return your analysis as a valid JSON object matching the exact schema below. Do 
             "experience_improvements": []
         }
 
-async def smart_fill_resume_fields(resume_text: str, required_fields: List[str]) -> Dict[str, str]:
-    """Smart fill resume fields based on extracted text and required template fields."""
+async def smart_fill_resume_fields(resume_text: str, required_fields: List[str], user_profile: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    """Smart fill resume fields based on extracted text, stored profile data, and required template fields."""
     client = _get_client()
     fields_list = "\n".join([f'- "{field}"' for field in required_fields])
     
-    prompt = f"""You are an expert resume assistant. Extract comprehensive information from the provided resume text to fill out the specified required fields for a new resume template.
+    profile_section = f"\nUSER STORED PROFILE DATA:\n{json.dumps(user_profile, indent=2, default=str)}\n" if user_profile else ""
+    
+    prompt = f"""You are an expert resume assistant. Extract comprehensive information from the provided resume text and stored profile data to intelligently pre-fill out the specified required fields for a new resume template.
 
 RESUME TEXT:
 {resume_text}
-
+{profile_section}
 REQUIRED FIELDS:
 {fields_list}
 

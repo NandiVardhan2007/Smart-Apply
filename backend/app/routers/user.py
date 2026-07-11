@@ -19,6 +19,9 @@ router = APIRouter(prefix="/api/user", tags=["user"])
 @router.get("/profile")
 async def get_profile(user: User = Depends(get_current_user)):
     """Get the current user's profile."""
+    primary_resume = await Resume.find_one({"user_id": user.id, "is_primary": True})
+    resume_url = primary_resume.file_url if primary_resume else None
+
     return {
         "id": str(user.id),
         "email": user.email,
@@ -32,7 +35,7 @@ async def get_profile(user: User = Depends(get_current_user)):
         "education": user.education,
         "experience": user.experience,
         "profile_pic_url": user.profile_pic_url,
-        "resume_url": user.resume_url,
+        "resume_url": resume_url,
         "is_verified": user.is_verified,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }

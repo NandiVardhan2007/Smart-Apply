@@ -2,6 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.schemas.profile import EducationEntry, ExperienceEntry
+
 
 class SignupRequest(BaseModel):
     email: EmailStr
@@ -48,15 +50,15 @@ class ProfileUpdateRequest(BaseModel):
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
     portfolio_url: Optional[str] = None
-    education: Optional[list] = None
-    experience: Optional[list] = None
+    education: Optional[list[EducationEntry]] = None
+    experience: Optional[list[ExperienceEntry]] = None
 
 class ResumeParseResponse(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
     skills: list = []
-    education: list = []
-    experience: list = []
+    education: list[EducationEntry] = []
+    experience: list[ExperienceEntry] = []
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
     portfolio_url: Optional[str] = None

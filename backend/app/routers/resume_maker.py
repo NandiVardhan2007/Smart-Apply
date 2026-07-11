@@ -2,7 +2,7 @@ import json
 import os
 import subprocess
 import tempfile
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
@@ -21,7 +21,7 @@ from app.rate_limiter import limiter
 from pydantic import BaseModel
 
 class SmartFillRequest(BaseModel):
-    resume_id: str
+    resume_id: Optional[str] = None
 
 router = APIRouter(prefix="/api/resume-maker", tags=["resume-maker"])
 
@@ -183,13 +183,28 @@ async def smart_fill_template(
         if not template:
             raise HTTPException(status_code=404, detail="Template not found")
             
-        resume = await Resume.get(PydanticObjectId(payload.resume_id))
-        if not resume or resume.user_id != user.id:
-            raise HTTPException(status_code=404, detail="Resume not found")
+        resume_text = ""
+        if payload.resume_id:
+            resume = await Resume.get(PydanticObjectId(payload.resume_id))
+            if resume and resume.user_id == user.id:
+                resume_text = resume.extracted_text
+
+        user_profile = {
+            "full_name": user.full_name,
+            "bio": user.bio,
+            "phone": user.phone,
+            "skills": user.skills,
+            "education": [dict(e) for e in user.education] if user.education else [],
+            "experience": [dict(e) for e in user.experience] if user.experience else [],
+            "linkedin_url": user.linkedin_url,
+            "github_url": user.github_url,
+            "portfolio_url": user.portfolio_url
+        }
             
         filled_data = await ai_service.smart_fill_resume_fields(
-            resume.extracted_text, 
-            template.required_fields
+            resume_text=resume_text, 
+            required_fields=template.required_fields,
+            user_profile=user_profile
         )
         
         return {"filled_data": filled_data}

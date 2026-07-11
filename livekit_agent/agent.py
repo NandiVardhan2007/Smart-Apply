@@ -56,14 +56,16 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 
-class AssistantFnc(llm.FunctionContext):
+import typing
+
+class AssistantFnc(llm.ToolContext):
     def __init__(self, tts: cartesia.TTS, room: rtc.Room):
         super().__init__()
         self.tts = tts
         self.room = room
 
-    @llm.ai_callable(description="Change the AI interviewer's voice to a specific gender if the user asks you to change your voice to male or female.")
-    async def change_voice(self, gender: str = llm.TypeInfo(description="The gender to switch to. Must be 'male' or 'female'")):
+    @llm.function_tool(description="Change the AI interviewer's voice to a specific gender if the user asks you to change your voice to male or female.")
+    async def change_voice(self, gender: typing.Annotated[str, "The gender to switch to. Must be 'male' or 'female'"]):
         if gender.lower() == "male":
             voice_id = os.environ.get("VOICE_ID_TECHNICAL_MALE", "638efaaa-4d0c-442e-b701-3fae16aad012")
             self.tts.update_options(voice=voice_id)
@@ -74,7 +76,7 @@ class AssistantFnc(llm.FunctionContext):
             return "Voice changed to female."
         return "Unknown gender."
 
-    @llm.ai_callable(description="Open the live code editor on the user's screen. Call this tool immediately when you ask the candidate a coding question.")
+    @llm.function_tool(description="Open the live code editor on the user's screen. Call this tool immediately when you ask the candidate a coding question.")
     async def open_code_editor(self):
         await self.room.local_participant.publish_data(
             payload=b'open',
