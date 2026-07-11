@@ -44,11 +44,3 @@ def get_session_id(request: Request) -> Optional[str]:
     """Extract the X-Session-ID header for WebSocket event routing."""
     return request.headers.get("x-session-id")
 
-async def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Dependency that checks if the current user is an admin."""
-    if getattr(current_user, "role", "") != "admin" and not getattr(current_user, "is_admin", False):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
-    return current_user

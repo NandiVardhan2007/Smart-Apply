@@ -13,7 +13,10 @@ services:
       - key: MONGODB_URI
         sync: false
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: redis
+          name: smartapply-redis
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
@@ -36,3 +39,8 @@ services:
           type: web
           name: smartapply-backend
           envVarKey: RENDER_EXTERNAL_URL
+
+  - type: redis
+    name: smartapply-redis
+    ipAllowList: [] # Internal only
+    plan: free

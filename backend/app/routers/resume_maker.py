@@ -11,7 +11,8 @@ from beanie import PydanticObjectId
 import urllib.parse
 import filetype
 
-from app.middleware.auth_middleware import get_current_user, require_admin
+from app.middleware.auth_middleware import get_current_user
+from app.middleware.admin_middleware import get_admin_user
 from app.models.resume_template import ResumeTemplate
 from app.models.resume import Resume
 from app.models.user import User
@@ -45,7 +46,7 @@ async def create_template(
     latex_code: str = Form(...),
     required_fields: str = Form("[]"),  # JSON string of list of strings
     image: UploadFile = File(...),
-    user: User = Depends(require_admin)
+    user: User = Depends(get_admin_user)
 ):
     """(Admin only) Create a new resume template."""
     if image.content_type not in ALLOWED_IMAGE_TYPES:
