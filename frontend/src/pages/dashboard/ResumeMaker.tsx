@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from '../../api/client';
+import { apiFetch, getApiBaseUrl } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import PageHeader from '../../components/PageHeader';
 import { SkeletonCard, ButtonSpinner } from '../../components/LoadingSpinner';
@@ -64,8 +64,8 @@ export default function ResumeMaker() {
 
     setCompiling(true);
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/resume-maker/templates/${selectedTemplate._id}/compile`, {
+      const token = localStorage.getItem('sa_token');
+      const response = await fetch(`${getApiBaseUrl()}/resume-maker/templates/${selectedTemplate._id}/compile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,23 +106,17 @@ export default function ResumeMaker() {
     showToast('info', 'AI is smart filling your resume...', 3000);
     
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/resume-maker/templates/${selectedTemplate._id}/smart-fill`, {
+      const response = await apiFetch(`/resume-maker/templates/${selectedTemplate._id}/smart-fill`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({ resume_id: selectedResumeId })
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        showToast('error', errData.detail || 'Failed to smart fill resume.');
+        showToast('error', (response.data as any)?.detail || 'Failed to smart fill resume.');
         return;
       }
 
-      const resData = await response.json();
+      const resData = response.data as any;
       if (resData.filled_data) {
         setFormData(prev => ({
           ...prev,
@@ -139,63 +133,127 @@ export default function ResumeMaker() {
 
   if (selectedTemplate) {
     return (
-      <div className="container fade-in">
-        <PageHeader title={`Compile: ${selectedTemplate.name}`} subtitle="Fill out the details below to generate your perfect resume." />
-        <button className="btn btn-ghost" style={{ marginBottom: 20 }} onClick={() => setSelectedTemplate(null)}>
+      <div className="container fade-in" style={{ paddingBottom: '40px' }}>
+        <button 
+          className="btn btn-ghost" 
+          style={{ marginBottom: 24, display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }} 
+          onClick={() => setSelectedTemplate(null)}
+        >
           &larr; Back to templates
         </button>
 
-        <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
-          {resumes.length > 0 && (
-            <div style={{ marginBottom: 24, padding: 16, backgroundColor: 'var(--surface-sunken)', borderRadius: 8, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: 'var(--ink-faint)' }}>Smart Fill from Resume</label>
-                <select 
-                  className="input" 
-                  value={selectedResumeId} 
-                  onChange={e => setSelectedResumeId(e.target.value)}
-                  style={{ width: '100%' }}
-                >
-                  {resumes.map(r => (
-                    <option key={r._id} value={r._id}>
-                      {/^[0-9a-fA-F]{24}\.?.*?$/.test(r.filename) ? 'Resume document.pdf' : r.filename}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={handleSmartFill} 
-                disabled={filling || !selectedResumeId}
-                style={{ marginTop: 20 }}
-              >
-                {filling ? <ButtonSpinner /> : <><Wand2 size={16} /> Smart Fill</>}
-              </button>
-            </div>
-          )}
-
-          <form onSubmit={handleCompile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {selectedTemplate.required_fields.map(field => (
-              <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontWeight: 500, fontSize: 14 }}>{field}</label>
-                <input
-                  type="text"
-                  className="input"
-                  required
-                  value={formData[field] || ''}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
-                  placeholder={`Enter your ${field}`}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', alignItems: 'start' }}>
+          
+          {/* Left Side: Template Presentation */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="card"
+            style={{ padding: 0, overflow: 'hidden', position: 'sticky', top: '100px' }}
+          >
+            <div style={{ width: '100%', aspectRatio: '1 / 1.4', backgroundColor: 'var(--surface-sunken)', position: 'relative' }}>
+              {selectedTemplate.image_url ? (
+                <img 
+                  src={selectedTemplate.image_url} 
+                  alt={selectedTemplate.name} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-faint)' }}>
+                  No Preview
+                </div>
+              )}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 24px 24px', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
+                <h2 style={{ margin: 0, color: '#fff', fontSize: '24px' }}>{selectedTemplate.name}</h2>
+                <p style={{ margin: '8px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
+                  {selectedTemplate.description || `A professional template requiring ${selectedTemplate.required_fields.length} details.`}
+                </p>
               </div>
-            ))}
-            
-            <div style={{ marginTop: 16 }}>
-              <button type="submit" className="btn btn-primary" disabled={compiling} style={{ width: '100%' }}>
-                {compiling ? <ButtonSpinner /> : <><Download size={18} /> Generate PDF</>}
-              </button>
             </div>
-          </form>
+          </motion.div>
+
+          {/* Right Side: Form & Magic Fill */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+          >
+            <div>
+              <h1 className="text-accent" style={{ fontSize: '32px', marginBottom: '8px' }}>Build Your Resume</h1>
+              <p className="text-muted" style={{ fontSize: '16px' }}>Provide the details below or use AI to magically fill them in.</p>
+            </div>
+
+            {resumes.length > 0 && (
+              <div className="glass-panel" style={{ padding: '20px', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ padding: '8px', background: 'var(--accent-soft)', borderRadius: '8px', color: 'var(--accent)' }}>
+                    <Wand2 size={20} />
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '16px' }}>AI Smart Fill</h3>
+                </div>
+                <p className="text-muted" style={{ fontSize: '13px', margin: 0 }}>Select an existing resume to automatically extract and format your data into this template.</p>
+                
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <select 
+                    className="input-field" 
+                    value={selectedResumeId} 
+                    onChange={e => setSelectedResumeId(e.target.value)}
+                    style={{ flex: 1, minWidth: '200px', backgroundColor: 'var(--bg-input)' }}
+                  >
+                    {resumes.map(r => (
+                      <option key={r._id} value={r._id}>
+                        {/^[0-9a-fA-F]{24}\.?.*?$/.test(r.filename) ? 'Resume document.pdf' : r.filename}
+                      </option>
+                    ))}
+                  </select>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary" 
+                    onClick={handleSmartFill} 
+                    disabled={filling || !selectedResumeId}
+                    style={{ flexShrink: 0 }}
+                  >
+                    {filling ? <ButtonSpinner /> : 'Autofill Template'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="card">
+              <form onSubmit={handleCompile} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                  {selectedTemplate.required_fields.map((field, index) => (
+                    <motion.div 
+                      key={field} 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+                    >
+                      <label style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-secondary)' }}>
+                        {field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, ' ')}
+                      </label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        required
+                        value={formData[field] || ''}
+                        onChange={(e) => handleInputChange(field, e.target.value)}
+                        placeholder={`Enter ${field.replace(/_/g, ' ')}`}
+                        style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+                
+                <div style={{ marginTop: '16px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+                  <button type="submit" className="btn btn-primary" disabled={compiling} style={{ width: '100%', padding: '16px', fontSize: '16px' }}>
+                    {compiling ? <ButtonSpinner /> : <><Download size={20} /> Generate Professional PDF</>}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
         </div>
       </div>
     );
