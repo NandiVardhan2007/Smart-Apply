@@ -5,6 +5,7 @@ import logging
 from typing import List
 import httpx
 import fitz  # PyMuPDF
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -149,38 +150,70 @@ CRITICAL RULES FOR CONTENT:
         raise ValueError(f"Failed to extract LaTeX: {str(e)}")
 
 
-async def compile_latex_to_pdf(latex_code: str) -> bytes:
-    """Compile LaTeX to PDF using ytotech API."""
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type((httpx.RequestError, httpx.HTTPStatusError)),
+    reraise=True
+)
+async def _compile_with_ytotech(latex_code: str) -> bytes:
+    """Internal function to compile via ytotech with retries."""
     url = "https://latex.ytotech.com/builds/sync"
-    
     payload = {
         "compiler": "xelatex",
-        "resources": [
-            {
-                "main": True,
-                "content": latex_code
-            }
-        ]
+        "resources": [{"main": True, "content": latex_code}]
     }
     
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(url, json=payload)
+        response.raise_for_status()
+        return response.content
+
+async def _compile_with_fallback(latex_code: str, fallback_url: str) -> bytes:
+    """Internal function to compile via a generic fallback."""
+    # Note: Paid fallback APIs might require different payload structures.
+    # This assumes a similar or generic API.
+    payload = {
+        "compiler": "xelatex",
+        "resources": [{"main": True, "content": latex_code}]
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(fallback_url, json=payload)
+        response.raise_for_status()
+        return response.content
+
+async def compile_latex_to_pdf(latex_code: str) -> bytes:
+    """Compile LaTeX to PDF with retries and fallback."""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            
-            # The API returns the PDF directly as binary if successful
-            return response.content
-            
+        return await _compile_with_ytotech(latex_code)
     except httpx.HTTPStatusError as e:
         error_text = e.response.text
         try:
             err_json = e.response.json()
             if "logs" in err_json:
-                error_text = err_json["logs"][-500:] # Get the last 500 chars of the log
+                error_text = err_json["logs"][-500:]
         except:
             pass
-        logger.error(f"LaTeX compilation failed: {error_text}")
+        logger.error(f"LaTeX compilation failed on ytotech: {error_text}")
+        
+        if settings.LATEX_FALLBACK_URL:
+            logger.info("Attempting compilation with fallback URL...")
+            try:
+                return await _compile_with_fallback(latex_code, settings.LATEX_FALLBACK_URL)
+            except Exception as fallback_e:
+                logger.error(f"Fallback compilation also failed: {fallback_e}")
+                raise ValueError(f"LaTeX compilation failed on both primary and fallback.\nPrimary error: {error_text}")
+        
         raise ValueError(f"LaTeX compilation failed:\n{error_text}")
     except Exception as e:
         logger.error(f"Failed to compile LaTeX: {e}")
+        
+        if settings.LATEX_FALLBACK_URL:
+            logger.info("Attempting compilation with fallback URL...")
+            try:
+                return await _compile_with_fallback(latex_code, settings.LATEX_FALLBACK_URL)
+            except Exception as fallback_e:
+                logger.error(f"Fallback compilation also failed: {fallback_e}")
+                raise ValueError(f"Failed to compile LaTeX on primary and fallback: {str(e)}")
+                
         raise ValueError(f"Failed to compile LaTeX: {str(e)}")

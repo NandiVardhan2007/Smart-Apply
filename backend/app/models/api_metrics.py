@@ -16,3 +16,4 @@ class APILog(Document):
     
     class Settings:
         name = "api_logs"
+        indexes = ["timestamp"]

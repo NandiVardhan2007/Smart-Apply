@@ -23,3 +23,4 @@ class Resume(Document):
 
     class Settings:
         name = "resumes"
+        indexes = ["user_id", "uploaded_at"]

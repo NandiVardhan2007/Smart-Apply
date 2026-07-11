@@ -14,6 +14,7 @@ from app.config import settings
 from app.database import close_db, init_db
 from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, stats, cover_letter, jobs, linkedin, code_execution, admin, resume_maker, livekit
 from app.websockets.auth_ws import router as ws_router
+from app.websockets.manager import manager
 
 
 import subprocess
@@ -50,7 +51,9 @@ async def lifespan(app: FastAPI):
     ping_task = asyncio.create_task(self_ping())
 
     await init_db()
+    await manager.start_pubsub()
     yield
+    await manager.stop_pubsub()
     await close_db()
 
     ping_task.cancel()

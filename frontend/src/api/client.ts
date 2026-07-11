@@ -69,10 +69,20 @@ export async function apiFetch<T = unknown>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    // Network error (e.g. server down, offline). Wait 500ms and retry exactly once.
+    await new Promise(resolve => setTimeout(resolve, 500));
+    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  }
 
   if (response.status === 401) {
     _onUnauthorized?.();

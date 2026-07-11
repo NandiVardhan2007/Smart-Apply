@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     MONGODB_URI: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "smartapply"
 
+    # ── Redis (Pub/Sub for WebSockets) ──
+    REDIS_URL: str = "redis://localhost:6379"
+
     # ── Brevo (Email OTP) ──
     BREVO_API_KEY: str = ""
     BREVO_SENDER_EMAIL: str = "noreply@smartapply.com"
@@ -51,6 +54,9 @@ class Settings(BaseSettings):
     # ── App URLs ──
     FRONTEND_URL: str = "https://smartapplies.app"
     ENVIRONMENT: str = "development"
+
+    # ── LaTeX Service ──
+    LATEX_FALLBACK_URL: Optional[str] = None
 
     class Config:
         env_file = ".env"

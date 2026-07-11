@@ -23,3 +23,4 @@ class InterviewReport(Document):
 
     class Settings:
         name = "interview_reports"
+        indexes = ["user_id"]
