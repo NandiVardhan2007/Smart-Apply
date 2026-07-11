@@ -193,8 +193,8 @@ async def entrypoint(ctx: JobContext):
         stt=deepgram.STT(), # Deepgram is ultra-fast and purpose-built for speech
         llm=llm_instance,
         tts=tts,
-        fnc_ctx=fnc_ctx,
     )
+    agent.fnc_ctx = fnc_ctx
 
     session = AgentSession(vad=vad)
     

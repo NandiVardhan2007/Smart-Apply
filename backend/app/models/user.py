@@ -22,6 +22,7 @@ class User(Document):
 
     # Profile fields
     profile_pic_url: Optional[str] = None
+    resume_url: Optional[str] = None
     phone: Optional[str] = None
     bio: Optional[str] = None
     skills: List[str] = Field(default_factory=list)
