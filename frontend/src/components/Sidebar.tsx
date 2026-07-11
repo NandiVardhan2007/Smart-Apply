@@ -13,7 +13,7 @@ import {
   Briefcase,
   Code
 } from 'lucide-react';
-import { FiLinkedin as Linkedin } from 'react-icons/fi';
+import { Linkedin } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
 import '../styles/dashboard.css';

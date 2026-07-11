@@ -1,7 +1,7 @@
-livekit-agents
-livekit-plugins-silero
-livekit-plugins-openai
-livekit-plugins-cartesia
-livekit-plugins-deepgram
+livekit-agents==0.11.2
+livekit-plugins-silero==0.6.1
+livekit-plugins-openai==0.6.1
+livekit-plugins-cartesia==0.6.1
+livekit-plugins-deepgram==0.6.1
 python-dotenv
 Pillow

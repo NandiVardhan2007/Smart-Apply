@@ -18,7 +18,7 @@ let modelsLoadedGlobally = false;
 export function useFaceAnalyzer(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   isActive: boolean,
-  intervalMs: number = 100
+  intervalMs: number = 400
 ) {
   const [modelsLoaded, setModelsLoaded] = useState(modelsLoadedGlobally);
   const blinkCountRef = useRef(0);

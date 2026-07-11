@@ -210,3 +210,70 @@
     padding: 20px 16px;
   }
 }
+
+/* ── Utilities for Admin and ATS ── */
+.btn-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.btn-action-outline {
+  background: var(--surface-sunken);
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.btn-action-warning {
+  background: var(--warning-faint);
+  color: var(--warning);
+}
+
+.btn-action-primary {
+  background: var(--primary-faint);
+  color: var(--primary);
+}
+
+.btn-action-danger {
+  background: var(--danger-faint);
+  color: var(--danger);
+}
+
+.table-header-cell {
+  padding: 16px 24px;
+  color: var(--ink-faint);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-cell {
+  padding: 16px 24px;
+}
+
+.badge-status-success {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--success-faint);
+  color: var(--success);
+}
+
+.badge-status-danger {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--danger-faint);
+  color: var(--danger);
+}

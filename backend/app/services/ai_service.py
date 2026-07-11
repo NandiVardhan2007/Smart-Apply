@@ -561,6 +561,191 @@ Return your analysis as a valid JSON object matching the exact schema below. Do 
     content = content.strip()
     if content.startswith("```"):
         content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    content = content.strip()
+
+async def tailor_resume_latex(latex_code: str, recommendations: List[str], custom_instructions: str) -> str:
+    """Modify LaTeX resume code based on ATS recommendations and user instructions."""
+    client = _get_client()
+    
+    recs_text = "\n".join([f"- {r}" for r in recommendations]) if recommendations else "None"
+    custom_text = custom_instructions if custom_instructions else "None"
+
+    prompt = f"""You are an expert LaTeX developer and career coach.
+I will provide you with the raw LaTeX source code of a user's resume.
+Your task is to modify the LaTeX code to incorporate the following ATS recommendations and custom user instructions.
+
+ATS Recommendations to apply:
+{recs_text}
+
+Custom User Instructions:
+{custom_text}
+
+Original LaTeX Code:
+```latex
+{latex_code}
+```
+
+Instructions:
+1. Make targeted, intelligent edits to the LaTeX code to fulfill the requests.
+2. Ensure the resulting LaTeX code remains valid, compilable, and syntactically correct.
+3. Do NOT change the overall layout, styling, or document class unless explicitly requested.
+4. CRITICAL: You MUST escape all LaTeX special characters like &, %, $, _, # by preceding them with a backslash (e.g. \\&, \\%, \\$, \\_, \\#) inside text content.
+5. CRITICAL: Do NOT delete or modify the user's contact information (email, phone, LinkedIn, GitHub, etc.) or any existing hyperlinks (\\href) unless explicitly requested. Keep them exactly where they are.
+6. Output ONLY the raw updated LaTeX code. Do NOT wrap it in markdown blocks (e.g. ```latex). Do NOT add any conversational text.
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=4000,
+    )
+
+    content = completion.choices[0].message.content or latex_code
+    content = content.strip()
+    
+    if "```latex" in content:
+        content = content.split("```latex")[1]
+    elif "```" in content:
+        content = content.split("```")[1]
+        
+    if "```" in content:
+        content = content.split("```")[0]
+        
+    return content.strip()
+
+async def generate_cover_letter(resume_text: str, job_description: str) -> str:
+    """Generate a cover letter based on a resume and job description."""
+    client = _get_client()
+    
+    prompt = f"""You are an expert career coach and professional copywriter.
+Write a highly professional, engaging, and concise cover letter for the following job description based on the candidate's resume.
+
+JOB DESCRIPTION:
+{job_description}
+
+CANDIDATE RESUME:
+{resume_text}
+
+Instructions:
+1. Do not use generic, overly robotic openings (like "I am writing to express my interest in..."). Be enthusiastic and direct.
+2. Highlight 2-3 specific skills or experiences from the resume that directly match the job description.
+3. Keep it under 350 words.
+4. Output ONLY the raw cover letter text. Do not include markdown blocks or conversational text. Use placeholders like [Your Name] or [Company Name] if information is missing.
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.6,
+        max_tokens=1000,
+    )
+
+    content = completion.choices[0].message.content or "Error generating cover letter."
+    return content.strip()
+
+async def score_jobs_batch(resume_text: str, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Score a batch of jobs against a resume quickly."""
+    if not jobs:
+        return []
+
+    client = _get_client()
+    
+    # We will pass the job titles and brief descriptions to the LLM
+    jobs_summary = ""
+    for i, job in enumerate(jobs):
+        desc_snippet = job['description'][:400].replace('\n', ' ') if job.get('description') else ""
+        jobs_summary += f"Job ID {i}:\nTitle: {job['title']}\nSnippet: {desc_snippet}\n\n"
+
+    prompt = f"""You are an ATS matching engine. Score the following jobs based on their match with the candidate's resume.
+Score each job from 0 to 100 based on title alignment and skill overlap.
+
+CANDIDATE RESUME:
+{resume_text}
+
+JOBS:
+{jobs_summary}
+
+Return ONLY a valid JSON array of objects, where each object has:
+- "index": integer (the Job ID number from above)
+- "score": integer (0-100)
+- "match_reason": a brief 1-sentence reason why it matches or lacks match
+
+Do not include markdown blocks or conversational text.
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=1500,
+    )
+
+    content = completion.choices[0].message.content or "[]"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        results = json.loads(content)
+        # map back scores
+        for job in jobs:
+            job["match_score"] = 50 # default
+            job["match_reason"] = ""
+            
+        for res in results:
+            idx = res.get("index")
+            if idx is not None and 0 <= idx < len(jobs):
+                jobs[idx]["match_score"] = res.get("score", 50)
+                jobs[idx]["match_reason"] = res.get("match_reason", "")
+                
+    except Exception as e:
+        # Fallback if JSON fails
+        for job in jobs:
+            job["match_score"] = 50
+            job["match_reason"] = ""
+
+    # Sort jobs by match_score descending
+    jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+    return jobs
+
+async def optimize_linkedin_profile(profile_text: str) -> Dict[str, Any]:
+    """Analyze a LinkedIn profile and provide optimization suggestions."""
+    client = _get_client()
+    prompt = f"""You are an expert LinkedIn profile optimization coach and recruiter.
+Analyze the provided LinkedIn profile text (extracted from a PDF) and provide highly actionable recommendations to improve it.
+
+PROFILE TEXT:
+{profile_text}
+
+Return your analysis as a valid JSON object matching the exact schema below. Do not include markdown code blocks (like ```json), conversational text, or any other formatting.
+
+{{
+  "headline_suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
+  "summary_rewrite": "A professionally written, engaging summary paragraph tailored to their experience.",
+  "experience_improvements": [
+    {{
+      "role": "Role Name",
+      "suggestion": "How to improve the bullet points for this specific role."
+    }}
+  ]
+}}
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.6,
+        max_tokens=2000,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
     if content.endswith("```"):
         content = content[:-3]
     content = content.strip()
@@ -573,3 +758,41 @@ Return your analysis as a valid JSON object matching the exact schema below. Do 
             "summary_rewrite": "Unable to parse summary rewrite. Please try again.",
             "experience_improvements": []
         }
+
+async def smart_fill_resume_fields(resume_text: str, required_fields: List[str]) -> Dict[str, str]:
+    """Smart fill resume fields based on extracted text and required template fields."""
+    client = _get_client()
+    fields_list = "\n".join([f'- "{field}"' for field in required_fields])
+    
+    prompt = f"""You are an expert resume assistant. Extract information from the provided resume text to fill out the specified required fields for a new resume template.
+
+RESUME TEXT:
+{resume_text}
+
+REQUIRED FIELDS:
+{fields_list}
+
+Return your answer as a valid JSON object mapping each required field to the extracted text value.
+If a field's information is not found in the resume, leave the value as an empty string "".
+Do not include markdown code blocks (like ```json), conversational text, or any other formatting. Output ONLY the JSON object.
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=2000,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return {}

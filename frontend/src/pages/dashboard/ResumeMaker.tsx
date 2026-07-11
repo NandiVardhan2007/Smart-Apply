@@ -4,8 +4,8 @@ import { useToast } from '../../components/Toast';
 import PageHeader from '../../components/PageHeader';
 import { SkeletonCard, ButtonSpinner } from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
-import { FileText, Download } from 'lucide-react';
-import type { ResumeTemplate } from '../../api/types';
+import { FileText, Download, Wand2 } from 'lucide-react';
+import type { ResumeTemplate, Resume } from '../../api/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResumeMaker() {
@@ -14,6 +14,9 @@ export default function ResumeMaker() {
   const [selectedTemplate, setSelectedTemplate] = useState<ResumeTemplate | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [compiling, setCompiling] = useState(false);
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [filling, setFilling] = useState(false);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>('');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -28,8 +31,15 @@ export default function ResumeMaker() {
       } else {
         showToast('error', 'Failed to fetch templates.');
       }
+      const resResumes = await apiFetch<{ resumes: Resume[] }>('/resumes');
+      if (resResumes.ok) {
+        setResumes(resResumes.data.resumes || []);
+        if (resResumes.data.resumes && resResumes.data.resumes.length > 0) {
+          setSelectedResumeId(resResumes.data.resumes[0]._id);
+        }
+      }
     } catch {
-      showToast('error', 'Network error while fetching templates.');
+      showToast('error', 'Network error while fetching data.');
     } finally {
       setLoading(false);
     }
@@ -90,6 +100,43 @@ export default function ResumeMaker() {
     }
   };
 
+  const handleSmartFill = async () => {
+    if (!selectedTemplate || !selectedResumeId) return;
+    setFilling(true);
+    showToast('info', 'AI is smart filling your resume...', 3000);
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/resume-maker/templates/${selectedTemplate._id}/smart-fill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ resume_id: selectedResumeId })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        showToast('error', errData.detail || 'Failed to smart fill resume.');
+        return;
+      }
+
+      const resData = await response.json();
+      if (resData.filled_data) {
+        setFormData(prev => ({
+          ...prev,
+          ...resData.filled_data
+        }));
+        showToast('success', 'Smart fill complete! You can now edit the fields.');
+      }
+    } catch (err) {
+      showToast('error', 'Error smart filling resume.');
+    } finally {
+      setFilling(false);
+    }
+  };
+
   if (selectedTemplate) {
     return (
       <div className="container fade-in">
@@ -99,6 +146,35 @@ export default function ResumeMaker() {
         </button>
 
         <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
+          {resumes.length > 0 && (
+            <div style={{ marginBottom: 24, padding: 16, backgroundColor: 'var(--surface-sunken)', borderRadius: 8, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: 'var(--ink-faint)' }}>Smart Fill from Resume</label>
+                <select 
+                  className="input" 
+                  value={selectedResumeId} 
+                  onChange={e => setSelectedResumeId(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  {resumes.map(r => (
+                    <option key={r._id} value={r._id}>
+                      {/^[0-9a-fA-F]{24}\.?.*?$/.test(r.filename) ? 'Resume document.pdf' : r.filename}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={handleSmartFill} 
+                disabled={filling || !selectedResumeId}
+                style={{ marginTop: 20 }}
+              >
+                {filling ? <ButtonSpinner /> : <><Wand2 size={16} /> Smart Fill</>}
+              </button>
+            </div>
+          )}
+
           <form onSubmit={handleCompile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {selectedTemplate.required_fields.map(field => (
               <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

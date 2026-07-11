@@ -1,53 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import gsap from 'gsap';
+import React from 'react';
+import { motion } from 'framer-motion';
 
 export default function AnimatedBackground() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const orb1Ref = useRef<HTMLDivElement>(null);
-  const orb2Ref = useRef<HTMLDivElement>(null);
-  const orb3Ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!orb1Ref.current || !orb2Ref.current || !orb3Ref.current) return;
-
-    // Subtle floating animations for background orbs
-    const tl1 = gsap.timeline({ repeat: -1, yoyo: true });
-    tl1.to(orb1Ref.current, {
-      x: '10vw',
-      y: '15vh',
-      rotation: 45,
-      duration: 20,
-      ease: 'sine.inOut',
-    });
-
-    const tl2 = gsap.timeline({ repeat: -1, yoyo: true });
-    tl2.to(orb2Ref.current, {
-      x: '-15vw',
-      y: '10vh',
-      rotation: -30,
-      duration: 25,
-      ease: 'sine.inOut',
-    });
-
-    const tl3 = gsap.timeline({ repeat: -1, yoyo: true });
-    tl3.to(orb3Ref.current, {
-      x: '5vw',
-      y: '-20vh',
-      rotation: 90,
-      duration: 22,
-      ease: 'sine.inOut',
-    });
-
-    return () => {
-      tl1.kill();
-      tl2.kill();
-      tl3.kill();
-    };
-  }, []);
-
   return (
     <div
-      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
@@ -60,8 +16,17 @@ export default function AnimatedBackground() {
         background: 'var(--bg-primary)',
       }}
     >
-      <div
-        ref={orb1Ref}
+      <motion.div
+        animate={{
+          x: ['0vw', '10vw', '0vw'],
+          y: ['0vh', '15vh', '0vh'],
+          rotate: [0, 45, 0],
+        }}
+        transition={{
+          duration: 40,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
         style={{
           position: 'absolute',
           top: '-10%',
@@ -73,8 +38,17 @@ export default function AnimatedBackground() {
           filter: 'blur(60px)',
         }}
       />
-      <div
-        ref={orb2Ref}
+      <motion.div
+        animate={{
+          x: ['0vw', '-15vw', '0vw'],
+          y: ['0vh', '10vh', '0vh'],
+          rotate: [0, -30, 0],
+        }}
+        transition={{
+          duration: 50,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
         style={{
           position: 'absolute',
           top: '40%',
@@ -86,8 +60,17 @@ export default function AnimatedBackground() {
           filter: 'blur(80px)',
         }}
       />
-      <div
-        ref={orb3Ref}
+      <motion.div
+        animate={{
+          x: ['0vw', '5vw', '0vw'],
+          y: ['0vh', '-20vh', '0vh'],
+          rotate: [0, 90, 0],
+        }}
+        transition={{
+          duration: 44,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
         style={{
           position: 'absolute',
           bottom: '-20%',

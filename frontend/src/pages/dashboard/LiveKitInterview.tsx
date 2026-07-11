@@ -35,7 +35,8 @@ function CodeEditorFeature({ theme }: { theme: string }) {
 
   const handleSubmit = () => {
     if (localParticipant) {
-      const payload = new TextEncoder().encode(code);
+      const payloadObj = { code, language };
+      const payload = new TextEncoder().encode(JSON.stringify(payloadObj));
       localParticipant.publishData(payload, { topic: 'code_submission' });
       showToast('success', 'Code submitted to AI!');
       setIsOpen(false);
@@ -247,7 +248,7 @@ function FacialAnalysisHUD() {
           } catch (err) {
             console.error("Face detection error:", err);
           }
-        }, 150);
+        }, 400);
       } catch (err) {
         console.error("Failed to load FaceAPI models", err);
       }

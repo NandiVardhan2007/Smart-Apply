@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Camera, Plus, X, GraduationCap, Briefcase, Globe, Save } from 'lucide-react';
-import { FaGithub, FaLinkedin } from 'react-icons/fa';
+import { Github, Linkedin } from '../../components/Icons';
+
 
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
@@ -310,13 +311,13 @@ export default function Profile() {
         <h3 style={{ fontSize: 15.5, marginBottom: 18 }}>Links</h3>
         <div className="input-group">
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FaGithub size={14} /> GitHub
+            <Github size={14} /> GitHub
           </label>
           <input type="url" className="input-field" placeholder="https://github.com/username" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} />
         </div>
         <div className="input-group">
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FaLinkedin size={14} style={{ color: '#0A66C2' }} /> LinkedIn
+            <Linkedin size={14} style={{ color: '#0A66C2' }} /> LinkedIn
           </label>
           <input type="url" className="input-field" placeholder="https://linkedin.com/in/username" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} />
         </div>

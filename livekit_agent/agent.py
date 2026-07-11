@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import json
 from dotenv import load_dotenv
 
 from livekit import rtc
@@ -8,97 +9,52 @@ from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions,
 from livekit.agents.voice import Agent as VoicePipelineAgent
 from livekit.plugins import cartesia, openai, silero, deepgram
 import aiohttp
-import time
-import base64
-import json
-from PIL import Image
+
+_cached_cartesia_key = None
+_cartesia_key_timestamp = 0
+
+async def _check_cartesia_key(session: aiohttp.ClientSession, key: str) -> str | None:
+    try:
+        headers = {"X-API-Key": key, "Cartesia-Version": "2024-06-10"}
+        async with session.get("https://api.cartesia.ai/voices", headers=headers) as resp:
+            if resp.status == 200:
+                logging.info(f"Using Cartesia key: {key[:12]}...")
+                return key
+            else:
+                logging.warning(f"Cartesia key {key[:12]}... failed with status {resp.status}")
+    except Exception as e:
+        logging.warning(f"Error checking Cartesia key {key[:12]}... : {e}")
+    return None
 
 async def get_working_cartesia_key() -> str:
+    global _cached_cartesia_key, _cartesia_key_timestamp
+    import time
+    now = time.time()
+    
+    # Use cache if valid (5 minutes TTL)
+    if _cached_cartesia_key and (now - _cartesia_key_timestamp < 300):
+        return _cached_cartesia_key
+
     keys_str = os.environ.get("CARTESIA_API_KEYS", "")
     keys = [k.strip() for k in keys_str.split(",") if k.strip()]
     if not keys:
         return os.environ.get("CARTESIA_API_KEY", "")
     
     async with aiohttp.ClientSession() as session:
-        for key in keys:
-            try:
-                headers = {"X-API-Key": key, "Cartesia-Version": "2024-06-10"}
-                async with session.get("https://api.cartesia.ai/voices", headers=headers) as resp:
-                    if resp.status == 200:
-                        logging.info(f"Using Cartesia key: {key[:12]}...")
-                        return key
-                    else:
-                        logging.warning(f"Cartesia key {key[:12]}... failed with status {resp.status}")
-            except Exception as e:
-                logging.warning(f"Error checking Cartesia key {key[:12]}... : {e}")
+        tasks = [_check_cartesia_key(session, key) for key in keys]
+        results = await asyncio.gather(*tasks)
+        
+        for res in results:
+            if res is not None:
+                _cached_cartesia_key = res
+                _cartesia_key_timestamp = now
+                return res
     
     return keys[0] if keys else ""
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-async def analyze_frame(img_b64: str) -> dict:
-    url = "https://integrate.api.nvidia.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "meta/llama-3.2-90b-vision-instruct",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Analyze this candidate's face. Return a JSON object with 'focus' (integer 0-100), 'expression' (string, e.g. 'Engaged'), 'posture' (string, e.g. 'Upright'). Only output valid JSON."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
-                ]
-            }
-        ],
-        "max_tokens": 100,
-        "temperature": 0.3
-    }
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=payload) as resp:
-            data = await resp.json()
-            if 'choices' in data:
-                text = data['choices'][0]['message']['content']
-                if text.startswith("```json"):
-                    text = text.split("```json")[1].split("```")[0].strip()
-                return json.loads(text)
-    return {}
-
-async def process_video(video_stream: rtc.VideoStream, room: rtc.Room):
-    last_process_time = 0
-    async for frame_event in video_stream:
-        now = time.time()
-        # Analyze every 5 seconds
-        if now - last_process_time > 5.0:
-            last_process_time = now
-            try:
-                frame = frame_event.frame
-                argb = frame.convert(rtc.VideoBufferType.RGBA)
-                
-                # Create PIL Image
-                image = Image.frombuffer("RGBA", (argb.width, argb.height), bytes(argb.data), "raw", "RGBA", 0, 1)
-                
-                # Convert to JPEG
-                import io
-                buf = io.BytesIO()
-                image.convert("RGB").save(buf, format="JPEG", quality=60)
-                img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-                
-                # Analyze
-                result = await analyze_frame(img_b64)
-                if result:
-                    # Send via Data Channel
-                    payload = json.dumps(result).encode('utf-8')
-                    await room.local_participant.publish_data(
-                        payload=payload,
-                        topic="facial_analysis"
-                    )
-                    logging.info(f"Published facial analysis: {result}")
-            except Exception as e:
-                logging.warning(f"Failed to process video frame: {e}")
 
 class AssistantFnc(llm.FunctionContext):
     def __init__(self, tts: cartesia.TTS, room: rtc.Room):
@@ -231,9 +187,18 @@ async def entrypoint(ctx: JobContext):
     def on_data_received(data: rtc.DataPacket):
         if data.topic == "code_submission":
             try:
-                code_text = data.data.decode('utf-8')
-                logging.info(f"Received code submission:\n{code_text}")
-                msg = llm.ChatMessage(role="user", content=f"I have submitted my code:\n\n```\n{code_text}\n```\nPlease evaluate it.")
+                raw_text = data.data.decode('utf-8')
+                try:
+                    payload = json.loads(raw_text)
+                    code_text = payload.get("code", "")
+                    language = payload.get("language", "unknown")
+                except json.JSONDecodeError:
+                    # Fallback for old clients sending plain text
+                    code_text = raw_text
+                    language = "unknown"
+                    
+                logging.info(f"Received {language} code submission:\n{code_text}")
+                msg = llm.ChatMessage(role="user", content=f"I have submitted my {language} code:\n\n```{language}\n{code_text}\n```\nPlease evaluate it.")
                 agent.chat_ctx.messages.append(msg)
                 asyncio.create_task(session.say("I have received your code submission.", allow_interruptions=True))
             except Exception as e:
@@ -244,7 +209,6 @@ async def entrypoint(ctx: JobContext):
         agent=agent,
     )
     
-    await asyncio.sleep(1)
     await session.say(f"Hello {participant_name}! I am your AI interviewer. Shall we begin?", allow_interruptions=True)
 
 

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, FileText, ArrowRight, X } from 'lucide-react';
-import { FiLinkedin as Linkedin } from 'react-icons/fi';
+import { Linkedin } from '../../components/Icons';
 import { apiFetch, apiErrorMessage } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';

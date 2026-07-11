@@ -2,14 +2,10 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ScanSearch, Wand2, MessageSquareText, Lightbulb, Video, ArrowRight, Check, Sparkles } from 'lucide-react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import Navbar from '../components/Navbar';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { useAuth } from '../context/AuthContext';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const FEATURES = [
   {
@@ -55,48 +51,7 @@ export default function Landing() {
   const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 100]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
-  useEffect(() => {
-    // GSAP ScrollTrigger for Features
-    if (featuresRef.current) {
-      const cards = featuresRef.current.querySelectorAll('.feature-card');
-      gsap.fromTo(
-        cards,
-        { opacity: 0, y: 50, scale: 0.95 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: featuresRef.current,
-            start: 'top 80%',
-          },
-        }
-      );
-    }
 
-    // GSAP ScrollTrigger for Steps
-    if (stepsRef.current) {
-      const stepCards = stepsRef.current.querySelectorAll('.step-card');
-      gsap.fromTo(
-        stepCards,
-        { opacity: 0, x: -30 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.8,
-          stagger: 0.2,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: stepsRef.current,
-            start: 'top 75%',
-          },
-        }
-      );
-    }
-  }, []);
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden' }}>
@@ -184,9 +139,13 @@ export default function Landing() {
           </div>
 
           <div className="grid-auto-fit">
-            {FEATURES.map((feature) => (
-              <div
+            {FEATURES.map((feature, idx) => (
+              <motion.div
                 key={feature.title}
+                initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, delay: idx * 0.1, ease: "easeOut" }}
                 className="card feature-card"
                 style={{
                   display: 'flex',
@@ -212,7 +171,7 @@ export default function Landing() {
                 </div>
                 <h3 style={{ fontSize: 20, marginBottom: 12 }}>{feature.title}</h3>
                 <p className="text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>{feature.description}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -227,9 +186,13 @@ export default function Landing() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40 }}>
-            {STEPS.map((step) => (
-              <div
+            {STEPS.map((step, idx) => (
+              <motion.div
                 key={step.n}
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.8, delay: idx * 0.2, ease: "easeOut" }}
                 className="step-card"
                 style={{
                   padding: '32px',
@@ -256,7 +219,7 @@ export default function Landing() {
                   <h3 style={{ fontSize: 22, marginBottom: 12 }}>{step.title}</h3>
                   <p className="text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>{step.description}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>

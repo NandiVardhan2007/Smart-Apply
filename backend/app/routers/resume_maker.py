@@ -13,9 +13,14 @@ import filetype
 
 from app.middleware.auth_middleware import get_current_user, require_admin
 from app.models.resume_template import ResumeTemplate
+from app.models.resume import Resume
 from app.models.user import User
-from app.services import storage_service
+from app.services import storage_service, ai_service
 from app.rate_limiter import limiter
+from pydantic import BaseModel
+
+class SmartFillRequest(BaseModel):
+    resume_id: str
 
 router = APIRouter(prefix="/api/resume-maker", tags=["resume-maker"])
 
@@ -162,3 +167,33 @@ async def compile_template(
         filename="resume.pdf",
         headers={"Content-Disposition": "attachment; filename=resume.pdf"}
     )
+
+@router.post("/templates/{template_id}/smart-fill")
+@limiter.limit("5/minute")
+async def smart_fill_template(
+    request: Request,
+    template_id: str,
+    payload: SmartFillRequest,
+    user: User = Depends(get_current_user)
+):
+    """Smart fill a resume template form using an existing parsed resume."""
+    try:
+        template = await ResumeTemplate.get(PydanticObjectId(template_id))
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+            
+        resume = await Resume.get(PydanticObjectId(payload.resume_id))
+        if not resume or resume.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Resume not found")
+            
+        filled_data = await ai_service.smart_fill_resume_fields(
+            resume.extracted_text, 
+            template.required_fields
+        )
+        
+        return {"filled_data": filled_data}
+        
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Failed to smart fill: {str(e)}")
