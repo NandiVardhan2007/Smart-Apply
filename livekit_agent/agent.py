@@ -144,28 +144,28 @@ async def entrypoint(ctx: JobContext):
             f"{base_rule}"
         )
     elif theme == "Behavioral":
-        voice_id = os.environ.get("VOICE_ID_BEHAVIORAL", "79a125e8-cd45-4c13-8a67-188112f4dd22")
+        voice_id = os.environ.get("VOICE_ID_BEHAVIORAL", "92da9281-7cf3-4c61-be0f-face03a3312f")
         instructions = (
             "You are a professional behavioral interviewer evaluating leadership and cultural fit. "
             "Ask situational questions like 'Tell me about a time when...' and dig deep into their reasoning. "
             f"{base_rule}"
         )
     elif theme == "Executive":
-        voice_id = os.environ.get("VOICE_ID_EXECUTIVE", "5c5318e0-73ce-450b-801b-c6b75ebf91b7")
+        voice_id = os.environ.get("VOICE_ID_EXECUTIVE", "56e35e2d-6eb6-4226-ab8b-9776515a7094")
         instructions = (
             "You are a stern, high-level executive conducting a leadership interview. "
             "You expect data-driven answers, challenge the candidate on strategy, and demand business impact. "
             f"{base_rule}"
         )
     elif theme == "Creative":
-        voice_id = os.environ.get("VOICE_ID_CREATIVE", "c45a8cb6-4556-42db-ab25-3b1a20b72ea9")
+        voice_id = os.environ.get("VOICE_ID_CREATIVE", "59ba7dee-8f9a-432f-a6c0-ffb33666b654")
         instructions = (
             "You are an enthusiastic and casual creative director for a design agency. "
             "You are energetic, use informal language, and ask imaginative, out-of-the-box questions. "
             f"{base_rule}"
         )
     else: # HR
-        voice_id = os.environ.get("VOICE_ID_HR", "a0e99841-438c-4a64-b679-ae501e7d6091")
+        voice_id = os.environ.get("VOICE_ID_HR", "59ba7dee-8f9a-432f-a6c0-ffb33666b654")
         instructions = (
             "You are a friendly and welcoming HR recruiter. "
             "You are conducting an initial phone screen with a candidate. "
@@ -193,8 +193,8 @@ async def entrypoint(ctx: JobContext):
         stt=deepgram.STT(), # Deepgram is ultra-fast and purpose-built for speech
         llm=llm_instance,
         tts=tts,
+        tools=[fnc_ctx],
     )
-    agent.fnc_ctx = fnc_ctx
 
     session = AgentSession(vad=vad)
     
