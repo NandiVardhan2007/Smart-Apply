@@ -10,18 +10,41 @@ import Editor from '@monaco-editor/react';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
 
+const getBoilerplate = (lang: string) => {
+  switch(lang) {
+    case 'python': return 'def solution():\n    pass';
+    case 'javascript': return 'function solution() {\n    \n}';
+    case 'typescript': return 'function solution(): any {\n    \n}';
+    case 'java': return 'class Solution {\n    public static void main(String[] args) {\n        \n    }\n}';
+    case 'cpp': return '#include <iostream>\n\nint main() {\n    return 0;\n}';
+    default: return '';
+  }
+};
+
 function CodeEditorFeature({ theme }: { theme: string }) {
   const { localParticipant } = useLocalParticipant();
   const { showToast } = useToast();
   const room = useRoomContext();
   const [isOpen, setIsOpen] = useState(false);
-  const [code, setCode] = useState('def solution():\n    pass');
   const [language, setLanguage] = useState('python');
+  const [code, setCode] = useState(getBoilerplate('python'));
+  const [questionData, setQuestionData] = useState<{ title?: string; description?: string; sample_input?: string; sample_output?: string } | null>(null);
 
   useEffect(() => {
     if (!room) return;
     const handleData = (payload: Uint8Array, participant: any, kind: any, topic?: string) => {
       if (topic === 'open_code_editor') {
+        try {
+          const text = new TextDecoder().decode(payload);
+          if (text !== 'open') {
+             const data = JSON.parse(text);
+             setQuestionData(data);
+          } else {
+             setQuestionData(null);
+          }
+        } catch (e) {
+          setQuestionData(null);
+        }
         setIsOpen(true);
       }
     };
@@ -30,6 +53,12 @@ function CodeEditorFeature({ theme }: { theme: string }) {
       room.off(RoomEvent.DataReceived, handleData);
     };
   }, [room]);
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value;
+    setLanguage(newLang);
+    setCode(getBoilerplate(newLang));
+  };
 
   if (theme !== 'Technical') return null;
 
@@ -57,14 +86,14 @@ function CodeEditorFeature({ theme }: { theme: string }) {
             aria-modal="true" 
             aria-labelledby="code-editor-title"
             tabIndex={-1}
-            style={{ display: 'flex', flexDirection: 'column', height: '80vh', padding: 0 }}
+            style={{ display: 'flex', flexDirection: 'column', height: '90vh', width: '90vw', maxWidth: '1200px', padding: 0 }}
           >
              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                  <h3 id="code-editor-title" style={{ margin: 0, fontSize: '18px' }}>Live Code Editor</h3>
                  <select 
                    value={language} 
-                   onChange={(e) => setLanguage(e.target.value)}
+                   onChange={handleLanguageChange}
                    className="input-field"
                    style={{ width: 'auto', padding: '6px 12px' }}
                  >
@@ -77,22 +106,47 @@ function CodeEditorFeature({ theme }: { theme: string }) {
                </div>
                <button onClick={() => setIsOpen(false)} className="btn btn-ghost" style={{ padding: '8px 16px' }}>Close</button>
              </div>
-             <div style={{ flex: 1, overflow: 'hidden' }}>
-               <Editor
-                 height="100%"
-                 language={language}
-                 theme="vs-dark"
-                 value={code}
-                 onChange={(val) => setCode(val || '')}
-                 options={{ 
-                   minimap: { enabled: false },
-                   suggestOnTriggerCharacters: true,
-                   quickSuggestions: { other: true, comments: true, strings: true },
-                   wordBasedSuggestions: "currentDocument",
-                   acceptSuggestionOnEnter: "on"
-                 }}
-               />
+             
+             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+               {/* Left side: Question details */}
+               <div style={{ flex: 1, padding: '24px', borderRight: '1px solid var(--border)', overflowY: 'auto', background: 'var(--bg-secondary)', display: questionData ? 'block' : 'none' }}>
+                  <h2 style={{ marginTop: 0, color: 'var(--text-primary)', fontSize: '20px' }}>{questionData?.title || 'Coding Question'}</h2>
+                  <p style={{ whiteSpace: 'pre-wrap', marginTop: '16px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{questionData?.description}</p>
+                  
+                  {questionData?.sample_input && (
+                      <div style={{ marginTop: '24px' }}>
+                          <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Sample Input</h4>
+                          <pre style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', color: 'var(--text-primary)', overflowX: 'auto', fontFamily: 'var(--font-mono)' }}>{questionData.sample_input}</pre>
+                      </div>
+                  )}
+                  
+                  {questionData?.sample_output && (
+                      <div style={{ marginTop: '16px' }}>
+                          <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Sample Output</h4>
+                          <pre style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', color: 'var(--text-primary)', overflowX: 'auto', fontFamily: 'var(--font-mono)' }}>{questionData.sample_output}</pre>
+                      </div>
+                  )}
+               </div>
+               
+               {/* Right side: Editor */}
+               <div style={{ flex: questionData ? 1.5 : 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                 <Editor
+                   height="100%"
+                   language={language}
+                   theme="vs-dark"
+                   value={code}
+                   onChange={(val) => setCode(val || '')}
+                   options={{ 
+                     minimap: { enabled: false },
+                     suggestOnTriggerCharacters: true,
+                     quickSuggestions: { other: true, comments: true, strings: true },
+                     wordBasedSuggestions: "currentDocument",
+                     acceptSuggestionOnEnter: "on"
+                   }}
+                 />
+               </div>
              </div>
+             
              <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)' }}>
                <button className="btn btn-primary" onClick={handleSubmit}>Submit Code to AI</button>
              </div>

@@ -257,7 +257,7 @@ export default function AtsChecker() {
             )}
 
             {analyzing && (
-              <SkeletonAnalysis />
+              <SkeletonAnalysis key="analyzing" />
             )}
 
             {result && tone && !analyzing && (

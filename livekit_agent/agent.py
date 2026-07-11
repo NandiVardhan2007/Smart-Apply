@@ -76,10 +76,23 @@ class AssistantFnc(llm.ToolContext):
             return "Voice changed to female."
         return "Unknown gender."
 
-    @llm.function_tool(description="Open the live code editor on the user's screen. Call this tool immediately when you ask the candidate a coding question.")
-    async def open_code_editor(self):
+    @llm.function_tool(description="Open the live code editor on the user's screen. Call this tool immediately when you ask the candidate a coding question. Provide the question details to display.")
+    async def open_code_editor(
+        self,
+        question_title: typing.Annotated[str, "The title of the coding question"],
+        question_description: typing.Annotated[str, "The full description of the coding question"],
+        sample_input: typing.Annotated[str, "Sample input for the question"],
+        sample_output: typing.Annotated[str, "Sample output for the question"]
+    ):
+        payload = json.dumps({
+            "title": question_title,
+            "description": question_description,
+            "sample_input": sample_input,
+            "sample_output": sample_output
+        }).encode('utf-8')
+        
         await self.room.local_participant.publish_data(
-            payload=b'open',
+            payload=payload,
             topic="open_code_editor"
         )
         return "Editor opened successfully on the user's screen."
