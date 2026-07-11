@@ -277,3 +277,35 @@
   background: var(--danger-faint);
   color: var(--danger);
 }
+
+/* ── Responsive Page Grid Overrides ── */
+
+@media (max-width: 900px) {
+  .ats-grid,
+  .cover-letter-grid,
+  .job-matching-grid,
+  .resume-maker-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-page-header h1 {
+    font-size: 22px;
+  }
+  .dashboard-page-header p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-page-header h1 {
+    font-size: 20px;
+  }
+  .table-header-cell,
+  .table-cell {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+}
+

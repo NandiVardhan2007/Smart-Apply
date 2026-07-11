@@ -266,7 +266,14 @@ export default function ResumeMaker() {
       {loading ? (
         <div className="grid-auto-fit">
           {[1, 2, 3].map((i) => (
-            <SkeletonCard key={i} height={300} />
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <SkeletonCard height={300} />
+            </motion.div>
           ))}
         </div>
       ) : templates.length === 0 ? (
@@ -307,6 +314,18 @@ export default function ResumeMaker() {
           </AnimatePresence>
         </div>
       )}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .resume-maker-detail-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .resume-maker-detail-grid > div:first-child {
+            position: static !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
+

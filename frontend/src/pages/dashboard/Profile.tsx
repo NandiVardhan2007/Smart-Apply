@@ -192,7 +192,7 @@ export default function Profile() {
     <div className="container-narrow">
       <PageHeader title="Profile" subtitle="Keep your information current for the best AI-powered recommendations." />
 
-      <div className="card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20 }}>
+      <div className="card profile-header-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ position: 'relative' }}>
           <button
             onClick={user?.profile_pic_url ? handleViewAvatar : undefined}
@@ -348,6 +348,15 @@ export default function Profile() {
         onClose={() => setCropModalOpen(false)}
         onSave={handleAvatarSave}
       />
+
+      <style>{`
+        @media (max-width: 480px) {
+          .profile-header-card {
+            flex-direction: column !important;
+            text-align: center;
+          }
+        }
+      `}</style>
     </div>
   );
 }

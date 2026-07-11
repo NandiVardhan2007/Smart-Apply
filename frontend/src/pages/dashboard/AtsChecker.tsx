@@ -4,7 +4,7 @@ import { UploadCloud, FileText, ArrowRight, X, Sparkles } from 'lucide-react';
 
 import { apiFetch, apiErrorMessage } from '../../api/client';
 import { useToast } from '../../components/Toast';
-import { InlineLoader, ButtonSpinner } from '../../components/LoadingSpinner';
+import { SkeletonAnalysis, ButtonSpinner } from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import type { AtsCheckResult, Resume } from '../../api/types';
 
@@ -257,7 +257,7 @@ export default function AtsChecker() {
             )}
 
             {analyzing && (
-              <InlineLoader title="AI is reading your resume…" subtitle="Scanning for keywords, formatting, and ATS compatibility" />
+              <SkeletonAnalysis />
             )}
 
             {result && tone && !analyzing && (

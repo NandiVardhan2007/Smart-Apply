@@ -126,7 +126,14 @@ export default function Resumes() {
       {loading ? (
         <div className="grid-auto-fit">
           {[1, 2, 3].map((i) => (
-            <SkeletonCard key={i} height={150} />
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <SkeletonCard variant="list-item" />
+            </motion.div>
           ))}
         </div>
       ) : resumes.length === 0 ? (

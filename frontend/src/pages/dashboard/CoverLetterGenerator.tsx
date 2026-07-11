@@ -93,7 +93,7 @@ export default function CoverLetterGenerator() {
 
       <PageLoader show={generating} title="Drafting your cover letter" subtitle="Analyzing job requirements and matching your skills..." />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.15fr)', gap: 22, alignItems: 'start' }} className="cl-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.15fr)', gap: 22, alignItems: 'start' }} className="cl-grid cover-letter-grid">
         {/* Input */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           <div>

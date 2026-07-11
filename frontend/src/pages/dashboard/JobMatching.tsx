@@ -94,7 +94,7 @@ export default function JobMatching() {
       />
 
       <div className="card" style={{ marginBottom: 32 }}>
-        <form onSubmit={handleSearch} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'end' }}>
+        <form onSubmit={handleSearch} className="job-search-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'end' }}>
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 8 }}>Target Role</label>
             <div className="input-with-icon">
@@ -197,7 +197,7 @@ export default function JobMatching() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="card"
+                className="card job-result-card"
                 style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}
               >
                 {/* Score badge */}
@@ -222,7 +222,7 @@ export default function JobMatching() {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                       <h3 style={{ fontSize: 18, marginBottom: 4, fontWeight: 600 }}>{job.title}</h3>
                       <div style={{ display: 'flex', gap: 12, fontSize: 14, color: 'var(--ink-soft)', marginBottom: 12 }}>
@@ -269,6 +269,14 @@ export default function JobMatching() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .job-search-form { grid-template-columns: 1fr !important; }
+          .job-result-card { flex-direction: column !important; align-items: stretch !important; gap: 16px !important; }
+          .job-result-card > div:first-child { width: 100% !important; height: auto !important; flex-direction: row !important; padding: 12px 16px !important; }
+        }
+      `}</style>
     </div>
   );
 }

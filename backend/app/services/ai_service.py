@@ -764,7 +764,7 @@ async def smart_fill_resume_fields(resume_text: str, required_fields: List[str])
     client = _get_client()
     fields_list = "\n".join([f'- "{field}"' for field in required_fields])
     
-    prompt = f"""You are an expert resume assistant. Extract information from the provided resume text to fill out the specified required fields for a new resume template.
+    prompt = f"""You are an expert resume assistant. Extract comprehensive information from the provided resume text to fill out the specified required fields for a new resume template.
 
 RESUME TEXT:
 {resume_text}
@@ -772,9 +772,12 @@ RESUME TEXT:
 REQUIRED FIELDS:
 {fields_list}
 
-Return your answer as a valid JSON object mapping each required field to the extracted text value.
-If a field's information is not found in the resume, leave the value as an empty string "".
-Do not include markdown code blocks (like ```json), conversational text, or any other formatting. Output ONLY the JSON object.
+Instructions:
+1. Extract ALL relevant details for each required field. Do not summarize or truncate if the field represents a list of items (e.g., Experience, Projects, Education) - include all the entries you can find.
+2. If a field represents bullet points or multiple items, separate them clearly using newlines or bullet formats (e.g., - ) so they render nicely.
+3. If a field's information is completely missing, leave the value as an empty string "".
+4. Return your answer as a valid JSON object mapping each required field to the extracted text value.
+5. Do not include markdown code blocks (like ```json), conversational text, or any other formatting. Output ONLY the JSON object.
 """
 
     completion = await _call_llm_with_tracking(
