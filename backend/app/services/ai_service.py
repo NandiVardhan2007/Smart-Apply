@@ -383,3 +383,52 @@ Instructions:
 
     content = completion.choices[0].message.content or "{}"
     return _parse_llm_json(content, fallback={})
+
+async def parse_resume_for_profile(resume_text: str) -> Dict[str, Any]:
+    """Parse a resume PDF text and extract profile details."""
+    client = _get_client()
+    prompt = f"""You are an expert AI resume parser. Extract the following information from the provided resume text into a structured JSON format.
+
+RESUME:
+{resume_text}
+
+Extract the details exactly into this JSON format:
+{{
+    "full_name": "Full Name or null",
+    "bio": "A short 2-3 sentence professional summary based on the resume",
+    "skills": ["skill1", "skill2"],
+    "education": [
+        {{
+            "institution": "University Name",
+            "degree": "Degree Name",
+            "start_date": "YYYY-MM or string",
+            "end_date": "YYYY-MM or string",
+            "description": "Details"
+        }}
+    ],
+    "experience": [
+        {{
+            "company": "Company Name",
+            "role": "Job Title",
+            "start_date": "YYYY-MM",
+            "end_date": "YYYY-MM or Present",
+            "description": "Bullet points or description"
+        }}
+    ],
+    "linkedin_url": "URL or null",
+    "github_url": "URL or null",
+    "portfolio_url": "URL or null"
+}}
+
+Return ONLY valid JSON, no markdown formatting."""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=2500,
+    )
+
+    content = completion.choices[0].message.content or "{{}}"
+    return _parse_llm_json(content, fallback={{}})
+
