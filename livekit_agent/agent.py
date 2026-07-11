@@ -60,7 +60,7 @@ import typing
 
 class AssistantFnc(llm.ToolContext):
     def __init__(self, tts: cartesia.TTS, room: rtc.Room):
-        super().__init__()
+        super().__init__(tools=[])
         self.tts = tts
         self.room = room
 
