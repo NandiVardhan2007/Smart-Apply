@@ -17,7 +17,11 @@ async def init_db() -> None:
     global _client
     _client = AsyncIOMotorClient(settings.MONGODB_URI)
     database = _client[settings.MONGODB_DB_NAME]
-    await init_beanie(database=database, document_models=[User, Resume, InterviewReport, SystemSettings, APILog, ResumeTemplate])
+    await init_beanie(
+        database=database,
+        document_models=[User, Resume, InterviewReport, SystemSettings, APILog, ResumeTemplate],
+        allow_index_dropping=True,
+    )
 
 
 async def close_db() -> None:
