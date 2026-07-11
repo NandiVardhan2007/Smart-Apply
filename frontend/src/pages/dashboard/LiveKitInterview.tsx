@@ -430,18 +430,18 @@ export default function LiveKitInterview() {
       serverUrl={import.meta.env.VITE_LIVEKIT_URL}
       connect={true}
       onDisconnected={handleDisconnect}
-      style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}
+      className="interview-layout"
     >
-      <div style={{ flex: 1, display: 'flex', padding: '24px', gap: '24px', boxSizing: 'border-box', overflow: 'hidden' }}>
+      <div className="interview-container">
         
         {/* Left Side: User Video + Facial Analysis */}
-        <div style={{ flex: 2, height: '100%' }}>
+        <div className="interview-video-pane">
            <VideoView />
         </div>
 
         {/* Right Side: AI Visualizer & Controls */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', overflowY: 'auto' }}>
-           <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '32px' }}>
+        <div className="interview-control-pane">
+           <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '32px', minHeight: '300px' }}>
               <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', color: 'var(--primary-foreground)' }}>
                  <Bot size={40} />
               </div>
