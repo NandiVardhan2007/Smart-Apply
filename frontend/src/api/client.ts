@@ -55,7 +55,7 @@ export async function apiFetch<T = unknown>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const token = _getToken ? _getToken() : localStorage.getItem('sa_token');
+  const token = _getToken ? _getToken() : null;
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -74,6 +74,7 @@ export async function apiFetch<T = unknown>(
     response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
     });
   } catch (error) {
     // Network error (e.g. server down, offline). Wait 500ms and retry exactly once.
@@ -81,6 +82,7 @@ export async function apiFetch<T = unknown>(
     response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
     });
   }
 

@@ -6,10 +6,19 @@ from typing import List
 import httpx
 import re
 import fitz  # PyMuPDF
+import nh3
 from app.config import settings
 from app.services.latex_service import convert_pdf_to_images
 
 logger = logging.getLogger(__name__)
+
+def sanitize_resume_html(html: str) -> str:
+    return nh3.clean(
+        html,
+        tags={"html", "head", "body", "style", "div", "span", "p", "h1", "h2", "h3",
+              "ul", "li", "a", "strong", "em", "table", "tr", "td", "th", "br", "hr"},
+        attributes={"a": {"href"}, "*": {"class", "style"}},
+    )
 
 async def extract_html_from_pdf(pdf_content: bytes) -> str:
     """Use NVIDIA vision model to extract a styled HTML resume from a PDF."""
@@ -121,7 +130,7 @@ p {{ margin: 0 0 8px 0; }}
                     content = re.sub(r'^```\s*', '', content)
                     content = re.sub(r'```\s*$', '', content)
             
-            return content.strip()
+            return sanitize_resume_html(content.strip())
             
     except Exception as e:
         logger.error(f"Failed to extract HTML: {e}")

@@ -11,6 +11,43 @@ from app.models.api_metrics import APILog
 _client: Optional[AsyncOpenAI] = None
 
 
+
+def _parse_llm_json(content: str, fallback: Any) -> Any:
+    """Safely parse JSON from LLM output, handling markdown fences and extraneous text."""
+    if not content:
+        return fallback
+    content = content.strip()
+    
+    if content.startswith("```"):
+        lines = content.split("\n")
+        if len(lines) > 1:
+            content = "\n".join(lines[1:])
+        else:
+            content = content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+    
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        pass
+        
+    try:
+        start_idx = content.find('{')
+        end_idx = content.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            return json.loads(content[start_idx:end_idx+1])
+            
+        start_idx = content.find('[')
+        end_idx = content.rfind(']')
+        if start_idx != -1 and end_idx != -1:
+            return json.loads(content[start_idx:end_idx+1])
+    except Exception:
+        pass
+        
+    return fallback
+
 def _get_client() -> AsyncOpenAI:
     """Lazy-initialize the NVIDIA NIM OpenAI-compatible client."""
     global _client
@@ -115,130 +152,11 @@ You MUST return your analysis as a valid JSON object matching the exact schema b
     )
 
     content = completion.choices[0].message.content or "{}"
-    
-    try:
-        start_idx = content.find('{')
-        end_idx = content.rfind('}')
-        if start_idx != -1 and end_idx != -1:
-            json_str = content[start_idx:end_idx+1]
-            return json.loads(json_str)
-        else:
-            raise json.JSONDecodeError("No JSON object found", content, 0)
-    except Exception:
-        return {
-            "score": 0,
-            "matched_keywords": [],
-            "missing_keywords": [],
-            "suggestions": ["Unable to parse AI response. Please try again."],
-            "raw_response": content,
-        }
-
-async def parse_resume_for_profile(resume_text: str) -> Dict[str, Any]:
-    """Parse a resume to extract structured data for the user's profile."""
-    client = _get_client()
-    prompt = f"""You are an expert resume parser. Extract the following information from the resume text below:
-- "full_name": The candidate's full name
-- "bio": A short professional summary or objective
-- "skills": A list of technical and soft skills
-- "education": A list of objects with keys: "institution", "degree", "start_date" (optional string), "end_date" (optional string), "description" (optional string)
-- "experience": A list of objects with keys: "company", "role", "start_date" (optional string), "end_date" (optional string), "description" (optional string)
-- "linkedin_url": LinkedIn profile URL if present, else null
-- "github_url": GitHub profile URL if present, else null
-- "portfolio_url": Portfolio or personal website URL if present, else null
-
-RESUME:
-{resume_text}
-
-Return ONLY valid JSON, matching the keys above. No markdown or extra text."""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-        max_tokens=2000,
-    )
-
-    content = completion.choices[0].message.content or "{}"
-    
-    try:
-        start_idx = content.find('{')
-        end_idx = content.rfind('}')
-        if start_idx != -1 and end_idx != -1:
-            json_str = content[start_idx:end_idx+1]
-            return json.loads(json_str)
-        else:
-            raise json.JSONDecodeError("No JSON object found", content, 0)
-    except Exception:
-        return {
-            "full_name": None, "bio": None, "skills": [],
-            "education": [], "experience": [],
-            "linkedin_url": None, "github_url": None, "portfolio_url": None
-        }
-
-
-async def chat_completion(messages: List[Dict[str, str]]) -> str:
-    """General AI chatbot for career advice."""
-    client = AsyncOpenAI(
-        base_url=settings.NVIDIA_BASE_URL,
-        api_key=settings.CHATBOT_API_KEY or settings.NVIDIA_API_KEY,
-    )
-    system_msg = {
-        "role": "system",
-        "content": (
-            "You are Smart Apply AI, a friendly and helpful career advisor for "
-            "students and job seekers. Help with resume tips, cover letters, "
-            "interview preparation, job search strategies, and career guidance. "
-            "Keep responses concise, actionable, and encouraging."
-        ),
-    }
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[system_msg] + messages,
-        temperature=0.7,
-        max_tokens=1500,
-    )
-
-    return completion.choices[0].message.content or "I'm sorry, I couldn't generate a response."
-
-
-async def generate_interview_question(
-    role: str, difficulty: str
-) -> Dict[str, str]:
-    """Generate an AI interview question for a given role and difficulty."""
-    client = _get_client()
-    prompt = f"""Generate a single {difficulty} difficulty interview question for a {role} position.
-
-Return a JSON object with:
-- "question": the interview question
-- "category": the category (e.g., "Technical", "Behavioral", "System Design", "Problem Solving")
-- "tips": a brief tip for how to approach this question (1-2 sentences)
-
-Return ONLY valid JSON."""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8,
-        max_tokens=500,
-    )
-
-    content = completion.choices[0].message.content or "{}"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {
+    return _parse_llm_json(content, fallback={
             "question": "Tell me about a challenging project you've worked on.",
             "category": "Behavioral",
             "tips": "Use the STAR method: Situation, Task, Action, Result.",
-        }
+        })
 
 
 async def evaluate_interview_answer(
@@ -269,22 +187,12 @@ Return ONLY valid JSON."""
     )
 
     content = completion.choices[0].message.content or "{}"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {
+    return _parse_llm_json(content, fallback={
             "score": 50,
             "strengths": ["Attempted to answer the question"],
             "weaknesses": ["Could provide more specific examples"],
             "improved_answer": "Unable to parse AI feedback. Please try again.",
-        }
+        })
 
 async def suggest_projects(skills: str, time_commitment: str, interests: str) -> List[Dict[str, Any]]:
     """Suggest software projects based on user skills, time, and interests."""
@@ -313,18 +221,8 @@ Return a JSON array of project objects. Return ONLY valid JSON, no markdown form
         max_tokens=1500,
     )
 
-    content = completion.choices[0].message.content or "[]"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return []
+    content = completion.choices[0].message.content or "{}"
+    return _parse_llm_json(content, fallback=[])
 
 async def generate_project_roadmap(project_details: Dict[str, Any], preferences: Dict[str, str] = None) -> Dict[str, Any]:
     """Generate a step-by-step roadmap for a specific project."""
@@ -361,17 +259,7 @@ Return ONLY valid JSON, no markdown formatting."""
     )
 
     content = completion.choices[0].message.content or "{}"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {"phases": []}
+    return _parse_llm_json(content, fallback={"phases": []})
 
 async def tailor_resume_latex(latex_code: str, recommendations: List[str], custom_instructions: str) -> str:
     """Modify LaTeX resume code based on ATS recommendations and user instructions."""
@@ -456,308 +344,12 @@ Instructions:
         max_tokens=1000,
     )
 
-    content = completion.choices[0].message.content or "Error generating cover letter."
-    return content.strip()
-
-async def score_jobs_batch(resume_text: str, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Score a batch of jobs against a resume quickly."""
-    if not jobs:
-        return []
-
-    client = _get_client()
-    
-    # We will pass the job titles and brief descriptions to the LLM
-    jobs_summary = ""
-    for i, job in enumerate(jobs):
-        desc_snippet = job['description'][:400].replace('\n', ' ') if job.get('description') else ""
-        jobs_summary += f"Job ID {i}:\nTitle: {job['title']}\nSnippet: {desc_snippet}\n\n"
-
-    prompt = f"""You are an ATS matching engine. Score the following jobs based on their match with the candidate's resume.
-Score each job from 0 to 100 based on title alignment and skill overlap.
-
-CANDIDATE RESUME:
-{resume_text}
-
-JOBS:
-{jobs_summary}
-
-Return ONLY a valid JSON array of objects, where each object has:
-- "index": integer (the Job ID number from above)
-- "score": integer (0-100)
-- "match_reason": a brief 1-sentence reason why it matches or lacks match
-
-Do not include markdown blocks or conversational text.
-"""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=1500,
-    )
-
-    content = completion.choices[0].message.content or "[]"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        results = json.loads(content)
-        # map back scores
-        for job in jobs:
-            job["match_score"] = 50 # default
-            job["match_reason"] = ""
-            
-        for res in results:
-            idx = res.get("index")
-            if idx is not None and 0 <= idx < len(jobs):
-                jobs[idx]["match_score"] = res.get("score", 50)
-                jobs[idx]["match_reason"] = res.get("match_reason", "")
-                
-    except Exception as e:
-        # Fallback if JSON fails
-        for job in jobs:
-            job["match_score"] = 50
-            job["match_reason"] = ""
-
-    # Sort jobs by match_score descending
-    jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
-    return jobs
-
-async def optimize_linkedin_profile(profile_text: str) -> Dict[str, Any]:
-    """Analyze a LinkedIn profile and provide optimization suggestions."""
-    client = _get_client()
-    prompt = f"""You are an expert LinkedIn profile optimization coach and recruiter.
-Analyze the provided LinkedIn profile text (extracted from a PDF) and provide highly actionable recommendations to improve it.
-
-PROFILE TEXT:
-{profile_text}
-
-Return your analysis as a valid JSON object matching the exact schema below. Do not include markdown code blocks (like ```json), conversational text, or any other formatting.
-
-{{
-  "headline_suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
-  "summary_rewrite": "A professionally written, engaging summary paragraph tailored to their experience.",
-  "experience_improvements": [
-    {{
-      "role": "Role Name",
-      "suggestion": "How to improve the bullet points for this specific role."
-    }}
-  ]
-}}
-"""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.6,
-        max_tokens=2000,
-    )
-
     content = completion.choices[0].message.content or "{}"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    content = content.strip()
-
-async def tailor_resume_latex(latex_code: str, recommendations: List[str], custom_instructions: str) -> str:
-    """Modify LaTeX resume code based on ATS recommendations and user instructions."""
-    client = _get_client()
-    
-    recs_text = "\n".join([f"- {r}" for r in recommendations]) if recommendations else "None"
-    custom_text = custom_instructions if custom_instructions else "None"
-
-    prompt = f"""You are an expert LaTeX developer and career coach.
-I will provide you with the raw LaTeX source code of a user's resume.
-Your task is to modify the LaTeX code to incorporate the following ATS recommendations and custom user instructions.
-
-ATS Recommendations to apply:
-{recs_text}
-
-Custom User Instructions:
-{custom_text}
-
-Original LaTeX Code:
-```latex
-{latex_code}
-```
-
-Instructions:
-1. Make targeted, intelligent edits to the LaTeX code to fulfill the requests.
-2. Ensure the resulting LaTeX code remains valid, compilable, and syntactically correct.
-3. Do NOT change the overall layout, styling, or document class unless explicitly requested.
-4. CRITICAL: You MUST escape all LaTeX special characters like &, %, $, _, # by preceding them with a backslash (e.g. \\&, \\%, \\$, \\_, \\#) inside text content.
-5. CRITICAL: Do NOT delete or modify the user's contact information (email, phone, LinkedIn, GitHub, etc.) or any existing hyperlinks (\\href) unless explicitly requested. Keep them exactly where they are.
-6. Output ONLY the raw updated LaTeX code. Do NOT wrap it in markdown blocks (e.g. ```latex). Do NOT add any conversational text.
-"""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=4000,
-    )
-
-    content = completion.choices[0].message.content or latex_code
-    content = content.strip()
-    
-    if "```latex" in content:
-        content = content.split("```latex")[1]
-    elif "```" in content:
-        content = content.split("```")[1]
-        
-    if "```" in content:
-        content = content.split("```")[0]
-        
-    return content.strip()
-
-async def generate_cover_letter(resume_text: str, job_description: str) -> str:
-    """Generate a cover letter based on a resume and job description."""
-    client = _get_client()
-    
-    prompt = f"""You are an expert career coach and professional copywriter.
-Write a highly professional, engaging, and concise cover letter for the following job description based on the candidate's resume.
-
-JOB DESCRIPTION:
-{job_description}
-
-CANDIDATE RESUME:
-{resume_text}
-
-Instructions:
-1. Do not use generic, overly robotic openings (like "I am writing to express my interest in..."). Be enthusiastic and direct.
-2. Highlight 2-3 specific skills or experiences from the resume that directly match the job description.
-3. Keep it under 350 words.
-4. Output ONLY the raw cover letter text. Do not include markdown blocks or conversational text. Use placeholders like [Your Name] or [Company Name] if information is missing.
-"""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.6,
-        max_tokens=1000,
-    )
-
-    content = completion.choices[0].message.content or "Error generating cover letter."
-    return content.strip()
-
-async def score_jobs_batch(resume_text: str, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Score a batch of jobs against a resume quickly."""
-    if not jobs:
-        return []
-
-    client = _get_client()
-    
-    # We will pass the job titles and brief descriptions to the LLM
-    jobs_summary = ""
-    for i, job in enumerate(jobs):
-        desc_snippet = job['description'][:400].replace('\n', ' ') if job.get('description') else ""
-        jobs_summary += f"Job ID {i}:\nTitle: {job['title']}\nSnippet: {desc_snippet}\n\n"
-
-    prompt = f"""You are an ATS matching engine. Score the following jobs based on their match with the candidate's resume.
-Score each job from 0 to 100 based on title alignment and skill overlap.
-
-CANDIDATE RESUME:
-{resume_text}
-
-JOBS:
-{jobs_summary}
-
-Return ONLY a valid JSON array of objects, where each object has:
-- "index": integer (the Job ID number from above)
-- "score": integer (0-100)
-- "match_reason": a brief 1-sentence reason why it matches or lacks match
-
-Do not include markdown blocks or conversational text.
-"""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=1500,
-    )
-
-    content = completion.choices[0].message.content or "[]"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        results = json.loads(content)
-        # map back scores
-        for job in jobs:
-            job["match_score"] = 50 # default
-            job["match_reason"] = ""
-            
-        for res in results:
-            idx = res.get("index")
-            if idx is not None and 0 <= idx < len(jobs):
-                jobs[idx]["match_score"] = res.get("score", 50)
-                jobs[idx]["match_reason"] = res.get("match_reason", "")
-                
-    except Exception as e:
-        # Fallback if JSON fails
-        for job in jobs:
-            job["match_score"] = 50
-            job["match_reason"] = ""
-
-    # Sort jobs by match_score descending
-    jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
-    return jobs
-
-async def optimize_linkedin_profile(profile_text: str) -> Dict[str, Any]:
-    """Analyze a LinkedIn profile and provide optimization suggestions."""
-    client = _get_client()
-    prompt = f"""You are an expert LinkedIn profile optimization coach and recruiter.
-Analyze the provided LinkedIn profile text (extracted from a PDF) and provide highly actionable recommendations to improve it.
-
-PROFILE TEXT:
-{profile_text}
-
-Return your analysis as a valid JSON object matching the exact schema below. Do not include markdown code blocks (like ```json), conversational text, or any other formatting.
-
-{{
-  "headline_suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
-  "summary_rewrite": "A professionally written, engaging summary paragraph tailored to their experience.",
-  "experience_improvements": [
-    {{
-      "role": "Role Name",
-      "suggestion": "How to improve the bullet points for this specific role."
-    }}
-  ]
-}}
-"""
-
-    completion = await _call_llm_with_tracking(
-        model=settings.NVIDIA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.6,
-        max_tokens=2000,
-    )
-
-    content = completion.choices[0].message.content or "{}"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {
+    return _parse_llm_json(content, fallback={
             "headline_suggestions": ["Unable to parse suggestions."],
             "summary_rewrite": "Unable to parse summary rewrite. Please try again.",
             "experience_improvements": []
-        }
+        })
 
 async def smart_fill_resume_fields(resume_text: str, required_fields: List[str], user_profile: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
     """Smart fill resume fields based on extracted text, stored profile data, and required template fields."""
@@ -790,14 +382,4 @@ Instructions:
     )
 
     content = completion.choices[0].message.content or "{}"
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    content = content.strip()
-
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {}
+    return _parse_llm_json(content, fallback={})

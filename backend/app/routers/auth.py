@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import secrets
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.rate_limiter import limiter
 
 from app.models.user import User
@@ -96,7 +96,7 @@ async def signup(request: Request, body: SignupRequest):
     # Push WebSocket event
     session_id = get_session_id(request)
     if session_id:
-        manager.associate_email(session_id, body.email)
+        await manager.associate_email(session_id, body.email)
         await manager.send_event(session_id, "otp_sent", {
             "email": body.email,
             "expires_in_seconds": 600,
@@ -107,7 +107,7 @@ async def signup(request: Request, body: SignupRequest):
 
 @router.post("/verify-otp", response_model=TokenResponse)
 @limiter.limit("5/minute")
-async def verify_otp(request: Request, body: OtpVerifyRequest):
+async def verify_otp(request: Request, response: Response, body: OtpVerifyRequest):
     """Verify the 6-digit OTP and activate the account."""
     user = await User.find_one(User.email == body.email)
     if not user:
@@ -145,12 +145,22 @@ async def verify_otp(request: Request, body: OtpVerifyRequest):
             "has_onboarded": bool(user.bio or user.skills or user.education or user.experience)
         })
 
+    from app.config import settings
+    response.set_cookie(
+        key="sa_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
     return TokenResponse(access_token=token, user=_user_dict(user))
 
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
-async def login(request: Request, body: LoginRequest):
+async def login(request: Request, response: Response, body: LoginRequest):
     """Authenticate with email and password."""
     user = await User.find_one(User.email == body.email)
     session_id = get_session_id(request)
@@ -184,7 +194,7 @@ async def login(request: Request, body: LoginRequest):
     token = create_access_token({"sub": user.email})
 
     if session_id:
-        manager.associate_email(session_id, user.email)
+        await manager.associate_email(session_id, user.email)
         await manager.send_event(session_id, "login_success", {
             "id": str(user.id),
             "email": user.email,
@@ -193,6 +203,16 @@ async def login(request: Request, body: LoginRequest):
             "profile_pic_url": user.profile_pic_url,
         })
 
+    from app.config import settings
+    response.set_cookie(
+        key="sa_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
     return TokenResponse(access_token=token, user=_user_dict(user))
 
 
@@ -276,3 +296,14 @@ async def resend_otp(request: Request, body: ForgotPasswordRequest):
         })
 
     return MessageResponse(message="A new OTP has been sent to your email.")
+
+@router.post("/logout", response_model=MessageResponse)
+async def logout(response: Response):
+    """Clear the httpOnly authentication cookie."""
+    response.delete_cookie(
+        key="sa_token",
+        path="/",
+        secure=True,
+        samesite="lax"
+    )
+    return MessageResponse(message="Logged out successfully.")

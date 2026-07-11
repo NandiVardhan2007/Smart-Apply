@@ -405,7 +405,7 @@ export default function ResumeTailor() {
                 >
                   <iframe
                     ref={iframeRef}
-                    sandbox="allow-scripts allow-same-origin"
+                    sandbox="allow-scripts"
                     srcDoc={mode === 'visual' ? buildVisualDoc(htmlCode, zoom) : htmlCode.replace('</head>', `<style>body { zoom: ${zoom}; }</style></head>`)}
                     style={{ width: '100%', height: '100%', border: 'none' }}
                     title="HTML preview"

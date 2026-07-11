@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     # ── JWT ──
     SECRET_KEY: str = "change-this-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
     ALGORITHM: str = "HS256"
 
     # ── MongoDB ──
@@ -30,8 +30,6 @@ class Settings(BaseSettings):
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     
     CHATBOT_API_KEY: str = ""
-    PROJECT_FINDER_API_KEY: str = ""
-    INTERVIEW_EVAL_API_KEY: str = ""
 
     # ── RapidAPI (JSearch) ──
     RAPIDAPI_KEY: str = ""

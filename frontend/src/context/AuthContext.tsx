@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { configureClient } from '../api/client';
+import { configureClient, apiFetch } from '../api/client';
 import { useAuthSocket, type AuthSocketEvent } from '../hooks/useAuthSocket';
 import type { User } from '../api/types';
 
@@ -28,21 +28,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('sa_user');
     return stored ? JSON.parse(stored) : null;
   });
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('sa_token'));
+  const [token, setToken] = useState<string | null>(null);
   const [lastAuthEvent, setLastAuthEvent] = useState<AuthSocketEvent | null>(null);
 
   const login = useCallback((newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('sa_token', newToken);
     localStorage.setItem('sa_user', JSON.stringify(newUser));
   }, []);
 
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('sa_token');
+    localStorage.removeItem('sa_token'); // Keep for cleanup of old tokens
     localStorage.removeItem('sa_user');
+    apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
   }, []);
 
   const handleAuthEvent = useCallback(
@@ -65,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
             setToken(data.token as string);
             setUser(u);
-            localStorage.setItem('sa_token', data.token as string);
             localStorage.setItem('sa_user', JSON.stringify(u));
           }
           break;
@@ -112,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         token,
         sessionId,
-        isAuthenticated: Boolean(token) && Boolean(user),
+        isAuthenticated: Boolean(user),
         login,
         logout,
         updateUser,

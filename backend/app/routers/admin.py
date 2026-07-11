@@ -26,21 +26,29 @@ async def get_system_stats(admin: User = Depends(get_admin_user)) -> Dict[str, A
     }
 
 @router.get("/users")
-async def get_users(admin: User = Depends(get_admin_user)):
-    """Get all users (admin only)."""
-    users = await User.find_all().to_list()
-    safe_users = []
-    for user in users:
-        safe_users.append({
-            "id": str(user.id),
-            "email": user.email,
-            "full_name": user.full_name,
-            "is_verified": user.is_verified,
-            "is_admin": user.is_admin,
-            "created_at": user.created_at,
-            "features": user.features
-        })
-    return {"users": safe_users}
+async def get_users(
+    page: int = 1,
+    page_size: int = 50,
+    admin: User = Depends(get_admin_user),
+):
+    """Get all users (admin only) with pagination."""
+    page_size = min(max(page_size, 1), 200)
+    skip = (max(page, 1) - 1) * page_size
+
+    total = await User.count()
+    users = await User.find_all().sort("-created_at").skip(skip).limit(page_size).to_list()
+
+    safe_users = [{
+        "id": str(u.id),
+        "email": u.email,
+        "full_name": u.full_name,
+        "is_verified": u.is_verified,
+        "is_admin": u.is_admin,
+        "created_at": u.created_at,
+        "features": u.features
+    } for u in users]
+
+    return {"users": safe_users, "total": total, "page": page, "page_size": page_size}
 
 @router.get("/search")
 async def search_users(q: str = "", admin: User = Depends(get_admin_user)):
@@ -275,43 +283,54 @@ async def get_resume_stats(admin: User = Depends(get_admin_user)):
 
 @router.get("/stats/api")
 async def get_api_stats(admin: User = Depends(get_admin_user)):
-    """Get real-time API analytics (NVIDIA NIM)."""
+    """Get real-time API analytics (NVIDIA NIM) using aggregation pipeline."""
     fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
     
-    logs = await APILog.find({"timestamp": {"$gte": fourteen_days_ago}}).to_list()
+    pipeline = [
+        {"$match": {"timestamp": {"$gte": fourteen_days_ago}}},
+        {
+            "$group": {
+                "_id": {
+                    "$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}
+                },
+                "total": {"$sum": 1},
+                "failed": {"$sum": {"$cond": [{"$eq": ["$success", False]}, 1, 0]}},
+                "total_ms": {"$sum": {"$cond": [{"$eq": ["$success", True]}, "$response_time_ms", 0]}}
+            }
+        },
+        {"$sort": {"_id": 1}}
+    ]
     
-    total_calls = len(logs)
-    failed_calls = sum(1 for log in logs if not log.success)
-    total_response_time = sum(log.response_time_ms for log in logs if log.success)
-    overall_avg_ms = int(total_response_time / (total_calls - failed_calls)) if (total_calls - failed_calls) > 0 else 0
+    results = await APILog.aggregate(pipeline).to_list()
     
-    # Group by date
-    timeline_dict = {}
-    for i in range(15):
-        d = (fourteen_days_ago + timedelta(days=i)).strftime("%Y-%m-%d")
-        timeline_dict[d] = {"date": d, "total": 0, "failed": 0, "total_ms": 0}
-        
-    for log in logs:
-        d_str = log.timestamp.strftime("%Y-%m-%d")
+    # Fill missing dates to ensure 14-day continuity
+    timeline_dict = {
+        (fourteen_days_ago + timedelta(days=i)).strftime("%Y-%m-%d"): {
+            "date": (fourteen_days_ago + timedelta(days=i)).strftime("%Y-%m-%d"),
+            "total": 0, "failed": 0, "avg_ms": 0
+        } for i in range(15)
+    }
+    
+    for row in results:
+        d_str = row["_id"]
         if d_str in timeline_dict:
-            timeline_dict[d_str]["total"] += 1
-            if not log.success:
-                timeline_dict[d_str]["failed"] += 1
-            else:
-                timeline_dict[d_str]["total_ms"] += log.response_time_ms
-                
-    timeline = []
-    for d_str in sorted(timeline_dict.keys()):
-        data = timeline_dict[d_str]
-        successful = data["total"] - data["failed"]
-        avg_ms = int(data["total_ms"] / successful) if successful > 0 else 0
-        timeline.append({
-            "date": data["date"],
-            "total": data["total"],
-            "failed": data["failed"],
-            "avg_ms": avg_ms
-        })
-        
+            successful = row["total"] - row["failed"]
+            avg_ms = int(row["total_ms"] / successful) if successful > 0 else 0
+            timeline_dict[d_str].update({
+                "total": row["total"],
+                "failed": row["failed"],
+                "avg_ms": avg_ms
+            })
+            
+    timeline = [timeline_dict[k] for k in sorted(timeline_dict.keys())]
+    
+    # Calculate global totals
+    total_calls = sum(d["total"] for d in timeline)
+    failed_calls = sum(d["failed"] for d in timeline)
+    successful_calls = total_calls - failed_calls
+    total_ms = sum(row.get("total_ms", 0) for row in results)
+    overall_avg_ms = int(total_ms / successful_calls) if successful_calls > 0 else 0
+    
     return {
         "total_calls": total_calls,
         "failed_calls": failed_calls,

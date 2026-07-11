@@ -9,11 +9,20 @@ from app.services.auth_service import decode_access_token
 security = HTTPBearer()
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> User:
-    """Dependency that extracts and validates the JWT from the Authorization header."""
-    token = credentials.credentials
+async def get_current_user(request: Request) -> User:
+    """Dependency that extracts and validates the JWT from cookies or Authorization header."""
+    token = request.cookies.get("sa_token")
+    if not token:
+        auth_header = request.headers.get("authorization", "")
+        token = auth_header.removeprefix("Bearer ").strip() or None
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_access_token(token)
 
     if payload is None:

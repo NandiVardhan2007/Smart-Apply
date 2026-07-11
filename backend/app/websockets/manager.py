@@ -1,68 +1,96 @@
 import json
 import logging
-from typing import Any, Dict
+import asyncio
+from typing import Any, Dict, Optional
 
+import redis.asyncio as redis
 from fastapi import WebSocket
+
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+CHANNEL = "sa:ws:events"
+SESSION_TTL = 60 * 60  # 1 hour, refreshed on activity
+
 
 class ConnectionManager:
-    """Manages active WebSocket connections keyed by session_id with local routing only."""
+    """Manages local WebSocket connections; relays cross-instance events via Redis pub/sub."""
 
     def __init__(self):
         self._connections: Dict[str, WebSocket] = {}
-        self._session_to_email: Dict[str, str] = {}
+        self._redis: Optional[redis.Redis] = None
+        self._pubsub_task: Optional[asyncio.Task] = None
 
     async def start_pubsub(self):
-        """No-op for local routing."""
-        logger.info("Using local routing for websockets (Redis removed).")
+        self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        pubsub = self._redis.pubsub()
+        await pubsub.subscribe(CHANNEL)
+        self._pubsub_task = asyncio.create_task(self._listen(pubsub))
+        logger.info("Subscribed to Redis pub/sub for WebSocket relay.")
 
     async def stop_pubsub(self):
-        """No-op for local routing."""
-        pass
+        if self._pubsub_task:
+            self._pubsub_task.cancel()
+        if self._redis:
+            await self._redis.close()
+
+    async def _listen(self, pubsub):
+        async for message in pubsub.listen():
+            if message["type"] != "message":
+                continue
+            try:
+                envelope = json.loads(message["data"])
+                session_id = envelope.get("session_id")
+                if session_id and session_id in self._connections:
+                    await self._send_local(session_id, envelope["type"], envelope["data"])
+            except Exception as e:
+                logger.error(f"Failed to process pub/sub message: {e}")
 
     async def connect(self, session_id: str, websocket: WebSocket) -> None:
-        """Accept and store a WebSocket connection."""
         await websocket.accept()
         self._connections[session_id] = websocket
         await self.send_event(session_id, "connected", {"session_id": session_id})
 
-    def disconnect(self, session_id: str) -> None:
-        """Remove a WebSocket connection."""
+    async def disconnect(self, session_id: str) -> None:
         self._connections.pop(session_id, None)
-        self._session_to_email.pop(session_id, None)
+        if self._redis:
+            # best-effort cleanup of any user->session set this session was added to
+            async for key in self._redis.scan_iter("sa:ws:sessions:*"):
+                await self._redis.srem(key, session_id)
 
-    def associate_email(self, session_id: str, email: str) -> None:
-        """Associate a session with a user email."""
-        self._session_to_email[session_id] = email
+    async def associate_email(self, session_id: str, email: str) -> None:
+        if self._redis:
+            key = f"sa:ws:sessions:{email}"
+            await self._redis.sadd(key, session_id)
+            await self._redis.expire(key, SESSION_TTL)
 
-    async def send_event(
-        self, session_id: str, event_type: str, payload: Dict[str, Any]
-    ) -> bool:
-        """Publish a typed JSON event to a specific session locally."""
-        if session_id in self._connections:
-            ws = self._connections[session_id]
-            try:
-                await ws.send_text(json.dumps({"type": event_type, "data": payload}))
-            except Exception as e:
-                logger.error(f"Failed to push message locally {session_id}: {e}")
-                self.disconnect(session_id)
+    async def _send_local(self, session_id: str, event_type: str, payload: Dict[str, Any]):
+        ws = self._connections.get(session_id)
+        if not ws:
+            return
+        try:
+            await ws.send_text(json.dumps({"type": event_type, "data": payload}))
+        except Exception as e:
+            logger.error(f"Failed to push message locally {session_id}: {e}")
+            await self.disconnect(session_id)
+
+    async def send_event(self, session_id: str, event_type: str, payload: Dict[str, Any]) -> bool:
+        """Publish an event. Every instance receives it; only the one holding the session delivers it."""
+        if not self._redis:
+            # Fallback if pubsub isn't started
+            await self._send_local(session_id, event_type, payload)
+            return True
+        envelope = json.dumps({"session_id": session_id, "type": event_type, "data": payload})
+        await self._redis.publish(CHANNEL, envelope)
         return True
 
-    async def broadcast_to_user(
-        self, email: str, event_type: str, payload: Dict[str, Any]
-    ) -> None:
-        """Publish an event to all sessions associated with a user email locally."""
-        for local_session_id, session_email in list(self._session_to_email.items()):
-            if session_email == email and local_session_id in self._connections:
-                ws = self._connections[local_session_id]
-                try:
-                    await ws.send_text(json.dumps({"type": event_type, "data": payload}))
-                except Exception as e:
-                    logger.error(f"Failed to push message locally {local_session_id}: {e}")
-                    self.disconnect(local_session_id)
+    async def broadcast_to_user(self, email: str, event_type: str, payload: Dict[str, Any]) -> None:
+        if not self._redis:
+            return
+        session_ids = await self._redis.smembers(f"sa:ws:sessions:{email}")
+        for session_id in session_ids:
+            await self.send_event(session_id, event_type, payload)
 
-# Global singleton
+
 manager = ConnectionManager()
-

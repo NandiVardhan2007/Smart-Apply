@@ -3,6 +3,7 @@ from typing import Optional
 
 from beanie import Document
 from pydantic import Field
+from pymongo import IndexModel, ASCENDING
 
 class APILog(Document):
     """Logs of calls made to external APIs like NVIDIA NIM."""
@@ -16,4 +17,6 @@ class APILog(Document):
     
     class Settings:
         name = "api_logs"
-        indexes = ["timestamp"]
+        indexes = [
+            IndexModel([("timestamp", ASCENDING)], expireAfterSeconds=60 * 60 * 24 * 30)
+        ]

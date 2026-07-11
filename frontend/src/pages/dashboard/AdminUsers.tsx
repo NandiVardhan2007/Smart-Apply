@@ -20,6 +20,9 @@ interface AdminUser {
 export default function AdminUsers() {
   const { user } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -38,10 +41,12 @@ export default function AdminUsers() {
     }
 
     const fetchUsers = async () => {
+      setLoading(true);
       try {
-        const res = await apiFetch<{ users: AdminUser[] }>('/admin/users');
+        const res = await apiFetch<{ users: AdminUser[], total: number }>(`/admin/users?page=${page}&page_size=${pageSize}`);
         if (res.ok) {
           setUsers(res.data.users);
+          setTotal(res.data.total);
         } else {
           setError("Failed to fetch users.");
         }
@@ -53,7 +58,7 @@ export default function AdminUsers() {
     };
 
     fetchUsers();
-  }, [user]);
+  }, [user, page, pageSize]);
 
   const toggleAdmin = async (userId: string, currentStatus: boolean) => {
     if (userId === user?.id) {
@@ -299,6 +304,29 @@ export default function AdminUsers() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--ink-faint)' }}>
+              Showing {users.length > 0 ? (page - 1) * pageSize + 1 : 0} to {Math.min(page * pageSize, total)} of {total} users
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button 
+                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                disabled={page === 1}
+                className="btn-sm"
+                style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: page === 1 ? 'var(--surface-sunken)' : 'var(--surface)', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Previous
+              </button>
+              <button 
+                onClick={() => setPage(p => p + 1)} 
+                disabled={page * pageSize >= total}
+                className="btn-sm"
+                style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: page * pageSize >= total ? 'var(--surface-sunken)' : 'var(--surface)', cursor: page * pageSize >= total ? 'not-allowed' : 'pointer' }}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </motion.div>
       )}

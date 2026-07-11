@@ -27,24 +27,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 worker_process = None
 
-async def self_ping():
-    while True:
-        try:
-            await asyncio.sleep(600)  # 10 minutes
-            external_url = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("EXTERNAL_URL")
-            if external_url:
-                ping_url = f"{external_url.rstrip('/')}/ping"
-            else:
-                port = os.getenv("PORT", "10000")
-                ping_url = f"http://localhost:{port}/ping"
-                
-            async with httpx.AsyncClient() as client:
-                await client.get(ping_url)
-                logging.info(f"Self-pinged {ping_url}")
-        except asyncio.CancelledError:
-            break
-        except Exception as e:
-            logging.error(f"Error in self-ping: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,15 +35,11 @@ async def lifespan(app: FastAPI):
     if settings.ENVIRONMENT == "production":
         assert settings.SECRET_KEY != "change-this-in-production", "SECRET_KEY must be changed in production"
 
-    ping_task = asyncio.create_task(self_ping())
-
     await init_db()
     await manager.start_pubsub()
     yield
     await manager.stop_pubsub()
     await close_db()
-
-    ping_task.cancel()
 
 
 app = FastAPI(
