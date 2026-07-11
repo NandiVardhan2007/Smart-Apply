@@ -31,12 +31,16 @@ async def self_ping():
     while True:
         try:
             await asyncio.sleep(600)  # 10 minutes
-            external_url = os.getenv("EXTERNAL_URL")
+            external_url = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("EXTERNAL_URL")
             if external_url:
                 ping_url = f"{external_url.rstrip('/')}/ping"
-                async with httpx.AsyncClient() as client:
-                    await client.get(ping_url)
-                    logging.info(f"Self-pinged {ping_url}")
+            else:
+                port = os.getenv("PORT", "10000")
+                ping_url = f"http://localhost:{port}/ping"
+                
+            async with httpx.AsyncClient() as client:
+                await client.get(ping_url)
+                logging.info(f"Self-pinged {ping_url}")
         except asyncio.CancelledError:
             break
         except Exception as e:
