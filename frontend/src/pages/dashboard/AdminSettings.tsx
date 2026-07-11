@@ -87,7 +87,7 @@ export default function AdminSettings() {
 
   if (!user?.is_admin) {
     return (
-      <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+      <div className="dashboard-content flex flex-col items-center justify-center gap-4 h-full">
         <AlertTriangle size={64} color="var(--danger)" />
         <h2>403 Forbidden</h2>
         <p>You do not have permission to view this page.</p>
@@ -97,19 +97,19 @@ export default function AdminSettings() {
 
   if (loading) {
     return (
-      <div className="dashboard-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <div className="dashboard-content flex items-center justify-center h-full">
         <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div className="dashboard-content" style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      <header style={{ marginBottom: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="dashboard-content mx-auto" style={{ maxWidth: 800, padding: 24 }}>
+      <header className="flex items-center gap-3 mb-6">
         <SettingsIcon size={32} color="var(--primary)" />
         <div>
-          <h1 style={{ margin: 0 }}>System Settings</h1>
-          <p style={{ margin: 0, color: 'var(--ink-faint)' }}>Manage global platform configuration.</p>
+          <h1 className="m-0">System Settings</h1>
+          <p className="m-0 text-faint">Manage global platform configuration.</p>
         </div>
       </header>
 
@@ -126,18 +126,18 @@ export default function AdminSettings() {
       )}
 
       <motion.div 
+        className="card card-flush"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}
       >
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-sunken)' }}>
-          <h3 style={{ margin: 0 }}>General Configuration</h3>
+          <h3 className="m-0">General Configuration</h3>
         </div>
         
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="flex flex-col gap-6" style={{ padding: 24 }}>
+          <div className="flex items-center justify-between">
             <div>
-              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>Maintenance Mode</div>
-              <div style={{ fontSize: 13, color: 'var(--ink-faint)' }}>When enabled, normal users will see a maintenance screen.</div>
+              <div className="font-semibold text-ink">Maintenance Mode</div>
+              <div className="text-sm text-faint">When enabled, normal users will see a maintenance screen.</div>
             </div>
             <label className="switch">
               <input 
@@ -149,10 +149,10 @@ export default function AdminSettings() {
             </label>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="flex items-center justify-between">
             <div>
-              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>Allow New Signups</div>
-              <div style={{ fontSize: 13, color: 'var(--ink-faint)' }}>When disabled, new users cannot register.</div>
+              <div className="font-semibold text-ink">Allow New Signups</div>
+              <div className="text-sm text-faint">When disabled, new users cannot register.</div>
             </div>
             <label className="switch">
               <input 
@@ -164,11 +164,11 @@ export default function AdminSettings() {
             </label>
           </div>
 
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24 }}>
-            <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+          <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+            <label className="font-semibold text-ink mb-2" style={{ display: 'block' }}>
               NVIDIA NIM API Key
             </label>
-            <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginBottom: 8 }}>
+            <div className="text-sm text-faint mb-2">
               Overrides the environment variable if provided. Used for ATS checking and AI features via NVIDIA NIM.
             </div>
             <input 
@@ -176,25 +176,26 @@ export default function AdminSettings() {
               placeholder="nvapi-..."
               value={settings.nvidia_nim_api_key || ''}
               onChange={(e) => setSettings({...settings, nvidia_nim_api_key: e.target.value})}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)' }}
+              className="input-field"
             />
           </div>
 
         </div>
       </motion.div>
+      </motion.div>
       <motion.div 
+        className="card card-flush mt-6"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', marginTop: 24 }}
       >
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface-sunken)' }}>
-          <h3 style={{ margin: 0 }}>System Announcement</h3>
+          <h3 className="m-0">System Announcement</h3>
         </div>
         
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="flex flex-col gap-6" style={{ padding: 24 }}>
+          <div className="flex items-center justify-between">
             <div>
-              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>Enable Global Announcement</div>
-              <div style={{ fontSize: 13, color: 'var(--ink-faint)' }}>Shows a banner at the top of every page.</div>
+              <div className="font-semibold text-ink">Enable Global Announcement</div>
+              <div className="text-sm text-faint">Shows a banner at the top of every page.</div>
             </div>
             <label className="switch">
               <input 
@@ -207,9 +208,9 @@ export default function AdminSettings() {
           </div>
 
           {settings.announcement_active && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+            <div className="flex flex-col gap-4 mt-2">
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+                <label className="font-semibold text-ink mb-2" style={{ display: 'block' }}>
                   Announcement Message
                 </label>
                 <textarea 
@@ -217,18 +218,18 @@ export default function AdminSettings() {
                   value={settings.announcement_message}
                   onChange={(e) => setSettings({...settings, announcement_message: e.target.value})}
                   rows={3}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)', resize: 'vertical' }}
+                  className="input-field"
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+                <label className="font-semibold text-ink mb-2" style={{ display: 'block' }}>
                   Banner Type (Color)
                 </label>
                 <select 
                   value={settings.announcement_type}
                   onChange={(e) => setSettings({...settings, announcement_type: e.target.value})}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--ink)' }}
+                  className="input-field"
                 >
                   <option value="info">Info (Blue)</option>
                   <option value="success">Success (Green)</option>
@@ -239,17 +240,11 @@ export default function AdminSettings() {
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+          <div className="flex justify-end mt-4">
             <button 
               onClick={handleSave}
               disabled={saving}
-              style={{ 
-                display: 'flex', alignItems: 'center', gap: 8, 
-                padding: '10px 20px', borderRadius: 8, 
-                background: 'var(--primary)', color: 'white', 
-                fontWeight: 600, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.7 : 1
-              }}
+              className="btn btn-primary"
             >
               <Save size={18} />
               {saving ? 'Saving...' : 'Save Settings'}

@@ -190,8 +190,12 @@ export default function Settings() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.94, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-account-title"
+              tabIndex={-1}
             >
-              <h3 style={{ fontSize: 18, marginBottom: 10 }}>Delete account?</h3>
+              <h3 id="delete-account-title" style={{ fontSize: 18, marginBottom: 10 }}>Delete account?</h3>
               <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 22, lineHeight: 1.55 }}>
                 Are you sure you want to delete your account? All your data, resumes, and interview history will be permanently
                 erased.
@@ -200,7 +204,7 @@ export default function Settings() {
                 <button className="btn btn-secondary btn-block" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
                   Cancel
                 </button>
-                <button className="btn btn-danger btn-block" onClick={handleDeleteAccount} disabled={deleting}>
+                <button className="btn btn-danger btn-block" onClick={handleDeleteAccount} disabled={deleting} autoFocus>
                   {deleting ? <ButtonSpinner /> : 'Yes, delete'}
                 </button>
               </div>

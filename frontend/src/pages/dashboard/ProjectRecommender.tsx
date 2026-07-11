@@ -34,15 +34,15 @@ function LoadingView({ messages }: { messages: string[] }) {
   }, [messages]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center' }}>
-      <div style={{ position: 'relative', marginBottom: 30 }}>
+    <div className="flex flex-col items-center justify-center text-center pt-15 pb-15">
+      <div className="relative mb-6">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+          className="rounded-full"
           style={{
             width: 60,
             height: 60,
-            borderRadius: '50%',
             border: '3px solid var(--accent-soft-border)',
             borderTopColor: 'var(--accent)',
           }}
@@ -59,12 +59,12 @@ function LoadingView({ messages }: { messages: string[] }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
-          style={{ fontSize: 18, margin: 0, color: 'var(--ink)' }}
+          className="text-lg m-0 text-ink"
         >
           {messages[msgIndex]}
         </motion.h3>
       </AnimatePresence>
-      <p className="text-muted" style={{ marginTop: 12, fontSize: 14 }}>This usually takes 10-15 seconds</p>
+      <p className="text-muted text-sm mt-4">This usually takes 10-15 seconds</p>
     </div>
   );
 }
@@ -170,8 +170,8 @@ export default function ProjectRecommender() {
             ) : (
               <>
                 <span className="eyebrow">Step 1 of 2</span>
-                <h2 style={{ fontSize: 19, marginTop: 6, marginBottom: 22 }}>Tell us about yourself</h2>
-                <form onSubmit={handleGetRecommendations} style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2 className="mt-2 mb-6" style={{ fontSize: 19 }}>Tell us about yourself</h2>
+                <form onSubmit={handleGetRecommendations} className="flex flex-col">
                   <div className="input-group">
                     <label>Current skills &amp; technologies</label>
                     <input
@@ -205,8 +205,7 @@ export default function ProjectRecommender() {
                       required
                     />
                   </div>
-
-                  <button type="submit" className="btn btn-primary btn-lg" style={{ alignSelf: 'flex-start' }} disabled={loading}>
+                  <button type="submit" className="btn btn-primary btn-lg items-start mt-4" style={{ alignSelf: 'flex-start' }} disabled={loading}>
                     Find projects <ArrowRight size={17} />
                   </button>
                 </form>
@@ -217,30 +216,30 @@ export default function ProjectRecommender() {
 
         {step === 2 && (
           <motion.div key="step2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-            <button className="btn btn-secondary btn-sm" style={{ marginBottom: 20 }} onClick={() => setStep(1)} disabled={loading}>
+            <button className="btn btn-secondary btn-sm mb-6" onClick={() => setStep(1)} disabled={loading}>
               <ChevronLeft size={15} /> Back
             </button>
 
-            <h2 style={{ fontSize: 19, marginBottom: 20 }}>Recommended for you</h2>
+            <h2 className="mb-6" style={{ fontSize: 19 }}>Recommended for you</h2>
 
             {loading ? (
               <InlineLoader title="Finding your projects" subtitle="Matching ideas to your skills and interests" />
             ) : (
               <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                 {projects.map((proj) => (
-                  <div key={proj.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 10 }}>
-                      <h3 style={{ fontSize: 16 }}>{proj.title}</h3>
-                      <span className="badge badge-accent" style={{ flexShrink: 0 }}>
+                  <div key={proj.id} className="card flex flex-col">
+                    <div className="flex justify-between items-start mb-3 gap-3">
+                      <h3 style={{ fontSize: 16, margin: 0 }}>{proj.title}</h3>
+                      <span className="badge badge-accent shrink-0">
                         <Star size={11} /> {proj.rating}/10
                       </span>
                     </div>
 
-                    <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 16, flex: 1, lineHeight: 1.55 }}>
+                    <p className="text-muted text-sm mb-4 flex-1" style={{ lineHeight: 1.55 }}>
                       {proj.description}
                     </p>
 
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <span className="badge">
                         <Code2 size={12} /> {proj.skill_level}
                       </span>
@@ -249,7 +248,7 @@ export default function ProjectRecommender() {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+                    <div className="flex flex-wrap gap-2 mb-6">
                       {proj.key_technologies.map((tech) => (
                         <span key={tech} className="badge badge-accent">
                           {tech}
@@ -257,7 +256,7 @@ export default function ProjectRecommender() {
                       ))}
                     </div>
 
-                    <button className="btn btn-primary btn-block" onClick={() => handlePrepareRoadmap(proj)}>
+                    <button className="btn btn-primary btn-block mt-auto" onClick={() => handlePrepareRoadmap(proj)}>
                       Generate roadmap
                     </button>
                   </div>
@@ -273,18 +272,18 @@ export default function ProjectRecommender() {
               <LoadingView messages={loadingMessagesStep3} />
             ) : (
               <>
-                <button className="btn btn-secondary btn-sm" style={{ marginBottom: 20 }} onClick={() => setStep(2)} disabled={loading}>
+                <button className="btn btn-secondary btn-sm mb-6" onClick={() => setStep(2)} disabled={loading}>
                   <ChevronLeft size={15} /> Back to projects
                 </button>
 
                 <span className="eyebrow">Step 2 of 2</span>
-                <h2 style={{ fontSize: 19, marginTop: 6, marginBottom: 10 }}>Customize your roadmap</h2>
-                <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 22 }}>
+                <h2 className="mt-2 mb-3" style={{ fontSize: 19 }}>Customize your roadmap</h2>
+                <p className="text-muted text-sm mb-6">
                   Before generating the plan for <strong style={{ color: 'var(--ink)' }}>{selectedProject.title}</strong>, add any
                   preferences — all optional.
                 </p>
 
-                <form onSubmit={handleGenerateRoadmap} style={{ display: 'flex', flexDirection: 'column' }}>
+                <form onSubmit={handleGenerateRoadmap} className="flex flex-col">
                   <div className="input-group">
                     <label>Preferred database</label>
                     <input type="text" className="input-field" placeholder="e.g. PostgreSQL, MongoDB, Firebase" value={dbPref} onChange={(e) => setDbPref(e.target.value)} />
@@ -309,8 +308,7 @@ export default function ProjectRecommender() {
                     <label>Additional requirements</label>
                     <textarea className="input-field" rows={3} placeholder="e.g. Focus on testing, use TypeScript" value={extraPref} onChange={(e) => setExtraPref(e.target.value)} />
                   </div>
-
-                  <button type="submit" className="btn btn-primary btn-lg" style={{ alignSelf: 'flex-start' }} disabled={loading}>
+                  <button type="submit" className="btn btn-primary btn-lg items-start mt-4" style={{ alignSelf: 'flex-start' }} disabled={loading}>
                     Generate roadmap <ArrowRight size={17} />
                   </button>
                 </form>
@@ -321,49 +319,45 @@ export default function ProjectRecommender() {
 
         {step === 4 && selectedProject && (
           <motion.div key="step4" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-            <button className="btn btn-secondary btn-sm" style={{ marginBottom: 20 }} onClick={() => setStep(3)}>
+            <button className="btn btn-secondary btn-sm mb-6" onClick={() => setStep(3)}>
               <ChevronLeft size={15} /> Back to preferences
             </button>
 
-            <div className="card" style={{ marginBottom: 24, borderColor: 'var(--accent-soft-border)', background: 'var(--accent-soft)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <div className="card mb-6" style={{ borderColor: 'var(--accent-soft-border)', background: 'var(--accent-soft)' }}>
+              <div className="flex items-center gap-2 mb-2">
                 <Lightbulb size={16} style={{ color: 'var(--accent)' }} />
                 <span className="eyebrow" style={{ color: 'var(--accent)' }}>Your roadmap</span>
               </div>
-              <h2 style={{ fontSize: 21, marginBottom: 6 }}>{selectedProject.title}</h2>
-              <p style={{ fontSize: 14, color: 'var(--ink-soft)' }}>{selectedProject.description}</p>
+              <h2 className="mb-2" style={{ fontSize: 21 }}>{selectedProject.title}</h2>
+              <p className="text-sm m-0" style={{ color: 'var(--ink-soft)' }}>{selectedProject.description}</p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="flex flex-col gap-4">
               {roadmap.map((phase, i) => (
                 <div key={i} className="card">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+                  <div className="flex items-center gap-3 mb-3">
                     <div
+                      className="rounded-full flex items-center justify-center shrink-0"
                       style={{
                         width: 36,
                         height: 36,
-                        borderRadius: '50%',
                         background: 'var(--accent)',
                         color: 'var(--accent-ink)',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 700,
                         fontSize: 14,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
                       }}
                     >
                       {phase.phase_number}
                     </div>
-                    <h3 style={{ fontSize: 16 }}>{phase.title}</h3>
+                    <h3 style={{ fontSize: 16, margin: 0 }}>{phase.title}</h3>
                   </div>
-                  <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 16 }}>{phase.description}</p>
+                  <p className="text-muted text-sm mb-4">{phase.description}</p>
 
-                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <ul className="flex flex-col gap-2" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {phase.tasks.map((task, j) => (
-                      <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13.5 }}>
-                        <CheckCircle2 size={16} style={{ color: 'var(--success)', flexShrink: 0, marginTop: 2 }} />
+                      <li key={j} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 size={16} className="shrink-0" style={{ color: 'var(--success)', marginTop: 2 }} />
                         <span>{task}</span>
                       </li>
                     ))}

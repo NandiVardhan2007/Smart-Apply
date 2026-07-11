@@ -40,24 +40,15 @@ export default function InterviewReport() {
 
   if (notReady || !report) {
     return (
-      <div className="container-narrow" style={{ textAlign: 'center', paddingTop: 60 }}>
+      <div className="container-narrow text-center pt-15">
         <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px',
-          }}
+          className="rounded-full flex items-center justify-center mx-auto mb-6 shrink-0"
+          style={{ width: 56, height: 56, background: 'var(--accent-soft)', color: 'var(--accent)' }}
         >
           <Clock size={26} />
         </div>
-        <h2 style={{ fontSize: 20, marginBottom: 10 }}>Your report is still being generated</h2>
-        <p className="text-muted" style={{ fontSize: 14, marginBottom: 24 }}>
+        <h2 className="text-lg mb-3">Your report is still being generated</h2>
+        <p className="text-muted text-sm mb-6">
           Our AI is analyzing your interview. This usually takes under a minute — check back shortly.
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/dashboard/live-interview')}>
@@ -71,37 +62,28 @@ export default function InterviewReport() {
 
   return (
     <div className="container-narrow">
-      <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard/live-interview')} style={{ marginBottom: 24 }}>
+      <button className="btn btn-secondary btn-sm mb-6" onClick={() => navigate('/dashboard/live-interview')}>
         <ArrowLeft size={15} /> New interview
       </button>
 
-      <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 22, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+      <motion.div className="card flex flex-wrap items-center gap-6 mb-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <div
-          style={{
-            width: 100,
-            height: 100,
-            borderRadius: '50%',
-            background: tone.bg,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
+          className="rounded-full flex flex-col items-center justify-center shrink-0"
+          style={{ width: 100, height: 100, background: tone.bg }}
         >
           <div className="stat-number" style={{ fontSize: 32, color: tone.color, lineHeight: 1 }}>{report.final_score}</div>
           <div className="eyebrow" style={{ color: tone.color, marginTop: 3 }}>Score</div>
         </div>
-        <div style={{ flex: 1, minWidth: 200 }}>
+        <div className="flex-1 min-w-0" style={{ minWidth: 200 }}>
           <span className="eyebrow">Interview report</span>
-          <h1 style={{ fontSize: 22, marginTop: 4, marginBottom: 8 }}>{report.overall_feedback}</h1>
-          <p className="text-faint" style={{ fontSize: 12.5 }}>{new Date(report.timestamp).toLocaleString()}</p>
+          <h1 className="mb-2 mt-2" style={{ fontSize: 22 }}>{report.overall_feedback}</h1>
+          <p className="text-faint text-sm">{new Date(report.timestamp).toLocaleString()}</p>
         </div>
       </motion.div>
 
-      <div className="grid-auto-fit" style={{ marginBottom: 22 }}>
+      <div className="grid-auto-fit mb-6">
         <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div className="flex items-center gap-2 mb-2">
             <Eye size={16} style={{ color: 'var(--accent)' }} />
             <span className="eyebrow">Avg. confidence</span>
           </div>
@@ -110,7 +92,7 @@ export default function InterviewReport() {
           </div>
         </div>
         <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div className="flex items-center gap-2 mb-2">
             <Eye size={16} style={{ color: 'var(--accent)' }} />
             <span className="eyebrow">Blink count</span>
           </div>
@@ -118,23 +100,23 @@ export default function InterviewReport() {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 22 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <div className="card mb-6">
+        <div className="flex items-center gap-2 mb-3">
           <MessageCircle size={16} style={{ color: 'var(--accent)' }} />
-          <h3 style={{ fontSize: 15.5 }}>Communication feedback</h3>
+          <h3 className="text-sm font-semibold m-0">Communication feedback</h3>
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--ink-soft)' }}>{report.communication_feedback}</p>
       </div>
 
       {report.areas_for_improvement?.length > 0 && (
-        <div className="card" style={{ marginBottom: 22 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <div className="card mb-6">
+          <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={16} style={{ color: 'var(--success)' }} />
-            <h3 style={{ fontSize: 15.5 }}>Areas for improvement</h3>
+            <h3 className="text-sm font-semibold m-0">Areas for improvement</h3>
           </div>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <ul className="flex flex-col gap-3" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {report.areas_for_improvement.map((item, i) => (
-              <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
+              <li key={i} className="flex gap-3 text-sm">
                 <span style={{ color: 'var(--success)' }}>—</span> {item}
               </li>
             ))}
@@ -143,14 +125,14 @@ export default function InterviewReport() {
       )}
 
       {report.weaknesses?.length > 0 && (
-        <div className="card" style={{ marginBottom: 22 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <div className="card mb-6">
+          <div className="flex items-center gap-2 mb-4">
             <AlertTriangle size={16} style={{ color: 'var(--warning)' }} />
-            <h3 style={{ fontSize: 15.5 }}>Weaknesses noted</h3>
+            <h3 className="text-sm font-semibold m-0">Weaknesses noted</h3>
           </div>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <ul className="flex flex-col gap-3" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {report.weaknesses.map((item, i) => (
-              <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
+              <li key={i} className="flex gap-3 text-sm">
                 <span style={{ color: 'var(--warning)' }}>—</span> {item}
               </li>
             ))}
@@ -160,13 +142,13 @@ export default function InterviewReport() {
 
       {report.questions_asked?.length > 0 && (
         <div className="card">
-          <h3 style={{ fontSize: 15.5, marginBottom: 16 }}>Transcript</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <h3 className="text-sm font-semibold mb-4 m-0">Transcript</h3>
+          <div className="flex flex-col gap-4">
             {report.questions_asked.map((q, i) => (
               <div key={i} style={{ paddingBottom: 16, borderBottom: i < report.questions_asked.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 6 }}>Q: {q}</p>
+                <p className="text-sm font-semibold mb-2 m-0">Q: {q}</p>
                 {report.user_replies?.[i] && (
-                  <p className="text-muted" style={{ fontSize: 13.5, paddingLeft: 14, borderLeft: '2px solid var(--border)' }}>
+                  <p className="text-muted text-sm m-0" style={{ paddingLeft: 14, borderLeft: '2px solid var(--border)' }}>
                     {report.user_replies[i]}
                   </p>
                 )}

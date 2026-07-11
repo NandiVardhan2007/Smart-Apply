@@ -50,26 +50,34 @@ function CodeEditorFeature({ theme }: { theme: string }) {
       </button>
       
       {isOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: '80%', height: '80%', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+        <div className="modal-overlay" style={{ zIndex: 100 }}>
+          <div 
+            className="modal modal-large" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="code-editor-title"
+            tabIndex={-1}
+            style={{ display: 'flex', flexDirection: 'column', height: '80vh', padding: 0 }}
+          >
+             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                 <h3 style={{ margin: 0 }}>Live Code Editor</h3>
+                 <h3 id="code-editor-title" style={{ margin: 0, fontSize: '18px' }}>Live Code Editor</h3>
                  <select 
                    value={language} 
                    onChange={(e) => setLanguage(e.target.value)}
-                   style={{ padding: '6px 12px', borderRadius: 'var(--radius)', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}
+                   className="input-field"
+                   style={{ width: 'auto', padding: '6px 12px' }}
                  >
-                   <option value="python" style={{ color: '#000', background: '#fff' }}>Python</option>
-                   <option value="javascript" style={{ color: '#000', background: '#fff' }}>JavaScript</option>
-                   <option value="typescript" style={{ color: '#000', background: '#fff' }}>TypeScript</option>
-                   <option value="java" style={{ color: '#000', background: '#fff' }}>Java</option>
-                   <option value="cpp" style={{ color: '#000', background: '#fff' }}>C++</option>
+                   <option value="python">Python</option>
+                   <option value="javascript">JavaScript</option>
+                   <option value="typescript">TypeScript</option>
+                   <option value="java">Java</option>
+                   <option value="cpp">C++</option>
                  </select>
                </div>
                <button onClick={() => setIsOpen(false)} className="btn btn-ghost" style={{ padding: '8px 16px' }}>Close</button>
              </div>
-             <div style={{ flex: 1, border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+             <div style={{ flex: 1, overflow: 'hidden' }}>
                <Editor
                  height="100%"
                  language={language}
@@ -85,7 +93,7 @@ function CodeEditorFeature({ theme }: { theme: string }) {
                  }}
                />
              </div>
-             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+             <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)' }}>
                <button className="btn btn-primary" onClick={handleSubmit}>Submit Code to AI</button>
              </div>
           </div>

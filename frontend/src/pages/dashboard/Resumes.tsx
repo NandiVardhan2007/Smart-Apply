@@ -22,6 +22,7 @@ export default function Resumes() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+  const [deletingResumeId, setDeletingResumeId] = useState<string | null>(null);
 
   const fetchResumes = useCallback(async () => {
     try {
@@ -66,18 +67,24 @@ export default function Resumes() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this resume? This cannot be undone.')) return;
+  const confirmDelete = (id: string) => {
+    setDeletingResumeId(id);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingResumeId) return;
     try {
-      const res = await apiFetch(`/resumes/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/resumes/${deletingResumeId}`, { method: 'DELETE' });
       if (res.ok) {
-        setResumes((prev) => prev.filter((r) => r._id !== id));
+        setResumes((prev) => prev.filter((r) => r._id !== deletingResumeId));
         showToast('success', 'Resume deleted.');
       } else {
         showToast('error', 'Failed to delete resume.');
       }
     } catch {
       showToast('error', 'Network error.');
+    } finally {
+      setDeletingResumeId(null);
     }
   };
 
@@ -177,7 +184,7 @@ export default function Resumes() {
                     </Link>
                   </div>
                   <button
-                    onClick={() => handleDelete(resume._id)}
+                    onClick={() => confirmDelete(resume._id)}
                     className="btn btn-ghost btn-icon"
                     aria-label="Delete resume"
                     style={{ color: 'var(--danger)' }}
@@ -190,6 +197,37 @@ export default function Resumes() {
           </AnimatePresence>
         </div>
       )}
+
+      <AnimatePresence>
+        {deletingResumeId && (
+          <div className="modal-overlay" onClick={() => setDeletingResumeId(null)}>
+            <motion.div
+              className="modal"
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-resume-title"
+              tabIndex={-1}
+            >
+              <h3 id="delete-resume-title" style={{ fontSize: 18, marginBottom: 10 }}>Delete resume?</h3>
+              <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 22, lineHeight: 1.55 }}>
+                Are you sure you want to delete this resume? It will no longer be available for ATS checking or job matching.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-secondary btn-block" onClick={() => setDeletingResumeId(null)}>
+                  Cancel
+                </button>
+                <button className="btn btn-danger btn-block" onClick={handleDelete} autoFocus>
+                  Yes, delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

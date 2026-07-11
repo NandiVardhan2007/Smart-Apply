@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Users, AlertTriangle, Trash2, UserPlus, UserMinus, ShieldCheck, Download, Settings, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch, getApiBaseUrl } from '../../api/client';
+import { useToast } from '../../components/Toast';
+import { AnimatePresence } from 'framer-motion';
 import '../../styles/dashboard.css';
 
 interface AdminUser {
@@ -24,6 +26,9 @@ export default function AdminUsers() {
   const [editingFeaturesUser, setEditingFeaturesUser] = useState<AdminUser | null>(null);
   const [tempFeatures, setTempFeatures] = useState<Record<string, boolean>>({});
   const [savingFeatures, setSavingFeatures] = useState(false);
+
+  const { showToast } = useToast();
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -52,7 +57,7 @@ export default function AdminUsers() {
 
   const toggleAdmin = async (userId: string, currentStatus: boolean) => {
     if (userId === user?.id) {
-      alert("You cannot change your own admin role.");
+      showToast('error', "You cannot change your own admin role.");
       return;
     }
     try {
@@ -62,31 +67,41 @@ export default function AdminUsers() {
       });
       if (res.ok) {
         setUsers(users.map(u => u.id === userId ? { ...u, is_admin: !currentStatus } : u));
+        showToast('success', "Role updated successfully.");
       } else {
-        alert("Failed to update role");
+        showToast('error', "Failed to update role");
       }
     } catch (err) {
       console.error("Failed to toggle admin role", err);
+      showToast('error', "Failed to toggle admin role");
     }
   };
 
-  const deleteUser = async (userId: string) => {
+  const confirmDeleteUser = (userId: string) => {
     if (userId === user?.id) {
-      alert("You cannot delete yourself.");
+      showToast('error', "You cannot delete yourself.");
       return;
     }
-    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    setDeletingUserId(userId);
+  };
+
+  const deleteUser = async () => {
+    if (!deletingUserId) return;
     try {
-      const res = await apiFetch(`/admin/users/${userId}`, {
+      const res = await apiFetch(`/admin/users/${deletingUserId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        setUsers(users.filter(u => u.id !== userId));
+        setUsers(users.filter(u => u.id !== deletingUserId));
+        showToast('success', 'User deleted successfully.');
       } else {
-        alert("Failed to delete user");
+        showToast('error', "Failed to delete user");
       }
     } catch (err) {
       console.error("Failed to delete user", err);
+      showToast('error', "Failed to delete user");
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -106,12 +121,13 @@ export default function AdminUsers() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        showToast('success', 'Export successful.');
       } else {
-        alert("Failed to export users");
+        showToast('error', "Failed to export users");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to export users");
+      showToast('error', "Failed to export users");
     }
   };
 
@@ -137,12 +153,13 @@ export default function AdminUsers() {
       if (res.ok) {
         setUsers(users.map(u => u.id === editingFeaturesUser.id ? { ...u, features: tempFeatures } : u));
         setEditingFeaturesUser(null);
+        showToast('success', 'Features updated successfully.');
       } else {
-        alert("Failed to update features.");
+        showToast('error', "Failed to update features.");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to update features.");
+      showToast('error', "Failed to update features.");
     } finally {
       setSavingFeatures(false);
     }
@@ -263,13 +280,9 @@ export default function AdminUsers() {
                           {u.is_admin ? 'Demote' : 'Promote'}
                         </button>
                         <button 
-                          onClick={() => deleteUser(u.id)}
+                          onClick={() => confirmDeleteUser(u.id)}
                           title="Delete User"
-                          style={{ 
-                            background: 'var(--danger-faint)', color: 'var(--danger)',
-                            border: 'none', padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap'
-                          }}
+                          className="btn-action btn-action-danger"
                         >
                           <Trash2 size={18} style={{ flexShrink: 0 }} /> Delete
                         </button>
@@ -352,6 +365,37 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {deletingUserId && (
+          <div className="modal-overlay" onClick={() => setDeletingUserId(null)}>
+            <motion.div
+              className="modal"
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-user-title"
+              tabIndex={-1}
+            >
+              <h3 id="delete-user-title" style={{ fontSize: 18, marginBottom: 10 }}>Delete User?</h3>
+              <p className="text-muted" style={{ fontSize: 13.5, marginBottom: 22, lineHeight: 1.55 }}>
+                Are you sure you want to delete this user? All their data, resumes, and interview history will be permanently erased.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-secondary btn-block" onClick={() => setDeletingUserId(null)}>
+                  Cancel
+                </button>
+                <button className="btn btn-danger btn-block" onClick={deleteUser} autoFocus>
+                  Yes, delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
