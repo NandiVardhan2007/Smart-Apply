@@ -228,6 +228,17 @@ textarea.input-field {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
+/* Keyboard users get the same affordance as hover, so a focused card
+   reads as "activatable" without relying on the pointer. */
+.card-interactive:focus-visible {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+  transform: translateY(-2px);
+}
+.card-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
 
 /* ── Badges / tags ── */
 .badge {
@@ -526,4 +537,16 @@ textarea.input-field {
 .mx-auto { margin-left: auto; margin-right: auto; }
 .pt-10 { padding-top: 40px; }
 .pt-15 { padding-top: 60px; }
+
+/* ── Mobile density ──
+   Cards and modals carry generous desktop padding; on small screens
+   that padding eats the limited width, so tighten it a step. */
+@media (max-width: 640px) {
+  .card {
+    padding: 18px;
+  }
+  .modal {
+    padding: 22px;
+  }
+}
 

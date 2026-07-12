@@ -62,6 +62,7 @@
 }
 
 .sidebar-link {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 9px 12px;
@@ -74,6 +75,23 @@
   cursor: pointer;
   width: 100%;
   text-align: left;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+/* A short accent bar that grows in from the left to mark the active
+   route — a quieter signal than a full pill, and it animates rather
+   than snapping so navigation feels continuous. */
+.sidebar-link::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: height var(--transition-base);
 }
 
 .sidebar-link:hover {
@@ -87,10 +105,23 @@
   font-weight: 600;
 }
 
+.sidebar-link.active::before {
+  height: 18px;
+}
+
 .sidebar-link-content {
   display: flex;
   align-items: center;
   gap: 12px;
+  transition: transform var(--transition-fast);
+}
+
+.sidebar-link:hover .sidebar-link-content {
+  transform: translateX(2px);
+}
+
+.sidebar-link-content svg {
+  flex-shrink: 0;
 }
 
 .sidebar-footer {
@@ -146,7 +177,10 @@
   position: fixed;
   inset: 0;
   background: rgba(20, 22, 28, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 90;
+  animation: fadeIn 0.2s ease-out;
 }
 
 /* Mobile top bar */
@@ -170,6 +204,25 @@
   flex: 1;
   min-width: 0;
   padding: 40px 48px;
+}
+
+/* A gentle rise-and-fade on route change. Overrides the plain opacity
+   `.fade-in` from utilities.css for the dashboard shell specifically so
+   page transitions feel deliberate rather than abrupt. Reduced-motion
+   users get the near-instant version via the global rule in base.css. */
+.dashboard-main.fade-in {
+  animation: dashboardEnter 0.32s var(--ease-out);
+}
+
+@keyframes dashboardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dashboard-page-header {
@@ -233,18 +286,25 @@
 }
 
 .btn-action-warning {
-  background: var(--warning-faint);
+  background: var(--warning-soft);
   color: var(--warning);
+  border: 1px solid var(--warning-border);
 }
 
 .btn-action-primary {
-  background: var(--primary-faint);
-  color: var(--primary);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft-border);
 }
 
 .btn-action-danger {
-  background: var(--danger-faint);
+  background: var(--danger-soft);
   color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.btn-action:hover {
+  filter: brightness(0.97);
 }
 
 .table-header-cell {
@@ -265,8 +325,9 @@
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: var(--success-faint);
+  background: var(--success-soft);
   color: var(--success);
+  border: 1px solid var(--success-border);
 }
 
 .badge-status-danger {
@@ -274,8 +335,9 @@
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: var(--danger-faint);
+  background: var(--danger-soft);
   color: var(--danger);
+  border: 1px solid var(--danger-border);
 }
 
 /* ── Responsive Page Grid Overrides ── */

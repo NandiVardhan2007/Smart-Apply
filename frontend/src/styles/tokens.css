@@ -79,6 +79,68 @@
   color-scheme: light;
 }
 
+/* ── Legacy alias layer ───────────────────────────────────────────
+   An earlier "premium dark" design system used a different set of
+   variable names. Some components and pages (loaders, the LiveKit
+   interview, resume maker, admin views) still reference those names
+   inline. Rather than hunt down every usage, we alias each old name
+   to its editorial-system equivalent *once*, here.
+
+   Because these are defined in terms of the base tokens (--surface,
+   --ink, --accent, …) via var(), they resolve at use-time and so
+   automatically pick up the right value in every theme — no need to
+   repeat this block inside the dark/ice overrides below. */
+:root {
+  /* surfaces */
+  --bg-primary: var(--paper);
+  --bg-body: var(--paper);
+  --bg-secondary: var(--surface-sunken);
+  --bg-surface: var(--surface-sunken);
+  --bg-card: var(--surface);
+  --bg-card-hover: var(--surface-sunken);
+  --bg-elevated: var(--surface);
+  --bg-input: var(--surface);
+
+  /* text */
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-muted: var(--ink-faint);
+
+  /* borders */
+  --border-color: var(--border);
+  --border-thin: var(--border);
+  --border-accent: var(--accent-soft-border);
+
+  /* accent + primary pairing */
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-ink);
+  --accent-secondary: var(--accent);
+  --accent-start: var(--accent);
+  --accent-end: var(--accent-hover);
+  --primary-faint: var(--accent-soft);
+
+  /* semantic + their soft/faint variants */
+  --error: var(--danger);
+  --error-bg: var(--danger-soft);
+  --success-bg: var(--success-soft);
+  --warning-bg: var(--warning-soft);
+  --success-faint: var(--success-soft);
+  --warning-faint: var(--warning-soft);
+  --danger-faint: var(--danger-soft);
+
+  /* shape + shadow + type */
+  --radius-xl: var(--radius-lg);
+  --shadow-soft: var(--shadow-md);
+  --shadow-soft-lg: var(--shadow-md);
+  --shadow-raised: var(--shadow-sm);
+  --shadow-glow: var(--shadow-focus);
+  --font-body: var(--font-sans);
+  --font-heading: var(--font-display);
+
+  /* motion — the old system used a single un-suffixed duration token */
+  --transition: var(--transition-base);
+}
+
 /* ── Dark ── a low-glare, low-contrast-shift twin of the default theme */
 [data-theme='dark'] {
   --paper: #121316;

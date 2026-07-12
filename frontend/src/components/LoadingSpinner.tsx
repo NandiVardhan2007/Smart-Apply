@@ -11,7 +11,7 @@ function SpinnerRing({ size = 32, color = 'var(--accent)' }: { size?: number; co
         width: size,
         height: size,
         borderRadius: '50%',
-        border: `3px solid rgba(255,255,255,0.08)`,
+        border: `3px solid var(--border)`,
         borderTopColor: color,
         flexShrink: 0,
       }}
@@ -66,7 +66,7 @@ export function InlineLoader({ title, subtitle }: { title: string; subtitle?: st
         textAlign: 'center',
         padding: '48px 24px',
         gap: 18,
-        color: 'var(--text-secondary)',
+        color: 'var(--ink-soft)',
       }}
     >
       <div style={{ position: 'relative', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -77,7 +77,7 @@ export function InlineLoader({ title, subtitle }: { title: string; subtitle?: st
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            border: '2.5px solid rgba(255,255,255,0.06)',
+            border: '2.5px solid var(--border)',
             borderTopColor: 'var(--accent)',
           }}
         />
@@ -88,17 +88,17 @@ export function InlineLoader({ title, subtitle }: { title: string; subtitle?: st
             position: 'absolute',
             inset: 6,
             borderRadius: '50%',
-            border: '2px solid rgba(255,255,255,0.04)',
-            borderBottomColor: 'var(--accent-secondary)',
+            border: '2px solid var(--border)',
+            borderBottomColor: 'var(--accent)',
           }}
         />
       </div>
       <div>
-        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+        <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
           {title}
           <BouncingDots />
         </div>
-        {subtitle && <div style={{ fontSize: 13, marginTop: 6, color: 'var(--text-muted)' }}>{subtitle}</div>}
+        {subtitle && <div style={{ fontSize: 13, marginTop: 6, color: 'var(--ink-faint)' }}>{subtitle}</div>}
       </div>
     </motion.div>
   );
@@ -116,9 +116,9 @@ export function PageLoader({ show, title, subtitle }: { show: boolean; title: st
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(3, 3, 5, 0.6)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
+            background: 'rgba(20, 22, 28, 0.5)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
@@ -132,9 +132,9 @@ export function PageLoader({ show, title, subtitle }: { show: boolean; title: st
             exit={{ scale: 0.92, opacity: 0, y: 16 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-xl)',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
               padding: '48px 40px',
               display: 'flex',
               flexDirection: 'column',
@@ -143,10 +143,10 @@ export function PageLoader({ show, title, subtitle }: { show: boolean; title: st
               textAlign: 'center',
               maxWidth: 400,
               width: '100%',
-              boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+              boxShadow: 'var(--shadow-md)',
             }}
           >
-            {/* Animated gradient ring */}
+            {/* Animated accent ring */}
             <div style={{ position: 'relative', width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <motion.div
                 animate={{ rotate: 360 }}
@@ -155,9 +155,9 @@ export function PageLoader({ show, title, subtitle }: { show: boolean; title: st
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '50%',
-                  border: '3px solid rgba(255,255,255,0.06)',
+                  border: '3px solid var(--border)',
                   borderTopColor: 'var(--accent)',
-                  borderRightColor: 'var(--accent-secondary)',
+                  borderRightColor: 'var(--accent)',
                 }}
               />
               <motion.div
@@ -167,19 +167,19 @@ export function PageLoader({ show, title, subtitle }: { show: boolean; title: st
                   width: 32,
                   height: 32,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))',
-                  opacity: 0.25,
+                  background: 'var(--accent)',
+                  opacity: 0.18,
                 }}
               />
             </div>
 
             <div>
-              <h3 style={{ fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <h3 style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
                 {title}
                 <BouncingDots />
               </h3>
               {subtitle && (
-                <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>{subtitle}</p>
+                <p style={{ fontSize: 14, color: 'var(--ink-faint)', margin: 0, lineHeight: 1.6 }}>{subtitle}</p>
               )}
             </div>
           </motion.div>
@@ -197,7 +197,7 @@ export function PageLoader({ show, title, subtitle }: { show: boolean; title: st
 export function SkeletonLine({ width = '100%', height = 12, style }: { width?: string | number; height?: number; style?: CSSProperties }) {
   return (
     <div
-      className="skeleton-shimmer"
+      className="skeleton"
       style={{
         width,
         height,
@@ -221,9 +221,9 @@ export function SkeletonCard({
   style?: CSSProperties;
 }) {
   const wrapStyle: CSSProperties = {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--radius-lg)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
     padding: variant === 'list-item' ? '16px 20px' : 32,
     overflow: 'hidden',
     ...(height ? { height } : {}),
@@ -235,7 +235,7 @@ export function SkeletonCard({
       <div style={wrapStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
           <SkeletonLine width="45%" height={10} />
-          <div className="skeleton-shimmer" style={{ width: 28, height: 28, borderRadius: 8 }} />
+          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 8 }} />
         </div>
         <SkeletonLine width="50%" height={36} style={{ borderRadius: 10 }} />
         <SkeletonLine width="30%" height={10} style={{ marginTop: 12 }} />
@@ -246,12 +246,12 @@ export function SkeletonCard({
   if (variant === 'list-item') {
     return (
       <div style={{ ...wrapStyle, display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div className="skeleton-shimmer" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+        <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <SkeletonLine width="60%" height={12} />
           <SkeletonLine width="35%" height={9} style={{ marginTop: 8 }} />
         </div>
-        <div className="skeleton-shimmer" style={{ width: 60, height: 28, borderRadius: 14 }} />
+        <div className="skeleton" style={{ width: 60, height: 28, borderRadius: 14 }} />
       </div>
     );
   }
@@ -260,7 +260,7 @@ export function SkeletonCard({
     return (
       <div style={wrapStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 24 }}>
-          <div className="skeleton-shimmer" style={{ width: 64, height: 64, borderRadius: '50%', flexShrink: 0 }} />
+          <div className="skeleton" style={{ width: 64, height: 64, borderRadius: '50%', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <SkeletonLine width="50%" height={16} />
             <SkeletonLine width="70%" height={10} style={{ marginTop: 10 }} />
@@ -277,7 +277,7 @@ export function SkeletonCard({
   return (
     <div style={wrapStyle}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 18 }}>
-        <div className="skeleton-shimmer" style={{ width: 42, height: 42, borderRadius: 10, flexShrink: 0 }} />
+        <div className="skeleton" style={{ width: 42, height: 42, borderRadius: 10, flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <SkeletonLine width="65%" height={13} />
           <SkeletonLine width="40%" height={9} style={{ marginTop: 8 }} />
@@ -287,8 +287,8 @@ export function SkeletonCard({
       <SkeletonLine width="85%" height={10} style={{ marginTop: 8 }} />
       <SkeletonLine width="55%" height={10} style={{ marginTop: 8 }} />
       <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-        <div className="skeleton-shimmer" style={{ width: 72, height: 30, borderRadius: 15 }} />
-        <div className="skeleton-shimmer" style={{ width: 72, height: 30, borderRadius: 15 }} />
+        <div className="skeleton" style={{ width: 72, height: 30, borderRadius: 15 }} />
+        <div className="skeleton" style={{ width: 72, height: 30, borderRadius: 15 }} />
       </div>
     </div>
   );
@@ -331,7 +331,7 @@ export function SkeletonAnalysis() {
     >
       {/* Score circle + verdict */}
       <div style={{ display: 'flex', gap: 20, marginBottom: 28, alignItems: 'center' }}>
-        <div className="skeleton-shimmer" style={{ width: 96, height: 96, borderRadius: '50%', flexShrink: 0 }} />
+        <div className="skeleton" style={{ width: 96, height: 96, borderRadius: '50%', flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <SkeletonLine width="80%" height={14} />
           <SkeletonLine width="50%" height={10} style={{ marginTop: 10 }} />
@@ -341,13 +341,13 @@ export function SkeletonAnalysis() {
       <SkeletonLine width="30%" height={10} style={{ marginBottom: 12 }} />
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
         {[60, 80, 50, 70, 90, 55].map((w, i) => (
-          <div key={i} className="skeleton-shimmer" style={{ width: w, height: 26, borderRadius: 13 }} />
+          <div key={i} className="skeleton" style={{ width: w, height: 26, borderRadius: 13 }} />
         ))}
       </div>
       {/* Suggestions */}
       <SkeletonLine width="35%" height={10} style={{ marginBottom: 12 }} />
       {[1, 2, 3].map((i) => (
-        <div key={i} className="skeleton-shimmer" style={{ height: 48, borderRadius: 8, marginBottom: 8, width: '100%' }} />
+        <div key={i} className="skeleton" style={{ height: 48, borderRadius: 8, marginBottom: 8, width: '100%' }} />
       ))}
     </motion.div>
   );
