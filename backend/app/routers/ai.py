@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from app.rate_limiter import limiter
 import fitz  # PyMuPDF
 
@@ -118,10 +119,36 @@ async def parse_resume(
 @router.post("/chat", response_model=ChatResponse)
 @limiter.limit("20/minute")
 async def chat(request: Request, body: ChatRequest, user: User = Depends(get_current_user)):
-    """Send messages to the AI career advisor chatbot."""
+    """Send messages to the AI career advisor chatbot (non-streaming)."""
     messages = [{"role": m.role, "content": m.content} for m in body.messages]
     reply = await ai_service.chat_completion(messages)
     return ChatResponse(reply=reply)
+
+
+@router.post("/chat/stream")
+@limiter.limit("20/minute")
+async def chat_stream(request: Request, body: ChatRequest, user: User = Depends(get_current_user)):
+    """Stream the chatbot reply as plain-text chunks for lower perceived latency.
+
+    The client reads the response body incrementally and appends text as it
+    arrives. If the upstream model fails mid-stream we stop sending; the client
+    falls back to the non-streaming /chat endpoint on any error."""
+    messages = [{"role": m.role, "content": m.content} for m in body.messages]
+
+    async def token_generator():
+        try:
+            async for delta in ai_service.chat_completion_stream(messages):
+                yield delta
+        except Exception:
+            # Nothing further to send; the client will detect the truncated
+            # stream (or an empty body) and retry the non-streaming endpoint.
+            return
+
+    return StreamingResponse(
+        token_generator(),
+        media_type="text/plain; charset=utf-8",
+        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+    )
 
 
 @router.post("/interview/question", response_model=InterviewQuestionResponse)

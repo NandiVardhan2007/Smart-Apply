@@ -105,3 +105,34 @@ export function apiErrorMessage(res: ApiResponse<unknown>, fallback: string): st
   const data = res.data as { detail?: string } | undefined;
   return data?.detail || fallback;
 }
+
+/**
+ * Like `apiFetch` but returns the raw `Response` without parsing the body —
+ * for endpoints that stream (e.g. the chatbot's token stream), where the
+ * caller wants to read `response.body` incrementally. Attaches the same auth
+ * and session headers. Does NOT auto-retry, since a stream can't be replayed.
+ */
+export async function apiFetchRaw(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const token = _getToken ? _getToken() : null;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const sessionId = _getSessionId?.();
+  if (sessionId) headers['X-Session-ID'] = sessionId;
+
+  if (options.body && !(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+
+  if (response.status === 401) _onUnauthorized?.();
+  return response;
+}

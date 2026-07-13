@@ -1,4 +1,6 @@
+import asyncio
 import json
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
@@ -7,6 +9,8 @@ import openai
 
 from app.config import settings
 from app.models.api_metrics import APILog
+
+logger = logging.getLogger(__name__)
 
 _client: Optional[AsyncOpenAI] = None
 
@@ -49,59 +53,86 @@ def _parse_llm_json(content: str, fallback: Any) -> Any:
     return fallback
 
 def _get_client() -> AsyncOpenAI:
-    """Lazy-initialize the NVIDIA NIM OpenAI-compatible client."""
+    """Lazy-initialize the NVIDIA NIM OpenAI-compatible client.
+
+    A request-level timeout and automatic retries are set here so a slow or
+    flaky upstream can't hang a user request indefinitely — without them the
+    default client waits ~10 minutes before giving up, which manifests to the
+    user as the whole feature being frozen."""
     global _client
     if _client is None:
         _client = AsyncOpenAI(
             base_url=settings.NVIDIA_BASE_URL,
             api_key=settings.NVIDIA_API_KEY,
+            timeout=60.0,
+            max_retries=2,
         )
     return _client
 
 
 import inspect
 
+
+def _log_api_metric(**fields) -> None:
+    """Persist an APILog row without blocking the caller.
+
+    The metric write used to be `await`ed inline, so every user-facing AI
+    response paid for an extra MongoDB round-trip before returning. We now
+    schedule it as a background task: the AI result is returned immediately
+    and the log lands a few milliseconds later. Failures to log are swallowed
+    (metrics must never break a working feature)."""
+    async def _write():
+        try:
+            await APILog(**fields).insert()
+        except Exception:
+            logger.warning("Failed to write APILog metric", exc_info=True)
+
+    try:
+        asyncio.create_task(_write())
+    except RuntimeError:
+        # No running loop (e.g. called from sync context) — skip silently.
+        pass
+
+
 async def _call_llm_with_tracking(**kwargs):
     """Wraps client.chat.completions.create to track API latency and success rates."""
     client = _get_client()
     start_time = time.time()
-    
+
     # Auto-detect caller function name
     try:
         endpoint_name = inspect.currentframe().f_back.f_code.co_name
     except Exception:
         endpoint_name = "unknown"
-        
-    
+
     try:
         completion = await client.chat.completions.create(**kwargs)
         duration_ms = int((time.time() - start_time) * 1000)
-        
-        # Fire and forget logging
-        await APILog(
+
+        _log_api_metric(
             endpoint=endpoint_name,
             response_time_ms=duration_ms,
             success=True,
-            status_code=200
-        ).insert()
-        
+            status_code=200,
+        )
+
         return completion
-        
+
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
         status_code = 500
-        
+
         if isinstance(e, openai.APIError):
             status_code = e.status_code if hasattr(e, 'status_code') and e.status_code else 500
-            
-        await APILog(
+
+        _log_api_metric(
             endpoint=endpoint_name,
             response_time_ms=duration_ms,
             success=False,
             status_code=status_code,
-            error_message=str(e)
-        ).insert()
-        
+            error_message=str(e),
+        )
+
         raise e
 
 
@@ -153,9 +184,10 @@ You MUST return your analysis as a valid JSON object matching the exact schema b
 
     content = completion.choices[0].message.content or "{}"
     return _parse_llm_json(content, fallback={
-            "question": "Tell me about a challenging project you've worked on.",
-            "category": "Behavioral",
-            "tips": "Use the STAR method: Situation, Task, Action, Result.",
+            "score": 0,
+            "matched_keywords": [],
+            "missing_keywords": [],
+            "suggestions": ["We couldn't analyze this resume automatically. Please try again."],
         })
 
 
@@ -309,12 +341,7 @@ Instructions:
         
     if "```" in content:
         content = content.split("```")[0]
-        
-    return content.strip()
-        
-    if "```" in content:
-        content = content.split("```")[0]
-        
+
     return content.strip()
 
 async def generate_cover_letter(resume_text: str, job_description: str) -> str:
@@ -344,12 +371,19 @@ Instructions:
         max_tokens=1000,
     )
 
-    content = completion.choices[0].message.content or "{}"
-    return _parse_llm_json(content, fallback={
-            "headline_suggestions": ["Unable to parse suggestions."],
-            "summary_rewrite": "Unable to parse summary rewrite. Please try again.",
-            "experience_improvements": []
-        })
+    # This endpoint returns a plain-text cover letter (the router's response
+    # model is `cover_letter: str`), so return the text directly. Running it
+    # through the JSON parser used to yield a dict and break the response.
+    content = completion.choices[0].message.content or ""
+    content = content.strip()
+
+    # Strip a stray markdown code fence if the model added one.
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+
+    return content.strip()
 
 async def smart_fill_resume_fields(resume_text: str, required_fields: List[str], user_profile: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
     """Smart fill resume fields based on extracted text, stored profile data, and required template fields."""
@@ -429,6 +463,191 @@ Return ONLY valid JSON, no markdown formatting."""
         max_tokens=2500,
     )
 
-    content = completion.choices[0].message.content or "{{}}"
-    return _parse_llm_json(content, fallback={{}})
+    content = completion.choices[0].message.content or "{}"
+    return _parse_llm_json(content, fallback={})
+
+
+_CHAT_SYSTEM_MSG = {
+    "role": "system",
+    "content": (
+        "You are Smart Apply AI, a friendly and helpful career advisor for "
+        "students and job seekers. Help with resume tips, cover letters, "
+        "interview preparation, job search strategies, and career guidance. "
+        "Keep responses concise, actionable, and encouraging."
+    ),
+}
+
+
+async def chat_completion(messages: List[Dict[str, str]]) -> str:
+    """General AI career-advisor chatbot. Returns the assistant's reply text."""
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[_CHAT_SYSTEM_MSG] + list(messages),
+        temperature=0.7,
+        max_tokens=1500,
+    )
+
+    return (
+        completion.choices[0].message.content
+        or "I'm sorry, I couldn't generate a response. Please try again."
+    )
+
+
+async def chat_completion_stream(messages: List[Dict[str, str]]):
+    """Stream the chatbot reply token-by-token.
+
+    Yields text deltas as they arrive so the UI can render the answer while
+    it's still being generated — the single biggest perceived-latency win for
+    an interactive chat, since the user sees words in ~1s instead of waiting
+    for the whole (often multi-second) response. Metrics are logged in the
+    background once the stream finishes."""
+    client = _get_client()
+    start_time = time.time()
+    try:
+        stream = await client.chat.completions.create(
+            model=settings.NVIDIA_MODEL,
+            messages=[_CHAT_SYSTEM_MSG] + list(messages),
+            temperature=0.7,
+            max_tokens=1500,
+            stream=True,
+        )
+        async for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                yield delta.content
+        _log_api_metric(
+            endpoint="chat_completion_stream",
+            response_time_ms=int((time.time() - start_time) * 1000),
+            success=True,
+            status_code=200,
+        )
+    except Exception as e:
+        _log_api_metric(
+            endpoint="chat_completion_stream",
+            response_time_ms=int((time.time() - start_time) * 1000),
+            success=False,
+            status_code=getattr(e, "status_code", 500) or 500,
+            error_message=str(e),
+        )
+        raise
+
+
+async def generate_interview_question(role: str, difficulty: str) -> Dict[str, str]:
+    """Generate a single AI interview question for a given role and difficulty."""
+    prompt = f"""Generate a single {difficulty} difficulty interview question for a {role} position.
+
+Return a JSON object with:
+- "question": the interview question
+- "category": the category (e.g., "Technical", "Behavioral", "System Design", "Problem Solving")
+- "tips": a brief tip for how to approach this question (1-2 sentences)
+
+Return ONLY valid JSON."""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+        max_tokens=500,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    return _parse_llm_json(content, fallback={
+        "question": "Tell me about a challenging project you've worked on.",
+        "category": "Behavioral",
+        "tips": "Use the STAR method: Situation, Task, Action, Result.",
+    })
+
+
+async def optimize_linkedin_profile(profile_text: str) -> Dict[str, Any]:
+    """Analyze a LinkedIn profile and provide optimization suggestions."""
+    prompt = f"""You are an expert LinkedIn profile optimization coach and recruiter.
+Analyze the provided LinkedIn profile text (extracted from a PDF) and provide highly actionable recommendations to improve it.
+
+PROFILE TEXT:
+{profile_text}
+
+Return your analysis as a valid JSON object matching the exact schema below. Do not include markdown code blocks (like ```json), conversational text, or any other formatting.
+
+{{
+  "headline_suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
+  "summary_rewrite": "A professionally written, engaging summary paragraph tailored to their experience.",
+  "experience_improvements": [
+    {{
+      "role": "Role Name",
+      "suggestion": "How to improve the bullet points for this specific role."
+    }}
+  ]
+}}
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.6,
+        max_tokens=2000,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    return _parse_llm_json(content, fallback={
+        "headline_suggestions": ["Unable to parse suggestions."],
+        "summary_rewrite": "Unable to parse summary rewrite. Please try again.",
+        "experience_improvements": [],
+    })
+
+
+async def score_jobs_batch(resume_text: str, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Score a batch of jobs against a resume in a single LLM call, then sort by match."""
+    if not jobs:
+        return []
+
+    jobs_summary = ""
+    for i, job in enumerate(jobs):
+        desc_snippet = job["description"][:400].replace("\n", " ") if job.get("description") else ""
+        jobs_summary += f"Job ID {i}:\nTitle: {job.get('title', '')}\nSnippet: {desc_snippet}\n\n"
+
+    prompt = f"""You are an ATS matching engine. Score the following jobs based on their match with the candidate's resume.
+Score each job from 0 to 100 based on title alignment and skill overlap.
+
+CANDIDATE RESUME:
+{resume_text}
+
+JOBS:
+{jobs_summary}
+
+Return ONLY a valid JSON array of objects, where each object has:
+- "index": integer (the Job ID number from above)
+- "score": integer (0-100)
+- "match_reason": a brief 1-sentence reason why it matches or lacks match
+
+Do not include markdown blocks or conversational text.
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=1500,
+    )
+
+    content = completion.choices[0].message.content or "[]"
+    results = _parse_llm_json(content, fallback=[])
+
+    # Seed defaults so every job has a score even if the model skipped it.
+    for job in jobs:
+        job.setdefault("match_score", 50)
+        job.setdefault("match_reason", "")
+
+    if isinstance(results, list):
+        for res in results:
+            if not isinstance(res, dict):
+                continue
+            idx = res.get("index")
+            if isinstance(idx, int) and 0 <= idx < len(jobs):
+                jobs[idx]["match_score"] = res.get("score", 50)
+                jobs[idx]["match_reason"] = res.get("match_reason", "")
+
+    jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+    return jobs
 

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Sparkles, Loader2, Trash2, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-import { apiFetch } from '../../api/client';
+import { apiFetch, apiFetchRaw } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import type { ChatMessage } from '../../api/types';
 
@@ -40,13 +40,55 @@ export default function AiChatbot() {
     setInput('');
     setIsLoading(true);
 
+    const cappedMessages = newMessages.slice(-10);
+    const body = JSON.stringify({ messages: cappedMessages });
+
+    // Try the streaming endpoint first for the lowest perceived latency: the
+    // reply renders token-by-token. If anything about the stream fails, fall
+    // back to the plain /ai/chat request so chat always works.
+    let streamedAny = false;
     try {
-      const cappedMessages = newMessages.slice(-10);
+      const res = await apiFetchRaw('/ai/chat/stream', { method: 'POST', body });
+      if (res.ok && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (!chunk) continue;
+          if (!streamedAny) {
+            // First chunk: clear the typing indicator and open the bubble.
+            streamedAny = true;
+            setIsLoading(false);
+            setMessages((prev) => [...prev, { role: 'assistant', content: chunk }]);
+          } else {
+            setMessages((prev) => {
+              const next = [...prev];
+              next[next.length - 1] = {
+                role: 'assistant',
+                content: next[next.length - 1].content + chunk,
+              };
+              return next;
+            });
+          }
+        }
+      }
+    } catch {
+      // fall through to non-streaming fallback below
+    }
+
+    if (streamedAny) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Fallback: non-streaming request.
+    try {
       const res = await apiFetch<{ reply: string }>('/ai/chat', {
         method: 'POST',
-        body: JSON.stringify({ messages: cappedMessages }),
+        body,
       });
-
       if (res.ok) {
         setMessages((prev) => [...prev, { role: 'assistant', content: res.data.reply }]);
       } else {
