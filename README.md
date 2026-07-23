@@ -38,7 +38,7 @@ Smart Apply is an AI-powered job application assistant designed to streamline th
 ### Backend Setup
 
 1. Navigate to the backend directory:
-   ``bash
+   ```bash
    cd backend
    ```
 2. Create and activate a virtual environment:
