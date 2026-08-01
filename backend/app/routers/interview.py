@@ -22,6 +22,91 @@ router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
 
 # ─────────────────────────────────────────────
+# Real-time Voice AI Interviewer Response Endpoint
+# ─────────────────────────────────────────────
+
+class InterviewRespondRequest(BaseModel):
+    theme: str = "HR"
+    messages: List[Dict[str, str]]
+    participant_name: str = "Candidate"
+
+THEME_SYSTEM_PROMPTS = {
+    "Technical": (
+        "You are a strict and highly technical lead software engineer. "
+        "Ask clear technical questions about algorithms, system architecture, or live coding. "
+        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+    ),
+    "Behavioral": (
+        "You are a behavioral interviewer evaluating leadership, team conflict resolution, and adaptability. "
+        "Ask situational questions using the STAR framework ('Tell me about a time when...'). "
+        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+    ),
+    "Executive": (
+        "You are a C-suite executive interviewing a candidate for strategic alignment, ROI metrics, and vision. "
+        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+    ),
+    "Creative": (
+        "You are an enthusiastic creative director interviewing a designer/product strategist. "
+        "Ask imaginative, out-of-the-box product and UI/UX design questions. "
+        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+    ),
+    "HR": (
+        "You are a warm, professional HR recruiter conducting a phone screen. "
+        "Ask about past experience, motivation, and career goals. "
+        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+    )
+}
+
+@router.post("/respond")
+@limiter.limit("30/minute")
+async def respond_to_candidate(request: Request, body: InterviewRespondRequest, current_user: User = Depends(get_current_user)):
+    """Generate instant AI Interviewer speech response based on conversation history."""
+    try:
+        system_instruction = THEME_SYSTEM_PROMPTS.get(body.theme, THEME_SYSTEM_PROMPTS["HR"])
+        prompt = f"{system_instruction}\nCandidate Name: {body.participant_name or current_user.full_name or 'Candidate'}."
+        
+        full_messages = [{"role": "system", "content": prompt}]
+        for msg in body.messages[-10:]: # keep last 10 turns for context
+            full_messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+
+        nvidia_api_key = settings.NVIDIA_API_KEY
+        nvidia_model = settings.NVIDIA_MODEL
+
+        client = openai.AsyncOpenAI(
+            base_url=settings.NVIDIA_BASE_URL,
+            api_key=nvidia_api_key,
+        )
+
+        response = await client.chat.completions.create(
+            model=nvidia_model,
+            messages=full_messages,
+            temperature=0.7,
+            max_tokens=250,
+        )
+
+        ai_response = response.choices[0].message.content.strip()
+        
+        # Detect if AI asks for code solution in Technical track
+        should_open_editor = False
+        if body.theme == "Technical" and any(kw in ai_response.lower() for kw in ["write code", "code editor", "solve", "implement", "algorithm", "function"]):
+            should_open_editor = True
+
+        return {
+            "status": "success",
+            "response": ai_response,
+            "open_code_editor": should_open_editor
+        }
+    except Exception as e:
+        logger.error(f"Interview respond error: {e}")
+        # Fallback response
+        return {
+            "status": "success",
+            "response": "Could you tell me more about your recent project achievements and key challenges?",
+            "open_code_editor": False
+        }
+
+
+# ─────────────────────────────────────────────
 # Internal report-save endpoint (legacy / direct)
 # ─────────────────────────────────────────────
 
