@@ -118,8 +118,16 @@ async def entrypoint(ctx: JobContext):
 
     participant_name = "Candidate"
     try:
-        participant = await ctx.wait_for_participant()
-        participant_name = participant.name or "Candidate"
+        # Check if candidate is already in room, otherwise wait
+        if ctx.room.remote_participants:
+            participant = next(iter(ctx.room.remote_participants.values()))
+            participant_name = participant.name or "Candidate"
+            logging.info(f"Candidate already in room: {participant_name}")
+        else:
+            logging.info("Waiting for candidate to join...")
+            participant = await ctx.wait_for_participant()
+            participant_name = participant.name or "Candidate"
+            logging.info(f"Candidate joined room: {participant_name}")
     except Exception as e:
         logging.warning(f"Failed to get participant name: {e}")
 
@@ -173,10 +181,16 @@ async def entrypoint(ctx: JobContext):
             f"{base_rule}"
         )
 
-    # Use Cartesia TTS for ultra-fast, realistic cloud voices
-    # Automatically rotate and check API keys
-    cartesia_key = await get_working_cartesia_key()
-    tts = cartesia.TTS(api_key=cartesia_key, voice=voice_id)
+    # Use Cartesia TTS with fallback to OpenAI TTS
+    try:
+        cartesia_key = await get_working_cartesia_key()
+        if cartesia_key:
+            tts = cartesia.TTS(api_key=cartesia_key, voice=voice_id)
+        else:
+            tts = openai.TTS()
+    except Exception as e:
+        logging.warning(f"Cartesia TTS init failed: {e}, falling back to OpenAI TTS")
+        tts = openai.TTS()
     fnc_ctx = AssistantFnc(tts=tts, room=ctx.room)
 
     openai_base_url = os.environ.get("OPENAI_BASE_URL") or os.environ.get("NVIDIA_BASE_URL")

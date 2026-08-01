@@ -763,6 +763,17 @@ function AIAvatarPanel({
   setIsTranscriptOpen: (val: boolean) => void;
 }) {
   const { state } = useVoiceAssistant();
+  const room = useRoomContext();
+
+  useEffect(() => {
+    if (room) {
+      room.startAudio().catch((err) => console.warn('Audio start prevented by autoplay:', err));
+    }
+  }, [room]);
+
+  const handleUnmuteAudio = () => {
+    if (room) room.startAudio().catch(() => {});
+  };
 
   const getStatusText = () => {
     switch (state) {
@@ -781,7 +792,7 @@ function AIAvatarPanel({
   };
 
   return (
-    <div className="ai-avatar-card">
+    <div className="ai-avatar-card" onClick={handleUnmuteAudio}>
       <div className="ai-avatar-orb-container">
         <div className={`ai-avatar-orb-ring ${state}`} />
         <div className={`ai-avatar-orb ${state}`}>
