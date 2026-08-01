@@ -971,11 +971,12 @@ export default function LiveKitInterview() {
           className="card glass-panel"
           style={{
             textAlign: 'center',
-            maxWidth: '740px',
+            maxWidth: '960px',
             width: '100%',
-            padding: '40px',
+            padding: '44px 40px',
             borderRadius: 'var(--radius-xl)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 50px rgba(56, 189, 248, 0.15)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 50px rgba(56, 189, 248, 0.18)',
+            margin: 'auto 0',
           }}
         >
           {/* Header Icon */}
@@ -997,10 +998,10 @@ export default function LiveKitInterview() {
           </div>
 
           <h2 className="text-accent" style={{ fontSize: '34px', marginBottom: '8px', letterSpacing: '-0.02em' }}>
-            AI Live Interview Studio
+            AI Live Interview Studio Setup
           </h2>
-          <p className="text-muted" style={{ fontSize: '15px', lineHeight: 1.6, maxWidth: '560px', margin: '0 auto' }}>
-            Real-time voice AI interview coach featuring deep vision emotion tracking, multi-language coding evaluation, and realistic speech synthesis.
+          <p className="text-muted" style={{ fontSize: '15px', lineHeight: 1.6, maxWidth: '620px', margin: '0 auto' }}>
+            Select your target role track below to customize the AI interviewer's persona, interview depth, and live evaluation algorithms.
           </p>
 
           {/* Candidate Info Badge */}
@@ -1028,9 +1029,9 @@ export default function LiveKitInterview() {
           <div
             style={{
               margin: '24px 0 16px',
-              padding: '16px 20px',
+              padding: '16px 22px',
               borderRadius: 'var(--radius-lg)',
-              background: 'rgba(10, 10, 18, 0.7)',
+              background: 'rgba(10, 10, 18, 0.75)',
               border: '1px solid var(--border-color)',
               display: 'flex',
               alignItems: 'center',
@@ -1041,7 +1042,7 @@ export default function LiveKitInterview() {
           >
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <Volume2 size={14} color="var(--accent)" /> PRE-FLIGHT MICROPHONE TEST
+                <Volume2 size={14} color="var(--accent)" /> HARDWARE CHECK • MICROPHONE INPUT METERS
               </div>
               <div className="audio-meter-track">
                 <div className="audio-meter-fill" style={{ width: `${micVolume}%` }} />
@@ -1054,10 +1055,14 @@ export default function LiveKitInterview() {
           </div>
 
           {/* Theme Selector */}
-          <div style={{ marginTop: '20px', textAlign: 'left' }}>
-            <label style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Layers size={16} color="var(--accent)" /> Select Interview Track
-            </label>
+          <div style={{ marginTop: '24px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <label style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers size={18} color="var(--accent)" /> Choose Specialization Track
+              </label>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>5 Tracks Available</span>
+            </div>
+
             <div className="theme-grid">
               {THEMES.map((t) => {
                 const Icon = t.icon;
@@ -1065,31 +1070,37 @@ export default function LiveKitInterview() {
                 return (
                   <motion.div
                     key={t.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.015 }}
+                    whileTap={{ scale: 0.985 }}
                     className={`theme-card ${isActive ? 'active' : ''}`}
                     onClick={() => setTheme(t.id)}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div className="theme-card-icon" style={{ background: `${t.color}20`, color: t.color }}>
-                        <Icon size={20} />
+                    <div className="theme-card-header">
+                      <div className="theme-card-icon" style={{ background: `${t.color}22`, color: t.color, border: `1px solid ${t.color}35` }}>
+                        <Icon size={22} />
                       </div>
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          background: `${t.color}15`,
-                          color: t.color,
-                          border: `1px solid ${t.color}30`,
-                        }}
-                      >
-                        {t.level}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            background: `${t.color}15`,
+                            color: t.color,
+                            border: `1px solid ${t.color}30`,
+                          }}
+                        >
+                          {t.level}
+                        </span>
+                        {isActive && <CheckCircle2 size={18} color="var(--accent)" />}
+                      </div>
                     </div>
-                    <div className="theme-card-title">{t.title}</div>
-                    <div className="theme-card-desc">{t.description}</div>
+
+                    <div>
+                      <div className="theme-card-title">{t.title}</div>
+                      <div className="theme-card-desc">{t.description}</div>
+                    </div>
                   </motion.div>
                 );
               })}
@@ -1103,19 +1114,20 @@ export default function LiveKitInterview() {
             className="btn btn-primary"
             style={{
               width: '100%',
-              padding: '16px',
-              fontSize: '17px',
-              marginTop: '12px',
+              padding: '18px',
+              fontSize: '18px',
+              marginTop: '16px',
+              borderRadius: 'var(--radius-xl)',
               boxShadow: '0 0 35px rgba(56, 189, 248, 0.45)',
             }}
           >
             {status === 'connecting' ? (
               <>
-                <Loader2 size={22} className="spin" /> Connecting to Live Room...
+                <Loader2 size={22} className="spin" /> Initializing {selectedThemeObj.title} Session...
               </>
             ) : (
               <>
-                <Play size={22} /> Enter {selectedThemeObj.title} Studio
+                <Play size={22} /> Launch {selectedThemeObj.title} Studio
               </>
             )}
           </button>
