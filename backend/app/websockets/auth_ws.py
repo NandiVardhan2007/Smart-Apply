@@ -23,6 +23,6 @@ async def auth_websocket(websocket: WebSocket, session_id: str):
             if data == "ping":
                 await manager.send_event(session_id, "pong", {})
     except WebSocketDisconnect:
-        manager.disconnect(session_id)
+        await manager.disconnect(session_id)
     except Exception:
-        manager.disconnect(session_id)
+        await manager.disconnect(session_id)

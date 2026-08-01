@@ -55,7 +55,7 @@ export async function apiFetch<T = unknown>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const token = _getToken ? _getToken() : null;
+  const token = (_getToken ? _getToken() : null) || localStorage.getItem('sa_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -117,7 +117,7 @@ export async function apiFetchRaw(endpoint: string, options: RequestInit = {}): 
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const token = _getToken ? _getToken() : null;
+  const token = (_getToken ? _getToken() : null) || localStorage.getItem('sa_token');
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const sessionId = _getSessionId?.();
