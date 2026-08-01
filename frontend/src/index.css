@@ -868,7 +868,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .interview-container {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr 380px;
   gap: 16px;
   flex: 1;
   min-height: 0;
