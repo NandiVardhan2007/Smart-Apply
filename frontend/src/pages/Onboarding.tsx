@@ -174,10 +174,14 @@ export default function Onboarding() {
                 <span className="hr" style={{ flex: 1, margin: 0 }} />
               </div>
 
-              <button className="btn btn-secondary btn-block" onClick={() => setStep(2)}>
-                Skip &amp; fill manually
-                <ArrowRight size={16} />
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-secondary" onClick={() => setStep(2)} style={{ flex: 1 }}>
+                  Fill manually <ArrowRight size={16} />
+                </button>
+                <button className="btn btn-ghost" onClick={handleSaveAndComplete} style={{ flex: 1, fontSize: 13 }}>
+                  Skip to Dashboard
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     # ── JWT ──
     SECRET_KEY: str = "change-this-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days (43200 minutes)
     ALGORITHM: str = "HS256"
 
     # ── MongoDB ──

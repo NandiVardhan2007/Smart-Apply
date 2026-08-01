@@ -65,6 +65,7 @@ async def update_profile(
     if body.experience is not None:
         user.experience = body.experience
 
+    user.has_onboarded = True
     await user.save()
     return {
         "message": "Profile updated successfully",
@@ -82,6 +83,7 @@ async def update_profile(
             "experience": user.experience,
             "profile_pic_url": user.profile_pic_url,
             "is_verified": user.is_verified,
+            "has_onboarded": True,
         }
     }
 

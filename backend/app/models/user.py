@@ -15,6 +15,7 @@ class User(Document):
     full_name: str = ""
     is_verified: bool = False
     is_admin: bool = False
+    has_onboarded: bool = False
 
     # OTP fields
     otp_code: Optional[str] = None

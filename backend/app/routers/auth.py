@@ -37,7 +37,7 @@ def _user_dict(user: User) -> dict:
         "is_verified": user.is_verified,
         "is_admin": user.is_admin,
         "profile_pic_url": user.profile_pic_url,
-        "has_onboarded": bool(user.bio or user.skills or user.education or user.experience),
+        "has_onboarded": bool(user.has_onboarded or user.bio or user.skills or user.education or user.experience),
     }
 
 
@@ -142,7 +142,7 @@ async def verify_otp(request: Request, response: Response, body: OtpVerifyReques
             "token": token,
             "full_name": user.full_name,
             "profile_pic_url": user.profile_pic_url,
-            "has_onboarded": bool(user.bio or user.skills or user.education or user.experience)
+            "has_onboarded": bool(user.has_onboarded or user.bio or user.skills or user.education or user.experience)
         })
 
     from app.config import settings
@@ -201,6 +201,7 @@ async def login(request: Request, response: Response, body: LoginRequest):
             "token": token,
             "full_name": user.full_name,
             "profile_pic_url": user.profile_pic_url,
+            "has_onboarded": bool(user.has_onboarded or user.bio or user.skills or user.education or user.experience),
         })
 
     from app.config import settings
