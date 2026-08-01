@@ -64,19 +64,19 @@ class AssistantFnc(llm.ToolContext):
         self.tts = tts
         self.room = room
 
-    @llm.function_tool(description="Change the AI interviewer's voice to a specific gender if the user asks you to change your voice to male or female.")
+    @llm.function_tool(description="ONLY call this tool if the candidate explicitly asks to change voice gender ('change voice', 'male voice', 'female voice'). DO NOT call for normal responses.")
     async def change_voice(self, gender: typing.Annotated[str, "The gender to switch to. Must be 'male' or 'female'"]):
         if gender.lower() == "male":
             voice_id = os.environ.get("VOICE_ID_TECHNICAL_MALE", "638efaaa-4d0c-442e-b701-3fae16aad012")
             self.tts.update_options(voice=voice_id)
-            return "Voice changed to male."
+            return "Voice changed to male. Now ask the candidate your next interview question."
         elif gender.lower() == "female":
             voice_id = os.environ.get("VOICE_ID_TECHNICAL_FEMALE", "7ea5e9c2-b719-4dc3-b870-5ba5f14d31d8")
             self.tts.update_options(voice=voice_id)
-            return "Voice changed to female."
-        return "Unknown gender."
+            return "Voice changed to female. Now ask the candidate your next interview question."
+        return "Unknown gender. Now ask the candidate your next interview question."
 
-    @llm.function_tool(description="Open the live code editor on the user's screen. Call this tool immediately when you ask the candidate a coding question. Provide the question details to display.")
+    @llm.function_tool(description="ONLY call this tool in Technical interviews when presenting a coding problem for the candidate to write code on screen.")
     async def open_code_editor(
         self,
         question_title: typing.Annotated[str, "The title of the coding question"],
@@ -95,7 +95,7 @@ class AssistantFnc(llm.ToolContext):
             payload=payload,
             topic="open_code_editor"
         )
-        return "Editor opened successfully on the user's screen."
+        return "Editor opened on screen. Now verbally present the question to the candidate."
 
 async def entrypoint(ctx: JobContext):
     # Use Silero for Voice Activity Detection
@@ -133,10 +133,10 @@ async def entrypoint(ctx: JobContext):
 
     # Define voices and instructions based on theme
     base_rule = (
-        f"You are interviewing {participant_name}. Greet them by name and start with a brief self intro. "
-        "CRITICAL RULE: You must ask ONLY ONE short question at a time. "
-        "Do NOT ask multi-part questions. Keep your responses under 2 sentences. "
-        "Wait for the user to answer before asking the next question."
+        f"You are conducting a live voice interview with {participant_name}. Greet them and ask your first question. "
+        "CRITICAL MANDATORY RULE: On every single user input, you MUST immediately speak back with your next single question. "
+        "Never stay silent. Do NOT ask multi-part questions. Keep your responses under 2 sentences. "
+        "Wait for the candidate to answer before asking the next question."
     )
 
     if theme == "Technical":
