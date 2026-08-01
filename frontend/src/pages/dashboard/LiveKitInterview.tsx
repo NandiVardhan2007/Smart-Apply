@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -38,7 +39,8 @@ import {
   Activity,
   CheckCircle2,
   Layers,
-  Cpu
+  Cpu,
+  ArrowLeft
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
@@ -841,6 +843,7 @@ function AIAvatarPanel({
 
 // Main Interactive Page Component
 export default function LiveKitInterview() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { volume: micVolume, isMicWorking } = useMicTester();
   const [token, setToken] = useState<string>('');
@@ -899,6 +902,11 @@ export default function LiveKitInterview() {
     showToast('info', 'Interview session completed.');
   };
 
+  const handleExitStudio = () => {
+    handleDisconnect();
+    navigate('/dashboard');
+  };
+
   const handleNewSegment = (seg: TranscriptionSegment) => {
     setTranscriptLogs((prev) => {
       if (prev.some((item) => item.id === seg.id)) return prev;
@@ -914,15 +922,37 @@ export default function LiveKitInterview() {
     return (
       <div
         style={{
-          minHeight: 'calc(100vh - 80px)',
+          position: 'fixed',
+          inset: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '24px 16px',
-          background: 'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(3, 3, 5, 0.96) 80%)',
+          background: 'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(3, 3, 5, 0.98) 80%)',
+          overflowY: 'auto',
         }}
       >
+        {/* Top Left Exit Button */}
+        <button
+          onClick={handleExitStudio}
+          className="btn"
+          style={{
+            position: 'absolute',
+            top: 24,
+            left: 24,
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid var(--border-color)',
+            color: '#fff',
+            padding: '10px 20px',
+            fontSize: '14px',
+          }}
+        >
+          <ArrowLeft size={18} /> Return to Dashboard
+        </button>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

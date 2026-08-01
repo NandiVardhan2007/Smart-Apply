@@ -179,18 +179,25 @@ async def entrypoint(ctx: JobContext):
     tts = cartesia.TTS(api_key=cartesia_key, voice=voice_id)
     fnc_ctx = AssistantFnc(tts=tts, room=ctx.room)
 
-    # Use OpenAI plugin for LLM (You can point this to NVIDIA NIM by setting OPENAI_BASE_URL)
-    # Default is OpenAI if OPENAI_BASE_URL is not set
-    # Ensure you have OPENAI_API_KEY set in your .env
+    openai_base_url = os.environ.get("OPENAI_BASE_URL") or os.environ.get("NVIDIA_BASE_URL")
+    openai_api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("NVIDIA_API_KEY")
+    
+    if openai_base_url and "nvidia" in openai_base_url.lower():
+        model_name = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct")
+    else:
+        model_name = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+
+    logging.info(f"Initializing LLM with model: {model_name} (base_url={openai_base_url})")
+
     llm_instance = openai.LLM(
-        model="meta/llama-3.1-70b-instruct",
-        base_url=os.environ.get("OPENAI_BASE_URL"),
-        api_key=os.environ.get("OPENAI_API_KEY")
+        model=model_name,
+        base_url=openai_base_url,
+        api_key=openai_api_key
     )
 
     agent = VoicePipelineAgent(
         instructions=instructions,
-        stt=deepgram.STT(), # Deepgram is ultra-fast and purpose-built for speech
+        stt=deepgram.STT(),
         llm=llm_instance,
         tts=tts,
         tools=[fnc_ctx],

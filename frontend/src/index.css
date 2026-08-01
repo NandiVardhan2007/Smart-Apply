@@ -804,10 +804,14 @@ h1, h2, h3, h4, h5, h6 {
    ================================== */
 
 .interview-layout {
-  height: calc(100vh - 72px);
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.08) 0%, rgba(3, 3, 5, 0.95) 70%), var(--bg-primary);
+  background: radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.12) 0%, rgba(3, 3, 5, 0.98) 75%), #030305;
   overflow: hidden;
   padding: 16px;
   gap: 16px;
