@@ -49,11 +49,6 @@ class Settings(BaseSettings):
     JUDGE0_API_HOST: str = "judge0-ce.p.rapidapi.com"
     JUDGE0_API_URL: str = "https://judge0-ce.p.rapidapi.com"
 
-    # ── LiveKit (Voice AI Room Server) ──
-    LIVEKIT_URL: str = ""
-    LIVEKIT_API_KEY: str = ""
-    LIVEKIT_API_SECRET: str = ""
-
     # ── App URLs ──
     FRONTEND_URL: str = "https://smartapplies.app"
     ENVIRONMENT: str = "development"

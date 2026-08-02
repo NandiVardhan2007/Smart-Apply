@@ -29,7 +29,7 @@ const ResumeTailor = lazy(() => import('./pages/dashboard/ResumeTailor'));
 const AtsChecker = lazy(() => import('./pages/dashboard/AtsChecker'));
 const AiChatbot = lazy(() => import('./pages/dashboard/AiChatbot'));
 const ProjectRecommender = lazy(() => import('./pages/dashboard/ProjectRecommender'));
-const LiveKitInterview = lazy(() => import('./pages/dashboard/LiveKitInterview'));
+const LiveInterview = lazy(() => import('./pages/dashboard/LiveInterview'));
 const InterviewReport = lazy(() => import('./pages/dashboard/InterviewReport'));
 const Profile = lazy(() => import('./pages/dashboard/Profile'));
 const Settings = lazy(() => import('./pages/dashboard/Settings'));
@@ -155,7 +155,7 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Suspense fallback={<PageFallback />}>
-                <LiveKitInterview />
+                <LiveInterview />
               </Suspense>
             </ProtectedRoute>
           }

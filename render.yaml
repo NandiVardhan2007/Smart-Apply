@@ -45,29 +45,3 @@ services:
     ipAllowList: [] # Internal only
     plan: free
 
-  - type: web
-    name: smartapply-livekit-agent
-    env: docker
-    region: oregon
-    plan: free
-    rootDir: livekit_agent
-    dockerfilePath: Dockerfile
-    healthCheckPath: /ping
-    envVars:
-      - key: LIVEKIT_URL
-        sync: false
-      - key: LIVEKIT_API_KEY
-        sync: false
-      - key: LIVEKIT_API_SECRET
-        sync: false
-      - key: DEEPGRAM_API_KEY
-        sync: false
-      - key: CARTESIA_API_KEYS
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_BASE_URL
-        value: https://integrate.api.nvidia.com/v1
-      - key: NVIDIA_MODEL
-        value: meta/llama-3.1-70b-instruct
-

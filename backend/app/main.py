@@ -12,7 +12,7 @@ from app.rate_limiter import limiter
 from app.config import settings
 
 from app.database import close_db, init_db
-from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, stats, cover_letter, jobs, linkedin, code_execution, admin, resume_maker, livekit
+from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, stats, cover_letter, jobs, linkedin, code_execution, admin, resume_maker
 from app.websockets.auth_ws import router as ws_router
 from app.websockets.manager import manager
 
@@ -94,7 +94,6 @@ app.include_router(jobs.router)
 app.include_router(linkedin.router)
 app.include_router(admin.router)
 app.include_router(resume_maker.router)
-app.include_router(livekit.router)
 
 # ── WebSocket Router ──
 app.include_router(ws_router, prefix="/api")

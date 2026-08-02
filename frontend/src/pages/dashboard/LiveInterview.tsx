@@ -30,7 +30,11 @@ import {
   Send,
   Maximize2,
   Minimize2,
-  FileText
+  FileText,
+  VideoOff,
+  PhoneOff,
+  Subtitles,
+  VolumeX
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
@@ -385,7 +389,7 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
   );
 }
 
-export default function LiveKitInterview() {
+export default function LiveInterview() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { volume: micVolume, isMicWorking } = useMicTester();
@@ -398,6 +402,9 @@ export default function LiveKitInterview() {
   const [transcriptLogs, setTranscriptLogs] = useState<Array<{ id: string; text: string; time: string; role: 'user' | 'assistant' }>>([]);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [showCaptions, setShowCaptions] = useState(true);
+  const [lastAiSubtitle, setLastAiSubtitle] = useState('');
   const [textInput, setTextInput] = useState('');
   const [liveSpeechText, setLiveSpeechText] = useState('');
   
@@ -473,6 +480,7 @@ export default function LiveKitInterview() {
 
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setTranscriptLogs((prev) => [...prev, { id: String(Date.now()), text: aiText, time: now, role: 'assistant' }]);
+      setLastAiSubtitle(aiText);
 
       if (res.data?.open_code_editor) {
         setIsEditorOpen(true);
@@ -571,23 +579,12 @@ export default function LiveKitInterview() {
     return `${m}:${s}`;
   };
 
-  const handleStart = async () => {
+  const handleStart = () => {
     setStatus('connected');
     const greeting = `Hello ${user?.full_name || 'Candidate'}! I am your AI interviewer for the ${theme} track. Shall we begin?`;
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     conversationRef.current = [{ role: 'assistant', content: greeting }];
     setTranscriptLogs([{ id: '1', text: greeting, time: now, role: 'assistant' }]);
-
-    // Pre-fetch LiveKit token if backend configured
-    try {
-      const res = await apiFetch<{ token: string; room_name: string; url?: string }>(`/livekit/token?theme=${theme}`);
-      if (res.ok && res.data?.token) {
-        console.log('LiveKit room token obtained:', res.data.room_name);
-      }
-    } catch (e) {
-      console.log('LiveKit token fallback to browser voice engine');
-    }
-
     showToast('success', `Connected to ${theme} Voice AI Studio!`);
     setTimeout(() => speakAIResponse(greeting), 600);
   };
@@ -747,158 +744,174 @@ export default function LiveKitInterview() {
             Track: {theme}
           </span>
 
-          <button onClick={() => setIsTranscriptOpen(!isTranscriptOpen)} className="btn" style={{ background: isTranscriptOpen ? 'var(--accent)' : 'rgba(255,255,255,0.06)', color: isTranscriptOpen ? '#030305' : '#fff', border: '1px solid var(--border-color)', padding: '8px 16px', fontSize: '13px' }}>
-            <MessageSquareText size={16} /> Live Transcript ({transcriptLogs.length})
+          <button
+            onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
+            className="btn"
+            style={{
+              background: isTranscriptOpen ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
+              color: isTranscriptOpen ? '#030305' : '#fff',
+              border: '1px solid var(--border-color)',
+              padding: '8px 16px',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Subtitles size={16} /> Captions & Transcript ({transcriptLogs.length})
           </button>
 
-          <button onClick={handleDisconnect} className="btn" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '8px 18px', fontSize: '13px' }}>
-            <LogOut size={16} /> End Interview
+          <button
+            onClick={handleDisconnect}
+            className="btn"
+            style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '8px 18px', fontSize: '13px' }}
+          >
+            <PhoneOff size={16} /> End Call
           </button>
         </div>
       </header>
 
-      <div className={`interview-container ${isEditorOpen ? 'with-editor' : ''}`} style={{ position: 'relative' }}>
-        <div className="interview-control-pane">
-          <div className="ai-avatar-card">
+      <div className={`interview-container ${isEditorOpen ? 'with-editor' : ''} ${isTranscriptOpen ? 'has-transcript' : ''}`}>
+        {/* Main Stage: Video Call Area */}
+        <div className="video-call-stage">
+          <div className="scanline" />
+
+          {/* AI Interviewer Stage (Center Tile) */}
+          <div className="ai-avatar-card" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
             <div className="ai-avatar-orb-container">
               <div className={`ai-avatar-orb-ring ${aiState}`} />
               <div className={`ai-avatar-orb ${aiState}`}>
-                <Bot size={48} />
+                <Bot size={54} />
               </div>
             </div>
 
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              AI Interviewer
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              AI Interviewer ({theme} Track)
             </h3>
 
             <div className={`ai-status-pill ${aiState}`}>
               <span>
                 {aiState === 'speaking' && '🤖 AI Interviewer Speaking...'}
-                {aiState === 'listening' && '🎤 Candidate Turn — Speak or Type Response Below'}
+                {aiState === 'listening' && '🎤 Candidate Turn — Speak into mic or type below'}
                 {aiState === 'thinking' && '🧠 AI Evaluating & Synthesizing Question...'}
               </span>
             </div>
 
-            {liveSpeechText && (
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  marginTop: '12px',
-                  padding: '8px 16px',
-                  borderRadius: '12px',
-                  background: 'rgba(56, 189, 248, 0.15)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  color: 'var(--accent)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Mic size={14} className="spin" /> Listening: "{liveSpeechText}"
-              </motion.div>
+            {aiState === 'speaking' && (
+              <div className="audio-waveform-bar" style={{ marginTop: '16px' }}>
+                <span /><span /><span /><span />
+              </div>
             )}
-
-            <div style={{ marginTop: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                <input
-                  type="text"
-                  placeholder={liveSpeechText ? `Listening: "${liveSpeechText}"` : "Type your answer or speak into microphone..."}
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendManualText()}
-                  className="input"
-                  style={{
-                    flex: 1,
-                    background: 'rgba(10, 10, 18, 0.8)',
-                    border: '1px solid var(--border-color)',
-                    color: '#fff',
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    borderRadius: '12px',
-                  }}
-                />
-                <button
-                  onClick={handleSendManualText}
-                  className="btn btn-primary"
-                  style={{ padding: '12px 20px', borderRadius: '12px', fontSize: '14px' }}
-                >
-                  <Send size={16} /> Send
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                <button
-                  className="btn"
-                  style={{ flex: 1, padding: '10px', background: isMuted ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.06)', color: isMuted ? '#ef4444' : '#fff', border: '1px solid var(--border-color)', fontSize: '13px' }}
-                  onClick={() => setIsMuted(!isMuted)}
-                >
-                  {isMuted ? <MicOff size={16} /> : <Mic size={16} />} {isMuted ? 'Mic Muted' : 'Mute Mic'}
-                </button>
-
-                {theme === 'Technical' && (
-                  <button className="btn btn-primary" style={{ flex: 1, padding: '10px', fontSize: '13px' }} onClick={() => setIsEditorOpen(true)}>
-                    <Code size={16} /> Open Code IDE
-                  </button>
-                )}
-
-                <button className="btn" style={{ flex: 1, padding: '10px', fontSize: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-color)', color: '#fff' }} onClick={() => setIsTranscriptOpen(true)}>
-                  <MessageSquareText size={16} /> Transcript Log
-                </button>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 'auto', paddingTop: '16px', display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <span>Session: <strong style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>voice-ai-active</strong></span>
-              <span>Theme: <strong style={{ color: 'var(--accent)' }}>{theme}</strong></span>
-            </div>
           </div>
-        </div>
 
-        <div className="interview-video-pane">
-          <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '340px', overflow: 'hidden', background: '#000' }}>
-            <div className="scanline" />
-            <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-            
-            <div style={{ position: 'absolute', top: '12%', left: '16%', right: '16%', bottom: '12%', border: '1px dashed rgba(56, 189, 248, 0.35)', borderRadius: 'var(--radius-lg)', pointerEvents: 'none', zIndex: 5 }}>
-              <div style={{ position: 'absolute', top: -2, left: -2, width: 16, height: 16, borderTop: '3px solid var(--accent)', borderLeft: '3px solid var(--accent)', borderTopLeftRadius: '6px' }} />
-              <div style={{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderTop: '3px solid var(--accent)', borderRight: '3px solid var(--accent)', borderTopRightRadius: '6px' }} />
-              <div style={{ position: 'absolute', bottom: -2, left: -2, width: 16, height: 16, borderBottom: '3px solid var(--accent)', borderLeft: '3px solid var(--accent)', borderBottomLeftRadius: '6px' }} />
-              <div style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderBottom: '3px solid var(--accent)', borderRight: '3px solid var(--accent)', borderBottomRightRadius: '6px' }} />
-            </div>
+          {/* Floating Closed Captions (Subtitles Overlay) */}
+          {showCaptions && (lastAiSubtitle || liveSpeechText) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="floating-captions-bar"
+            >
+              <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Subtitles size={13} /> {liveSpeechText ? 'Candidate Speech:' : 'AI Interviewer:'}
+              </div>
+              <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>
+                "{liveSpeechText || lastAiSubtitle}"
+              </div>
+            </motion.div>
+          )}
+
+          {/* Floating Candidate PIP Video Tile (Corner) */}
+          <div className="candidate-pip-tile">
+            {!isVideoOff ? (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#090a12', color: 'var(--text-muted)' }}>
+                <VideoOff size={28} color="var(--text-muted)" />
+                <span style={{ fontSize: '11px', marginTop: '6px' }}>Camera Muted</span>
+              </div>
+            )}
 
             <FacialAnalysisHUD videoRef={videoRef} />
           </div>
+
+          {/* Bottom Floating Action Toolbar */}
+          <div className="video-call-toolbar">
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className={`call-btn ${isMuted ? 'active' : ''}`}
+              style={{ background: isMuted ? 'rgba(239, 68, 68, 0.85)' : undefined }}
+              title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+            >
+              {isMuted ? <MicOff size={20} color="#fff" /> : <Mic size={20} />}
+            </button>
+
+            <button
+              onClick={() => setIsVideoOff(!isVideoOff)}
+              className={`call-btn ${isVideoOff ? 'active' : ''}`}
+              style={{ background: isVideoOff ? 'rgba(239, 68, 68, 0.85)' : undefined }}
+              title={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
+            >
+              {isVideoOff ? <VideoOff size={20} color="#fff" /> : <Video size={20} />}
+            </button>
+
+            <button
+              onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
+              className={`call-btn ${isTranscriptOpen ? 'active' : ''}`}
+              title="Toggle Captions & Live Transcript"
+            >
+              <Subtitles size={20} />
+            </button>
+
+            {theme === 'Technical' && (
+              <button
+                onClick={() => setIsEditorOpen(!isEditorOpen)}
+                className={`call-btn ${isEditorOpen ? 'active' : ''}`}
+                title="Open Code Execution IDE"
+              >
+                <Code size={20} />
+              </button>
+            )}
+
+            <button onClick={handleDisconnect} className="call-btn danger" title="End Call">
+              <PhoneOff size={18} /> End Call
+            </button>
+          </div>
         </div>
 
+        {/* Code Editor Pane (Split View) */}
         {isEditorOpen && (
           <div className="interview-editor-pane" style={{ height: '100%', minHeight: 0 }}>
             <CodeEditorFeature isOpen={isEditorOpen} setIsOpen={setIsEditorOpen} isEmbedded={true} />
           </div>
         )}
 
+        {/* Live Transcript Side Panel (Right Side) */}
         <AnimatePresence>
           {isTranscriptOpen && (
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="transcript-drawer">
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="transcript-drawer" style={{ position: 'relative', width: '100%', borderLeft: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(10,10,18,0.9)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, color: '#fff' }}>
-                  <MessageSquareText size={18} color="var(--accent)" /> Live Transcript Log
+                  <Subtitles size={18} color="var(--accent)" /> Captions & Live Transcript
                 </div>
-                <button onClick={() => setIsTranscriptOpen(false)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
+                <button onClick={() => setIsTranscriptOpen(false)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'none', border: 'none' }}>
                   <X size={18} />
                 </button>
               </div>
 
-              <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {transcriptLogs.length === 0 ? (
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px', fontSize: '13px' }}>
-                    Speech transcriptions will appear here in real-time as you converse with the AI...
+                    Captions and speech transcriptions will appear here in real-time as you converse with the AI...
                   </div>
                 ) : (
                   transcriptLogs.map((log) => (
-                    <div key={log.id} className={`transcript-message ${log.role === 'assistant' ? 'ai' : ''}`}>
+                    <div key={log.id} className={`transcript-message ${log.role === 'assistant' ? 'ai' : 'user'}`}>
                       <div style={{ fontSize: '11px', color: log.role === 'assistant' ? 'var(--accent)' : 'var(--accent-green)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                         <span>{log.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Candidate'}</span>
                         <span>{log.time}</span>
@@ -908,6 +921,21 @@ export default function LiveKitInterview() {
                   ))
                 )}
                 <div ref={transcriptEndRef} />
+              </div>
+
+              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-color)', background: 'rgba(10,10,18,0.9)', display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  placeholder="Type a response..."
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendManualText()}
+                  className="input"
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', fontSize: '13px', padding: '8px 12px', borderRadius: '8px', color: '#fff', border: '1px solid var(--border-color)' }}
+                />
+                <button onClick={handleSendManualText} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: '13px', borderRadius: '8px' }}>
+                  <Send size={14} />
+                </button>
               </div>
             </motion.div>
           )}

@@ -868,15 +868,167 @@ h1, h2, h3, h4, h5, h6 {
 
 .interview-container {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr;
   gap: 16px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.interview-container.has-transcript {
+  grid-template-columns: 1fr 360px;
 }
 
 .interview-container.with-editor {
-  grid-template-columns: 340px 1fr 1.2fr;
+  grid-template-columns: 340px 1fr;
+}
+
+.interview-container.with-editor.has-transcript {
+  grid-template-columns: 320px 1fr 340px;
+}
+
+/* Video Call Stage */
+.video-call-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.9) 0%, rgba(3, 3, 5, 0.98) 85%);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Floating Candidate PIP Tile */
+.candidate-pip-tile {
+  position: absolute;
+  bottom: 84px;
+  right: 20px;
+  width: 240px;
+  height: 150px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
+  z-index: 20;
+  transition: all 0.3s ease;
+}
+
+.candidate-pip-tile:hover {
+  border-color: var(--accent);
+  transform: scale(1.03);
+}
+
+/* Floating Call Action Toolbar */
+.video-call-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  z-index: 30;
+}
+
+.call-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.call-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+}
+
+.call-btn.active {
+  background: var(--accent);
+  color: #030305;
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.call-btn.danger {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+  border-color: #ef4444;
+  width: auto;
+  padding: 0 18px;
+  border-radius: 24px;
+  font-weight: 600;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.call-btn.danger:hover {
+  background: #dc2626;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* Floating Subtitles / Captions Banner */
+.floating-captions-bar {
+  position: absolute;
+  bottom: 84px;
+  left: 24px;
+  right: 280px;
+  padding: 12px 20px;
+  background: rgba(8, 8, 14, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 15;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Audio Waveform Animation */
+.audio-waveform-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+}
+
+.audio-waveform-bar span {
+  width: 4px;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: waveBar 1s ease-in-out infinite alternate;
+}
+
+.audio-waveform-bar span:nth-child(2) { animation-delay: 0.2s; }
+.audio-waveform-bar span:nth-child(3) { animation-delay: 0.4s; }
+.audio-waveform-bar span:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes waveBar {
+  0% { height: 4px; }
+  100% { height: 20px; }
 }
 
 .interview-editor-pane {
