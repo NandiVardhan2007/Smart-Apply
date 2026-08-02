@@ -857,15 +857,6 @@ export default function LiveInterview() {
             </button>
 
             <button
-              onClick={() => setIsVideoOff(!isVideoOff)}
-              className={`call-btn ${isVideoOff ? 'active' : ''}`}
-              style={isVideoOff ? { background: 'rgba(239, 68, 68, 0.8)' } : undefined}
-              title={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
-            >
-              {isVideoOff ? <VideoOff size={20} color="#fff" /> : <Video size={20} />}
-            </button>
-
-            <button
               onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
               className={`call-btn ${isTranscriptOpen ? 'active' : ''}`}
               title="Toggle Captions & Live Transcript"
