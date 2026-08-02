@@ -7,8 +7,37 @@ from dotenv import load_dotenv
 from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm, AgentSession
 from livekit.agents.voice import Agent as VoicePipelineAgent
-from livekit.plugins import cartesia, openai, silero, deepgram
 import aiohttp
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ["/ping", "/healthz", "/health", "/"]:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            payload = json.dumps({
+                "status": "ok",
+                "service": "livekit-agent",
+                "message": "LiveKit Voice AI Agent worker is active and running"
+            }).encode("utf-8")
+            self.wfile.write(payload)
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        pass
+
+def start_ping_server(port: int):
+    try:
+        server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+        logging.info(f"Ping HTTP server active on http://0.0.0.0:{port}/ping")
+        server.serve_forever()
+    except Exception as e:
+        logging.warning(f"Could not start Ping HTTP server on port {port}: {e}")
 
 _cached_cartesia_key = None
 _cartesia_key_timestamp = 0
@@ -250,7 +279,12 @@ async def entrypoint(ctx: JobContext):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8081))
+    
+    # Start HTTP ping server thread for Render keep-alive and external cronjob monitoring
+    threading.Thread(target=start_ping_server, args=(port,), daemon=True).start()
+
+    worker_port = port + 1 if os.environ.get("PORT") else port
     cli.run_app(WorkerOptions(
         entrypoint_fnc=entrypoint,
-        port=port
+        port=worker_port
     ))
