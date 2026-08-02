@@ -213,115 +213,95 @@ function CodeEditorFeature({
 
   if (!isOpen) return null;
 
-  const containerStyle: React.CSSProperties = isFullscreen
-    ? {
-        position: 'fixed',
-        inset: 0,
-        zIndex: 10000,
-        background: 'rgba(3, 3, 5, 0.96)',
-        backdropFilter: 'blur(16px)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '16px',
-        gap: '16px',
-      }
-    : {
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: 'rgba(10, 10, 18, 0.85)',
-        backdropFilter: 'blur(16px)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-color)',
-        padding: '14px',
-        gap: '12px',
-        overflow: 'hidden',
-      };
-
   return (
-    <div style={containerStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15,15,22,0.8)', padding: '10px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-            <Code size={18} />
+    <div className={`code-editor-container ${isFullscreen ? 'fullscreen' : ''}`}>
+      {/* Header */}
+      <div className="code-editor-header">
+        <div className="code-editor-title-area">
+          <div className="code-editor-icon">
+            <Code size={16} />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '15px', color: '#fff', fontWeight: 700 }}>Live Coding IDE & AI Evaluation</h3>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Judge0 Sandboxed Runner</span>
+            <h3 className="code-editor-title">Live Coding IDE & AI Evaluation</h3>
+            <span className="code-editor-subtitle">Judge0 Sandboxed Runner</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px', borderRadius: '6px' }}>
+        <div className="code-editor-actions">
+          <div className="code-editor-tabs">
             <button
               onClick={() => setActiveTab('editor')}
-              style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '4px', background: activeTab === 'editor' ? 'var(--accent)' : 'transparent', color: activeTab === 'editor' ? '#000' : '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+              className={`code-editor-tab ${activeTab === 'editor' ? 'active' : ''}`}
             >
-              <Code size={13} style={{ display: 'inline', marginRight: '4px' }} /> Editor
+              <Code size={12} /> Editor
             </button>
             <button
               onClick={() => setActiveTab('problem')}
-              style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '4px', background: activeTab === 'problem' ? 'var(--accent)' : 'transparent', color: activeTab === 'problem' ? '#000' : '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+              className={`code-editor-tab ${activeTab === 'problem' ? 'active' : ''}`}
             >
-              <FileText size={13} style={{ display: 'inline', marginRight: '4px' }} /> Problem
+              <FileText size={12} /> Problem
             </button>
           </div>
 
           <select
             value={language}
             onChange={(e) => handleLanguageChange(e.target.value)}
-            className="input"
-            style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid var(--border-color)' }}
+            className="code-editor-lang-select"
           >
-            <option value="python" style={{ background: '#000' }}>Python 3</option>
-            <option value="javascript" style={{ background: '#000' }}>JavaScript</option>
-            <option value="typescript" style={{ background: '#000' }}>TypeScript</option>
-            <option value="java" style={{ background: '#000' }}>Java 17</option>
-            <option value="cpp" style={{ background: '#000' }}>C++ 20</option>
+            <option value="python">Python 3</option>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="java">Java 17</option>
+            <option value="cpp">C++ 20</option>
           </select>
 
-          <button onClick={handleRunCode} disabled={isRunning} className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '12px' }}>
-            {isRunning ? <Loader2 size={14} className="spin" /> : <Play size={14} />} Execute Code
+          <button onClick={handleRunCode} disabled={isRunning} className="code-editor-run-btn">
+            {isRunning ? <Loader2 size={14} className="spin" /> : <Play size={14} />} Execute
           </button>
 
-          <button onClick={() => setIsFullscreen(!isFullscreen)} className="btn" style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid var(--border-color)' }} title={isFullscreen ? 'Dock in split view' : 'Maximize to full screen'}>
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="code-editor-toolbar-btn"
+            title={isFullscreen ? 'Dock in split view' : 'Maximize to full screen'}
+          >
+            {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
 
-          <button onClick={() => setIsOpen(false)} className="btn" style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid var(--border-color)' }}>
-            <X size={16} />
+          <button onClick={() => setIsOpen(false)} className="code-editor-toolbar-btn">
+            <X size={15} />
           </button>
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: activeTab === 'problem' ? '1fr 1fr' : '1fr 300px', gap: '12px', minHeight: 0 }}>
+      {/* Body */}
+      <div className={`code-editor-body ${activeTab === 'problem' ? 'with-problem' : 'editor-only'}`}>
         {activeTab === 'problem' ? (
-          <div style={{ background: 'rgba(10,10,18,0.9)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--accent)', fontWeight: 700 }}>Technical Coding Challenge</h4>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+          <div className="code-problem-panel">
+            <h4 className="code-problem-title">Technical Coding Challenge</h4>
+            <p className="code-problem-desc">
               Implement an efficient function that accepts the input data, processes the algorithmic constraints, and returns the expected output.
             </p>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>SAMPLE INPUT</div>
-              <code style={{ color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>[2, 7, 11, 15], target = 9</code>
+            <div className="code-sample-block">
+              <div className="code-sample-label">SAMPLE INPUT</div>
+              <code className="code-sample-value input">[2, 7, 11, 15], target = 9</code>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>EXPECTED OUTPUT</div>
-              <code style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>[0, 1]</code>
+            <div className="code-sample-block">
+              <div className="code-sample-label">EXPECTED OUTPUT</div>
+              <code className="code-sample-value output">[0, 1]</code>
             </div>
           </div>
         ) : (
-          <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden', height: '100%' }}>
+          <div className="code-editor-monaco">
             <Editor height="100%" defaultLanguage="python" language={language} theme="vs-dark" value={code} onChange={(v) => setCode(v || '')} options={{ fontSize: 13, minimap: { enabled: false }, automaticLayout: true }} />
           </div>
         )}
 
-        <div style={{ background: 'rgba(10,10,18,0.9)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', height: '100%', minHeight: 0 }}>
-          <h4 style={{ margin: 0, fontSize: '13px', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Terminal size={14} /> Console Execution Output
+        <div className="code-output-panel">
+          <h4 className="code-output-title">
+            <Terminal size={14} /> Console Output
           </h4>
-          <pre style={{ flex: 1, margin: 0, padding: '10px', background: '#000', borderRadius: '6px', border: '1px solid var(--border-color)', color: '#10b981', fontFamily: 'var(--font-mono)', fontSize: '12px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
-            {output || '// Press "Execute Code" to run your solution on Judge0 sandbox...'}
+          <pre className="code-output-pre">
+            {output || '// Press "Execute" to run your solution on Judge0 sandbox...'}
           </pre>
         </div>
       </div>
@@ -365,25 +345,25 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
   }, [videoRef]);
 
   return (
-    <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10, background: 'rgba(10, 10, 18, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 'var(--radius-md)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px', width: '210px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Activity size={14} /> AI FACIAL HUD SCAN
+    <div className="hud-panel">
+      <div className="hud-title">
+        <Activity size={13} /> AI FACIAL HUD SCAN
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>EMOTION STATE</span>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{emotion}</span>
+      <div className="hud-row">
+        <span className="hud-label">EMOTION STATE</span>
+        <span className="hud-value">{emotion}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>CONFIDENCE</span>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-green)' }}>{confidenceScore}%</span>
+      <div className="hud-row">
+        <span className="hud-label">CONFIDENCE</span>
+        <span className="hud-value green">{confidenceScore}%</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>EYE CONTACT</span>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent)' }}>{eyeContact}</span>
+      <div className="hud-row">
+        <span className="hud-label">EYE CONTACT</span>
+        <span className="hud-value accent">{eyeContact}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>POSTURE</span>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-green)' }}>{posture}</span>
+      <div className="hud-row">
+        <span className="hud-label">POSTURE</span>
+        <span className="hud-value green">{posture}</span>
       </div>
     </div>
   );
@@ -665,31 +645,13 @@ export default function LiveInterview() {
     navigate('/dashboard');
   };
 
+  /* ── IDLE / SETUP SCREEN ── */
   if (status === 'idle') {
     const selectedThemeObj = THEMES.find((t) => t.id === theme) || THEMES[0];
 
     return (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 9999,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '24px 16px',
-          background: 'radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.14) 0%, rgba(3, 3, 5, 0.98) 80%)',
-          overflowY: 'auto',
-        }}
-      >
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="btn"
-          style={{ position: 'absolute', top: 24, left: 24, background: 'rgba(255, 255, 255, 0.06)', border: '1px solid var(--border-color)', color: '#fff', padding: '10px 20px', fontSize: '14px' }}
-        >
+      <div className="interview-setup-screen">
+        <button onClick={() => navigate('/dashboard')} className="interview-back-btn">
           <ArrowLeft size={18} /> Return to Dashboard
         </button>
 
@@ -697,47 +659,46 @@ export default function LiveInterview() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="card glass-panel"
-          style={{ textAlign: 'center', maxWidth: '960px', width: '100%', padding: '44px 40px', borderRadius: 'var(--radius-xl)', boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 50px rgba(56, 189, 248, 0.18)', margin: 'auto 0' }}
+          className="interview-setup-card"
         >
-          <div style={{ width: '76px', height: '76px', borderRadius: '22px', background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(56, 189, 248, 0.5)', color: '#fff' }}>
+          <div className="interview-setup-icon">
             <Bot size={40} />
           </div>
 
-          <h2 className="text-accent" style={{ fontSize: '34px', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+          <h2 className="interview-setup-title">
             AI Live Voice Interview Studio
           </h2>
-          <p className="text-muted" style={{ fontSize: '15px', lineHeight: 1.6, maxWidth: '620px', margin: '0 auto' }}>
+          <p className="interview-setup-subtitle">
             Instant, zero-latency Voice AI interviewer featuring real-time speech evaluation, deep vision HUD telemetry, and live Monaco coding execution.
           </p>
 
           {user && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '16px', padding: '6px 18px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              <Sparkle size={14} color="var(--accent)" /> Candidate: <strong style={{ color: '#fff' }}>{user.full_name || user.email}</strong>
+            <div className="interview-candidate-badge">
+              <Sparkle size={14} color="#818cf8" /> Candidate: <strong>{user.full_name || user.email}</strong>
             </div>
           )}
 
-          <div style={{ margin: '24px 0 16px', padding: '16px 22px', borderRadius: 'var(--radius-lg)', background: 'rgba(10, 10, 18, 0.75)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', textAlign: 'left' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <Volume2 size={14} color="var(--accent)" /> MICROPHONE INPUT METERS
+          <div className="interview-mic-check">
+            <div className="mic-check-content">
+              <div className="mic-check-label">
+                <Volume2 size={14} color="#818cf8" /> MICROPHONE INPUT METERS
               </div>
               <div className="audio-meter-track">
                 <div className="audio-meter-fill" style={{ width: `${micVolume}%` }} />
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: isMicWorking ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+            <div className={`mic-check-status ${isMicWorking ? 'active' : 'inactive'}`}>
               <CheckCircle2 size={16} /> {isMicWorking ? 'Microphone Active' : 'Speak to test mic...'}
             </div>
           </div>
 
-          <div style={{ marginTop: '24px', textAlign: 'left' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <label style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Layers size={18} color="var(--accent)" /> Choose Specialization Track
+          <div className="interview-tracks-section">
+            <div className="interview-tracks-header">
+              <label className="interview-tracks-title">
+                <Layers size={18} color="#818cf8" /> Choose Specialization Track
               </label>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>5 Tracks Available</span>
+              <span className="interview-tracks-count">5 Tracks Available</span>
             </div>
 
             <div className="theme-grid">
@@ -747,14 +708,14 @@ export default function LiveInterview() {
                 return (
                   <motion.div key={t.id} whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }} className={`theme-card ${isActive ? 'active' : ''}`} onClick={() => setTheme(t.id)}>
                     <div className="theme-card-header">
-                      <div className="theme-card-icon" style={{ background: `${t.color}22`, color: t.color, border: `1px solid ${t.color}35` }}>
+                      <div className="theme-card-icon" style={{ background: `${t.color}18`, color: t.color, border: `1px solid ${t.color}30` }}>
                         <Icon size={22} />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: `${t.color}15`, color: t.color, border: `1px solid ${t.color}30` }}>
+                        <span className="theme-card-level" style={{ background: `${t.color}12`, color: t.color, border: `1px solid ${t.color}28` }}>
                           {t.level}
                         </span>
-                        {isActive && <CheckCircle2 size={18} color="var(--accent)" />}
+                        {isActive && <CheckCircle2 size={18} color="#818cf8" />}
                       </div>
                     </div>
                     <div>
@@ -767,7 +728,7 @@ export default function LiveInterview() {
             </div>
           </div>
 
-          <button onClick={handleStart} className="btn btn-primary" style={{ width: '100%', padding: '18px', fontSize: '18px', marginTop: '16px', borderRadius: 'var(--radius-xl)', boxShadow: '0 0 35px rgba(56, 189, 248, 0.45)' }}>
+          <button onClick={handleStart} className="interview-launch-btn">
             <Play size={22} /> Launch {selectedThemeObj.title} Studio
           </button>
         </motion.div>
@@ -775,6 +736,7 @@ export default function LiveInterview() {
     );
   }
 
+  /* ── CONNECTED SESSION ── */
   return (
     <div className="interview-layout">
       <header className="interview-header-bar">
@@ -782,42 +744,28 @@ export default function LiveInterview() {
           <div className="interview-live-badge">
             <span className="interview-live-dot" /> LIVE SESSION ACTIVE
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-            <Clock size={16} color="var(--accent)" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#fff' }}>
+          <div className="header-timer">
+            <Clock size={15} color="#818cf8" />
+            <span className="header-timer-value">
               {formatTimer(elapsedSeconds)}
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ padding: '6px 14px', borderRadius: '20px', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', color: 'var(--accent)', fontSize: '13px', fontWeight: 600 }}>
+        <div className="header-controls">
+          <span className="header-track-badge">
             Track: {theme}
           </span>
 
           <button
             onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
-            className="btn"
-            style={{
-              background: isTranscriptOpen ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
-              color: isTranscriptOpen ? '#030305' : '#fff',
-              border: '1px solid var(--border-color)',
-              padding: '8px 16px',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
+            className={`header-btn ${isTranscriptOpen ? 'active' : ''}`}
           >
-            <Subtitles size={16} /> Captions & Transcript ({transcriptLogs.length})
+            <Subtitles size={15} /> Captions & Transcript ({transcriptLogs.length})
           </button>
 
-          <button
-            onClick={handleDisconnect}
-            className="btn"
-            style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '8px 18px', fontSize: '13px' }}
-          >
-            <PhoneOff size={16} /> End Call
+          <button onClick={handleDisconnect} className="header-end-btn">
+            <PhoneOff size={15} /> End Call
           </button>
         </div>
       </header>
@@ -827,16 +775,16 @@ export default function LiveInterview() {
         <div className="video-call-stage">
           <div className="scanline" />
 
-          {/* AI Interviewer Stage (Center Tile) */}
-          <div className="ai-avatar-card" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+          {/* AI Interviewer Stage (Center) */}
+          <div className="ai-avatar-card">
             <div className="ai-avatar-orb-container">
               <div className={`ai-avatar-orb-ring ${aiState}`} />
               <div className={`ai-avatar-orb ${aiState}`}>
-                <Bot size={54} />
+                <Bot size={50} />
               </div>
             </div>
 
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            <h3 className="ai-avatar-title">
               AI Interviewer ({theme} Track)
             </h3>
 
@@ -850,31 +798,31 @@ export default function LiveInterview() {
 
             {aiState === 'speaking' && (
               <div className="audio-waveform-bar" style={{ marginTop: '16px' }}>
-                <span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span />
               </div>
             )}
           </div>
 
-          {/* Floating Closed Captions (Subtitles Overlay) */}
+          {/* Floating Closed Captions */}
           {showCaptions && (lastAiSubtitle || liveSpeechText) && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="floating-captions-bar"
             >
-              <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Subtitles size={13} /> {liveSpeechText ? 'Candidate Speech:' : 'AI Interviewer:'}
+              <div className="captions-label">
+                <Subtitles size={12} /> {liveSpeechText ? 'Candidate Speech:' : 'AI Interviewer:'}
               </div>
-              <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>
+              <div className="captions-text">
                 "{liveSpeechText || lastAiSubtitle}"
               </div>
             </motion.div>
           )}
 
-          {/* AI Vision HUD Scan in Top-Left Corner */}
+          {/* AI Vision HUD */}
           <FacialAnalysisHUD videoRef={videoRef} />
 
-          {/* Floating Candidate PIP Video Tile (Bottom Right) */}
+          {/* Candidate PIP Video Tile */}
           <div className="candidate-pip-tile">
             {!isVideoOff ? (
               <video
@@ -885,14 +833,14 @@ export default function LiveInterview() {
                 style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
               />
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#090a12', color: 'var(--text-muted)' }}>
-                <VideoOff size={26} color="var(--text-muted)" />
-                <span style={{ fontSize: '11px', marginTop: '4px' }}>Camera Off</span>
+              <div className="candidate-video-off-placeholder">
+                <VideoOff size={24} />
+                <span>Camera Off</span>
               </div>
             )}
 
-            <div style={{ position: 'absolute', bottom: 6, left: 8, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', color: '#fff', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 12 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isVideoOff ? '#ef4444' : '#10b981' }} /> {user?.full_name || 'You'}
+            <div className="candidate-pip-name">
+              <span className={`candidate-pip-status-dot ${isVideoOff ? 'off' : 'on'}`} /> {user?.full_name || 'You'}
             </div>
           </div>
 
@@ -901,7 +849,7 @@ export default function LiveInterview() {
             <button
               onClick={() => setIsMuted(!isMuted)}
               className={`call-btn ${isMuted ? 'active' : ''}`}
-              style={{ background: isMuted ? 'rgba(239, 68, 68, 0.85)' : undefined }}
+              style={isMuted ? { background: 'rgba(239, 68, 68, 0.8)' } : undefined}
               title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
             >
               {isMuted ? <MicOff size={20} color="#fff" /> : <Mic size={20} />}
@@ -910,7 +858,7 @@ export default function LiveInterview() {
             <button
               onClick={() => setIsVideoOff(!isVideoOff)}
               className={`call-btn ${isVideoOff ? 'active' : ''}`}
-              style={{ background: isVideoOff ? 'rgba(239, 68, 68, 0.85)' : undefined }}
+              style={isVideoOff ? { background: 'rgba(239, 68, 68, 0.8)' } : undefined}
               title={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
             >
               {isVideoOff ? <VideoOff size={20} color="#fff" /> : <Video size={20} />}
@@ -940,37 +888,43 @@ export default function LiveInterview() {
           </div>
         </div>
 
-        {/* Code Editor Pane (Split View) */}
+        {/* Code Editor Pane */}
         {isEditorOpen && (
-          <div className="interview-editor-pane" style={{ height: '100%', minHeight: 0 }}>
+          <div className="interview-editor-pane">
             <CodeEditorFeature isOpen={isEditorOpen} setIsOpen={setIsEditorOpen} isEmbedded={true} />
           </div>
         )}
 
-        {/* Live Transcript Side Panel (Right Side) */}
+        {/* Live Transcript Side Panel */}
         <AnimatePresence>
           {isTranscriptOpen && (
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="transcript-drawer" style={{ position: 'relative', width: '100%', borderLeft: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(10,10,18,0.9)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, color: '#fff' }}>
-                  <Subtitles size={18} color="var(--accent)" /> Captions & Live Transcript
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="transcript-drawer"
+            >
+              <div className="transcript-header">
+                <div className="transcript-header-title">
+                  <Subtitles size={17} color="#818cf8" /> Captions & Live Transcript
                 </div>
-                <button onClick={() => setIsTranscriptOpen(false)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'none', border: 'none' }}>
-                  <X size={18} />
+                <button onClick={() => setIsTranscriptOpen(false)} className="transcript-close-btn">
+                  <X size={17} />
                 </button>
               </div>
 
-              <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="transcript-body">
                 {transcriptLogs.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px', fontSize: '13px' }}>
+                  <div className="transcript-empty">
                     Captions and speech transcriptions will appear here in real-time as you converse with the AI...
                   </div>
                 ) : (
                   transcriptLogs.map((log) => (
                     <div key={log.id} className={`transcript-message ${log.role === 'assistant' ? 'ai' : 'user'}`}>
-                      <div style={{ fontSize: '11px', color: log.role === 'assistant' ? 'var(--accent)' : 'var(--accent-green)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{log.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Candidate'}</span>
-                        <span>{log.time}</span>
+                      <div className="transcript-msg-meta">
+                        <span className="role">{log.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Candidate'}</span>
+                        <span className="time">{log.time}</span>
                       </div>
                       <div>{log.text}</div>
                     </div>
@@ -979,17 +933,16 @@ export default function LiveInterview() {
                 <div ref={transcriptEndRef} />
               </div>
 
-              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-color)', background: 'rgba(10,10,18,0.9)', display: 'flex', gap: '8px' }}>
+              <div className="transcript-input-bar">
                 <input
                   type="text"
                   placeholder="Type a response..."
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendManualText()}
-                  className="input"
-                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', fontSize: '13px', padding: '8px 12px', borderRadius: '8px', color: '#fff', border: '1px solid var(--border-color)' }}
+                  className="transcript-input"
                 />
-                <button onClick={handleSendManualText} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: '13px', borderRadius: '8px' }}>
+                <button onClick={handleSendManualText} className="transcript-send-btn">
                   <Send size={14} />
                 </button>
               </div>
