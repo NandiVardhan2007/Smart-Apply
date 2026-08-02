@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, JobProcess, WorkerOptions, cli, llm, AgentSession
 from livekit.agents.voice import Agent as VoicePipelineAgent
+from livekit.plugins import cartesia, openai, silero, deepgram
 import aiohttp
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
