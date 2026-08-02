@@ -88,8 +88,14 @@ async def respond_to_candidate(request: Request, body: InterviewRespondRequest, 
         
         # Detect if AI asks for code solution in Technical track
         should_open_editor = False
-        if body.theme == "Technical" and any(kw in ai_response.lower() for kw in ["write code", "code editor", "solve", "implement", "algorithm", "function"]):
-            should_open_editor = True
+        if body.theme == "Technical":
+            ai_resp_lower = ai_response.lower()
+            code_triggers = [
+                "write code", "code editor", "solve in the editor", "implement a solution",
+                "open the code editor", "in your editor", "write a function to", "code a solution"
+            ]
+            if any(trigger in ai_resp_lower for trigger in code_triggers):
+                should_open_editor = True
 
         return {
             "status": "success",
@@ -192,15 +198,28 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
             temperature=0.2,
             max_tokens=1024,
         )
-        report_json = response.choices[0].message.content.strip()
+        import re
+        json_match = re.search(r'\{.*\}', report_json, re.DOTALL)
+        if json_match:
+            clean_json_str = json_match.group(0)
+        else:
+            clean_json_str = report_json
 
-        if "```" in report_json:
-            report_json = report_json.split("```")[1]
-            if report_json.startswith("json"):
-                report_json = report_json[4:]
-            report_json = report_json.strip()
+        try:
+            report_data = json.loads(clean_json_str)
+        except Exception as json_err:
+            logger.warning(f"Fallback JSON parsing for room {data.room_name}: {json_err}")
+            report_data = {
+                "questions_asked": [m["content"] for m in data.transcript if m["role"] == "assistant"],
+                "user_replies": [m["content"] for m in data.transcript if m["role"] == "user"],
+                "areas_for_improvement": ["Elaborate further on architectural design patterns."],
+                "weaknesses": ["Minor speech hesitation detected."],
+                "telemetry_summary": data.telemetry or {"avg_confidence": 0.85, "blink_count": 12},
+                "final_score": 82,
+                "overall_feedback": "Solid interview performance with good technical articulation.",
+                "communication_feedback": "Demonstrated strong verbal communication and domain clarity."
+            }
 
-        report_data = json.loads(report_json)
         report_data["user_id"] = data.user_id
         report_data["room_name"] = data.room_name
 

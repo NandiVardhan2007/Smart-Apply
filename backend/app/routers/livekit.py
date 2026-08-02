@@ -4,6 +4,8 @@ from livekit import api
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 
+from app.config import settings
+
 router = APIRouter(prefix="/api/livekit", tags=["LiveKit"])
 
 @router.get("/token")
@@ -11,8 +13,9 @@ async def get_livekit_token(theme: str = "HR", current_user: User = Depends(get_
     """
     Generate an access token for LiveKit to join a room.
     """
-    livekit_api_key = os.getenv("LIVEKIT_API_KEY")
-    livekit_api_secret = os.getenv("LIVEKIT_API_SECRET")
+    livekit_api_key = os.getenv("LIVEKIT_API_KEY") or settings.LIVEKIT_API_KEY
+    livekit_api_secret = os.getenv("LIVEKIT_API_SECRET") or settings.LIVEKIT_API_SECRET
+    livekit_url = os.getenv("LIVEKIT_URL") or settings.LIVEKIT_URL
 
     if not livekit_api_key or not livekit_api_secret:
         raise HTTPException(status_code=500, detail="LiveKit credentials are not configured on the server")
@@ -32,6 +35,10 @@ async def get_livekit_token(theme: str = "HR", current_user: User = Depends(get_
                 room=room_name,
             ))
         
-        return {"token": token.to_jwt(), "room_name": room_name}
+        return {
+            "token": token.to_jwt(),
+            "room_name": room_name,
+            "url": livekit_url
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate LiveKit token: {str(e)}")

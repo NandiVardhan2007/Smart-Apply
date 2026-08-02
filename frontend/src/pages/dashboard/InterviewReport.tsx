@@ -21,19 +21,36 @@ export default function InterviewReport() {
   const [notReady, setNotReady] = useState(false);
 
   useEffect(() => {
-    (async () => {
+    let timer: any = null;
+
+    const fetchReport = async () => {
       if (!roomName) return;
       try {
         const res = await apiFetch<InterviewReportData>(`/interview/report/${roomName}`);
-        if (res.ok) {
+        if (res.ok && res.data) {
           setReport(res.data);
+          setNotReady(false);
+          if (timer) clearInterval(timer);
         } else if (res.status === 404) {
           setNotReady(true);
         }
+      } catch (e) {
+        setNotReady(true);
       } finally {
         setLoading(false);
       }
-    })();
+    };
+
+    fetchReport();
+
+    // Poll every 3.5s if not ready yet
+    timer = setInterval(() => {
+      fetchReport();
+    }, 3500);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, [roomName]);
 
   if (loading) return <InlineLoader title="Loading your report" />;
