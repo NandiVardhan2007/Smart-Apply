@@ -437,24 +437,75 @@ export default function LiveInterview() {
     };
   }, [status]);
 
+  // Preload and cache browser neural voices
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    const updateVoices = () => {
+      if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          setAvailableVoices(voices);
+        }
+      }
+    };
+    updateVoices();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+  }, []);
+
   const speakAIResponse = (text: string) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
 
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft') || v.name.includes('Samantha')));
-    if (preferredVoice) utterance.voice = preferredVoice;
+    // Strip markdown formatting symbols (*, #, `, _, links) so TTS speaks fluidly
+    const cleanText = text
+      .replace(/[*_#`~]/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    const voices = availableVoices.length > 0 ? availableVoices : window.speechSynthesis.getVoices();
+
+    // Rank & select best human/neural voice across Chrome, Edge, Safari, Firefox
+    const preferredVoice = voices.find(
+      (v) =>
+        v.lang.startsWith('en') &&
+        (v.name.includes('Natural') ||
+          v.name.includes('Online') ||
+          v.name.includes('Google US English') ||
+          v.name.includes('Google UK English') ||
+          v.name.includes('Samantha') ||
+          v.name.includes('Microsoft Jenny') ||
+          v.name.includes('Microsoft Guy') ||
+          v.name.includes('Microsoft Aria') ||
+          v.name.includes('Karen') ||
+          v.name.includes('Daniel') ||
+          v.name.includes('Alex'))
+    ) || voices.find((v) => v.lang.startsWith('en'));
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.97; // Warm, conversational pace
+    utterance.pitch = 1.04; // Natural human pitch intonation
+    utterance.volume = 1.0;
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
 
     setAiState('speaking');
+
     utterance.onend = () => {
       setAiState('listening');
     };
+
     utterance.onerror = () => {
       setAiState('listening');
     };
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -820,7 +871,10 @@ export default function LiveInterview() {
             </motion.div>
           )}
 
-          {/* Floating Candidate PIP Video Tile (Corner) */}
+          {/* AI Vision HUD Scan in Top-Left Corner */}
+          <FacialAnalysisHUD videoRef={videoRef} />
+
+          {/* Floating Candidate PIP Video Tile (Bottom Right) */}
           <div className="candidate-pip-tile">
             {!isVideoOff ? (
               <video
@@ -832,12 +886,14 @@ export default function LiveInterview() {
               />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#090a12', color: 'var(--text-muted)' }}>
-                <VideoOff size={28} color="var(--text-muted)" />
-                <span style={{ fontSize: '11px', marginTop: '6px' }}>Camera Muted</span>
+                <VideoOff size={26} color="var(--text-muted)" />
+                <span style={{ fontSize: '11px', marginTop: '4px' }}>Camera Off</span>
               </div>
             )}
 
-            <FacialAnalysisHUD videoRef={videoRef} />
+            <div style={{ position: 'absolute', bottom: 6, left: 8, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', color: '#fff', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 12 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isVideoOff ? '#ef4444' : '#10b981' }} /> {user?.full_name || 'You'}
+            </div>
           </div>
 
           {/* Bottom Floating Action Toolbar */}
