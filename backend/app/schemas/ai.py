@@ -50,3 +50,42 @@ class InterviewEvaluateResponse(BaseModel):
     strengths: List[str] = []
     weaknesses: List[str] = []
     improved_answer: str = ""
+
+
+class IdeaClarificationQuestion(BaseModel):
+    id: str
+    question: str
+    options: List[str] = []
+    purpose: str = ""
+
+
+class IdeaAnalyzeRequest(BaseModel):
+    raw_idea: str
+    target_format: Optional[str] = "cursor"
+
+
+class IdeaAnalyzeResponse(BaseModel):
+    refined_title: str
+    one_liner: str
+    category: str
+    estimated_complexity: int = 5
+    suggested_stack: List[str] = []
+    initial_analysis: str = ""
+    clarifying_questions: List[IdeaClarificationQuestion] = []
+
+
+class IdeaPromptGenerateRequest(BaseModel):
+    raw_idea: str
+    refined_title: Optional[str] = ""
+    target_format: str = "cursor"  # "cursor", "v0", "claude", "architecture"
+    clarification_answers: Optional[Dict[str, str]] = {}
+    additional_notes: Optional[str] = ""
+
+
+class IdeaPromptGenerateResponse(BaseModel):
+    prompt_title: str
+    target_format: str
+    master_prompt: str
+    suggested_filename: str
+    architecture_summary: Dict[str, Any] = {}
+

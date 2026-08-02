@@ -41,6 +41,7 @@ import Editor from '@monaco-editor/react';
 import { apiFetch, apiErrorMessage } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/interview.css';
 
 const getBoilerplate = (lang: string) => {
   switch (lang) {

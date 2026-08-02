@@ -13,6 +13,10 @@ from app.schemas.ai import (
     InterviewEvaluateResponse,
     InterviewQuestionRequest,
     InterviewQuestionResponse,
+    IdeaAnalyzeRequest,
+    IdeaAnalyzeResponse,
+    IdeaPromptGenerateRequest,
+    IdeaPromptGenerateResponse,
 )
 from app.services import ai_service
 
@@ -171,3 +175,30 @@ async def interview_evaluate(
         body.question, body.answer, body.role
     )
     return InterviewEvaluateResponse(**result)
+
+
+@router.post("/idea/analyze", response_model=IdeaAnalyzeResponse)
+@limiter.limit("15/minute")
+async def idea_analyze(
+    request: Request, body: IdeaAnalyzeRequest, user: User = Depends(get_current_user)
+):
+    """Analyze a raw/unstructured project idea and generate clarifying questions to resolve ambiguities."""
+    result = await ai_service.analyze_raw_idea(body.raw_idea, body.target_format or "cursor")
+    return IdeaAnalyzeResponse(**result)
+
+
+@router.post("/idea/generate-prompt", response_model=IdeaPromptGenerateResponse)
+@limiter.limit("15/minute")
+async def idea_generate_prompt(
+    request: Request, body: IdeaPromptGenerateRequest, user: User = Depends(get_current_user)
+):
+    """Generate a production-grade AI Master Prompt for building the user's project idea."""
+    result = await ai_service.generate_idea_master_prompt(
+        raw_idea=body.raw_idea,
+        refined_title=body.refined_title or "",
+        target_format=body.target_format or "cursor",
+        clarification_answers=body.clarification_answers or {},
+        additional_notes=body.additional_notes or ""
+    )
+    return IdeaPromptGenerateResponse(**result)
+

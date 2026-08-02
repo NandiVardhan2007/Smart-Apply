@@ -651,3 +651,169 @@ Do not include markdown blocks or conversational text.
     jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
     return jobs
 
+
+async def analyze_raw_idea(raw_idea: str, target_format: str = "cursor") -> Dict[str, Any]:
+    """Analyze a raw/unstructured project idea and formulate clarifying questions to resolve ambiguities."""
+    prompt = f"""You are a principal software architect and AI product strategist.
+A user has submitted a raw, unstructured, or ambiguous project idea:
+
+RAW IDEA:
+"{raw_idea}"
+
+TARGET AI PROMPT FORMAT: {target_format}
+
+Your goal:
+1. Distill the raw idea into a refined title, compelling one-liner vision, category (e.g. SaaS, Mobile App, AI Agent, Developer Tool), complexity score (1-10), and recommended tech stack.
+2. Provide a 2-3 sentence initial architectural analysis highlighting potential challenges or ambiguities.
+3. Formulate 3 to 4 targeted, high-value clarifying questions to resolve crucial product/tech decisions (e.g., Auth mechanism, Real-time requirement, Tech stack preference, Target users, Data storage).
+   Each question MUST provide 3-4 distinct selectable options for quick user selection.
+
+Return ONLY a valid JSON object matching this exact structure:
+{{
+  "refined_title": "Clean Project Title",
+  "one_liner": "Concise product summary",
+  "category": "Web Application / SaaS / AI Tool / Mobile",
+  "estimated_complexity": 6,
+  "suggested_stack": ["React/Next.js", "FastAPI/Python", "PostgreSQL", "Tailwind CSS"],
+  "initial_analysis": "Initial architectural assessment highlighting scope and considerations...",
+  "clarifying_questions": [
+    {{
+      "id": "q1",
+      "question": "What primary platform/interface do you envision for the initial launch?",
+      "options": ["Responsive Web App (Next.js/React)", "Native Mobile App (React Native/Flutter)", "Chrome Extension / Plugin", "CLI / API Service Only"],
+      "purpose": "Platform Scope"
+    }},
+    {{
+      "id": "q2",
+      "question": "How should data persistent & authentication be handled?",
+      "options": ["Supabase / Firebase (Managed BaaS)", "FastAPI + PostgreSQL + JWT", "Node.js + MongoDB + NextAuth", "No Auth / Local Storage Only"],
+      "purpose": "Backend & Storage"
+    }},
+    {{
+      "id": "q3",
+      "question": "What is the primary AI capability or external integration needed?",
+      "options": ["LLM Text Generation / Chatbot API", "Vision / Image Processing API", "Web Scraping & Data Pipeline", "No External AI Required"],
+      "purpose": "Core AI Integration"
+    }}
+  ]
+}}
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.4,
+        max_tokens=2000,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    return _parse_llm_json(content, fallback={
+        "refined_title": "AI Project Concept",
+        "one_liner": raw_idea[:100],
+        "category": "Web Application",
+        "estimated_complexity": 5,
+        "suggested_stack": ["TypeScript", "React", "Node.js"],
+        "initial_analysis": "An interesting project concept that can be structured with clear requirements.",
+        "clarifying_questions": [
+            {
+                "id": "q1",
+                "question": "What is your preferred technology stack?",
+                "options": ["React + Node.js", "Next.js + Python/FastAPI", "Vue + Django", "Flutter Mobile"],
+                "purpose": "Tech Stack"
+            },
+            {
+                "id": "q2",
+                "question": "What is the primary target audience?",
+                "options": ["General Consumers (B2C)", "Developers / Engineers", "Small Business Owners (B2B)", "Internal Tool"],
+                "purpose": "Target Audience"
+            }
+        ]
+    })
+
+
+async def generate_idea_master_prompt(
+    raw_idea: str,
+    refined_title: str = "",
+    target_format: str = "cursor",
+    clarification_answers: Dict[str, str] = None,
+    additional_notes: str = ""
+) -> Dict[str, Any]:
+    """Generate a production-grade, highly structured AI master prompt to build the project."""
+
+    answers_summary = ""
+    if clarification_answers:
+        for k, v in clarification_answers.items():
+            if v and str(v).strip():
+                answers_summary += f"- {k}: {v}\n"
+
+    format_guidelines = {
+        "cursor": "Generate a comprehensive .cursorrules / System Instruction Prompt optimized for Cursor IDE / Antigravity AI agent. Include explicit tech stack rules, coding standards, directory structure, component hierarchy, and step-by-step implementation phases.",
+        "v0": "Generate a v0.dev / bolt.new / UI Design Specification Prompt. Focus heavily on UI layout, dark/light theme tokens, component states, interactive micro-animations, mobile responsiveness, and page hierarchy.",
+        "claude": "Generate a Master System Prompt for Claude 3.5 Sonnet / GPT-4o. Focus on PRD structure, User Stories, Database ERD Schema, API Endpoints design, State Management, and Security rules.",
+        "architecture": "Generate an End-to-End Technical Architecture Blueprint. Detail system boundaries, data flow diagrams, database schemas, REST API specs, middleware, deployment pipelines, and environment variables."
+    }.get(target_format, "Generate an exhaustive Master AI Prompt.")
+
+    suggested_ext = {
+        "cursor": ".cursorrules",
+        "v0": "v0_prompt.md",
+        "claude": "SYSTEM_PROMPT.md",
+        "architecture": "ARCHITECTURE_SPEC.md"
+    }.get(target_format, "PROMPT.md")
+
+    prompt = f"""You are an elite Principal Software Engineer & AI System Architect.
+Synthesize the user's raw project idea into a MASTER AI PROMPT for building the application.
+
+PROJECT TITLE: {refined_title or 'Untitled App'}
+RAW IDEA: "{raw_idea}"
+TARGET FORMAT SPEC: {target_format.upper()} ({format_guidelines})
+
+CLARIFICATIONS / DECISIONS PROVIDED BY USER:
+{answers_summary or 'None specified (use optimal industry defaults)'}
+
+ADDITIONAL CONSTRAINTS / NOTES:
+{additional_notes or 'None'}
+
+Instuctions:
+Create an exhaustive, professional, production-grade prompt that a developer can copy-paste directly into AI tools (Cursor, Antigravity, v0, Claude, ChatGPT) to generate the full app without ambiguity.
+
+Return ONLY a valid JSON object with the following schema:
+{{
+  "prompt_title": "Master Prompt for {refined_title or 'Project'}",
+  "target_format": "{target_format}",
+  "suggested_filename": "{suggested_ext}",
+  "master_prompt": "# Complete Markdown Master Prompt text with headers, code fences, guidelines, tech stack, data models, API endpoints, and step-by-step instructions...",
+  "architecture_summary": {{
+    "title": "{refined_title or 'Project Title'}",
+    "key_features": ["Feature 1", "Feature 2", "Feature 3", "Feature 4"],
+    "recommended_stack": ["Frontend Framework", "Backend/API", "Database", "Styling/UI"],
+    "database_entities": ["User", "Session", "Item", "Analytics"],
+    "primary_api_routes": ["POST /api/v1/auth/login", "GET /api/v1/items", "POST /api/v1/ai/process"],
+    "ui_pages": ["Landing Page", "Main Dashboard", "Editor/Workspace", "Settings & Analytics"]
+  }}
+}}
+"""
+
+    completion = await _call_llm_with_tracking(
+        model=settings.NVIDIA_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.5,
+        max_tokens=3500,
+    )
+
+    content = completion.choices[0].message.content or "{}"
+    return _parse_llm_json(content, fallback={
+        "prompt_title": f"Master Prompt - {refined_title or 'App'}",
+        "target_format": target_format,
+        "suggested_filename": suggested_ext,
+        "master_prompt": f"# Master AI Prompt: {refined_title}\n\n## Overview\n{raw_idea}\n\n## Implementation Steps\n1. Setup project workspace\n2. Configure tech stack\n3. Build UI components\n4. Connect backend API.",
+        "architecture_summary": {
+            "title": refined_title or "App Concept",
+            "key_features": ["User Authentication", "Dashboard Workspace", "AI Generation"],
+            "recommended_stack": ["React/Next.js", "Python FastAPI", "PostgreSQL"],
+            "database_entities": ["User", "Project"],
+            "primary_api_routes": ["/api/health", "/api/generate"],
+            "ui_pages": ["Home", "Dashboard"]
+        }
+    })
+
+

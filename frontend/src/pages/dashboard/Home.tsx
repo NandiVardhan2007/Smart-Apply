@@ -18,6 +18,7 @@ const STAT_CARDS = [
 const QUICK_ACTIONS = [
   { to: '/dashboard/ats-checker', label: 'Check resume ATS score', icon: ScanSearch },
   { to: '/dashboard/resumes', label: 'Tailor a resume', icon: Wand2 },
+  { to: '/dashboard/idea-prompt-generator', label: 'Idea Prompt Studio (Unstructured to Prompt)', icon: Wand2 },
   { to: '/dashboard/live-interview', label: 'Practice a live interview', icon: Video },
 ];
 

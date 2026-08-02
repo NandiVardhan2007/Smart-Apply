@@ -29,6 +29,7 @@ const ResumeTailor = lazy(() => import('./pages/dashboard/ResumeTailor'));
 const AtsChecker = lazy(() => import('./pages/dashboard/AtsChecker'));
 const AiChatbot = lazy(() => import('./pages/dashboard/AiChatbot'));
 const ProjectRecommender = lazy(() => import('./pages/dashboard/ProjectRecommender'));
+const IdeaPromptGenerator = lazy(() => import('./pages/dashboard/IdeaPromptGenerator'));
 const LiveInterview = lazy(() => import('./pages/dashboard/LiveInterview'));
 const InterviewReport = lazy(() => import('./pages/dashboard/InterviewReport'));
 const Profile = lazy(() => import('./pages/dashboard/Profile'));
@@ -150,6 +151,7 @@ export default function App() {
         <Route path="/dashboard/ats-checker" element={<Protected><AtsChecker /></Protected>} />
         <Route path="/dashboard/ai-chatbot" element={<Protected><AiChatbot /></Protected>} />
         <Route path="/dashboard/project-recommender" element={<Protected><ProjectRecommender /></Protected>} />
+        <Route path="/dashboard/idea-prompt-generator" element={<Protected><IdeaPromptGenerator /></Protected>} />
         <Route
           path="/dashboard/live-interview"
           element={

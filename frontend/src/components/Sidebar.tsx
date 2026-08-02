@@ -11,7 +11,8 @@ import {
   LogOut,
   Mail,
   Briefcase,
-  Code
+  Code,
+  Wand2
 } from 'lucide-react';
 import { Linkedin } from './Icons';
 import { useAuth } from '../context/AuthContext';
@@ -40,10 +41,11 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    title: 'Prepare',
+    title: 'Prepare & Build',
     links: [
       { to: '/dashboard/ai-chatbot', label: 'AI career chat', icon: MessageSquareText },
       { to: '/dashboard/project-recommender', label: 'Project ideas', icon: Lightbulb },
+      { to: '/dashboard/idea-prompt-generator', label: 'Idea Prompt Studio', icon: Wand2 },
       { to: '/dashboard/live-interview', label: 'Live interview', icon: Video },
     ],
   },
