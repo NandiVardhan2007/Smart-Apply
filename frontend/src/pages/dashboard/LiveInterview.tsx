@@ -990,7 +990,7 @@ export default function LiveInterview() {
           </div>
 
           {/* Bottom Floating Action Toolbar */}
-          <div className="video-call-toolbar">
+          <div className="video-call-toolbar" style={{ gap: '12px', maxWidth: '680px', width: '90%' }}>
             <button
               onClick={() => setIsMuted(!isMuted)}
               className={`call-btn ${isMuted ? 'active' : ''}`}
@@ -999,6 +999,26 @@ export default function LiveInterview() {
             >
               {isMuted ? <MicOff size={20} color="#fff" /> : <Mic size={20} />}
             </button>
+
+            {/* Quick Candidate Text Response Bar */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '30px', padding: '4px 6px 4px 14px' }}>
+              <input
+                type="text"
+                placeholder={aiState === 'thinking' ? 'AI Synthesizing Question...' : 'Type or speak your answer...'}
+                value={textInput}
+                disabled={aiState === 'thinking'}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendManualText()}
+                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', width: '100%', outline: 'none' }}
+              />
+              <button
+                onClick={handleSendManualText}
+                disabled={!textInput.trim() || aiState === 'thinking'}
+                style={{ background: textInput.trim() ? '#38bdf8' : 'rgba(255, 255, 255, 0.1)', color: textInput.trim() ? '#000' : '#64748b', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: textInput.trim() ? 'pointer' : 'default', flexShrink: 0 }}
+              >
+                <Send size={13} />
+              </button>
+            </div>
 
             <button
               onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
