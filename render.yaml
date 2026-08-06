@@ -1,12 +1,12 @@
 services:
   - type: web
-    name: smartapply-backend
+    name: smartapply-core
     env: python
     region: oregon
     plan: free
-    rootDir: backend
+    rootDir: backend/core
     buildCommand: pip install -r requirements.txt
-    startCommand: bash -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
@@ -20,8 +20,60 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
-        # This will be updated automatically if you name your static site properly, 
-        # or you can set it manually in the Render dashboard after the frontend deploys.
+        value: https://smartapply.onrender.com
+
+  - type: web
+    name: smartapply-ai
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend/ai
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: smartapply-redis
+          property: connectionString
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: smartapply-core
+          envVarKey: SECRET_KEY
+      - key: FRONTEND_URL
+        value: https://smartapply.onrender.com
+
+  - type: web
+    name: smartapply-tools
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend/tools
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: smartapply-redis
+          property: connectionString
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: smartapply-core
+          envVarKey: SECRET_KEY
+      - key: FRONTEND_URL
         value: https://smartapply.onrender.com
 
   - type: web
@@ -33,15 +85,28 @@ services:
     buildCommand: npm install && npm run build
     publishPath: dist
     envVars:
-      - key: VITE_API_BASE_URL
-        # This dynamic reference uses the backend's automatically generated Render URL
+      - key: VITE_CORE_API_BASE_URL
         fromService:
           type: web
-          name: smartapply-backend
+          name: smartapply-core
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_AI_API_BASE_URL
+        fromService:
+          type: web
+          name: smartapply-ai
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_TOOLS_API_BASE_URL
+        fromService:
+          type: web
+          name: smartapply-tools
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: smartapply-core
           envVarKey: RENDER_EXTERNAL_URL
 
   - type: redis
     name: smartapply-redis
     ipAllowList: [] # Internal only
     plan: free
-

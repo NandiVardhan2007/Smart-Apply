@@ -113,7 +113,7 @@ export default function AdminUsers() {
   const handleExportCsv = async () => {
     try {
       const token = localStorage.getItem('sa_token');
-      const res = await fetch(`${getApiBaseUrl()}/admin/export/users`, {
+      const res = await fetch(`${getApiBaseUrl('/admin/export/users')}/admin/export/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {

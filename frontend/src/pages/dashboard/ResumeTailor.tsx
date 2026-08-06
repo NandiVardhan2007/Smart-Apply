@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Code2, Layout, PenSquare, Play, Download, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
 
-import { apiFetch } from '../../api/client';
+import { apiFetch, getApiBaseUrl } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 
@@ -114,7 +114,7 @@ export default function ResumeTailor() {
     if (!codeToCompile.trim()) return;
     setCompiling(true);
     setCompileError(null);
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    const baseUrl = getApiBaseUrl('/tailor/compile');
     try {
       const res = await fetch(`${baseUrl}/tailor/compile`, {
         method: 'POST',

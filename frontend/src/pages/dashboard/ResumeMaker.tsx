@@ -65,7 +65,8 @@ export default function ResumeMaker() {
     setCompiling(true);
     try {
       const token = localStorage.getItem('sa_token');
-      const response = await fetch(`${getApiBaseUrl()}/resume-maker/templates/${selectedTemplate._id}/compile`, {
+      const endpoint = `/resume-maker/templates/${selectedTemplate._id}/compile`;
+      const response = await fetch(`${getApiBaseUrl(endpoint)}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

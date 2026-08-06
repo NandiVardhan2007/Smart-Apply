@@ -1,44 +1,36 @@
 import os
+import sys
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+# Add parent directory to sys.path so app modules are resolvable
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
 from app.rate_limiter import limiter
 from app.config import settings
-
 from app.database import close_db, init_db
-from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, stats, cover_letter, jobs, linkedin, code_execution, admin, resume_maker
-from app.websockets.auth_ws import router as ws_router
-from app.websockets.manager import manager
-
-
-import logging
+from app.routers import resume_maker, cover_letter, code_execution, upload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup / shutdown lifecycle."""
+    """Startup / shutdown lifecycle for Tools & Export Service."""
     if settings.ENVIRONMENT == "production":
         assert settings.SECRET_KEY != "change-this-in-production", "SECRET_KEY must be changed in production"
 
     await init_db()
-    await manager.start_pubsub()
     yield
-    await manager.stop_pubsub()
     await close_db()
 
-
 app = FastAPI(
-    title="Smart Apply API",
-    description="AI-powered job application platform",
+    title="Smart Apply - Tools & Export Service",
+    description="Tools backend microservice for PDF generation, cover letter export, code execution sandbox, and uploads.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -73,26 +65,10 @@ app.add_middleware(
 
 @app.get("/ping")
 async def ping():
-    return {"status": "ok", "service": "monolith"}
+    return {"status": "ok", "service": "tools"}
 
-# ── API Routers ──
-app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(ai.router)
-app.include_router(upload.router)
-app.include_router(resume.router)
-app.include_router(projects.router)
-app.include_router(interview.router)
-app.include_router(code_execution.router)
-app.include_router(tailor.router)
-app.include_router(stats.router)
-app.include_router(cover_letter.router)
-app.include_router(jobs.router)
-app.include_router(linkedin.router)
-app.include_router(admin.router)
+# ── Tools & Export API Routers ──
 app.include_router(resume_maker.router)
-
-# ── WebSocket Router ──
-app.include_router(ws_router, prefix="/api")
-
-# SPA Serving removed - handled by Render separate frontend service
+app.include_router(cover_letter.router)
+app.include_router(code_execution.router)
+app.include_router(upload.router)

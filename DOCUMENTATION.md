@@ -290,14 +290,27 @@ Open `http://localhost:5173` in your browser.
 
 ---
 
-## 8. Deployment Architecture
+## 8. Deployment Architecture (Microservices Split)
 
-SmartApply is pre-configured for continuous deployment via **Render** using [render.yaml](file:///d:/SMARTAPPLY/render.yaml):
+SmartApply supports both single-instance monolith deployment and a **3-Microservice Split Architecture** optimized for Render's free tier:
 
-* **Backend**: Deployed as a Python Web Service (`uvicorn app.main:app`).
-* **Frontend**: Deployed as a Static Site (Vite output `dist`).
-* **Redis**: Managed Redis instance connection.
-* **Environment Configuration**: Set `VITE_API_BASE_URL` to point to the live backend domain.
+### 🧩 Microservice Breakdown
+
+1. **`smartapply-core` (Core API Service)**
+   * **Entry Point**: `uvicorn app.main_core:app`
+   * **Routers**: Auth, User profiles, Resumes, Projects, Jobs, LinkedIn, Admin, Stats.
+2. **`smartapply-ai` (AI Engine Service)**
+   * **Entry Point**: `uvicorn app.main_ai:app`
+   * **Routers**: NVIDIA LLM AI operations, Mock Interview, Resume Tailoring.
+3. **`smartapply-tools` (Tools & Export Service)**
+   * **Entry Point**: `uvicorn app.main_tools:app`
+   * **Routers**: Resume Maker (LaTeX/PDF compilation), Cover Letter, Code Sandbox Execution, Uploads.
+
+### 🚀 Render Multi-Service Configuration
+* **Unified Blueprint (`render.yaml`)**: Automatically provisions `smartapply-core`, `smartapply-ai`, `smartapply-tools`, `smartapply-redis`, and `smartapply-frontend`.
+* **Frontend Routing**: Environment variables (`VITE_CORE_API_BASE_URL`, `VITE_AI_API_BASE_URL`, `VITE_TOOLS_API_BASE_URL`) dynamically route API requests from the browser directly to the corresponding microservice instance.
+* **Shared Authentication**: All microservices share the same `SECRET_KEY`, enabling stateless token verification without cross-service latency.
+* **Warm Pings**: Set up a free service (e.g. UptimeRobot) to ping `/ping` on all 3 services every 10–14 minutes to prevent Render free-tier spin-downs.
 
 ---
 

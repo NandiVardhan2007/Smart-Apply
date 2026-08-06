@@ -33,13 +33,38 @@ export interface ApiResponse<T = unknown> {
   status: number;
 }
 
-export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL || '/api';
+export function getApiBaseUrl(endpoint?: string): string {
+  const fallback = import.meta.env.VITE_API_BASE_URL || '/api';
+
+  if (!endpoint) {
+    return import.meta.env.VITE_CORE_API_BASE_URL || fallback;
+  }
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  if (
+    cleanEndpoint.startsWith('/ai') ||
+    cleanEndpoint.startsWith('/interview') ||
+    cleanEndpoint.startsWith('/tailor')
+  ) {
+    return import.meta.env.VITE_AI_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+  }
+
+  if (
+    cleanEndpoint.startsWith('/resume-maker') ||
+    cleanEndpoint.startsWith('/cover-letter') ||
+    cleanEndpoint.startsWith('/code-execution') ||
+    cleanEndpoint.startsWith('/upload')
+  ) {
+    return import.meta.env.VITE_TOOLS_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+  }
+
+  return import.meta.env.VITE_CORE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
 }
 
 /** Converts the REST base URL into a ws:// or wss:// origin + path prefix. */
 export function getWsUrl(path: string): string {
-  const baseUrl = getApiBaseUrl();
+  const baseUrl = getApiBaseUrl(path);
   if (baseUrl.startsWith('http')) {
     return baseUrl.replace(/^http/, 'ws') + path;
   }
@@ -69,9 +94,10 @@ export async function apiFetch<T = unknown>(
     headers['Content-Type'] = 'application/json';
   }
 
+  const baseUrl = getApiBaseUrl(endpoint);
   let response: Response;
   try {
-    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    response = await fetch(`${baseUrl}${endpoint}`, {
       ...options,
       headers,
       credentials: 'include',
@@ -79,7 +105,7 @@ export async function apiFetch<T = unknown>(
   } catch (error) {
     // Network error (e.g. server down, offline). Wait 500ms and retry exactly once.
     await new Promise(resolve => setTimeout(resolve, 500));
-    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    response = await fetch(`${baseUrl}${endpoint}`, {
       ...options,
       headers,
       credentials: 'include',
@@ -127,7 +153,8 @@ export async function apiFetchRaw(endpoint: string, options: RequestInit = {}): 
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+  const baseUrl = getApiBaseUrl(endpoint);
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
     credentials: 'include',
