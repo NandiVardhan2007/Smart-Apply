@@ -36,30 +36,36 @@ export interface ApiResponse<T = unknown> {
 export function getApiBaseUrl(endpoint?: string): string {
   const fallback = import.meta.env.VITE_API_BASE_URL || '/api';
 
-  if (!endpoint) {
-    return import.meta.env.VITE_CORE_API_BASE_URL || fallback;
+  let baseUrl = fallback;
+
+  if (endpoint) {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+    if (
+      cleanEndpoint.startsWith('/ai') ||
+      cleanEndpoint.startsWith('/interview') ||
+      cleanEndpoint.startsWith('/tailor')
+    ) {
+      baseUrl = import.meta.env.VITE_AI_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+    } else if (
+      cleanEndpoint.startsWith('/resume-maker') ||
+      cleanEndpoint.startsWith('/cover-letter') ||
+      cleanEndpoint.startsWith('/code-execution') ||
+      cleanEndpoint.startsWith('/upload')
+    ) {
+      baseUrl = import.meta.env.VITE_TOOLS_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+    } else {
+      baseUrl = import.meta.env.VITE_CORE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+    }
   }
 
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  baseUrl = baseUrl.replace(/\/+$/, '');
 
-  if (
-    cleanEndpoint.startsWith('/ai') ||
-    cleanEndpoint.startsWith('/interview') ||
-    cleanEndpoint.startsWith('/tailor')
-  ) {
-    return import.meta.env.VITE_AI_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+  if (baseUrl.startsWith('http') && !baseUrl.endsWith('/api')) {
+    baseUrl = `${baseUrl}/api`;
   }
 
-  if (
-    cleanEndpoint.startsWith('/resume-maker') ||
-    cleanEndpoint.startsWith('/cover-letter') ||
-    cleanEndpoint.startsWith('/code-execution') ||
-    cleanEndpoint.startsWith('/upload')
-  ) {
-    return import.meta.env.VITE_TOOLS_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
-  }
-
-  return import.meta.env.VITE_CORE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
+  return baseUrl;
 }
 
 /** Converts the REST base URL into a ws:// or wss:// origin + path prefix. */
