@@ -520,7 +520,8 @@ export default function LiveInterview() {
         body: JSON.stringify({
           theme,
           messages: conversationRef.current,
-          participant_name: user?.full_name || 'Candidate'
+          participant_name: user?.full_name || 'Candidate',
+          target_role: user?.headline || 'Software Engineer'
         })
       });
 

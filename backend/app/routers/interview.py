@@ -29,31 +29,44 @@ class InterviewRespondRequest(BaseModel):
     theme: str = "HR"
     messages: List[Dict[str, str]]
     participant_name: str = "Candidate"
+    target_role: Optional[str] = None
+    resume_summary: Optional[str] = None
 
 THEME_SYSTEM_PROMPTS = {
     "Technical": (
-        "You are a strict and highly technical lead software engineer. "
-        "Ask clear technical questions about algorithms, system architecture, or live coding. "
-        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+        "You are an expert Lead Software Engineer conducting a live technical interview. "
+        "Your goal is to assess technical depth, system design, algorithm optimization, and problem-solving skills. "
+        "RULES:\n"
+        "1. Actively listen to the candidate's answer and reference specific technical details they mentioned before asking your next follow-up.\n"
+        "2. If the candidate gives a high-level or vague answer, ask them to dive deeper into edge cases, concurrency, or performance tradeoffs.\n"
+        "3. If they propose an algorithm or design, ask them to implement or solve a specific part in the live code editor.\n"
+        "4. Keep responses concise (under 2-3 natural conversational sentences). Ask EXACTLY ONE clear question per turn."
     ),
     "Behavioral": (
-        "You are a behavioral interviewer evaluating leadership, team conflict resolution, and adaptability. "
-        "Ask situational questions using the STAR framework ('Tell me about a time when...'). "
-        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+        "You are a Senior Talent Acquisition Lead evaluating leadership, STAR methodology (Situation, Task, Action, Result), and team collaboration. "
+        "RULES:\n"
+        "1. Evaluate if the candidate provided specific Actions and measurable Results.\n"
+        "2. Follow up on key decisions, conflicts, or lessons learned from their story.\n"
+        "3. Keep responses conversational and concise (under 2-3 sentences). Ask EXACTLY ONE question per turn."
     ),
     "Executive": (
-        "You are a C-suite executive interviewing a candidate for strategic alignment, ROI metrics, and vision. "
-        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+        "You are a C-suite Executive interviewing a candidate for strategic impact, business ROI, scale, and vision. "
+        "RULES:\n"
+        "1. Focus on metrics, business outcome, team scaling, and strategic vision.\n"
+        "2. Challenge assumptions constructively and probe for measurable business impact.\n"
+        "3. Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per turn."
     ),
     "Creative": (
-        "You are an enthusiastic creative director interviewing a designer/product strategist. "
-        "Ask imaginative, out-of-the-box product and UI/UX design questions. "
-        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+        "You are a Creative Director evaluating product design, user experience (UX), and innovative strategy. "
+        "RULES:\n"
+        "1. Ask imaginative, user-centric design questions and explore trade-offs between aesthetic and usability.\n"
+        "2. Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per turn."
     ),
     "HR": (
-        "You are a warm, professional HR recruiter conducting a phone screen. "
-        "Ask about past experience, motivation, and career goals. "
-        "CRITICAL RULE: Keep responses concise (under 2-3 sentences). Ask EXACTLY ONE question per response."
+        "You are a warm, professional Senior HR Recruiter conducting an initial candidate screen. "
+        "RULES:\n"
+        "1. Evaluate role fit, career trajectory, core motivators, and communication clarity.\n"
+        "2. Keep responses warm, engaging, and concise (under 2-3 sentences). Ask EXACTLY ONE question per turn."
     )
 }
 
@@ -63,9 +76,22 @@ async def respond_to_candidate(request: Request, body: InterviewRespondRequest, 
     """Generate instant AI Interviewer speech response based on conversation history."""
     try:
         system_instruction = THEME_SYSTEM_PROMPTS.get(body.theme, THEME_SYSTEM_PROMPTS["HR"])
-        prompt = f"{system_instruction}\nCandidate Name: {body.participant_name or current_user.full_name or 'Candidate'}."
         
-        full_messages = [{"role": "system", "content": prompt}]
+        context_details = []
+        candidate_name = body.participant_name or current_user.full_name or "Candidate"
+        context_details.append(f"Candidate Name: {candidate_name}")
+        
+        if body.target_role:
+            context_details.append(f"Target Role: {body.target_role}")
+            
+        if body.resume_summary:
+            context_details.append(f"Candidate Resume Highlights: {body.resume_summary}")
+        elif hasattr(current_user, 'headline') and current_user.headline:
+            context_details.append(f"Candidate Background: {current_user.headline}")
+
+        full_prompt = f"{system_instruction}\n\nCONTEXT:\n" + "\n".join(context_details)
+        
+        full_messages = [{"role": "system", "content": full_prompt}]
         for msg in body.messages[-10:]: # keep last 10 turns for context
             full_messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
 
