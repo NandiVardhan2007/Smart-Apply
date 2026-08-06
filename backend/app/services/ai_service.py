@@ -105,35 +105,39 @@ async def _call_llm_with_tracking(**kwargs):
     except Exception:
         endpoint_name = "unknown"
 
-    try:
-        completion = await client.chat.completions.create(**kwargs)
-        duration_ms = int((time.time() - start_time) * 1000)
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            completion = await client.chat.completions.create(**kwargs)
+            duration_ms = int((time.time() - start_time) * 1000)
 
-        _log_api_metric(
-            endpoint=endpoint_name,
-            response_time_ms=duration_ms,
-            success=True,
-            status_code=200,
-        )
+            _log_api_metric(
+                endpoint=endpoint_name,
+                response_time_ms=duration_ms,
+                success=True,
+                status_code=200,
+            )
 
-        return completion
+            return completion
 
-    except Exception as e:
-        duration_ms = int((time.time() - start_time) * 1000)
-        status_code = 500
+        except Exception as e:
+            if attempt < max_retries - 1 and isinstance(e, (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError, httpx.HTTPError)):
+                logger.warning(f"LLM call transient error ({e}), retrying attempt {attempt + 2}/{max_retries}...")
+                await asyncio.sleep(1.0 * (attempt + 1))
+                continue
 
-        if isinstance(e, openai.APIError):
-            status_code = e.status_code if hasattr(e, 'status_code') and e.status_code else 500
+            duration_ms = int((time.time() - start_time) * 1000)
+            status_code = getattr(e, 'status_code', 500) or 500
 
-        _log_api_metric(
-            endpoint=endpoint_name,
-            response_time_ms=duration_ms,
-            success=False,
-            status_code=status_code,
-            error_message=str(e),
-        )
+            _log_api_metric(
+                endpoint=endpoint_name,
+                response_time_ms=duration_ms,
+                success=False,
+                status_code=status_code,
+                error_message=str(e),
+            )
 
-        raise e
+            raise e
 
 
 async def analyze_resume_ats(
