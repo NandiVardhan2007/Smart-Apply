@@ -1,21 +1,36 @@
+import asyncio
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 from app.models.resume import Resume
 from app.models.interview_report import InterviewReport
-import logging
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 @router.get("/dashboard")
 async def get_dashboard_stats(user: User = Depends(get_current_user)):
     try:
-        total_resumes = await Resume.find(Resume.user_id == user.id).count()
-        total_interviews = await InterviewReport.find(InterviewReport.user_id == str(user.id)).count()
-        
-        resumes = await Resume.find(Resume.user_id == user.id).to_list()
-        scored = [r.ats_score for r in resumes if r.ats_score is not None]
-        avg_ats = round(sum(scored) / len(scored)) if scored else 0
+        # Aggregation pipeline to compute average ATS score directly in MongoDB engine
+        ats_pipeline = [
+            {"$match": {"user_id": user.id, "ats_score": {"$ne": None}}},
+            {"$group": {"_id": None, "avg_ats": {"$avg": "$ats_score"}}}
+        ]
+
+        # Execute queries concurrently to minimize I/O waiting time
+        total_resumes_task = Resume.find(Resume.user_id == user.id).count()
+        total_interviews_task = InterviewReport.find(InterviewReport.user_id == str(user.id)).count()
+        ats_agg_task = Resume.aggregate(ats_pipeline).to_list()
+
+        total_resumes, total_interviews, ats_agg = await asyncio.gather(
+            total_resumes_task,
+            total_interviews_task,
+            ats_agg_task
+        )
+
+        avg_ats = 0
+        if ats_agg and len(ats_agg) > 0 and ats_agg[0].get("avg_ats") is not None:
+            avg_ats = round(ats_agg[0]["avg_ats"])
 
         return {
             "total_resumes": total_resumes,

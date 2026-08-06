@@ -8,6 +8,7 @@ import ThemeSwitcher from './ThemeSwitcher';
 const LINKS = [
   { href: '#features', label: 'Features' },
   { href: '#how-it-works', label: 'How it works' },
+  { href: '/docs', label: 'Documentation', isRoute: true },
 ];
 
 export default function Navbar() {
@@ -49,16 +50,27 @@ export default function Navbar() {
         </Link>
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="desktop-nav-links">
-          {LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}
-              className="nav-link-hover"
-            >
-              {l.label}
-            </a>
-          ))}
+          {LINKS.map((l) =>
+            l.isRoute ? (
+              <Link
+                key={l.href}
+                to={l.href}
+                style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}
+                className="nav-link-hover"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.href}
+                href={l.href}
+                style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}
+                className="nav-link-hover"
+              >
+                {l.label}
+              </a>
+            )
+          )}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} className="desktop-nav-actions">
@@ -106,11 +118,17 @@ export default function Navbar() {
               overflow: 'hidden'
             }}
           >
-            {LINKS.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
-                {l.label}
-              </a>
-            ))}
+            {LINKS.map((l) =>
+              l.isRoute ? (
+                <Link key={l.href} to={l.href} onClick={() => setMobileOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
+                  {l.label}
+                </Link>
+              ) : (
+                <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
+                  {l.label}
+                </a>
+              )
+            )}
             <div style={{ paddingBottom: 10 }}>
                <ThemeSwitcher />
             </div>

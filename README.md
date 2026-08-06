@@ -10,6 +10,10 @@ Smart Apply is an AI-powered job application assistant designed to streamline th
 - **Project Recommender**: Get recommendations for projects to build based on your skills and target roles.
 - **AI Chatbot**: Ask questions and get career advice from a built-in AI assistant.
 
+## Documentation
+
+For a comprehensive guide covering **Architecture**, **System Design**, **Data Models**, **Target Audience**, **Estimated Userbase**, and **Future Scope**, please see [DOCUMENTATION.md](file:///d:/SMARTAPPLY/DOCUMENTATION.md).
+
 ## Tech Stack
 
 ### Frontend

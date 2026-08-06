@@ -17,15 +17,9 @@ from app.websockets.auth_ws import router as ws_router
 from app.websockets.manager import manager
 
 
-import subprocess
-import sys
 import logging
-import asyncio
-import httpx
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-
-worker_process = None
 
 
 

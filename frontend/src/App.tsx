@@ -19,6 +19,7 @@ const Signup = lazy(() => import('./pages/Signup'));
 const OtpVerify = lazy(() => import('./pages/OtpVerify'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Docs = lazy(() => import('./pages/Docs'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Home = lazy(() => import('./pages/dashboard/Home'));
@@ -97,15 +98,28 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+    const timeoutId = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 1000);
+
     apiFetch<{ maintenance_mode: boolean }>('/auth/public-settings')
       .then(res => {
-        if (res.ok) {
+        if (mounted && res.ok) {
           setMaintenance(res.data.maintenance_mode);
         }
       })
       .finally(() => {
-        setLoading(false);
+        if (mounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
       });
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   if (loading) return <PageFallback />;
@@ -127,6 +141,7 @@ export default function App() {
         <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
+        <Route path="/docs" element={<Docs />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-otp" element={<OtpVerify />} />

@@ -12,7 +12,8 @@ import {
   Mail,
   Briefcase,
   Code,
-  Wand2
+  Wand2,
+  BookOpen
 } from 'lucide-react';
 import { Linkedin } from './Icons';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +23,10 @@ import '../styles/dashboard.css';
 const NAV_SECTIONS = [
   {
     title: 'Overview',
-    links: [{ to: '/dashboard', label: 'Home', icon: LayoutDashboard, end: true }],
+    links: [
+      { to: '/dashboard', label: 'Home', icon: LayoutDashboard, end: true },
+      { to: '/docs', label: 'Documentation', icon: BookOpen },
+    ],
   },
   {
     title: 'Resume',
