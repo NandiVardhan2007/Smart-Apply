@@ -395,6 +395,7 @@ export default function LiveInterview() {
   const timerRef = useRef<any>(null);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const isListeningRef = useRef(false);
+  const isCallActiveRef = useRef(false);
   const conversationRef = useRef<Array<{ role: string; content: string }>>([]);
   const { showToast } = useToast();
 
@@ -405,12 +406,23 @@ export default function LiveInterview() {
   }, [transcriptLogs]);
 
   useEffect(() => {
+    return () => {
+      isCallActiveRef.current = false;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (status === 'connected') {
+      isCallActiveRef.current = true;
       setElapsedSeconds(0);
       timerRef.current = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
     } else {
+      isCallActiveRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => {
@@ -437,7 +449,10 @@ export default function LiveInterview() {
   }, []);
 
   const speakAIResponse = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
+    if (!('speechSynthesis' in window) || !isCallActiveRef.current) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      return;
+    }
     window.speechSynthesis.cancel();
 
     // Strip markdown formatting symbols (*, #, `, _, links) so TTS speaks fluidly
@@ -487,11 +502,13 @@ export default function LiveInterview() {
       setAiState('listening');
     };
 
-    window.speechSynthesis.speak(utterance);
+    if (isCallActiveRef.current) {
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const generateAIResponse = async (userText: string) => {
-    if (!userText.trim()) return;
+    if (!userText.trim() || !isCallActiveRef.current) return;
     setAiState('thinking');
     setLiveSpeechText('');
     setTextInput('');
@@ -507,6 +524,8 @@ export default function LiveInterview() {
         })
       });
 
+      if (!isCallActiveRef.current) return;
+
       const aiText = res.ok && res.data ? res.data.response : "That's an insightful answer. Could you detail how you evaluated your solution?";
       conversationRef.current.push({ role: 'assistant', content: aiText });
 
@@ -518,7 +537,9 @@ export default function LiveInterview() {
         setIsEditorOpen(true);
       }
 
-      speakAIResponse(aiText);
+      if (isCallActiveRef.current) {
+        speakAIResponse(aiText);
+      }
     } catch (err) {
       console.error(err);
       setAiState('listening');
@@ -612,18 +633,24 @@ export default function LiveInterview() {
   };
 
   const handleStart = () => {
+    isCallActiveRef.current = true;
     setStatus('connected');
     const greeting = `Hello ${user?.full_name || 'Candidate'}! I am your AI interviewer for the ${theme} track. Shall we begin?`;
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     conversationRef.current = [{ role: 'assistant', content: greeting }];
     setTranscriptLogs([{ id: '1', text: greeting, time: now, role: 'assistant' }]);
     showToast('success', `Connected to ${theme} Voice AI Studio!`);
-    setTimeout(() => speakAIResponse(greeting), 600);
+    setTimeout(() => {
+      if (isCallActiveRef.current) speakAIResponse(greeting);
+    }, 600);
   };
 
   const handleDisconnect = async () => {
+    isCallActiveRef.current = false;
     isListeningRef.current = false;
-    window.speechSynthesis.cancel();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     if (recognitionRef.current) try { recognitionRef.current.stop(); } catch (e) {}
     if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach((t) => t.stop());
     

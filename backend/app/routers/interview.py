@@ -198,6 +198,7 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
             temperature=0.2,
             max_tokens=1024,
         )
+        report_json = response.choices[0].message.content.strip()
         import re
         json_match = re.search(r'\{.*\}', report_json, re.DOTALL)
         if json_match:
