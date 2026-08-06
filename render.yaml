@@ -20,7 +20,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
-        value: https://smartapply.onrender.com
+        value: https://smartapplies.app
 
   - type: web
     name: smartapply-ai
@@ -48,7 +48,7 @@ services:
           name: smartapply-core
           envVarKey: SECRET_KEY
       - key: FRONTEND_URL
-        value: https://smartapply.onrender.com
+        value: https://smartapplies.app
 
   - type: web
     name: smartapply-tools
@@ -74,7 +74,7 @@ services:
           name: smartapply-core
           envVarKey: SECRET_KEY
       - key: FRONTEND_URL
-        value: https://smartapply.onrender.com
+        value: https://smartapplies.app
 
   - type: web
     name: smartapply-frontend
