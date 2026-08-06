@@ -63,7 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/ping")
+@app.api_route("/ping", methods=["GET", "HEAD", "POST", "OPTIONS"])
 async def ping():
     return {"status": "ok", "service": "tools"}
 
