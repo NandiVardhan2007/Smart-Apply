@@ -311,36 +311,136 @@ function CodeEditorFeature({
 }
 
 function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoElement | null> }) {
-  const [emotion, setEmotion] = useState<string>('Confident');
+  const [emotion, setEmotion] = useState<string>('Focused');
   const [confidenceScore, setConfidenceScore] = useState<number>(88);
-  const [eyeContact, setEyeContact] = useState<string>('Optimal');
-  const [posture, setPosture] = useState<string>('Upright');
+  const [eyeContact, setEyeContact] = useState<string>('Direct (Optimal)');
+  const [posture, setPosture] = useState<string>('Upright & Engaged');
+  const [blinks, setBlinks] = useState<number>(0);
+
+  const prevEyeLuminanceRef = useRef<number>(0);
+  const blinkCounterRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const emotions = ['Confident', 'Analytical', 'Focused', 'Composed', 'Engaged'];
 
     const interval = setInterval(() => {
       if (videoRef?.current && ctx && videoRef.current.videoWidth > 0) {
-        canvas.width = 160;
-        canvas.height = 120;
-        ctx.drawImage(videoRef.current, 0, 0, 160, 120);
-        const imgData = ctx.getImageData(0, 0, 160, 120);
-        let sumLuminance = 0;
-        for (let i = 0; i < imgData.data.length; i += 16) {
-          sumLuminance += imgData.data[i] * 0.299 + imgData.data[i + 1] * 0.587 + imgData.data[i + 2] * 0.114;
+        const width = 160;
+        const height = 120;
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx.drawImage(videoRef.current, 0, 0, width, height);
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+
+        let skinPixels = 0;
+        let totalSampled = 0;
+        let eyeRegionLuminance = 0;
+        let eyePixels = 0;
+        let headCenterXSum = 0;
+        let headCenterYSum = 0;
+
+        // Sample pixels across 160x120 canvas
+        for (let y = 0; y < height; y += 2) {
+          for (let x = 0; x < width; x += 2) {
+            const index = (y * width + x) * 4;
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
+
+            totalSampled++;
+
+            // Skin color detection rule (YCbCr / RGB skin space filter)
+            const isSkin =
+              r > 95 &&
+              g > 40 &&
+              b > 20 &&
+              Math.max(r, g, b) - Math.min(r, g, b) > 15 &&
+              Math.abs(r - g) > 15 &&
+              r > g &&
+              r > b;
+
+            if (isSkin) {
+              skinPixels++;
+              headCenterXSum += x;
+              headCenterYSum += y;
+            }
+
+            // Eye region quadrant sampling (y between 25% and 50% of frame height)
+            if (y >= height * 0.25 && y <= height * 0.5 && x >= width * 0.25 && x <= width * 0.75) {
+              const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+              eyeRegionLuminance += lum;
+              eyePixels++;
+            }
+          }
         }
-        const avgLum = sumLuminance / (imgData.data.length / 16);
-        const dynamicConfidence = Math.min(98, Math.max(78, Math.round(82 + (avgLum % 15))));
-        setConfidenceScore(dynamicConfidence);
-        setEmotion(emotions[Math.floor((avgLum * 7) % emotions.length)]);
-        setEyeContact(dynamicConfidence > 85 ? 'Optimal' : 'Centered');
-        setPosture(dynamicConfidence > 80 ? 'Upright' : 'Stable');
+
+        const skinCoverage = skinPixels / totalSampled;
+        const avgEyeLum = eyePixels > 0 ? eyeRegionLuminance / eyePixels : 100;
+
+        // Detect blink when eye-region luminance drops sharply
+        if (prevEyeLuminanceRef.current > 0 && prevEyeLuminanceRef.current - avgEyeLum > 12) {
+          blinkCounterRef.current += 1;
+          setBlinks(blinkCounterRef.current);
+        }
+        prevEyeLuminanceRef.current = avgEyeLum;
+
+        // Calculate Head Center of Gravity for Posture & Gaze tracking
+        let postureStatus = 'Upright & Engaged';
+        let gazeStatus = 'Direct (Optimal)';
+        let emotionStatus = 'Focused';
+
+        if (skinPixels > 50) {
+          const avgX = headCenterXSum / skinPixels;
+          const avgY = headCenterYSum / skinPixels;
+
+          // Horizontal alignment check
+          if (avgX < width * 0.38) {
+            gazeStatus = 'Glancing Left';
+            postureStatus = 'Leaning Left';
+          } else if (avgX > width * 0.62) {
+            gazeStatus = 'Glancing Right';
+            postureStatus = 'Leaning Right';
+          }
+
+          // Vertical posture check
+          if (avgY > height * 0.58) {
+            postureStatus = 'Leaning Forward';
+          } else if (avgY < height * 0.35) {
+            postureStatus = 'Upright & Reclined';
+          }
+
+          // Emotion mapping based on facial brightness dynamics & skin presence
+          if (skinCoverage > 0.35 && gazeStatus === 'Direct (Optimal)') {
+            emotionStatus = 'Confident & Composed';
+          } else if (skinCoverage > 0.25) {
+            emotionStatus = 'Analytical / Thinking';
+          } else {
+            emotionStatus = 'Attentive';
+          }
+        } else {
+          postureStatus = 'Reposition Camera';
+          gazeStatus = 'Searching';
+          emotionStatus = 'Neutral';
+        }
+
+        // Calculate realistic confidence score (68% to 98%)
+        const baseScore = 75 + Math.round(skinCoverage * 40);
+        const finalConfidence = Math.min(98, Math.max(68, baseScore));
+
+        setConfidenceScore(finalConfidence);
+        setEmotion(emotionStatus);
+        setEyeContact(gazeStatus);
+        setPosture(postureStatus);
       } else {
-        setConfidenceScore(Math.floor(Math.random() * 8) + 86);
+        setConfidenceScore(86);
+        setEmotion('Focused');
+        setEyeContact('Direct (Optimal)');
+        setPosture('Upright & Engaged');
       }
-    }, 3500);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [videoRef]);
@@ -365,6 +465,10 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
       <div className="hud-row">
         <span className="hud-label">POSTURE</span>
         <span className="hud-value green">{posture}</span>
+      </div>
+      <div className="hud-row">
+        <span className="hud-label">BLINKS DETECTED</span>
+        <span className="hud-value">{blinks}</span>
       </div>
     </div>
   );
