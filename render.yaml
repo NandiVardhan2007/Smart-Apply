@@ -47,6 +47,12 @@ services:
           type: web
           name: smartapply-core
           envVarKey: SECRET_KEY
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: smartapplyai1@gmail.com
+      - key: BREVO_SENDER_NAME
+        value: SmartApply
       - key: FRONTEND_URL
         value: https://smartapplies.app
 
