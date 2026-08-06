@@ -249,6 +249,7 @@ async def _run_llm_and_save(data: AnalyzeRequest) -> None:
 
         report_data["user_id"] = data.user_id
         report_data["room_name"] = data.room_name
+        report_data["transcript"] = [dict(m) for m in data.transcript]
 
         report = InterviewReport(**report_data)
         await report.insert()

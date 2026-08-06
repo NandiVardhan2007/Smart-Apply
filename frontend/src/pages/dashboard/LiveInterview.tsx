@@ -657,20 +657,32 @@ export default function LiveInterview() {
     
     if (transcriptLogs.length > 0 && user) {
       try {
+        const roomName = `session-${Date.now()}`;
+        const formattedTranscript = transcriptLogs.map((t) => ({ role: t.role, content: t.text }));
+        
+        localStorage.setItem(`sa_transcript_${roomName}`, JSON.stringify(formattedTranscript));
+        
         await apiFetch('/interview/analyze', {
           method: 'POST',
           body: JSON.stringify({
             user_id: String(user.id),
-            room_name: `session-${Date.now()}`,
-            transcript: transcriptLogs.map((t) => ({ role: t.role, content: t.text })),
+            room_name: roomName,
+            transcript: formattedTranscript,
             telemetry: { avg_confidence: 0.88, blink_count: 14 }
           })
         });
-      } catch (e) {}
+        
+        setStatus('idle');
+        showToast('success', 'Interview ended! Generating performance analysis report...');
+        navigate(`/dashboard/interview-report/${roomName}`);
+        return;
+      } catch (e) {
+        showToast('error', 'Failed to queue report analysis.');
+      }
     }
 
     setStatus('idle');
-    showToast('info', 'Interview session ended. Performance analysis queued.');
+    showToast('info', 'Interview session ended.');
     navigate('/dashboard');
   };
 

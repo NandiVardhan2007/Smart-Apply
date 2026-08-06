@@ -11,6 +11,7 @@ export interface User {
   is_admin?: boolean;
   profile_pic_url?: string | null;
   bio?: string | null;
+  headline?: string | null;
   skills?: string[];
   linkedin_url?: string | null;
   github_url?: string | null;
@@ -95,6 +96,7 @@ export interface InterviewReportData {
   timestamp: string;
   questions_asked: string[];
   user_replies: string[];
+  transcript?: Array<{ role: string; content: string }>;
   areas_for_improvement: string[];
   weaknesses: string[];
   telemetry_summary: {

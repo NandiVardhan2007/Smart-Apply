@@ -10,6 +10,7 @@ class InterviewReport(Document):
     
     questions_asked: List[str] = Field(default_factory=list)
     user_replies: List[str] = Field(default_factory=list)
+    transcript: List[Dict] = Field(default_factory=list)
     areas_for_improvement: List[str] = Field(default_factory=list)
     weaknesses: List[str] = Field(default_factory=list)
     
