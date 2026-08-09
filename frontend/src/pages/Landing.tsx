@@ -100,9 +100,6 @@ export default function Landing() {
   const featuresRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'ats' | 'interview'>('all');
 
-  const { scrollYProgress } = useScroll();
-  const heroY = useTransform(scrollYProgress, [0, 0.25], [0, 50]);
-
   return (
     <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', background: 'var(--paper)', color: 'var(--ink)' }}>
       <AnimatedBackground />
@@ -118,10 +115,10 @@ export default function Landing() {
         }}
       >
         <motion.div 
-          style={{ y: heroY, maxWidth: 1240, margin: '0 auto' }}
-          initial={{ opacity: 0, y: 30 }} 
+          style={{ maxWidth: 1240, margin: '0 auto', willChange: 'transform', transform: 'translateZ(0)' }}
+          initial={{ opacity: 0, y: 25 }} 
           animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* Row of 5 3D Poster Feature Cards */}
           <div className="hero-poster-container">

@@ -14,6 +14,8 @@ export default function AnimatedBackground() {
         overflow: 'hidden',
         pointerEvents: 'none',
         background: 'var(--paper)',
+        transform: 'translateZ(0)',
+        willChange: 'transform',
       }}
     >
       {/* Background Grid Pattern */}
@@ -35,23 +37,22 @@ export default function AnimatedBackground() {
           position: 'absolute',
           top: '-15%',
           left: '50%',
-          transform: 'translateX(-50%)',
+          transform: 'translateX(-50%) translateZ(0)',
           width: '70vw',
           height: '400px',
-          background: 'radial-gradient(ellipse at top, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.12) 40%, rgba(0, 0, 0, 0) 70%)',
-          filter: 'blur(50px)',
+          background: 'radial-gradient(ellipse at top, rgba(79, 109, 245, 0.25) 0%, rgba(124, 92, 245, 0.12) 40%, transparent 70%)',
+          pointerEvents: 'none',
         }}
       />
 
-      {/* Floating Animated Neon Orbs */}
+      {/* Optimized GPU Floating Neon Orbs (Radial gradients without heavy CSS blurs) */}
       <motion.div
         animate={{
-          x: ['0vw', '8vw', '0vw'],
-          y: ['0vh', '12vh', '0vh'],
-          scale: [1, 1.15, 1],
+          x: ['0vw', '6vw', '0vw'],
+          y: ['0vh', '8vh', '0vh'],
         }}
         transition={{
-          duration: 25,
+          duration: 30,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
@@ -61,20 +62,20 @@ export default function AnimatedBackground() {
           left: '5%',
           width: '45vw',
           height: '45vw',
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(0,0,0,0) 70%)',
+          background: 'radial-gradient(circle, rgba(79, 109, 245, 0.14) 0%, rgba(79, 109, 245, 0.04) 50%, transparent 70%)',
           borderRadius: '50%',
-          filter: 'blur(70px)',
+          willChange: 'transform',
+          transform: 'translateZ(0)',
         }}
       />
 
       <motion.div
         animate={{
-          x: ['0vw', '-10vw', '0vw'],
-          y: ['0vh', '15vh', '0vh'],
-          scale: [1, 1.2, 1],
+          x: ['0vw', '-8vw', '0vw'],
+          y: ['0vh', '10vh', '0vh'],
         }}
         transition={{
-          duration: 30,
+          duration: 35,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
@@ -84,20 +85,20 @@ export default function AnimatedBackground() {
           right: '5%',
           width: '50vw',
           height: '50vw',
-          background: 'radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 70%)',
+          background: 'radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0.03) 50%, transparent 70%)',
           borderRadius: '50%',
-          filter: 'blur(80px)',
+          willChange: 'transform',
+          transform: 'translateZ(0)',
         }}
       />
 
       <motion.div
         animate={{
-          x: ['0vw', '6vw', '0vw'],
-          y: ['0vh', '-15vh', '0vh'],
-          scale: [1, 1.1, 1],
+          x: ['0vw', '5vw', '0vw'],
+          y: ['0vh', '-10vh', '0vh'],
         }}
         transition={{
-          duration: 28,
+          duration: 32,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
@@ -107,12 +108,12 @@ export default function AnimatedBackground() {
           left: '25%',
           width: '55vw',
           height: '55vw',
-          background: 'radial-gradient(circle, rgba(168, 85, 247, 0.14) 0%, rgba(0,0,0,0) 70%)',
+          background: 'radial-gradient(circle, rgba(124, 92, 245, 0.12) 0%, rgba(124, 92, 245, 0.03) 50%, transparent 70%)',
           borderRadius: '50%',
-          filter: 'blur(90px)',
+          willChange: 'transform',
+          transform: 'translateZ(0)',
         }}
       />
     </div>
   );
 }
-

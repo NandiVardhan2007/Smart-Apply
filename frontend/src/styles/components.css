@@ -657,22 +657,22 @@ textarea.input-field {
   }
 }
 
-/* ── Minutrix.in Floating 3D Posters & Keyframe Animations ── */
+/* ── Minutrix.in Floating 3D Posters & Keyframe Animations (GPU Accelerated) ── */
 
 @keyframes decoFloat1 {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-12px) rotate(3deg); }
-  66% { transform: translateY(-6px) rotate(-2deg); }
+  0%, 100% { transform: translate3d(0, 0px, 0) rotate(0deg); }
+  33% { transform: translate3d(0, -10px, 0) rotate(2deg); }
+  66% { transform: translate3d(0, -5px, 0) rotate(-1deg); }
 }
 
 @keyframes decoFloat2 {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(-4deg); }
+  0%, 100% { transform: translate3d(0, 0px, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -12px, 0) rotate(-3deg); }
 }
 
 @keyframes scrollLogos {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 .hero-poster-container {
@@ -684,6 +684,8 @@ textarea.input-field {
   overflow-x: auto;
   padding: 10px 20px 20px;
   scroll-behavior: smooth;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .hero-poster-card {
@@ -692,8 +694,8 @@ textarea.input-field {
   border-radius: 20px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -702,17 +704,19 @@ textarea.input-field {
   cursor: pointer;
   background-size: cover;
   background-position: center;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
-.hero-poster-card:nth-child(1) { animation: decoFloat1 7s ease-in-out infinite; }
-.hero-poster-card:nth-child(2) { animation: decoFloat2 8s ease-in-out infinite 0.5s; }
-.hero-poster-card:nth-child(3) { animation: decoFloat1 9s ease-in-out infinite 1s; }
-.hero-poster-card:nth-child(4) { animation: decoFloat2 7.5s ease-in-out infinite 1.5s; }
-.hero-poster-card:nth-child(5) { animation: decoFloat1 8.5s ease-in-out infinite 2s; }
+.hero-poster-card:nth-child(1) { animation: decoFloat1 8s ease-in-out infinite; }
+.hero-poster-card:nth-child(2) { animation: decoFloat2 9s ease-in-out infinite 0.5s; }
+.hero-poster-card:nth-child(3) { animation: decoFloat1 10s ease-in-out infinite 1s; }
+.hero-poster-card:nth-child(4) { animation: decoFloat2 8.5s ease-in-out infinite 1.5s; }
+.hero-poster-card:nth-child(5) { animation: decoFloat1 9.5s ease-in-out infinite 2s; }
 
 .hero-poster-card:hover {
-  transform: translateY(-12px) scale(1.04) !important;
-  box-shadow: 0 28px 50px rgba(79, 109, 245, 0.35);
+  transform: translate3d(0, -10px, 0) scale(1.03) !important;
+  box-shadow: 0 24px 44px rgba(79, 109, 245, 0.35);
   z-index: 5;
 }
 
@@ -724,12 +728,15 @@ textarea.input-field {
   padding: 16px 0;
   display: flex;
   align-items: center;
+  will-change: transform;
 }
 
 .marquee-content {
   display: inline-flex;
   gap: 48px;
-  animation: scrollLogos 25s linear infinite;
+  animation: scrollLogos 30s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .marquee-ticker:hover .marquee-content {
