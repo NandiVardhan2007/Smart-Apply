@@ -48,13 +48,18 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
-  /* ── Minutrix Glow & Gradients ── */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #38bdf8 100%);
+  /* ── Minutrix.in Official Palette & Gradients ── */
+  --minutrix-navy: #0b0e17;
+  --minutrix-blue: #4f6df5;
+  --minutrix-purple: #7c5cf5;
+  --minutrix-lavender: #e8d5f5;
+  --minutrix-card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 244, 255, 0.7) 100%);
+  --gradient-primary: linear-gradient(135deg, #4f6df5 0%, #7c5cf5 50%, #38bdf8 100%);
   --gradient-heading: linear-gradient(135deg, #ffffff 0%, #e2e8f0 60%, #94a3b8 100%);
-  --gradient-accent-text: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #38bdf8 100%);
-  --gradient-glow-card: linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(15, 17, 26, 0.7) 100%);
-  --glass-bg: rgba(15, 17, 26, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --gradient-accent-text: linear-gradient(135deg, #4f6df5 0%, #7c5cf5 50%, #e8d5f5 100%);
+  --gradient-glow-card: linear-gradient(180deg, rgba(124, 92, 245, 0.15) 0%, rgba(11, 14, 23, 0.7) 100%);
+  --glass-bg: rgba(11, 14, 23, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.12);
 
   /* ── Shape ── */
   --radius-sm: 8px;

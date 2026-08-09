@@ -38,78 +38,70 @@ export default function Navbar() {
       }}
     >
       <div
-        className={scrolled ? 'glass-nav' : ''}
         style={{
-          maxWidth: 1140,
+          maxWidth: 1180,
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 24px',
+          padding: '10px 24px',
           borderRadius: 999,
-          background: scrolled ? 'rgba(7, 8, 12, 0.88)' : 'rgba(15, 17, 26, 0.65)',
+          background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.12)',
           transition: 'all 300ms ease',
         }}
       >
         <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', gap: 10 }}>
           <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: 'var(--gradient-primary)',
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            background: 'var(--minutrix-navy)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
           }}>
             <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
           </div>
-          <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.02em', color: '#ffffff' }}>
-            Smart<span style={{ color: '#818cf8' }}>Apply</span>
+          <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.02em', color: '#0b0e17' }}>
+            Smart<span style={{ color: '#4f6df5' }}>Apply</span>
           </span>
         </Link>
 
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="desktop-nav-links">
-          {LINKS.map((l) =>
-            l.isRoute ? (
-              <Link
-                key={l.href}
-                to={l.href}
-                style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)', textDecoration: 'none' }}
-                className="nav-link-hover"
-              >
-                {l.label}
-              </Link>
-            ) : (
-              <a
-                key={l.href}
-                href={l.href}
-                style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)', textDecoration: 'none' }}
-                className="nav-link-hover"
-              >
-                {l.label}
-              </a>
-            )
-          )}
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 28 }} className="desktop-nav-links">
+          <a href="#features" style={{ fontSize: 14.5, fontWeight: 500, color: '#1a1a2e', textDecoration: 'none' }}>
+            Services ▾
+          </a>
+          <a href="#ai-agents" style={{ fontSize: 14.5, fontWeight: 500, color: '#1a1a2e', textDecoration: 'none' }}>
+            AI Agents
+          </a>
+          <a href="#how-it-works" style={{ fontSize: 14.5, fontWeight: 500, color: '#1a1a2e', textDecoration: 'none' }}>
+            Learning ▾
+          </a>
+          <Link to="/docs" style={{ fontSize: 14.5, fontWeight: 500, color: '#1a1a2e', textDecoration: 'none' }}>
+            Community
+          </Link>
+          <a href="#pricing" style={{ fontSize: 14.5, fontWeight: 500, color: '#1a1a2e', textDecoration: 'none' }}>
+            Pricing
+          </a>
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} className="desktop-nav-actions">
-          <ThemeSwitcher variant="compact" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="desktop-nav-actions">
           {isAuthenticated ? (
-            <button className="btn btn-glow btn-sm" onClick={() => navigate('/dashboard')}>
-              Go to dashboard
+            <button className="btn btn-sm" onClick={() => navigate('/dashboard')} style={{ background: '#0b0e17', color: '#ffffff', borderRadius: 999, padding: '9px 20px', fontWeight: 600 }}>
+              Go to Dashboard
             </button>
           ) : (
             <>
-              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/login')} style={{ color: '#cbd5e1' }}>
-                Log in
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/login')} style={{ color: '#1a1a2e', fontWeight: 600, border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '7px 16px' }}>
+                Sign In
               </button>
-              <button className="btn btn-glow btn-sm" onClick={() => navigate('/signup')}>
-                Get started free
+              <button className="btn btn-sm" onClick={() => navigate('/signup')} style={{ background: '#0b0e17', color: '#ffffff', borderRadius: 999, padding: '9px 22px', fontWeight: 600 }}>
+                Get Started
               </button>
             </>
           )}
@@ -119,7 +111,7 @@ export default function Navbar() {
           className="mobile-nav-toggle"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle menu"
-          style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+          style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', color: '#0b0e17' }}
         >
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
         </button>

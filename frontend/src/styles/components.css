@@ -657,6 +657,85 @@ textarea.input-field {
   }
 }
 
+/* ── Minutrix.in Floating 3D Posters & Keyframe Animations ── */
+
+@keyframes decoFloat1 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-12px) rotate(3deg); }
+  66% { transform: translateY(-6px) rotate(-2deg); }
+}
+
+@keyframes decoFloat2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(-4deg); }
+}
+
+@keyframes scrollLogos {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.hero-poster-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 40px;
+  overflow-x: auto;
+  padding: 10px 20px 20px;
+  scroll-behavior: smooth;
+}
+
+.hero-poster-card {
+  flex: 0 0 210px;
+  height: 340px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 20px;
+  color: #ffffff;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-poster-card:nth-child(1) { animation: decoFloat1 7s ease-in-out infinite; }
+.hero-poster-card:nth-child(2) { animation: decoFloat2 8s ease-in-out infinite 0.5s; }
+.hero-poster-card:nth-child(3) { animation: decoFloat1 9s ease-in-out infinite 1s; }
+.hero-poster-card:nth-child(4) { animation: decoFloat2 7.5s ease-in-out infinite 1.5s; }
+.hero-poster-card:nth-child(5) { animation: decoFloat1 8.5s ease-in-out infinite 2s; }
+
+.hero-poster-card:hover {
+  transform: translateY(-12px) scale(1.04) !important;
+  box-shadow: 0 28px 50px rgba(79, 109, 245, 0.35);
+  z-index: 5;
+}
+
+.marquee-ticker {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+  width: 100%;
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+}
+
+.marquee-content {
+  display: inline-flex;
+  gap: 48px;
+  animation: scrollLogos 25s linear infinite;
+}
+
+.marquee-ticker:hover .marquee-content {
+  animation-play-state: paused;
+}
+
 /* ── Mobile density ── */
 @media (max-width: 640px) {
   .card {
@@ -665,6 +744,16 @@ textarea.input-field {
   .modal {
     padding: 22px;
   }
+  .hero-poster-container {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  .hero-poster-card {
+    flex: 0 0 170px;
+    height: 270px;
+    padding: 16px;
+  }
 }
+
 
 
