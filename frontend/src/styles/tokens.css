@@ -43,27 +43,30 @@
   --danger-soft: #fbeae8;
   --danger-border: #f0c6c1;
 
-  /* ── Typography ──
-     --font-display is the one variable themes are encouraged to swap —
-     every h1–h6 in the app reads from it, so a theme's typographic
-     personality (e.g. Ice's Space Grotesk) applies everywhere at once. */
-  --font-display: 'Fraunces', 'Georgia', serif;
+  /* ── Typography ── */
+  --font-display: 'Sora', 'Space Grotesk', 'Inter', sans-serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
-  /* ── Shape ── */
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 16px;
+  /* ── Minutrix Glow & Gradients ── */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #38bdf8 100%);
+  --gradient-heading: linear-gradient(135deg, #ffffff 0%, #e2e8f0 60%, #94a3b8 100%);
+  --gradient-accent-text: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #38bdf8 100%);
+  --gradient-glow-card: linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(15, 17, 26, 0.7) 100%);
+  --glass-bg: rgba(15, 17, 26, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
 
-  /* ── Elevation (hairlines, not shadows) ── */
+  /* ── Shape ── */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+
+  /* ── Elevation ── */
   --shadow-sm: 0 1px 2px rgba(20, 22, 28, 0.04);
   --shadow-md: 0 4px 16px rgba(20, 22, 28, 0.06);
   --shadow-focus: 0 0 0 3px var(--accent-soft-border);
 
-  /* ── Motion — one shared easing curve so every transition in the
-     app decelerates the same way, which is what reads as "smooth"
-     rather than a patchwork of different animation feels. ── */
+  /* ── Motion ── */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast: 120ms var(--ease);
@@ -79,17 +82,7 @@
   color-scheme: light;
 }
 
-/* ── Legacy alias layer ───────────────────────────────────────────
-   An earlier "premium dark" design system used a different set of
-   variable names. Some components and pages (loaders, the LiveKit
-   interview, resume maker, admin views) still reference those names
-   inline. Rather than hunt down every usage, we alias each old name
-   to its editorial-system equivalent *once*, here.
-
-   Because these are defined in terms of the base tokens (--surface,
-   --ink, --accent, …) via var(), they resolve at use-time and so
-   automatically pick up the right value in every theme — no need to
-   repeat this block inside the dark/ice overrides below. */
+/* ── Legacy alias layer ─────────────────────────────────────────── */
 :root {
   /* surfaces */
   --bg-primary: var(--paper);
@@ -137,49 +130,49 @@
   --font-body: var(--font-sans);
   --font-heading: var(--font-display);
 
-  /* motion — the old system used a single un-suffixed duration token */
+  /* motion */
   --transition: var(--transition-base);
 }
 
-/* ── Dark ── a low-glare, low-contrast-shift twin of the default theme */
+/* ── Dark — Minutrix Ultra-Modern Glow Aesthetic ───────────────────── */
 [data-theme='dark'] {
-  --paper: #121316;
-  --surface: #191b1f;
-  --surface-sunken: #212328;
-  --ink: #f1f1f3;
-  --ink-soft: #a7abb5;
-  --ink-faint: #6d7078;
-  --border: #2b2d33;
-  --border-strong: #3a3d45;
+  --paper: #07080c;
+  --surface: #0f111a;
+  --surface-sunken: #161926;
+  --ink: #f8fafc;
+  --ink-soft: #94a3b8;
+  --ink-faint: #64748b;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
 
-  --accent: #6c85ff;
-  --accent-hover: #8398ff;
-  --accent-ink: #0d0f14;
-  --accent-soft: #1c2340;
-  --accent-soft-border: #2c356b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --accent-soft-border: rgba(99, 102, 241, 0.3);
 
-  --success: #3ecf8e;
-  --success-soft: #113228;
-  --success-border: #1c5240;
-  --warning: #e2a13d;
-  --warning-soft: #332409;
-  --warning-border: #56410f;
-  --danger: #f2685d;
-  --danger-soft: #3a1613;
-  --danger-border: #5c231d;
+  --success: #10b981;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.3);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.3);
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.3);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --font-display: 'Sora', 'Space Grotesk', 'Inter', sans-serif;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.35);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.25);
+  --glass-bg: rgba(15, 17, 26, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.09);
   color-scheme: dark;
 }
 
-/* ── Ice ── a crisp, cool, glacial theme with its own display type:
-   Space Grotesk brings a modern geometric edge to headings, while body
-   text stays on Inter like every other theme, so paragraphs, buttons,
-   and form fields read identically no matter which theme is active.
-   Every color below is tuned to the same ~4.5:1+ contrast bar as the
-   default theme (checked against WCAG's relative luminance formula),
-   so "premium" doesn't come at the cost of readability. */
+/* ── Ice ── a crisp, cool theme ─────────────────────────────────── */
 [data-theme='ice'] {
   --paper: #f2f9fc;
   --surface: #ffffff;

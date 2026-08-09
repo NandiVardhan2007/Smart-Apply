@@ -28,24 +28,48 @@ export default function Navbar() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-      className={scrolled ? 'glass-nav' : ''}
       style={{
         position: 'fixed',
-        top: 0,
+        top: 12,
         left: 0,
         right: 0,
         zIndex: 100,
-        transition: `background-color var(--transition-slow), border-color var(--transition-slow)`,
+        padding: '0 16px',
       }}
     >
       <div
-        className="container"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px' }}
+        className={scrolled ? 'glass-nav' : ''}
+        style={{
+          maxWidth: 1140,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 24px',
+          borderRadius: 999,
+          background: scrolled ? 'rgba(7, 8, 12, 0.88)' : 'rgba(15, 17, 26, 0.65)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          transition: 'all 300ms ease',
+        }}
       >
-        <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 28 }} />
-          <span style={{ marginLeft: 10, fontWeight: 700, fontSize: '1.2rem', letterSpacing: '-0.02em' }}>
-            SmartApply
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', gap: 10 }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: 'var(--gradient-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)'
+          }}>
+            <img src="/small_logo.svg" alt="Smart Apply" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
+          </div>
+          <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.02em', color: '#ffffff' }}>
+            Smart<span style={{ color: '#818cf8' }}>Apply</span>
           </span>
         </Link>
 
@@ -55,7 +79,7 @@ export default function Navbar() {
               <Link
                 key={l.href}
                 to={l.href}
-                style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}
+                style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)', textDecoration: 'none' }}
                 className="nav-link-hover"
               >
                 {l.label}
@@ -64,7 +88,7 @@ export default function Navbar() {
               <a
                 key={l.href}
                 href={l.href}
-                style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}
+                style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)', textDecoration: 'none' }}
                 className="nav-link-hover"
               >
                 {l.label}
@@ -76,16 +100,16 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} className="desktop-nav-actions">
           <ThemeSwitcher variant="compact" />
           {isAuthenticated ? (
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/dashboard')}>
+            <button className="btn btn-glow btn-sm" onClick={() => navigate('/dashboard')}>
               Go to dashboard
             </button>
           ) : (
             <>
-              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/login')}>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/login')} style={{ color: '#cbd5e1' }}>
                 Log in
               </button>
-              <button className="btn btn-primary btn-sm" onClick={() => navigate('/signup')}>
-                Get started
+              <button className="btn btn-glow btn-sm" onClick={() => navigate('/signup')}>
+                Get started free
               </button>
             </>
           )}

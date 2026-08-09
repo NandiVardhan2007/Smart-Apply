@@ -538,9 +538,126 @@ textarea.input-field {
 .pt-10 { padding-top: 40px; }
 .pt-15 { padding-top: 60px; }
 
-/* ── Mobile density ──
-   Cards and modals carry generous desktop padding; on small screens
-   that padding eats the limited width, so tighten it a step. */
+/* ── Minutrix Modern Visual Utilities ── */
+
+.gradient-text {
+  background: var(--gradient-accent-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-heading {
+  background: var(--gradient-heading);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.glass-nav {
+  background: rgba(7, 8, 12, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.glow-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.5) 50%, transparent 100%);
+  opacity: 0.6;
+  transition: opacity var(--transition-base);
+}
+
+.glow-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 12px 40px -10px rgba(99, 102, 241, 0.25);
+  transform: translateY(-3px);
+}
+
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+.btn-glow {
+  background: var(--gradient-primary) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+
+.btn-glow:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(99, 102, 241, 0.5);
+}
+
+.btn-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.btn-glow:hover::after {
+  opacity: 1;
+}
+
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 999px;
+  color: #818cf8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .bento-grid {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ── Mobile density ── */
 @media (max-width: 640px) {
   .card {
     padding: 18px;
@@ -549,4 +666,5 @@ textarea.input-field {
     padding: 22px;
   }
 }
+
 
