@@ -37,6 +37,8 @@ async def get_profile(user: User = Depends(get_current_user)):
         "profile_pic_url": user.profile_pic_url,
         "resume_url": resume_url,
         "is_verified": user.is_verified,
+        "is_admin": user.is_admin,
+        "has_onboarded": bool(user.has_onboarded or user.bio or user.skills or user.education or user.experience),
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 

@@ -141,6 +141,7 @@ async def verify_otp(request: Request, response: Response, body: OtpVerifyReques
             "email": user.email,
             "token": token,
             "full_name": user.full_name,
+            "is_admin": user.is_admin,
             "profile_pic_url": user.profile_pic_url,
             "has_onboarded": bool(user.has_onboarded or user.bio or user.skills or user.education or user.experience)
         })
@@ -200,6 +201,7 @@ async def login(request: Request, response: Response, body: LoginRequest):
             "email": user.email,
             "token": token,
             "full_name": user.full_name,
+            "is_admin": user.is_admin,
             "profile_pic_url": user.profile_pic_url,
             "has_onboarded": bool(user.has_onboarded or user.bio or user.skills or user.education or user.experience),
         })

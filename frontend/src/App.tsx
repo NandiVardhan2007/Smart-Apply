@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
@@ -81,12 +81,22 @@ function Protected({ children }: { children: React.ReactNode }) {
 }
 
 function AdminProtected({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
   return (
     <ProtectedRoute>
       <AdminLayout>
-        <Suspense fallback={<PageFallback />}>
-          <PageTransition>{children}</PageTransition>
-        </Suspense>
+        {!user?.is_admin ? (
+          <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '60vh', gap: 16 }}>
+            <AlertTriangle size={64} color="var(--danger)" />
+            <h2>403 Forbidden</h2>
+            <p>You do not have permission to view the Admin Console.</p>
+          </div>
+        ) : (
+          <Suspense fallback={<PageFallback />}>
+            <PageTransition>{children}</PageTransition>
+          </Suspense>
+        )}
       </AdminLayout>
     </ProtectedRoute>
   );
@@ -183,7 +193,16 @@ export default function App() {
         <Route path="/dashboard/linkedin" element={<Protected><LinkedInOptimizer /></Protected>} />
         <Route path="/dashboard/resume-maker" element={<Protected><ResumeMaker /></Protected>} />
         
-        {/* Hidden Admin Route */}
+        {/* Admin Routes with Aliases */}
+        <Route path="/admin" element={<Navigate to="/dashboard/sysadmin" replace />} />
+        <Route path="/admin/users" element={<Navigate to="/dashboard/sysadmin/users" replace />} />
+        <Route path="/admin/settings" element={<Navigate to="/dashboard/sysadmin/settings" replace />} />
+        <Route path="/admin/resume-templates" element={<Navigate to="/dashboard/sysadmin/resume-templates" replace />} />
+        <Route path="/dashboard/admin" element={<Navigate to="/dashboard/sysadmin" replace />} />
+        <Route path="/dashboard/admin/*" element={<Navigate to="/dashboard/sysadmin" replace />} />
+        <Route path="/sysadmin" element={<Navigate to="/dashboard/sysadmin" replace />} />
+        <Route path="/sysadmin/*" element={<Navigate to="/dashboard/sysadmin" replace />} />
+
         <Route path="/dashboard/sysadmin" element={<AdminProtected><AdminPanel /></AdminProtected>} />
         <Route path="/dashboard/sysadmin/users" element={<AdminProtected><AdminUsers /></AdminProtected>} />
         <Route path="/dashboard/sysadmin/settings" element={<AdminProtected><AdminSettings /></AdminProtected>} />

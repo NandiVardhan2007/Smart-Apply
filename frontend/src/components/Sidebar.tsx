@@ -13,7 +13,8 @@ import {
   Briefcase,
   Code,
   Wand2,
-  BookOpen
+  BookOpen,
+  ShieldCheck
 } from 'lucide-react';
 import { Linkedin } from './Icons';
 import { useAuth } from '../context/AuthContext';
@@ -92,6 +93,22 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
               ))}
             </div>
           ))}
+
+          {user?.is_admin && (
+            <div>
+              <div className="sidebar-section-title">Admin</div>
+              <NavLink
+                to="/dashboard/sysadmin"
+                onClick={onCloseMobile}
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              >
+                <span className="sidebar-link-content">
+                  <ShieldCheck size={17} />
+                  Admin Console
+                </span>
+              </NavLink>
+            </div>
+          )}
         </nav>
 
         <div className="sidebar-footer">
