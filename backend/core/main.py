@@ -8,13 +8,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.rate_limiter import limiter
 from app.config import settings
 from app.database import close_db, init_db
-from app.routers import auth, user, resume, projects, jobs, linkedin, admin, stats
+from app.routers import auth, user, resume, projects, jobs, linkedin, admin, stats, cover_letter, code_execution, resume_maker
 from app.websockets.auth_ws import router as ws_router
 from app.websockets.manager import manager
 
@@ -72,6 +73,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 @app.api_route("/ping", methods=["GET", "HEAD", "POST", "OPTIONS"])
 async def ping():
     return {"status": "ok", "service": "core"}
@@ -83,6 +86,9 @@ app.include_router(resume.router)
 app.include_router(projects.router)
 app.include_router(jobs.router)
 app.include_router(linkedin.router)
+app.include_router(cover_letter.router)
+app.include_router(code_execution.router)
+app.include_router(resume_maker.router)
 app.include_router(admin.router)
 app.include_router(stats.router)
 

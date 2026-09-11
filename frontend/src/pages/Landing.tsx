@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,8 +24,9 @@ import {
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
-import CinematicHeroSection from '../components/cinematic-hero/CinematicHeroSection';
 import AnimatedBackground from '../components/AnimatedBackground';
+import SplashScreen from './SplashScreen';
+import SplashCursor from '../components/reactbits/SplashCursor';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -183,48 +184,80 @@ export default function Landing() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  const [introActive, setIntroActive] = useState(() => {
+    try {
+      return sessionStorage.getItem('sa_intro_seen') !== '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleIntroComplete = () => {
+    try {
+      sessionStorage.setItem('sa_intro_seen', '1');
+    } catch {}
+    setIntroActive(false);
+  };
   const [activeTab, setActiveTab] = useState<'ats' | 'interview' | 'latex' | 'projects'>('ats');
   const [selectedRole, setSelectedRole] = useState<string>('backend');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const role = SAMPLE_ROLES.find((r) => r.id === selectedRole) || SAMPLE_ROLES[0];
 
-  const [inHeroTrack, setInHeroTrack] = useState(true);
-  const landingContentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onScroll = () => {
-      // Reveal standard navbar when scrolling into landing features (past ~2.5 screens)
-      const heroThreshold = window.innerHeight * 2.5;
-      setInHeroTrack(window.scrollY < heroThreshold);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const handleExploreClick = () => {
-    if (landingContentRef.current) {
-      landingContentRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <div
       style={{
         position: 'relative',
-        overflow: 'hidden',
         minHeight: '100vh',
         background: 'transparent',
         color: 'var(--ink)',
       }}
     >
-      {/* ── Cinematic Hero Sequence (Sticky 380vh Scroll Runway) ────── */}
-      <CinematicHeroSection onExploreClick={handleExploreClick} />
+      <AnimatePresence>
+        {introActive && (
+          <motion.div
+            key="landing-intro-overlay"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              width: '100vw',
+              height: '100vh',
+              zIndex: 99999,
+              background: '#000000',
+              overflow: 'hidden',
+            }}
+          >
+            <SplashScreen onComplete={handleIntroComplete} standalone={false} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatedBackground />
-      <Navbar visible={!inHeroTrack} />
+      <SplashCursor
+        DENSITY_DISSIPATION={3.5}
+        VELOCITY_DISSIPATION={2}
+        PRESSURE={0.1}
+        CURL={3}
+        SPLAT_RADIUS={0.2}
+        SPLAT_FORCE={6000}
+        COLOR_UPDATE_SPEED={10}
+        SHADING
+        RAINBOW_MODE={false}
+        COLOR="#A855F7"
+      />
+      <Navbar visible={true} />
 
-      <div ref={landingContentRef} id="features-overview">
+      <div
+        id="features-overview"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          zIndex: 10,
+        }}
+      >
         {/* ── Hero Section ────────────────────────────────────────────── */}
         <section style={{ padding: '130px 24px 70px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
         <motion.div
@@ -328,6 +361,7 @@ export default function Landing() {
             >
               Read Documentation
             </Link>
+
           </div>
 
           {/* Value Pills */}

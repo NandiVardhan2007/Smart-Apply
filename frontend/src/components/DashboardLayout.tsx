@@ -6,9 +6,7 @@ import '../styles/dashboard.css';
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // While the mobile nav is open, close it on Escape and stop the page
-  // behind it from scrolling — both are expected behaviors for an
-  // overlay drawer and keep keyboard users from getting trapped.
+  // Close mobile drawer on Escape and lock scroll
   useEffect(() => {
     if (!mobileNavOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -25,25 +23,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="dashboard-layout">
+      {/* Primary Rounded Sidebar Menu */}
       <Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
 
+      {/* Main Workspace Column */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* Mobile Header (only visible on mobile screens <= 1024px) */}
         <div className="mobile-dashboard-nav">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src="/logo.png" alt="Smart Apply" style={{ height: 26, width: 26, objectFit: 'contain' }} />
-            <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)' }}>
+            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--ink)' }}>
               Smart<span style={{ color: 'var(--accent)' }}>Apply</span>
             </span>
           </div>
           <button
             onClick={() => setMobileNavOpen(true)}
             aria-label="Open menu"
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink)' }}
+            style={{
+              background: 'var(--surface-sunken)',
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              padding: '6px 8px',
+              cursor: 'pointer',
+              color: 'var(--ink)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
         </div>
 
+        {/* Page Content Shell */}
         <main className="dashboard-main fade-in">{children}</main>
       </div>
     </div>

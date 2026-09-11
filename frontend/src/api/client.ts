@@ -45,12 +45,15 @@ export function getApiBaseUrl(endpoint?: string): string {
       cleanEndpoint.startsWith('/ai') ||
       cleanEndpoint.startsWith('/interview') ||
       cleanEndpoint.startsWith('/tailor') ||
-      cleanEndpoint.startsWith('/jobs')
+      cleanEndpoint.startsWith('/jobs') ||
+      cleanEndpoint.startsWith('/projects') ||
+      cleanEndpoint.startsWith('/cover-letter') ||
+      cleanEndpoint.startsWith('/linkedin')
     ) {
       baseUrl = import.meta.env.VITE_AI_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || fallback;
     } else if (
       cleanEndpoint.startsWith('/resume-maker') ||
-      cleanEndpoint.startsWith('/cover-letter') ||
+      cleanEndpoint.startsWith('/code') ||
       cleanEndpoint.startsWith('/code-execution') ||
       cleanEndpoint.startsWith('/upload')
     ) {
@@ -103,20 +106,63 @@ export async function apiFetch<T = unknown>(
 
   const baseUrl = getApiBaseUrl(endpoint);
   let response: Response;
+
+  // Timeout configuration:
+  // Render free tier instances spin down after inactivity and take 40-60s to wake up.
+  // AI generation requests (resume parsing, ATS checking, cover letter, tailor) take 15-40s.
+  // A 90s timeout for AI endpoints and 45s for standard endpoints prevents premature client-side aborts.
+  const isAiOrLongRunning =
+    endpoint.startsWith('/ai') ||
+    endpoint.startsWith('/tailor') ||
+    endpoint.startsWith('/jobs') ||
+    endpoint.startsWith('/projects') ||
+    endpoint.startsWith('/cover-letter') ||
+    endpoint.startsWith('/linkedin') ||
+    endpoint.startsWith('/interview') ||
+    endpoint.startsWith('/resume-maker') ||
+    endpoint.startsWith('/code');
+
+  const controller = new AbortController();
+  const timeoutMs = isAiOrLongRunning ? 90000 : 45000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => controller.abort());
+  }
+
   try {
-    response = await fetch(`${baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
+    try {
+      response = await fetch(`${baseUrl}${endpoint}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (controller.signal.aborted && !options.signal?.aborted) {
+        return { data: { detail: 'Request timed out. Please try again.' } as T, ok: false, status: 408 };
+      }
+      // Network error (e.g. server down, offline, or Render cold starting). Wait 1000ms and retry once if not aborted.
+      if (!controller.signal.aborted) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+          response = await fetch(`${baseUrl}${endpoint}`, {
+            ...options,
+            headers,
+            credentials: 'include',
+            signal: controller.signal,
+          });
+        } catch {
+          return { data: { detail: 'Network error or server unreachable.' } as T, ok: false, status: 503 };
+        }
+      } else {
+        return { data: { detail: 'Request timed out. Please try again.' } as T, ok: false, status: 408 };
+      }
+    }
   } catch (error) {
-    // Network error (e.g. server down, offline). Wait 500ms and retry exactly once.
-    await new Promise(resolve => setTimeout(resolve, 500));
-    response = await fetch(`${baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
+    return { data: { detail: 'Network error or server unreachable.' } as T, ok: false, status: 503 };
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (response.status === 401) {

@@ -11,49 +11,66 @@ import {
   LogOut,
   Mail,
   Briefcase,
-  Code,
   Wand2,
   BookOpen,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { Linkedin } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
 import '../styles/dashboard.css';
 
-const NAV_SECTIONS = [
+interface NavLinkItem {
+  to: string;
+  label: string;
+  icon: any;
+  end?: boolean;
+}
+
+interface NavSection {
+  title: string;
+  links: NavLinkItem[];
+}
+
+const CORE_NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Overview',
+    title: 'Command Center',
     links: [
-      { to: '/dashboard', label: 'Home', icon: LayoutDashboard, end: true },
-      { to: '/docs', label: 'Documentation', icon: BookOpen },
+      { to: '/dashboard', label: 'Executive Overview', icon: LayoutDashboard, end: true },
     ],
   },
   {
-    title: 'Resume',
+    title: 'Career Dossier',
     links: [
-      { to: '/dashboard/resumes', label: 'My resumes', icon: FileText },
-      { to: '/dashboard/resume-maker', label: 'Resume Maker', icon: FileText },
-      { to: '/dashboard/ats-checker', label: 'ATS checker', icon: ScanSearch },
-      { to: '/dashboard/cover-letter', label: 'Cover letter', icon: Mail },
+      { to: '/dashboard/resumes', label: 'Resume Vault', icon: FileText },
+      { to: '/dashboard/resume-maker', label: 'Resume Studio', icon: Sparkles },
+      { to: '/dashboard/ats-checker', label: 'ATS Intelligence', icon: ScanSearch },
+      { to: '/dashboard/cover-letter', label: 'Cover Letter Studio', icon: Mail },
       { to: '/dashboard/linkedin', label: 'LinkedIn Optimizer', icon: Linkedin },
     ],
   },
   {
-    title: 'Jobs',
+    title: 'Opportunities',
     links: [
-      { to: '/dashboard/jobs', label: 'Smart matching', icon: Briefcase },
+      { to: '/dashboard/jobs', label: 'Smart Job Matcher', icon: Briefcase },
     ],
   },
   {
-    title: 'Prepare & Build',
+    title: 'Engineering & Prep',
     links: [
-      { to: '/dashboard/ai-chatbot', label: 'AI career chat', icon: MessageSquareText },
-      { to: '/dashboard/project-recommender', label: 'Project ideas', icon: Lightbulb },
-      { to: '/dashboard/idea-prompt-generator', label: 'Idea Prompt Studio', icon: Wand2 },
-      { to: '/dashboard/live-interview', label: 'Live interview', icon: Video },
+      { to: '/dashboard/project-recommender', label: 'Project Architect', icon: Lightbulb },
+      { to: '/dashboard/idea-prompt-generator', label: 'Prompt Studio', icon: Wand2 },
+      { to: '/dashboard/live-interview', label: 'Voice Mock Studio', icon: Video },
+      { to: '/dashboard/ai-chatbot', label: 'AI Career Strategist', icon: MessageSquareText },
     ],
   },
+];
+
+const REMAINING_FEATURES: NavLinkItem[] = [
+  { to: '/docs', label: 'Platform Docs', icon: BookOpen },
+  { to: '/dashboard/profile', label: 'Profile Dossier', icon: UserIcon },
+  { to: '/dashboard/settings', label: 'Account Settings', icon: SettingsIcon },
 ];
 
 interface SidebarProps {
@@ -63,103 +80,125 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { user, logout } = useAuth();
-  const initials = (user?.full_name || user?.email || '?').charAt(0).toUpperCase();
+  const initials = (user?.full_name || user?.email || 'A').charAt(0).toUpperCase();
 
   return (
     <>
       {mobileOpen && <div className="sidebar-overlay" onClick={onCloseMobile} />}
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/logo.png" alt="Smart Apply" style={{ height: 28, width: 28, objectFit: 'contain' }} />
-            <span style={{ fontWeight: 800, fontSize: '1.12rem', letterSpacing: '-0.025em', color: 'var(--ink)' }}>
-              Smart<span style={{ color: 'var(--accent)' }}>Apply</span>
-            </span>
-          </Link>
+        {/* Upper Card: Features Menu */}
+        <div className="sidebar-features-card">
+          {/* Brand Header */}
+          <div className="sidebar-logo">
+            <Link
+              to="/dashboard"
+              onClick={onCloseMobile}
+              style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none' }}
+            >
+              <img
+                src="/logo.png"
+                alt="Smart Apply"
+                style={{ height: 28, width: 28, objectFit: 'contain' }}
+              />
+              <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.025em', color: 'var(--ink)' }}>
+                Smart<span style={{ color: 'var(--accent)' }}>Apply</span>
+              </span>
+            </Link>
+          </div>
+
+          {/* Navigation Sections */}
+          <nav className="sidebar-nav">
+            {CORE_NAV_SECTIONS.map((section) => (
+              <div key={section.title} className="sidebar-section-card">
+                <div className="sidebar-section-title">
+                  <span>{section.title}</span>
+                </div>
+                {section.links.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={'end' in link ? link.end : false}
+                    onClick={onCloseMobile}
+                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                  >
+                    <span className="sidebar-link-content">
+                      <span className="sidebar-icon-wrap">
+                        <link.icon size={16} />
+                      </span>
+                      <span>{link.label}</span>
+                    </span>
+                  </NavLink>
+                ))}
+              </div>
+            ))}
+          </nav>
         </div>
 
-        <nav className="sidebar-nav">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.title}>
-              <div className="sidebar-section-title">{section.title}</div>
-              {section.links.map((link) => (
+        {/* Bottom Card: Minimized Remaining Features & User Dossier */}
+        <div className="sidebar-bottom-card">
+          <div className={`sidebar-remaining-pills ${user?.is_admin ? 'has-admin' : ''}`}>
+            {REMAINING_FEATURES.map((link) => {
+              const shortLabel = link.label
+                .replace('Platform ', '')
+                .replace(' Dossier', '')
+                .replace('Account ', '');
+              return (
                 <NavLink
                   key={link.to}
                   to={link.to}
-                  end={'end' in link ? link.end : false}
                   onClick={onCloseMobile}
-                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                  className={({ isActive }) => `sidebar-pill-btn ${isActive ? 'active' : ''}`}
+                  title={link.label}
                 >
-                  <span className="sidebar-link-content">
-                    <link.icon size={17} />
-                    {link.label}
-                  </span>
+                  <link.icon size={13} />
+                  <span>{shortLabel}</span>
                 </NavLink>
-              ))}
-            </div>
-          ))}
+              );
+            })}
 
-          {user?.is_admin && (
-            <div>
-              <div className="sidebar-section-title">Admin</div>
+            {user?.is_admin && (
               <NavLink
                 to="/dashboard/sysadmin"
                 onClick={onCloseMobile}
-                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                className={({ isActive }) => `sidebar-pill-btn ${isActive ? 'active' : ''}`}
+                title="Admin Console"
               >
-                <span className="sidebar-link-content">
-                  <ShieldCheck size={17} />
-                  Admin Console
-                </span>
+                <ShieldCheck size={13} />
+                <span>Admin</span>
               </NavLink>
-            </div>
-          )}
-        </nav>
+            )}
+          </div>
 
-        <div className="sidebar-footer">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 4 }}>
-            <NavLink to="/dashboard/profile" onClick={onCloseMobile} className="sidebar-link">
-              <span className="sidebar-link-content">
-                <UserIcon size={17} />
-                Profile
-              </span>
-            </NavLink>
-            <NavLink to="/dashboard/settings" onClick={onCloseMobile} className="sidebar-link">
-              <span className="sidebar-link-content">
-                <SettingsIcon size={17} />
-                Settings
-              </span>
-            </NavLink>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 10px' }}>
-            <ThemeSwitcher variant="compact" />
-          </div>
-          <div className="sidebar-divider" />
-          <div className="sidebar-user">
-            <div className="sidebar-avatar">
+          {/* User Dossier Card */}
+          <div className="sidebar-user-card">
+            <div className="sidebar-avatar-wrap">
               {user?.profile_pic_url ? (
-                <img
-                  src={user.profile_pic_url}
-                  alt=""
-                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                />
+                <img src={user.profile_pic_url} alt="" className="sidebar-avatar-img" />
               ) : (
-                initials
+                <div className="sidebar-avatar-initials">{initials}</div>
               )}
             </div>
-            <div className="sidebar-user-info" style={{ flex: 1 }}>
-              <div className="name">{user?.full_name || 'Your account'}</div>
-              <div className="email">{user?.email}</div>
+
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">
+                {user?.full_name || 'Engineering Candidate'}
+              </div>
+              <div className="sidebar-user-role">
+                {user?.email || 'Pro Member'}
+              </div>
             </div>
-            <button
-              onClick={logout}
-              aria-label="Log out"
-              className="btn-icon"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink-faint)' }}
-              title="Log out"
-            >
-              <LogOut size={16} />
-            </button>
+
+            <div className="sidebar-user-actions">
+              <ThemeSwitcher variant="compact" />
+              <button
+                onClick={logout}
+                aria-label="Log out"
+                className="sidebar-mini-btn danger"
+                title="Sign Out"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

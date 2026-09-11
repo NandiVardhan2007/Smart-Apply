@@ -1,9 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
-  MapPin,
-  Briefcase,
   ExternalLink,
   CheckCircle2,
   DollarSign,
@@ -15,7 +12,6 @@ import {
   ChevronUp,
   Building,
   SlidersHorizontal,
-  FileCheck,
   Globe2,
   X
 } from 'lucide-react';
@@ -83,6 +79,7 @@ export default function JobMatching() {
 
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const cacheRef = useRef<Map<string, JobPosting[]>>(new Map());
 
   useEffect(() => {
     (async () => {
@@ -105,6 +102,14 @@ export default function JobMatching() {
       return;
     }
 
+    const cacheKey = `${selectedResumeId}:${q.toLowerCase()}:${(loc || 'us').toLowerCase()}`;
+    if (cacheRef.current.has(cacheKey)) {
+      setJobs(cacheRef.current.get(cacheKey)!);
+      setHasSearched(true);
+      setExpandedJobId(null);
+      return;
+    }
+
     setIsSearching(true);
     setHasSearched(true);
     setExpandedJobId(null);
@@ -123,6 +128,7 @@ export default function JobMatching() {
       });
 
       if (res.ok && res.data?.matches) {
+        cacheRef.current.set(cacheKey, res.data.matches);
         setJobs(res.data.matches);
         if (res.data.matches.length > 0) {
           showToast('success', `Found & scored ${res.data.matches.length} live opportunities!`);
@@ -224,11 +230,10 @@ export default function JobMatching() {
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, alignItems: 'end' }}
         >
           <div>
-            <label className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <Briefcase size={14} color="var(--primary)" /> Target Role or Keywords
+            <label className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>
+              Target Role or Keywords
             </label>
-            <div className="input-with-icon" style={{ position: 'relative' }}>
-              <Search size={16} />
+            <div style={{ position: 'relative' }}>
               <input
                 type="text"
                 className="input-field"
@@ -259,11 +264,10 @@ export default function JobMatching() {
           </div>
 
           <div>
-            <label className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <MapPin size={14} color="var(--primary)" /> Preferred Location
+            <label className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>
+              Preferred Location
             </label>
-            <div className="input-with-icon">
-              <MapPin size={16} />
+            <div>
               <input
                 type="text"
                 className="input-field"
@@ -275,8 +279,8 @@ export default function JobMatching() {
           </div>
 
           <div>
-            <label className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <FileCheck size={14} color="var(--primary)" /> Benchmark Resume
+            <label className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>
+              Benchmark Resume
             </label>
             <select
               className="input-field"
@@ -481,7 +485,7 @@ export default function JobMatching() {
                 margin: '0 auto 20px',
               }}
             >
-              <Briefcase size={36} />
+              <span style={{ fontSize: 36 }}>💼</span>
             </div>
             <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Discover Live Jobs Matching Your Resume</h3>
             <p className="text-muted" style={{ maxWidth: 460, margin: '0 auto 24px', fontSize: 14.5, lineHeight: 1.6 }}>
@@ -530,7 +534,7 @@ export default function JobMatching() {
                 margin: '0 auto 16px',
               }}
             >
-              <Search size={30} />
+              <span style={{ fontSize: 30 }}>🔍</span>
             </div>
             <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>No matching jobs found</h3>
             <p className="text-muted" style={{ maxWidth: 420, margin: '0 auto 20px', fontSize: 14 }}>
@@ -619,7 +623,7 @@ export default function JobMatching() {
                             </span>
                             <span>•</span>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                              <MapPin size={14} color="var(--ink-soft)" /> {job.location}
+                              {job.location}
                             </span>
 
                             {job.is_remote && (
