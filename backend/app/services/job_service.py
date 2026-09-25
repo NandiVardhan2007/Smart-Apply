@@ -52,8 +52,8 @@ def _parse_location(location: str) -> Tuple[str, str]:
 
 async def search_adzuna_jobs(query: str, location: str = "us") -> List[Dict[str, Any]]:
     """Search for real-time jobs using the Adzuna API."""
-    app_id = (settings.ADZUNA_APP_ID or "6ee93d80").strip()
-    app_key = (settings.ADZUNA_APP_KEY or "8788ae5ae01923e09e4fa568477759b6").strip()
+    app_id = (settings.ADZUNA_APP_ID or "").strip()
+    app_key = (settings.ADZUNA_APP_KEY or "").strip()
 
     if not app_id or not app_key:
         logger.warning("Adzuna API credentials not configured.")
@@ -131,8 +131,9 @@ async def search_adzuna_jobs(query: str, location: str = "us") -> List[Dict[str,
 
 async def search_jsearch_jobs(query: str, location: str = "us") -> List[Dict[str, Any]]:
     """Fallback search using RapidAPI JSearch."""
-    api_key = (settings.RAPIDAPI_KEY or "fa07d89f58msh04e859394cc9d75p191797jsn14a1d0492bd2").strip()
+    api_key = (settings.RAPIDAPI_KEY or "").strip()
     if not api_key:
+        logger.warning("RAPIDAPI_KEY not configured; skipping JSearch fallback.")
         return []
 
     url = "https://jsearch.p.rapidapi.com/search"
