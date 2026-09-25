@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.websockets.manager import manager
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 @router.websocket("/ws/auth/{session_id}")
@@ -25,4 +29,7 @@ async def auth_websocket(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         await manager.disconnect(session_id)
     except Exception:
+        # An unexpected error (not a normal client close) — log it before
+        # tearing down so a recurring transport/logic fault is visible.
+        logger.exception("auth websocket error for session %s", session_id)
         await manager.disconnect(session_id)

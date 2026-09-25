@@ -23,19 +23,42 @@ class ConnectionManager:
         self._pubsub_task: Optional[asyncio.Task] = None
 
     async def start_pubsub(self):
-        try:
-            self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
-            pubsub = self._redis.pubsub()
-            await pubsub.subscribe(CHANNEL)
-            self._pubsub_task = asyncio.create_task(self._listen(pubsub))
-            logger.info("Subscribed to Redis pub/sub for WebSocket relay.")
-        except Exception as e:
-            logger.warning(f"Redis pub/sub connection failed ({e}). Falling back to local in-memory relay.")
+        # Supervise the subscription so a dropped Redis connection reconnects instead of
+        # silently ending the listen loop (which would stop all cross-instance delivery).
+        self._pubsub_task = asyncio.create_task(self._pubsub_supervisor())
+
+    async def _pubsub_supervisor(self):
+        backoff = 1
+        while True:
+            try:
+                self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+                pubsub = self._redis.pubsub()
+                await pubsub.subscribe(CHANNEL)
+                logger.info("Subscribed to Redis pub/sub for WebSocket relay.")
+                backoff = 1
+                await self._listen(pubsub)
+                # _listen returned without raising -> stream ended; reconnect.
+                logger.warning("Redis pub/sub stream ended; reconnecting.")
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.warning(f"Redis pub/sub connection failed ({e}); retrying in {backoff}s. "
+                               "Falling back to local in-memory relay until reconnected.")
+            # Drop the handle so send_event uses the local fallback while we're down.
             self._redis = None
+            try:
+                await asyncio.sleep(backoff)
+            except asyncio.CancelledError:
+                raise
+            backoff = min(backoff * 2, 30)
 
     async def stop_pubsub(self):
         if self._pubsub_task:
             self._pubsub_task.cancel()
+            try:
+                await self._pubsub_task
+            except (asyncio.CancelledError, Exception):
+                pass
         if self._redis:
             try:
                 await self._redis.close()

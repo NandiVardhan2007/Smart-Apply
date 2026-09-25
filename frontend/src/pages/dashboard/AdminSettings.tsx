@@ -14,6 +14,12 @@ interface SystemSettings {
   announcement_type: string;
 }
 
+/** Shape returned by GET /admin/settings. The raw NVIDIA key is never sent to
+ * the client anymore — the backend only reports whether one is configured. */
+interface SystemSettingsResponse extends Omit<SystemSettings, 'nvidia_nim_api_key'> {
+  nvidia_nim_api_key_set?: boolean;
+}
+
 export default function AdminSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<SystemSettings>({
@@ -28,6 +34,9 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Whether a NVIDIA NIM key is already configured on the server. The raw key
+  // is never returned, so this drives a masked "configured" indicator.
+  const [keyConfigured, setKeyConfigured] = useState(false);
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -38,16 +47,17 @@ export default function AdminSettings() {
 
     const fetchSettings = async () => {
       try {
-        const res = await apiFetch<SystemSettings>('/admin/settings');
+        const res = await apiFetch<SystemSettingsResponse>('/admin/settings');
         if (res.ok) {
           setSettings({
             maintenance_mode: res.data.maintenance_mode || false,
             allow_new_signups: res.data.allow_new_signups !== false, // default true
-            nvidia_nim_api_key: res.data.nvidia_nim_api_key || '',
+            nvidia_nim_api_key: '', // never populated from the server
             announcement_active: res.data.announcement_active || false,
             announcement_message: res.data.announcement_message || '',
             announcement_type: res.data.announcement_type || 'info'
           });
+          setKeyConfigured(Boolean(res.data.nvidia_nim_api_key_set));
         } else {
           setError("Failed to fetch settings.");
         }
@@ -65,15 +75,28 @@ export default function AdminSettings() {
     setSaving(true);
     setError(null);
     setSuccess(false);
-    
+
     try {
+      // Only send the NVIDIA key when the admin actually typed a new value —
+      // sending an empty string would wipe the existing key on the server.
+      const { nvidia_nim_api_key, ...rest } = settings;
+      const payload: Record<string, unknown> = { ...rest };
+      if (nvidia_nim_api_key && nvidia_nim_api_key.trim()) {
+        payload.nvidia_nim_api_key = nvidia_nim_api_key.trim();
+      }
+
       const res = await apiFetch('/admin/settings', {
         method: 'PUT',
-        body: JSON.stringify(settings)
+        body: JSON.stringify(payload)
       });
-      
+
       if (res.ok) {
         setSuccess(true);
+        // If a new key was submitted, it's now configured; clear the input.
+        if (payload.nvidia_nim_api_key) {
+          setKeyConfigured(true);
+          setSettings((prev) => ({ ...prev, nvidia_nim_api_key: '' }));
+        }
         setTimeout(() => setSuccess(false), 3000);
       } else {
         setError("Failed to save settings.");
@@ -165,15 +188,26 @@ export default function AdminSettings() {
           </div>
 
           <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-            <label className="font-semibold text-ink mb-2" style={{ display: 'block' }}>
+            <label className="font-semibold text-ink mb-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               NVIDIA NIM API Key
+              {keyConfigured && (
+                <span style={{
+                  fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                  background: 'var(--success-faint)', color: 'var(--success)'
+                }}>
+                  ••• configured
+                </span>
+              )}
             </label>
             <div className="text-sm text-faint mb-2">
               Overrides the environment variable if provided. Used for ATS checking and AI features via NVIDIA NIM.
+              {keyConfigured
+                ? ' A key is already set — leave this blank to keep it, or enter a new value to replace it.'
+                : ' No key is currently configured.'}
             </div>
-            <input 
-              type="password" 
-              placeholder="nvapi-..."
+            <input
+              type="password"
+              placeholder={keyConfigured ? 'Enter a new key to replace the existing one' : 'nvapi-...'}
               value={settings.nvidia_nim_api_key || ''}
               onChange={(e) => setSettings({...settings, nvidia_nim_api_key: e.target.value})}
               className="input-field"

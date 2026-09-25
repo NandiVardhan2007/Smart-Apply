@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "https://smartapplies.app"
     ENVIRONMENT: str = "development"
 
+    # ── Rate limiting ──
+    # Number of trusted reverse-proxy hops in front of the app. The client IP is
+    # read this many entries from the RIGHT of X-Forwarded-For, so a client can't
+    # spoof its rate-limit identity by prepending fake IPs. Render puts a single
+    # proxy in front of the service, hence the default of 1. Increase this only if
+    # you add more trusted proxies (e.g. Cloudflare in front of Render → 2).
+    TRUSTED_PROXY_HOPS: int = 1
+
     # ── LaTeX Service ──
     LATEX_FALLBACK_URL: Optional[str] = None
 
@@ -75,3 +83,29 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def assert_secure_config() -> None:
+    """Fail fast at startup if critical secrets are left at insecure defaults.
+
+    Guards every environment except an explicit local ``development`` run, so a
+    blank or mistyped ENVIRONMENT (e.g. a forgotten prod flag) can't silently
+    boot with the well-known default JWT signing key."""
+    if settings.ENVIRONMENT == "development":
+        return
+
+    errors: list[str] = []
+    if not settings.SECRET_KEY or settings.SECRET_KEY == "change-this-in-production":
+        errors.append("SECRET_KEY must be set to a strong, unique value.")
+    if not settings.MONGODB_URI or settings.MONGODB_URI.startswith("mongodb://localhost"):
+        errors.append("MONGODB_URI must point at the production database, not localhost.")
+    if not settings.BREVO_API_KEY:
+        errors.append("BREVO_API_KEY is required for OTP/email delivery.")
+    if not settings.NVIDIA_API_KEY:
+        errors.append("NVIDIA_API_KEY is required for AI features.")
+
+    if errors:
+        raise RuntimeError(
+            "Insecure/incomplete configuration outside development:\n  - "
+            + "\n  - ".join(errors)
+        )

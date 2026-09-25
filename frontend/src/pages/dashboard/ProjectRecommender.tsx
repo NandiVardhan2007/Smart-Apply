@@ -5,6 +5,7 @@ import { Code2, Clock, Star, ArrowRight, ChevronLeft, CheckCircle2, Lightbulb } 
 import { InlineLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 import type { Project, RoadmapPhase } from '../../api/types';
 
 const loadingMessagesStep1 = [
@@ -227,7 +228,7 @@ export default function ProjectRecommender() {
             ) : (
               <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                 {projects.map((proj) => (
-                  <div key={proj.id} className="card flex flex-col">
+                  <SpotlightCard key={proj.id} className="card flex flex-col">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <h3 style={{ fontSize: 16, margin: 0 }}>{proj.title}</h3>
                       <span className="badge badge-accent shrink-0">
@@ -259,7 +260,7 @@ export default function ProjectRecommender() {
                     <button className="btn btn-primary btn-block mt-auto" onClick={() => handlePrepareRoadmap(proj)}>
                       Generate roadmap
                     </button>
-                  </div>
+                  </SpotlightCard>
                 ))}
               </div>
             )}

@@ -16,6 +16,12 @@ function displayName(filename: string): string {
   return /^[0-9a-fA-F]{24}\.?.*?$/.test(filename) ? 'Resume document.pdf' : filename;
 }
 
+/** Encodes a resume id into a URL-safe base64 token for use in a route param.
+ * Replaces the base64 chars that break URLs (+ / =); decoded in ResumeTailor.tsx. */
+function encodeResumeId(id: string): string {
+  return btoa(id).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 export default function Resumes() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,7 +192,7 @@ export default function Resumes() {
                     <a href={resume.file_url} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
                       <ExternalLink size={14} /> View
                     </a>
-                    <Link to={`/dashboard/tailor-resume/${btoa(resume._id)}`} className="btn btn-primary btn-sm">
+                    <Link to={`/dashboard/tailor-resume/${encodeResumeId(resume._id)}`} className="btn btn-primary btn-sm">
                       <Pencil size={14} /> Edit
                     </Link>
                   </div>

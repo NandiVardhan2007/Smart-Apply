@@ -42,7 +42,7 @@ LANGUAGE_MAP: dict[str, dict] = {
 }
 
 MAX_CODE_LENGTH = 50_000  # 50 KB
-JUDGE0_TIMEOUT = 15       # our HTTP timeout for Judge0 calls
+JUDGE0_TIMEOUT = 30       # our HTTP timeout for Judge0 calls (must exceed wall_time_limit + queue latency)
 RUN_TIME_LIMIT = 10       # seconds — hard limit Judge0 enforces on the run
 MEMORY_LIMIT = 128_000    # KB — 128 MB memory limit
 

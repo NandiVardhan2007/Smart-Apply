@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, AlertTriangle, TrendingUp, MessageCircle, Clock } from 
 
 import { apiFetch } from '../../api/client';
 import { InlineLoader } from '../../components/LoadingSpinner';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 import type { InterviewReportData } from '../../api/types';
 
 function scoreTone(score: number): { color: string; bg: string } {
@@ -148,7 +149,7 @@ export default function InterviewReport() {
       </motion.div>
 
       <div className="grid-auto-fit mb-6">
-        <div className="card">
+        <SpotlightCard className="card">
           <div className="flex items-center gap-2 mb-2">
             <Eye size={16} style={{ color: 'var(--accent)' }} />
             <span className="eyebrow">Avg. confidence</span>
@@ -156,23 +157,23 @@ export default function InterviewReport() {
           <div className="stat-number" style={{ fontSize: 26 }}>
             {Math.round((report.telemetry_summary?.avg_confidence || 0.88) * 100)}%
           </div>
-        </div>
-        <div className="card">
+        </SpotlightCard>
+        <SpotlightCard className="card">
           <div className="flex items-center gap-2 mb-2">
             <Eye size={16} style={{ color: 'var(--accent)' }} />
             <span className="eyebrow">Blink count</span>
           </div>
           <div className="stat-number" style={{ fontSize: 26 }}>{report.telemetry_summary?.blink_count ?? 14}</div>
-        </div>
+        </SpotlightCard>
       </div>
 
-      <div className="card mb-6">
+      <SpotlightCard className="card mb-6">
         <div className="flex items-center gap-2 mb-3">
           <MessageCircle size={16} style={{ color: 'var(--accent)' }} />
           <h3 className="text-sm font-semibold m-0">Communication & Grammar Feedback</h3>
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--ink-soft)' }}>{report.communication_feedback}</p>
-      </div>
+      </SpotlightCard>
 
       {report.areas_for_improvement?.length > 0 && (
         <div className="card mb-6">

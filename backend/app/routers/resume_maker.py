@@ -1,11 +1,14 @@
 import json
+import logging
 import os
+import shutil
 import subprocess
 import tempfile
 from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 from beanie import PydanticObjectId
 import urllib.parse
@@ -24,6 +27,35 @@ class SmartFillRequest(BaseModel):
     resume_id: Optional[str] = None
 
 router = APIRouter(prefix="/api/resume-maker", tags=["resume-maker"])
+
+logger = logging.getLogger(__name__)
+
+# Order matters: the backslash must be escaped first, otherwise the backslashes
+# we introduce for the other characters would themselves be re-escaped.
+_LATEX_ESCAPES = [
+    ("\\", r"\textbackslash{}"),
+    ("&", r"\&"),
+    ("%", r"\%"),
+    ("$", r"\$"),
+    ("#", r"\#"),
+    ("_", r"\_"),
+    ("{", r"\{"),
+    ("}", r"\}"),
+    ("~", r"\textasciitilde{}"),
+    ("^", r"\textasciicircum{}"),
+]
+
+
+def _latex_escape(value: str) -> str:
+    """Neutralize LaTeX control characters in untrusted user input.
+
+    Without this, a field value like ``\\input{/etc/passwd}`` would be compiled
+    verbatim, letting a user read arbitrary server files into the generated PDF
+    (or hang the compiler with a recursive macro)."""
+    for target, replacement in _LATEX_ESCAPES:
+        value = value.replace(target, replacement)
+    return value
+
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -111,8 +143,7 @@ async def compile_template(
     # Replace placeholders. e.g. {{Name}} -> John Doe
     latex_content = template.latex_code
     for field in template.required_fields:
-        value = data.get(field, "")
-        value = str(value).replace("&", "\\&").replace("%", "\\%").replace("$", "\\$")
+        value = _latex_escape(str(data.get(field, "")))
         latex_content = latex_content.replace(f"{{{{{field}}}}}", value)
 
     def run_pdflatex():
@@ -120,45 +151,74 @@ async def compile_template(
         tex_file_path = os.path.join(temp_dir, "resume.tex")
         pdf_file_path = os.path.join(temp_dir, "resume.pdf")
 
-        with open(tex_file_path, "w", encoding="utf-8") as f:
-            f.write(latex_content)
+        # Restrict TeX file I/O to the working directory so an injected
+        # \input/\openout can't escape to arbitrary paths, and never enable
+        # shell-escape (blocks \write18 RCE).
+        tex_env = {
+            **os.environ,
+            "openin_any": "p",
+            "openout_any": "p",
+        }
+        pdflatex_cmd = [
+            "pdflatex",
+            "-interaction=nonstopmode",
+            "-no-shell-escape",
+            "resume.tex",
+        ]
 
         try:
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "resume.tex"],
-                cwd=temp_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                timeout=15
-            )
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "resume.tex"],
-                cwd=temp_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                timeout=15
-            )
-        except subprocess.CalledProcessError as e:
-            log_path = os.path.join(temp_dir, "resume.log")
-            log_content = ""
-            if os.path.exists(log_path):
-                with open(log_path, "r", encoding="utf-8") as f:
-                    log_content = f.read()
-            raise ValueError(f"LaTeX compilation failed: {e.stderr.decode('utf-8')}\nLog: {log_content}")
-        except FileNotFoundError:
-            raise ValueError("pdflatex command not found. Please ensure a TeX distribution is installed.")
-        except subprocess.TimeoutExpired:
-            raise ValueError("LaTeX compilation timed out.")
+            with open(tex_file_path, "w", encoding="utf-8") as f:
+                f.write(latex_content)
 
-        if not os.path.exists(pdf_file_path):
-            raise ValueError("PDF file was not generated.")
+            try:
+                subprocess.run(
+                    pdflatex_cmd,
+                    cwd=temp_dir,
+                    env=tex_env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=True,
+                    timeout=15
+                )
+                subprocess.run(
+                    pdflatex_cmd,
+                    cwd=temp_dir,
+                    env=tex_env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=True,
+                    timeout=15
+                )
+            except subprocess.CalledProcessError as e:
+                # Log the full LaTeX log server-side only; never return it to the
+                # client (it can echo injected file contents and leak paths).
+                log_path = os.path.join(temp_dir, "resume.log")
+                log_content = ""
+                if os.path.exists(log_path):
+                    with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                        log_content = f.read()
+                logger.error(
+                    "LaTeX compile failed (template=%s): %s\n%s",
+                    template_id, e.stderr.decode("utf-8", "replace"), log_content,
+                )
+                raise ValueError("LaTeX compilation failed. Check your input values.")
+            except FileNotFoundError:
+                raise ValueError("pdflatex command not found. Please ensure a TeX distribution is installed.")
+            except subprocess.TimeoutExpired:
+                raise ValueError("LaTeX compilation timed out.")
 
-        return pdf_file_path
+            if not os.path.exists(pdf_file_path):
+                raise ValueError("PDF file was not generated.")
+        except BaseException:
+            # Clean up the temp dir on any failure; on success the caller removes
+            # it via a BackgroundTask after the FileResponse has been streamed.
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise
+
+        return pdf_file_path, temp_dir
 
     try:
-        pdf_path = await run_in_threadpool(run_pdflatex)
+        pdf_path, temp_dir = await run_in_threadpool(run_pdflatex)
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -166,7 +226,8 @@ async def compile_template(
         path=pdf_path,
         media_type="application/pdf",
         filename="resume.pdf",
-        headers={"Content-Disposition": "attachment; filename=resume.pdf"}
+        headers={"Content-Disposition": "attachment; filename=resume.pdf"},
+        background=BackgroundTask(shutil.rmtree, temp_dir, ignore_errors=True),
     )
 
 @router.post("/templates/{template_id}/smart-fill")
@@ -209,7 +270,8 @@ async def smart_fill_template(
         
         return {"filled_data": filled_data}
         
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=500, detail=f"Failed to smart fill: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Smart fill failed for template %s", template_id)
+        raise HTTPException(status_code=502, detail="Could not auto-fill the template right now. Please try again.")

@@ -1,7 +1,8 @@
+import logging
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from starlette.concurrency import run_in_threadpool
 from app.rate_limiter import limiter
-import fitz  # PyMuPDF
 
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
@@ -19,8 +20,11 @@ from app.schemas.ai import (
     IdeaPromptGenerateResponse,
 )
 from app.services import ai_service
+from app.utils.pdf import extract_pdf_text
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
+
+logger = logging.getLogger(__name__)
 
 
 from app.schemas.auth import ResumeParseResponse
@@ -57,12 +61,10 @@ async def ats_check(
             
         try:
             content = await resume_file.read()
-            doc = fitz.open(stream=content, filetype="pdf")
-            for page in doc:
-                resume_text += page.get_text() + "\n"
-            doc.close()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+            resume_text = await run_in_threadpool(extract_pdf_text, content)
+        except Exception:
+            logger.warning("Resume PDF parse failed", exc_info=True)
+            raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
     else:
         raise HTTPException(status_code=400, detail="Either resume_id or resume_file is required")
         
@@ -71,9 +73,19 @@ async def ats_check(
 
     result = await ai_service.analyze_resume_ats(resume_text, job_description)
 
-    if resume is not None:
+    # Only persist a real analysis. The service returns a score:0 fallback with
+    # empty keyword lists when the model call/JSON parse fails; saving that would
+    # clobber a previously good ats_score with a meaningless 0.
+    is_fallback = (
+        result.get("score", 0) == 0
+        and not result.get("matched_keywords")
+        and not result.get("missing_keywords")
+    )
+    if resume is not None and not is_fallback:
         resume.ats_score = result.get("score")
         await resume.save()
+    elif is_fallback:
+        logger.warning("ATS analysis returned fallback for user %s; not persisting score", user.id)
 
     return AtsCheckResponse(**result)
 
@@ -104,12 +116,10 @@ async def parse_resume(
 
         try:
             content = await resume_file.read()
-            doc = fitz.open(stream=content, filetype="pdf")
-            for page in doc:
-                resume_text += page.get_text() + "\n"
-            doc.close()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+            resume_text = await run_in_threadpool(extract_pdf_text, content)
+        except Exception:
+            logger.warning("Resume PDF parse failed", exc_info=True)
+            raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
     else:
         raise HTTPException(status_code=400, detail="Either resume_id or resume_file is required")
 
@@ -146,6 +156,7 @@ async def chat_stream(request: Request, body: ChatRequest, user: User = Depends(
         except Exception:
             # Nothing further to send; the client will detect the truncated
             # stream (or an empty body) and retry the non-streaming endpoint.
+            logger.exception("Chat stream failed mid-generation for user %s", user.id)
             return
 
     return StreamingResponse(

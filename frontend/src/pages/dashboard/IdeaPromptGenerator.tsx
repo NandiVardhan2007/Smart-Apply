@@ -27,6 +27,7 @@ import {
 
 import { apiFetch } from '../../api/client';
 import { useToast } from '../../components/Toast';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 
 interface ClarificationQuestion {
   id: string;
@@ -499,7 +500,7 @@ export default function IdeaPromptGenerator() {
                 </button>
 
                 {/* Initial AI Idea Analysis Banner */}
-                <div className="card" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-soft-border)' }}>
+                <SpotlightCard className="card" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-soft-border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
                       <span className="eyebrow" style={{ color: 'var(--accent)' }}>AI Concept Evaluation</span>
@@ -529,7 +530,7 @@ export default function IdeaPromptGenerator() {
                       </span>
                     ))}
                   </div>
-                </div>
+                </SpotlightCard>
 
                 {/* Clarifying Questions Form */}
                 <div className="card">
@@ -682,7 +683,7 @@ export default function IdeaPromptGenerator() {
 
               {/* Output Content */}
               {outputTab === 'prompt' ? (
-                <div className="card" style={{ padding: '16px' }}>
+                <SpotlightCard className="card" style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', fontWeight: 600 }}>
                       FILE: {result.suggested_filename} | FORMAT: {result.target_format.toUpperCase()}
@@ -709,7 +710,7 @@ export default function IdeaPromptGenerator() {
                   >
                     {result.master_prompt}
                   </pre>
-                </div>
+                </SpotlightCard>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                   {/* Key Features */}

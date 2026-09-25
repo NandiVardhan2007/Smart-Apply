@@ -86,12 +86,18 @@ export default function JobMatching() {
 
   useEffect(() => {
     (async () => {
-      const res = await apiFetch<{ resumes: Resume[] }>('/resumes');
-      if (res.ok) {
-        setResumes(res.data.resumes || []);
-        if (res.data.resumes && res.data.resumes.length > 0) {
-          setSelectedResumeId(res.data.resumes[0]._id);
+      try {
+        const res = await apiFetch<{ resumes: Resume[] }>('/resumes');
+        if (res.ok) {
+          setResumes(res.data.resumes || []);
+          if (res.data.resumes && res.data.resumes.length > 0) {
+            setSelectedResumeId(res.data.resumes[0]._id);
+          }
+        } else {
+          showToast('error', apiErrorMessage(res, 'Failed to load your resumes.'));
         }
+      } catch {
+        showToast('error', 'Network error while loading your resumes.');
       }
     })();
   }, []);

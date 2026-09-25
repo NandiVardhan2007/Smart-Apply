@@ -45,8 +45,11 @@ async def extract_latex(request: Request, resume_id: str = Body(..., embed=True)
         await resume.save()
         
         return {"latex_code": latex_code}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("LaTeX extraction failed for resume %s", resume_id)
+        raise HTTPException(status_code=502, detail="Could not extract LaTeX from this resume right now. Please try again.")
 
 @router.post("/extract-html")
 @limiter.limit("5/minute")
@@ -72,8 +75,11 @@ async def extract_html(request: Request, resume_id: str = Body(..., embed=True),
         await resume.save()
         
         return {"html_code": html_code}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("HTML extraction failed for resume %s", resume_id)
+        raise HTTPException(status_code=502, detail="Could not extract HTML from this resume right now. Please try again.")
 
 class CompileRequest(BaseModel):
     latex_code: str
@@ -85,8 +91,11 @@ async def compile_latex(request: Request, req: CompileRequest, user: User = Depe
     try:
         pdf_bytes = await latex_service.compile_latex_to_pdf(req.latex_code)
         return Response(content=pdf_bytes, media_type="application/pdf")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("LaTeX compilation failed")
+        raise HTTPException(status_code=422, detail="Could not compile the document. The LaTeX source may contain errors.")
 
 @router.post("/auto-apply")
 @limiter.limit("5/minute")
@@ -148,5 +157,8 @@ async def auto_apply_tailor(request: Request, req: TailorRequest, user: User = D
             "latex_code": new_latex,
             "email_sent": True,
         }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Auto-apply tailoring failed for resume %s", req.resume_id)
+        raise HTTPException(status_code=502, detail="Could not tailor and send this resume right now. Please try again.")

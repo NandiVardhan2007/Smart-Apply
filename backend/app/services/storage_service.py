@@ -1,10 +1,13 @@
 import uuid
 from typing import Optional
+import logging
 
 import boto3
 from botocore.config import Config as BotoConfig
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _s3_client = None
 
@@ -22,6 +25,8 @@ def _get_client():
             config=BotoConfig(
                 signature_version="s3v4",
                 retries={"max_attempts": 3, "mode": "standard"},
+                connect_timeout=10,
+                read_timeout=30,
             ),
         )
     return _s3_client
@@ -73,4 +78,5 @@ def delete_file(key: str) -> bool:
         client.delete_object(Bucket=settings.R2_BUCKET_NAME, Key=key)
         return True
     except Exception:
+        logger.exception("Failed to delete R2 object %r", key)
         return False

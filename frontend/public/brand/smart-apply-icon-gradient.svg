@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Smart Apply icon, indigo to violet gradient variant">
+  <defs>
+    <linearGradient id="tileGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="944" height="944" rx="210" fill="url(#tileGrad)"/>
+  <rect x="40" y="40" width="944" height="944" rx="210" fill="url(#sheen)"/>
+  <g fill="none" stroke="#2f2585" stroke-opacity="0.16" stroke-width="108"
+     stroke-linecap="round" stroke-linejoin="round" transform="translate(0,9)">
+    <path d="M294 546 L438 690 L738 354"/>
+    <path d="M567 410 L738 354 L700 530"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="108"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M294 546 L438 690 L738 354"/>
+    <path d="M567 410 L738 354 L700 530"/>
+  </g>
+</svg>

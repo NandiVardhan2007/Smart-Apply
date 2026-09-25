@@ -4,6 +4,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
+import httpx
 from openai import AsyncOpenAI
 import openai
 
@@ -13,6 +14,11 @@ from app.models.api_metrics import APILog
 logger = logging.getLogger(__name__)
 
 _client: Optional[AsyncOpenAI] = None
+
+# Retain references to fire-and-forget background tasks. Without this the event loop
+# only keeps a weak reference, so a task can be garbage-collected mid-flight (its write
+# silently lost, with a "Task was destroyed but it is pending" warning).
+_background_tasks: set = set()
 
 
 
@@ -42,14 +48,18 @@ def _parse_llm_json(content: str, fallback: Any) -> Any:
         end_idx = content.rfind('}')
         if start_idx != -1 and end_idx != -1:
             return json.loads(content[start_idx:end_idx+1])
-            
+
         start_idx = content.find('[')
         end_idx = content.rfind(']')
         if start_idx != -1 and end_idx != -1:
             return json.loads(content[start_idx:end_idx+1])
     except Exception:
         pass
-        
+
+    # Both parse attempts failed. Returning the caller's fallback keeps the
+    # feature working, but log it so a systematic model/prompt regression
+    # (e.g. the model wrapping output differently) is visible instead of silent.
+    logger.warning("LLM JSON parse failed; returning fallback. Raw output (truncated): %s", content[:500])
     return fallback
 
 def _get_client() -> AsyncOpenAI:
@@ -88,7 +98,9 @@ def _log_api_metric(**fields) -> None:
             logger.warning("Failed to write APILog metric", exc_info=True)
 
     try:
-        asyncio.create_task(_write())
+        task = asyncio.create_task(_write())
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
     except RuntimeError:
         # No running loop (e.g. called from sync context) — skip silently.
         pass

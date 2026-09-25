@@ -2,11 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Code2, Layout, PenSquare, Play, Download, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
 
-import { apiFetch, getApiBaseUrl } from '../../api/client';
+import { apiFetch, apiFetchRaw } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 
 type Mode = 'latex' | 'html' | 'visual' | null;
+
+/** Decodes a URL-safe base64 resume id (the inverse of the encoding used in
+ * Resumes.tsx). Falls back to the raw value if decoding fails. */
+function decodeResumeId(raw: string): string {
+  try {
+    let b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return atob(b64);
+  } catch {
+    return raw;
+  }
+}
 
 const ENGINE_OPTIONS: {
   mode: Exclude<Mode, null>;
@@ -93,7 +105,7 @@ function buildVisualDoc(htmlCode: string, zoom: number): string {
 
 export default function ResumeTailor() {
   const { id: rawId } = useParams();
-  const id = rawId ? atob(rawId) : undefined;
+  const id = rawId ? decodeResumeId(rawId) : undefined;
   const navigate = useNavigate();
   const { showToast } = useToast();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -114,14 +126,11 @@ export default function ResumeTailor() {
     if (!codeToCompile.trim()) return;
     setCompiling(true);
     setCompileError(null);
-    const baseUrl = getApiBaseUrl('/tailor/compile');
     try {
-      const res = await fetch(`${baseUrl}/tailor/compile`, {
+      // Uses apiFetchRaw (not apiFetch) so we can read the compiled PDF as a
+      // blob; it still attaches the same auth token, session id and credentials.
+      const res = await apiFetchRaw('/tailor/compile', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('sa_token')}`,
-        },
         body: JSON.stringify({ latex_code: codeToCompile }),
       });
 

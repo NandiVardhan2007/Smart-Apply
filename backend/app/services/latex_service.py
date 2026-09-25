@@ -192,7 +192,7 @@ async def compile_latex_to_pdf(latex_code: str) -> bytes:
             err_json = e.response.json()
             if "logs" in err_json:
                 error_text = err_json["logs"][-500:]
-        except:
+        except Exception:
             pass
         logger.error(f"LaTeX compilation failed on ytotech: {error_text}")
         

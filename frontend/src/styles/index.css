@@ -2,5 +2,25 @@
 @import './base.css';
 @import './components.css';
 @import './utilities.css';
-@import './interview.css';
+@import './reactbits.css';
+
+/* Accessibility: keyboard skip link — visually hidden until focused, then
+   pinned to the top-left so keyboard/screen-reader users can jump past the
+   nav straight to the page content. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 1000;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 8px;
+}
 

@@ -25,8 +25,13 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('sa_user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem('sa_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      // Corrupt/malformed localStorage should not crash the app at boot.
+      return null;
+    }
   });
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('sa_token');
@@ -53,26 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLastAuthEvent(event);
 
       switch (event.type) {
-        case 'otp_verified':
-        case 'login_success': {
-          const data = event.data;
-          if (data.token) {
-            const u: User = {
-              id: (data.id as string) || '',
-              email: (data.email as string) || '',
-              full_name: (data.full_name as string) || '',
-              is_verified: true,
-              is_admin: Boolean(data.is_admin),
-              profile_pic_url: (data.profile_pic_url as string) || null,
-              has_onboarded: Boolean(data.has_onboarded),
-            };
-            setToken(data.token as string);
-            setUser(u);
-            localStorage.setItem('sa_token', data.token as string);
-            localStorage.setItem('sa_user', JSON.stringify(u));
-          }
-          break;
-        }
+        // NOTE: the auth WebSocket never carries the JWT (the socket is keyed only on a
+        // client-chosen session id and is otherwise unauthenticated). The token is
+        // delivered by the REST login/verify responses, which call login() directly.
+        // These events are informational only (e.g. so a waiting tab can update its UI).
         case 'session_expired':
           logout();
           break;

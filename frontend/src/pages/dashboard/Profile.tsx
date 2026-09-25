@@ -8,6 +8,7 @@ import { useToast } from '../../components/Toast';
 import { ButtonSpinner } from '../../components/LoadingSpinner';
 import ImageCropModal from '../../components/ImageCropModal';
 import PageHeader from '../../components/PageHeader';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 import { apiFetch } from '../../api/client';
 import type { User } from '../../api/types';
 
@@ -192,7 +193,7 @@ export default function Profile() {
     <div className="container-narrow">
       <PageHeader title="Profile" subtitle="Keep your information current for the best AI-powered recommendations." />
 
-      <div className="card profile-header-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20 }}>
+      <SpotlightCard className="card profile-header-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ position: 'relative' }}>
           <button
             onClick={user?.profile_pic_url ? handleViewAvatar : undefined}
@@ -247,7 +248,7 @@ export default function Profile() {
           <h3 style={{ fontSize: 17 }}>{user?.full_name}</h3>
           <p className="text-muted" style={{ fontSize: 13.5 }}>{user?.email}</p>
         </div>
-      </div>
+      </SpotlightCard>
 
       <div className="card" style={{ marginBottom: 22 }}>
         <h3 style={{ fontSize: 15.5, marginBottom: 18 }}>Basic information</h3>

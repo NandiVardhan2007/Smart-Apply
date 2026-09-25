@@ -1,7 +1,8 @@
 services:
+  # ── Core API: auth, user, resume, projects, jobs, linkedin, admin, stats ──
   - type: web
     name: smartapply-core
-    env: python
+    runtime: python
     region: oregon
     plan: free
     rootDir: backend
@@ -10,6 +11,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
+      - key: ENVIRONMENT
+        value: production
       - key: MONGODB_URI
         sync: false
       - key: REDIS_URL
@@ -19,18 +22,41 @@ services:
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
+      # AI (projects/linkedin/resume-parse) + required by assert_secure_config
+      - key: NVIDIA_API_KEY
+        sync: false
+      # Email OTP (auth) + required by assert_secure_config
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: smartapplyai1@gmail.com
+      - key: BREVO_SENDER_NAME
+        value: SmartApply
+      # Job search (jobs → Adzuna primary, JSearch/RapidAPI fallback)
+      - key: ADZUNA_APP_ID
+        sync: false
+      - key: ADZUNA_APP_KEY
+        sync: false
+      - key: RAPIDAPI_KEY
+        sync: false
+      # Resume file storage (user/resume → Cloudflare R2)
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
       - key: FRONTEND_URL
         value: https://smartapplies.app
-      - key: ADZUNA_APP_ID
-        value: 6ee93d80
-      - key: ADZUNA_APP_KEY
-        value: 8788ae5ae01923e09e4fa568477759b6
-      - key: RAPIDAPI_KEY
-        value: fa07d89f58msh04e859394cc9d75p191797jsn14a1d0492bd2
 
+  # ── AI API: ai, interview, tailor ──
   - type: web
     name: smartapply-ai
-    env: python
+    runtime: python
     region: oregon
     plan: free
     rootDir: backend
@@ -39,6 +65,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
+      - key: ENVIRONMENT
+        value: production
       - key: MONGODB_URI
         fromService:
           type: web
@@ -53,12 +81,6 @@ services:
         sync: false
       - key: NVIDIA_MODEL
         value: meta/llama-3.2-11b-vision-instruct
-      - key: ADZUNA_APP_ID
-        value: 6ee93d80
-      - key: ADZUNA_APP_KEY
-        value: 8788ae5ae01923e09e4fa568477759b6
-      - key: RAPIDAPI_KEY
-        value: fa07d89f58msh04e859394cc9d75p191797jsn14a1d0492bd2
       - key: SECRET_KEY
         fromService:
           type: web
@@ -70,12 +92,16 @@ services:
         value: smartapplyai1@gmail.com
       - key: BREVO_SENDER_NAME
         value: SmartApply
+      # Optional remote LaTeX render fallback (tailor)
+      - key: LATEX_FALLBACK_URL
+        sync: false
       - key: FRONTEND_URL
         value: https://smartapplies.app
 
+  # ── Tools API: resume_maker, cover_letter, code_execution, upload ──
   - type: web
     name: smartapply-tools
-    env: python
+    runtime: python
     region: oregon
     plan: free
     rootDir: backend
@@ -84,6 +110,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
+      - key: ENVIRONMENT
+        value: production
       - key: MONGODB_URI
         fromService:
           type: web
@@ -99,9 +127,41 @@ services:
           type: web
           name: smartapply-core
           envVarKey: SECRET_KEY
+      # AI (resume_maker/cover_letter) + required by assert_secure_config
+      - key: NVIDIA_API_KEY
+        sync: false
+      # Required by assert_secure_config
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: smartapplyai1@gmail.com
+      - key: BREVO_SENDER_NAME
+        value: SmartApply
+      # Code execution sandbox (code_execution → Judge0 via RapidAPI)
+      - key: JUDGE0_API_KEY
+        sync: false
+      - key: JUDGE0_API_HOST
+        value: judge0-ce.p.rapidapi.com
+      - key: JUDGE0_API_URL
+        value: https://judge0-ce.p.rapidapi.com
+      # File storage (upload/resume_maker → Cloudflare R2)
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
+      # Optional remote LaTeX render fallback (resume_maker/cover_letter)
+      - key: LATEX_FALLBACK_URL
+        sync: false
       - key: FRONTEND_URL
         value: https://smartapplies.app
 
+  # ── Frontend: React + Vite static site ──
   - type: web
     name: smartapply-frontend
     runtime: static

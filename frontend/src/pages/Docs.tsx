@@ -353,13 +353,13 @@ export default function Docs() {
                   <tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td><strong>Frontend</strong></td><td><code>React 18</code> + <code>TypeScript</code> + <code>Vite</code></td><td>SPA with code-split lazy routes, Framer Motion transitions</td></tr>
+                  <tr><td><strong>Frontend</strong></td><td><code>React 19</code> + <code>TypeScript</code> + <code>Vite</code></td><td>SPA with code-split lazy routes, Framer Motion transitions</td></tr>
                   <tr><td><strong>Styling</strong></td><td>Vanilla CSS design token system</td><td>Three themes (Light, Dark, Ice) via CSS custom properties</td></tr>
                   <tr><td><strong>Backend</strong></td><td><code>FastAPI</code> + <code>Uvicorn</code> (Python 3.10)</td><td>Async REST API server, WebSocket manager, rate limiting</td></tr>
                   <tr><td><strong>Database</strong></td><td><code>MongoDB Atlas</code> + <code>Beanie ODM</code></td><td>Document store with async Pydantic models and indexes</td></tr>
                   <tr><td><strong>Cache / PubSub</strong></td><td><code>Redis</code></td><td>Session store, auth event broadcasting across tabs</td></tr>
                   <tr><td><strong>Storage</strong></td><td><code>Cloudflare R2</code></td><td>Resume PDF/DOCX uploads and file hosting</td></tr>
-                  <tr><td><strong>AI / LLM</strong></td><td><code>NVIDIA NIM</code> (Llama 3.1 70B)</td><td>Resume analysis, ATS scoring, interview questions, chat</td></tr>
+                  <tr><td><strong>AI / LLM</strong></td><td><code>NVIDIA NIM</code> (Llama-3.1 Nemotron Ultra 253B)</td><td>Resume analysis, ATS scoring, interview questions, chat</td></tr>
                   <tr><td><strong>Code Execution</strong></td><td><code>Judge0 CE</code></td><td>Sandboxed compilation & execution during mock interviews</td></tr>
                 </tbody>
               </table>
@@ -371,7 +371,7 @@ export default function Docs() {
             </Callout>
             <CodeBlock lang="text" filename="architecture.txt">{`┌─────────────────────────────────────────────────────────────────┐
 │                        Client (Browser)                        │
-│  React 18 SPA  ·  WebSpeech API  ·  WebSocket Client          │
+│  React 19 SPA  ·  WebSpeech API  ·  WebSocket Client          │
 └────────┬────────────────────────┬──────────────────────────────┘
          │ HTTPS REST             │ WSS
          ▼                        ▼
@@ -411,7 +411,7 @@ async def on_redis_message(message):
                 <div className="docs-step-number">1</div>
                 <div className="docs-step-content">
                   <h4>Upload & Parse</h4>
-                  <p>PDF/DOCX files are uploaded to Cloudflare R2. The backend extracts raw text using <code>PyPDF2</code> / <code>python-docx</code> and stores it in the <code>Resume</code> document.</p>
+                  <p>PDF/DOCX files are uploaded to Cloudflare R2. The backend extracts raw text using <code>PyMuPDF</code> (fitz) and stores it in the <code>Resume</code> document.</p>
                 </div>
               </div>
               <div className="docs-step">
@@ -425,7 +425,7 @@ async def on_redis_message(message):
                 <div className="docs-step-number">3</div>
                 <div className="docs-step-content">
                   <h4>ATS Analysis</h4>
-                  <p>The resume text and a target job description are sent to NVIDIA NIM (Llama 3.1 70B) with structured JSON schemas. The model returns a match score, missing keywords, and actionable improvements.</p>
+                  <p>The resume text and a target job description are sent to NVIDIA NIM (Llama-3.1 Nemotron Ultra 253B) with structured JSON schemas. The model returns a match score, missing keywords, and actionable improvements.</p>
                 </div>
               </div>
             </div>
@@ -506,7 +506,7 @@ async def on_redis_message(message):
             <CodeBlock lang="python" filename="models/settings.py">{`class SystemSettings(Document):
     maintenance_mode: bool = False
     max_resumes_per_user: int = 10
-    ai_model_default: str = "meta/llama-3.1-70b-instruct"
+    ai_model_default: str = "nvidia/llama-3.1-nemotron-ultra-253b-v1"
     rate_limits: Dict[str, str] = {
         "ai_chat": "20/minute",
         "resume_upload": "10/minute",

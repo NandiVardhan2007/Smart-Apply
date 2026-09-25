@@ -12,7 +12,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.rate_limiter import limiter
-from app.config import settings
+from app.config import settings, assert_secure_config
 from app.database import close_db, init_db
 from app.routers import resume_maker, cover_letter, code_execution, upload
 
@@ -21,8 +21,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle for Tools & Export Service."""
-    if settings.ENVIRONMENT == "production":
-        assert settings.SECRET_KEY != "change-this-in-production", "SECRET_KEY must be changed in production"
+    assert_secure_config()
 
     await init_db()
     yield

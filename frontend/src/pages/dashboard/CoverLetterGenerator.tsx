@@ -7,6 +7,7 @@ import { apiFetch, apiErrorMessage } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 import type { Resume } from '../../api/types';
 
 function resumeDisplayName(filename: string): string {
@@ -28,8 +29,13 @@ export default function CoverLetterGenerator() {
 
   useEffect(() => {
     (async () => {
-      const res = await apiFetch<{ resumes: Resume[] }>('/resumes');
-      if (res.ok) setResumes(res.data.resumes || []);
+      try {
+        const res = await apiFetch<{ resumes: Resume[] }>('/resumes');
+        if (res.ok) setResumes(res.data.resumes || []);
+        else showToast('error', apiErrorMessage(res, 'Failed to load your resumes.'));
+      } catch {
+        showToast('error', 'Network error while loading your resumes.');
+      }
     })();
   }, []);
 
@@ -195,7 +201,7 @@ export default function CoverLetterGenerator() {
         </div>
 
         {/* Results */}
-        <div className="card" style={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
+        <SpotlightCard className="card" style={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
           <AnimatePresence mode="wait">
             {!coverLetter && !generating && (
               <motion.div
@@ -236,12 +242,6 @@ export default function CoverLetterGenerator() {
                 </div>
                 
                 <div style={{ minHeight: 400, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-                  <textarea 
-                    value={coverLetter} 
-                    readOnly 
-                    style={{ width: '100%', height: 100, color: 'red', marginBottom: 10, padding: 10, fontFamily: 'monospace' }} 
-                    placeholder="DEBUG: If this is empty, the state is empty." 
-                  />
                   <Editor
                     height="400px"
                     defaultLanguage="markdown"
@@ -264,7 +264,7 @@ export default function CoverLetterGenerator() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </SpotlightCard>
       </div>
 
       <style>{`

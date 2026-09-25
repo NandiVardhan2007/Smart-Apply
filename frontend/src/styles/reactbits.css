@@ -1,0 +1,140 @@
+/**
+ * reactbits.dev — adapted components
+ * ---------------------------------------------------------------
+ * Components sourced from https://reactbits.dev (MIT) and adapted to
+ * Smart Apply's design tokens so they re-theme across light / dark / ice
+ * automatically. No new runtime dependencies were added — animation runs
+ * on CSS + the framer-motion already in the bundle.
+ *
+ * Every animation here is disabled under prefers-reduced-motion (see the
+ * guard at the bottom of this file), which also tames the pre-existing
+ * marquee / floating-poster loops for motion-sensitive users.
+ */
+
+/* ── ShinyText ── a soft sheen sweeping across muted text ── */
+.shiny-text {
+  color: var(--ink-faint);
+  background: linear-gradient(
+    120deg,
+    var(--ink-faint) 40%,
+    var(--ink) 50%,
+    var(--ink-faint) 60%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  animation: shine 5s linear infinite;
+}
+.shiny-text.disabled {
+  animation: none;
+}
+@keyframes shine {
+  0% { background-position: 100%; }
+  100% { background-position: -100%; }
+}
+
+/* ── SpotlightCard ── a radial glow that follows the cursor ──
+   Additive: adds only the glow overlay + clipping, so it layers onto any
+   existing box (Landing supplies its box via inline style; dashboard cards
+   keep their .card border/background/shadow). */
+.rb-spotlight {
+  position: relative;
+  overflow: hidden;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --spotlight-color: rgba(var(--accent-rgb), 0.18);
+}
+.rb-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    var(--spotlight-color),
+    transparent 40%
+  );
+  transition: opacity var(--transition-slow);
+  z-index: 0;
+}
+.rb-spotlight:hover::before,
+.rb-spotlight:focus-within::before {
+  opacity: 1;
+}
+.rb-spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── StarBorder ── twin gradient trails orbiting a pill button ── */
+.rb-star-border {
+  position: relative;
+  display: inline-block;
+  padding: 1.5px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.rb-star-border .rb-star-trail {
+  position: absolute;
+  width: 300%;
+  height: 50%;
+  opacity: 0.7;
+  border-radius: 50%;
+  z-index: 0;
+}
+.rb-star-border .rb-star-trail.bottom {
+  bottom: -11px;
+  right: -250%;
+  background: radial-gradient(circle, var(--rb-star-color) 0%, transparent 12%);
+  animation: rb-star-move-bottom var(--rb-star-speed, 6s) linear infinite alternate;
+}
+.rb-star-border .rb-star-trail.top {
+  top: -11px;
+  left: -250%;
+  background: radial-gradient(circle, var(--rb-star-color) 0%, transparent 12%);
+  animation: rb-star-move-top var(--rb-star-speed, 6s) linear infinite alternate;
+}
+.rb-star-border .rb-star-inner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 15px 34px;
+  font-size: 16px;
+  font-weight: 600;
+}
+@keyframes rb-star-move-bottom {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes rb-star-move-top {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(50%); }
+}
+
+/* ── Reduced-motion guard ──
+   Covers the reactbits animations above AND the existing decorative loops
+   (floating posters, logo marquee, shiny sweep) so motion-sensitive users
+   get a calm, static page. BlurText handles this in JS via useReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  .shiny-text,
+  .rb-star-trail,
+  .hero-poster-card,
+  .marquee-content {
+    animation: none !important;
+  }
+  .rb-spotlight::before {
+    display: none;
+  }
+}

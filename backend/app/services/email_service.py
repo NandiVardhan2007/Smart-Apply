@@ -8,6 +8,8 @@ import urllib.parse
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------------
 # Neo-Brutalist Email Styling
 # ---------------------------------------------------------------------------
@@ -66,11 +68,18 @@ async def _brevo_send(to_email: str, subject: str, html_content: str) -> bool:
         "subject": subject,
         "htmlContent": html_content,
     }
+    if not settings.BREVO_API_KEY:
+        logger.error("BREVO_API_KEY is not configured; cannot send email to %s (subject=%r).", to_email, subject)
+        return False
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=20.0) as client:
             response = await client.post(url, json=payload, headers=headers)
-            return response.status_code in (200, 201)
+            if response.status_code not in (200, 201):
+                logger.error("Brevo send failed (%s): %s", response.status_code, response.text[:500])
+                return False
+            return True
     except Exception:
+        logger.exception("Brevo send raised an exception for %s (subject=%r).", to_email, subject)
         return False
 
 
@@ -250,9 +259,12 @@ async def send_tailored_resume_email(
         ],
     }
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=payload, headers=headers)
-            return response.status_code in (200, 201)
+            if response.status_code not in (200, 201):
+                logger.error("Tailored-resume email failed (%s): %s", response.status_code, response.text[:500])
+                return False
+            return True
     except Exception as exc:
-        logging.getLogger(__name__).error("Failed to send tailored resume email: %s", exc)
+        logger.error("Failed to send tailored resume email: %s", exc)
         return False

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
+import logging
 import secrets
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.rate_limiter import limiter
@@ -26,6 +27,8 @@ from app.middleware.auth_middleware import get_session_id
 from app.websockets.manager import manager
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+logger = logging.getLogger(__name__)
 
 
 def _user_dict(user: User) -> dict:
@@ -91,7 +94,8 @@ async def signup(request: Request, body: SignupRequest):
     await user.insert()
 
     # Send OTP email (non-blocking — don't fail signup if email fails)
-    await send_otp_email(body.email, otp)
+    if not await send_otp_email(body.email, otp):
+        logger.warning("OTP email delivery failed for %s", body.email)
 
     # Push WebSocket event
     session_id = get_session_id(request)
@@ -111,7 +115,9 @@ async def verify_otp(request: Request, response: Response, body: OtpVerifyReques
     """Verify the 6-digit OTP and activate the account."""
     user = await User.find_one(User.email == body.email)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Return the same error as a bad/expired OTP so this endpoint can't be
+        # used to enumerate which emails have registered accounts.
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     session_id = get_session_id(request)
 
@@ -136,10 +142,14 @@ async def verify_otp(request: Request, response: Response, body: OtpVerifyReques
     token = create_access_token({"sub": user.email})
 
     if session_id:
+        # NOTE: never send the JWT over the WebSocket. The socket is keyed only on a
+        # client-chosen session_id and is otherwise unauthenticated, so the token would
+        # be readable by anyone who knows/guesses that id. The real token is delivered
+        # in the REST TokenResponse below and via the httpOnly cookie.
         await manager.send_event(session_id, "otp_verified", {
             "id": str(user.id),
             "email": user.email,
-            "token": token,
+            "verified": True,
             "full_name": user.full_name,
             "is_admin": user.is_admin,
             "profile_pic_url": user.profile_pic_url,
@@ -179,7 +189,8 @@ async def login(request: Request, response: Response, body: LoginRequest):
         user.otp_code = otp
         user.otp_expires_at = get_otp_expiry()
         await user.save()
-        await send_otp_email(user.email, otp)
+        if not await send_otp_email(user.email, otp):
+            logger.warning("OTP email delivery failed for %s", user.email)
 
         if session_id:
             await manager.send_event(session_id, "otp_sent", {
@@ -196,10 +207,12 @@ async def login(request: Request, response: Response, body: LoginRequest):
 
     if session_id:
         await manager.associate_email(session_id, user.email)
+        # NOTE: never send the JWT over the WebSocket (see verify_otp). The token is
+        # returned in the REST TokenResponse and set as an httpOnly cookie instead.
         await manager.send_event(session_id, "login_success", {
             "id": str(user.id),
             "email": user.email,
-            "token": token,
+            "authenticated": True,
             "full_name": user.full_name,
             "is_admin": user.is_admin,
             "profile_pic_url": user.profile_pic_url,
@@ -233,7 +246,8 @@ async def forgot_password(request: Request, body: ForgotPasswordRequest):
     user.otp_expires_at = get_otp_expiry()
     await user.save()
 
-    await send_otp_email(body.email, otp)
+    if not await send_otp_email(body.email, otp):
+        logger.warning("OTP email delivery failed for %s", body.email)
 
     session_id = get_session_id(request)
     if session_id:
@@ -251,7 +265,9 @@ async def reset_password(request: Request, body: ResetPasswordRequest):
     """Reset password after verifying OTP."""
     user = await User.find_one(User.email == body.email)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Return the same error as a bad/expired OTP so this endpoint can't be
+        # used to enumerate which emails have registered accounts.
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     if (
         not user.otp_code
@@ -282,14 +298,17 @@ async def resend_otp(request: Request, body: ForgotPasswordRequest):
     """Resend OTP to an existing user."""
     user = await User.find_one(User.email == body.email)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Don't reveal whether the email exists (mirror forgot-password's
+        # generic response to prevent account enumeration).
+        return MessageResponse(message="A new OTP has been sent to your email.")
 
     otp = generate_otp()
     user.otp_code = otp
     user.otp_expires_at = get_otp_expiry()
     await user.save()
 
-    await send_otp_email(body.email, otp)
+    if not await send_otp_email(body.email, otp):
+        logger.warning("OTP email delivery failed for %s", body.email)
 
     session_id = get_session_id(request)
     if session_id:

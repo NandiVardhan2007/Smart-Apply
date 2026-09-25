@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AdminLayout from './components/AdminLayout';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import CookieConsent from './components/CookieConsent';
 import { InlineLoader } from './components/LoadingSpinner';
 import { useAuth } from './context/AuthContext';
 import { apiFetch } from './api/client';
@@ -22,6 +23,9 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Docs = lazy(() => import('./pages/Docs'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'));
+const TermsConditions = lazy(() => import('./pages/legal/TermsConditions'));
+const CookiesPolicy = lazy(() => import('./pages/legal/CookiesPolicy'));
 
 const Home = lazy(() => import('./pages/dashboard/Home'));
 const Resumes = lazy(() => import('./pages/dashboard/Resumes'));
@@ -147,7 +151,10 @@ export default function App() {
 
   return (
     <>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <AnnouncementBanner />
+      <CookieConsent />
+      <main id="main-content">
       <Suspense fallback={<PageFallback />}>
         <Routes>
         {/* Public */}
@@ -158,6 +165,9 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-otp" element={<OtpVerify />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsConditions />} />
+        <Route path="/cookies-policy" element={<CookiesPolicy />} />
 
         {/* Onboarding sits outside the dashboard shell, but still requires auth */}
         <Route
@@ -214,6 +224,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
+    </main>
     </>
   );
 }

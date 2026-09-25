@@ -1,22 +1,29 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Form, UploadFile, File, Request
 from pydantic import BaseModel
 from typing import Dict, Any
 
-import fitz # PyMuPDF
+from starlette.concurrency import run_in_threadpool
 from beanie import PydanticObjectId
 from app.models.resume import Resume
 from app.models.user import User
 
 from app.services import ai_service
 from app.middleware.auth_middleware import get_current_user
+from app.rate_limiter import limiter
+from app.utils.pdf import extract_pdf_text
 
 router = APIRouter(prefix="/api/cover-letter", tags=["Cover Letter"])
+
+logger = logging.getLogger(__name__)
 
 class CoverLetterResponse(BaseModel):
     cover_letter: str
 
 @router.post("/generate", response_model=CoverLetterResponse)
+@limiter.limit("10/minute")
 async def generate_cover_letter(
+    request: Request,
     job_description: str = Form(""),
     resume_id: str = Form(None),
     resume_file: UploadFile = File(None),
@@ -44,12 +51,10 @@ async def generate_cover_letter(
             
         try:
             content = await resume_file.read()
-            doc = fitz.open(stream=content, filetype="pdf")
-            for page in doc:
-                resume_text += page.get_text() + "\n"
-            doc.close()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+            resume_text = await run_in_threadpool(extract_pdf_text, content)
+        except Exception:
+            logger.warning("Cover-letter PDF parse failed", exc_info=True)
+            raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
     else:
         raise HTTPException(status_code=400, detail="Either a resume ID or a PDF file must be provided")
 
@@ -59,6 +64,7 @@ async def generate_cover_letter(
             job_description=job_description
         )
         return {"cover_letter": content}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Cover-letter generation failed")
+        raise HTTPException(status_code=500, detail="Could not generate the cover letter. Please try again.")
 

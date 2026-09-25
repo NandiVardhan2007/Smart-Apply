@@ -7,6 +7,7 @@ import { useToast } from '../../components/Toast';
 import { apiFetch, apiErrorMessage } from '../../api/client';
 import { ButtonSpinner } from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 import ThemeSwitcher from '../../components/ThemeSwitcher';
 
 export default function Settings() {
@@ -81,7 +82,7 @@ export default function Settings() {
     <div className="container-narrow">
       <PageHeader title="Settings" subtitle="Manage your account preferences and security." />
 
-      <div className="card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <SpotlightCard className="card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 16 }}>
         <div
           style={{
             width: 56,
@@ -103,7 +104,7 @@ export default function Settings() {
           <h3 style={{ fontSize: 16 }}>{user?.full_name}</h3>
           <p className="text-muted" style={{ fontSize: 13.5 }}>{user?.email}</p>
         </div>
-      </div>
+      </SpotlightCard>
 
       <div className="card" style={{ marginBottom: 22 }}>
         <h3 style={{ fontSize: 15.5, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -1,6 +1,6 @@
 from typing import List
 
-import fitz  # PyMuPDF
+import logging
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request, BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from app.rate_limiter import limiter
@@ -10,10 +10,13 @@ from app.middleware.auth_middleware import get_current_user
 from app.models.resume import Resume
 from app.models.user import User
 from app.services import storage_service, ai_service
+from app.utils.pdf import extract_pdf_text
 import filetype
 import urllib.parse
 
 router = APIRouter(prefix="/api/resumes", tags=["resumes"])
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_RESUME_TYPES = {"application/pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -39,15 +42,12 @@ async def upload_new_resume(
     if kind is None or kind.mime not in ALLOWED_RESUME_TYPES:
         raise HTTPException(status_code=400, detail="Only PDF files are allowed based on file content")
 
-    # Extract text from PDF
+    # Extract text from PDF (off the event loop — fitz is blocking)
     try:
-        doc = fitz.open(stream=contents, filetype="pdf")
-        resume_text = ""
-        for page in doc:
-            resume_text += page.get_text() + "\n"
-        doc.close()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+        resume_text = await run_in_threadpool(extract_pdf_text, contents)
+    except Exception:
+        logger.warning("Resume PDF parse failed", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
 
     if not resume_text.strip():
         raise HTTPException(
@@ -87,12 +87,19 @@ async def upload_new_resume(
         await user.save()
 
     async def _populate_parsed_data(r_id: PydanticObjectId, txt: str):
-        parsed = await ai_service.parse_resume_for_profile(txt)
-        r = await Resume.get(r_id)
-        if r:
-            r.parsed_data = parsed
-            await r.save()
-            
+        # Runs after the response is sent; an unhandled error here would vanish
+        # silently, leaving the resume permanently without parsed_data.
+        try:
+            parsed = await ai_service.parse_resume_for_profile(txt)
+            if not isinstance(parsed, dict) or not parsed:
+                logger.warning("Resume %s: parser returned no usable data", r_id)
+                return
+            r = await Resume.get(r_id)
+            if r:
+                r.parsed_data = parsed
+                await r.save()
+        except Exception:
+            logger.exception("Background parse failed for resume %s", r_id)
     background_tasks.add_task(_populate_parsed_data, resume.id, resume_text)
 
     return {"message": "Resume uploaded successfully", "resume": resume}

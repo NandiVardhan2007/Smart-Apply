@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
+import logging
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel
 from typing import Dict, Any, List
 
-import fitz  # PyMuPDF
+from starlette.concurrency import run_in_threadpool
 from app.models.user import User
 from app.services import ai_service
 from app.middleware.auth_middleware import get_current_user
+from app.rate_limiter import limiter
+from app.utils.pdf import extract_pdf_text
 
 router = APIRouter(prefix="/api/linkedin", tags=["LinkedIn"])
+
+logger = logging.getLogger(__name__)
 
 class LinkedInOptimizationResponse(BaseModel):
     headline_suggestions: List[str]
@@ -15,7 +20,9 @@ class LinkedInOptimizationResponse(BaseModel):
     experience_improvements: List[Dict[str, str]]
 
 @router.post("/optimize", response_model=LinkedInOptimizationResponse)
+@limiter.limit("10/minute")
 async def optimize_linkedin(
+    request: Request,
     profile_file: UploadFile = File(...),
     user: User = Depends(get_current_user)
 ):
@@ -30,12 +37,10 @@ async def optimize_linkedin(
 
     try:
         content = await profile_file.read()
-        doc = fitz.open(stream=content, filetype="pdf")
-        for page in doc:
-            profile_text += page.get_text() + "\n"
-        doc.close()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+        profile_text = await run_in_threadpool(extract_pdf_text, content)
+    except Exception:
+        logger.warning("LinkedIn PDF parse failed", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
 
     if not profile_text.strip():
         raise HTTPException(status_code=400, detail="The uploaded PDF appears to be empty.")
@@ -43,5 +48,6 @@ async def optimize_linkedin(
     try:
         optimization_data = await ai_service.optimize_linkedin_profile(profile_text)
         return optimization_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating optimizations: {str(e)}")
+    except Exception:
+        logger.exception("LinkedIn optimization failed")
+        raise HTTPException(status_code=500, detail="Could not generate optimizations. Please try again.")

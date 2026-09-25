@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, AlertTriangle, Trash2, UserPlus, UserMinus, ShieldCheck, Download, Settings, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { apiFetch, getApiBaseUrl } from '../../api/client';
+import { apiFetch, apiFetchRaw } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { AnimatePresence } from 'framer-motion';
 import '../../styles/dashboard.css';
@@ -112,10 +112,9 @@ export default function AdminUsers() {
 
   const handleExportCsv = async () => {
     try {
-      const token = localStorage.getItem('sa_token');
-      const res = await fetch(`${getApiBaseUrl('/admin/export/users')}/admin/export/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      // apiFetchRaw returns the raw Response for the CSV blob while attaching the
+      // same auth token / session id / credentials as apiFetch.
+      const res = await apiFetchRaw('/admin/export/users');
       if (res.ok) {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
