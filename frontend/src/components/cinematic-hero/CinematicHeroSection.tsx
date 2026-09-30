@@ -154,7 +154,7 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
       ref={sectionRef}
       id="cinematic-hero"
       className="w-full bg-[#050308] text-[#F7F2FF] select-none"
-      style={{ minHeight: '380vh', position: 'relative' }}
+      style={{ minHeight: '120vh', position: 'relative' }}
     >
       {/* ── Sticky Viewport ─────────────────────────────────────────────── */}
       <div className="flex flex-col justify-between" style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden', background: '#050308' }}>
