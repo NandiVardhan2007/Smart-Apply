@@ -226,7 +226,7 @@ export default function Landing() {
 
       <div ref={landingContentRef} id="features-overview">
         {/* ── Hero Section ────────────────────────────────────────────── */}
-        <section style={{ padding: '130px 24px 70px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
+        <section style={{ padding: '60px 24px 70px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
         <motion.div
           style={{ maxWidth: 1040, margin: '0 auto' }}
           initial={{ opacity: 0, y: 20 }}

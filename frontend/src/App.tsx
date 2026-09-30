@@ -126,12 +126,18 @@ function AdminProtected({ children }: { children: React.ReactNode }) {
 export default function App() {
   const { user } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Ping all Render services every 5 min to prevent free-tier spin-down
   useKeepAlive();
 
   useEffect(() => {
     let mounted = true;
+    
+    // Auto-hide the boot splash screen after 2.4s (allows the full cinematic intro to play)
+    const timer = setTimeout(() => {
+      if (mounted) setShowSplash(false);
+    }, 2400);
 
     // Fetch public settings in the background without blocking initial paint
     apiFetch<{ maintenance_mode: boolean }>('/auth/public-settings')
@@ -144,8 +150,17 @@ export default function App() {
 
     return () => {
       mounted = false;
+      clearTimeout(timer);
     };
   }, []);
+
+  if (showSplash) {
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <SplashScreen />
+      </Suspense>
+    );
+  }
 
   if (maintenance && !user?.is_admin) {
     return (
