@@ -42,7 +42,7 @@ export default function OtpVerify() {
     if (verifiedRef.current) return;
     if (lastAuthEvent?.type === 'otp_verified') {
       verifiedRef.current = true;
-      login(lastAuthEvent.data.token || '', (lastAuthEvent.data.user || lastAuthEvent.data) as User);
+      login((lastAuthEvent.data.token as string) || '', (lastAuthEvent.data.user || lastAuthEvent.data) as unknown as User);
       setSuccess(true);
       setTimeout(() => navigate(lastAuthEvent.data.has_onboarded ? '/dashboard' : '/onboarding'), 1000);
     }
