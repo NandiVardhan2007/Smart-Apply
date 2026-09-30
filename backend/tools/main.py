@@ -16,7 +16,7 @@ from app.rate_limiter import limiter
 from app.config import settings, assert_secure_config
 from app.database import close_db, init_db
 from app.services import firebase_service  # Initialized on import
-from app.routers import resume_maker, cover_letter, code_execution, upload
+from app.routers import auth, user, resume, projects, jobs, linkedin, admin, stats, cover_letter, code_execution, resume_maker, ai, interview, tailor, upload
 from app.websockets.manager import manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
@@ -79,7 +79,4 @@ async def ping():
     return {"status": "ok", "service": "tools"}
 
 # ── Tools & Export API Routers ──
-app.include_router(resume_maker.router)
-app.include_router(cover_letter.router)
-app.include_router(code_execution.router)
-app.include_router(upload.router)
+

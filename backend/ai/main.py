@@ -16,7 +16,7 @@ from app.rate_limiter import limiter
 from app.config import settings, assert_secure_config
 from app.database import close_db, init_db
 from app.services import firebase_service  # Initialized on import
-from app.routers import ai, interview, tailor, jobs, projects, cover_letter, linkedin
+from app.routers import auth, user, resume, projects, jobs, linkedin, admin, stats, cover_letter, code_execution, resume_maker, ai, interview, tailor, upload
 from app.websockets.auth_ws import router as ws_router
 from app.websockets.manager import manager
 
@@ -80,13 +80,22 @@ async def ping():
     return {"status": "ok", "service": "ai"}
 
 # ── AI API Routers ──
+
+# ── WebSocket Router ──
+app.include_router(auth.router)
+app.include_router(user.router)
+app.include_router(resume.router)
+app.include_router(projects.router)
+app.include_router(jobs.router)
+app.include_router(linkedin.router)
+app.include_router(admin.router)
+app.include_router(stats.router)
+app.include_router(cover_letter.router)
+app.include_router(code_execution.router)
+app.include_router(resume_maker.router)
 app.include_router(ai.router)
 app.include_router(interview.router)
 app.include_router(tailor.router)
-app.include_router(jobs.router)
-app.include_router(projects.router)
-app.include_router(cover_letter.router)
-app.include_router(linkedin.router)
-
-# ── WebSocket Router ──
+app.include_router(upload.router)
 app.include_router(ws_router, prefix="/api")
+

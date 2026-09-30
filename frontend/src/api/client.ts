@@ -32,7 +32,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 export function getApiBaseUrl(endpoint?: string): string {
-  const fallback = import.meta.env.VITE_API_BASE_URL || '/api';
+  const fallback = import.meta.env.VITE_API_BASE_URL || 'https://smart-apply-e0h4.onrender.com/api';
 
   let baseUrl = fallback;
 
@@ -185,3 +185,4 @@ export async function apiFetchRaw(endpoint: string, options: RequestInit = {}): 
   if (response.status === 401) _onUnauthorized?.();
   return response;
 }
+
