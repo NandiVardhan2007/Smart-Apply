@@ -14,7 +14,7 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
   return (
     <section
       id="cinematic-hero"
-      className="relative w-full min-h-screen bg-[#050308] text-[#F7F2FF] flex flex-col items-center overflow-hidden select-none"
+      className="relative w-full min-h-screen bg-[#050308] text-[#F7F2FF] flex flex-col items-center overflow-hidden select-none z-20"
     >
       {/* ── Layer 0: Pure Deep Black & Soft Background Purple Light ─────── */}
       <div className="absolute inset-0 z-0 pointer-events-none bg-[#050308]" />
