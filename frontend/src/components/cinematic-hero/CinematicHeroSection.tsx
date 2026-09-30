@@ -154,10 +154,10 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
       ref={sectionRef}
       id="cinematic-hero"
       className="w-full bg-[#050308] text-[#F7F2FF] select-none"
-      style={{ minHeight: '120vh', position: 'relative' }}
+      style={{ position: 'relative' }}
     >
-      {/* ── Sticky Viewport ─────────────────────────────────────────────── */}
-      <div className="flex flex-col justify-between" style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden', background: '#050308' }}>
+      {/* ── Standard Viewport ─────────────────────────────────────────────── */}
+      <div className="flex flex-col justify-between" style={{ position: 'relative', minHeight: '100vh', width: '100%', overflow: 'hidden', background: '#050308' }}>
 
         {/* ── Layer 0: Pure Deep Black & Soft Background Purple Light ─────── */}
         <div className="z-0 pointer-events-none bg-[#050308]" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />

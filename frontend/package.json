@@ -24,6 +24,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@vladmandic/face-api": "^1.7.15",
+    "firebase": "^12.19.0",
     "framer-motion": "^12.42.0",
     "lucide-react": "^1.21.0",
     "ogl": "^1.0.11",
