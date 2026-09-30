@@ -78,12 +78,18 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
   useEffect(() => {
     if (!isPlaying || !sectionRef.current) return;
 
+    const cancelPlay = () => setIsPlaying(false);
+    window.addEventListener('wheel', cancelPlay, { passive: true });
+    window.addEventListener('touchstart', cancelPlay, { passive: true });
+
     let startTime: number | null = null;
     const duration = 7500; // 7.5s cinematic cycle
     const startScroll = window.scrollY;
     const sectionTop = sectionRef.current.offsetTop;
-    const sectionHeight = sectionRef.current.offsetHeight - window.innerHeight;
-    const targetScroll = sectionTop + sectionHeight;
+    const rawHeight = sectionRef.current?.offsetHeight || 0;
+    const effectiveHeight = Math.max(rawHeight, window.innerHeight * 3.8);
+    const sectionHeight = Math.max(window.innerHeight * 2.8, effectiveHeight - window.innerHeight);
+    const targetScroll = Math.max(startScroll + 100, sectionTop + sectionHeight);
 
     let frameId: number;
 
@@ -111,6 +117,8 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
 
     return () => {
       cancelAnimationFrame(frameId);
+      window.removeEventListener('wheel', cancelPlay);
+      window.removeEventListener('touchstart', cancelPlay);
     };
   }, [isPlaying]);
 
@@ -121,7 +129,9 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
       if (sectionRef.current) {
         // Reset to top of section if at the end
         const sectionTop = sectionRef.current.offsetTop;
-        const sectionHeight = sectionRef.current.offsetHeight - window.innerHeight;
+        const rawHeight = sectionRef.current?.offsetHeight || 0;
+        const effectiveHeight = Math.max(rawHeight, window.innerHeight * 3.8);
+        const sectionHeight = Math.max(window.innerHeight * 2.8, effectiveHeight - window.innerHeight);
         if (window.scrollY >= sectionTop + sectionHeight - 50) {
           window.scrollTo({ top: sectionTop, behavior: 'instant' as ScrollBehavior });
         }
@@ -143,18 +153,19 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
     <section
       ref={sectionRef}
       id="cinematic-hero"
-      className="relative w-full h-[360vh] sm:h-[380vh] md:h-[400vh] bg-[#050308] text-[#F7F2FF] select-none"
+      className="w-full bg-[#050308] text-[#F7F2FF] select-none"
+      style={{ minHeight: '380vh', position: 'relative' }}
     >
       {/* ── Sticky Viewport ─────────────────────────────────────────────── */}
-      <div className="sticky top-0 h-screen w-full flex flex-col justify-between overflow-hidden bg-[#050308]">
+      <div className="flex flex-col justify-between" style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden', background: '#050308' }}>
 
         {/* ── Layer 0: Pure Deep Black & Soft Background Purple Light ─────── */}
-        <div className="absolute inset-0 z-0 pointer-events-none bg-[#050308]" />
+        <div className="z-0 pointer-events-none bg-[#050308]" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
 
         {/* Deep Violet / Electric Purple Ambient Background Radial Gradients */}
         <motion.div
-          className="absolute inset-0 z-[1] pointer-events-none"
-          style={{ opacity: bgVioletGlowOpacity }}
+          className="z-[1] pointer-events-none"
+          style={{ opacity: bgVioletGlowOpacity, position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
         >
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-[1000px] h-[70vh] rounded-full"
@@ -167,7 +178,7 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
         </motion.div>
 
         {/* ── Layer 1: Atmospheric Canvas Particles (Violet/Magenta/Lavender) */}
-        <div className="absolute inset-0 z-[2] pointer-events-none">
+        <div className="z-[2] pointer-events-none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
           <CinematicParticleCanvas />
         </div>
 
@@ -176,11 +187,12 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
 
         {/* ── Layer 3: Radial Vignette Overlay (Focuses Gaze into Center) ─── */}
         <motion.div
-          className="absolute inset-0 z-[6] pointer-events-none"
+          className="z-[6] pointer-events-none"
           style={{
             opacity: vignetteOpacity,
             background:
               'radial-gradient(ellipse 60% 55% at 50% 50%, transparent 0%, rgba(5, 3, 8, 0.4) 40%, rgba(5, 3, 8, 0.95) 100%)',
+            position: 'absolute', top: 0, right: 0, bottom: 0, left: 0
           }}
         />
 
@@ -294,13 +306,30 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
             }}
             className="absolute bottom-16 sm:bottom-20 z-30 flex flex-col sm:flex-row items-center gap-3.5 pointer-events-auto"
           >
+            <style>
+              {`
+                @keyframes customBounce {
+                  0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+                  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
+                }
+                .hero-cta-btn:hover { filter: brightness(1.1); transform: scale(1.05); }
+                .hero-cta-btn:active { transform: scale(0.95); }
+              `}
+            </style>
             <button
               onClick={handleScrollToLandingContent}
               type="button"
-              className="px-6 py-3 rounded-full font-semibold text-xs sm:text-sm tracking-wide text-white bg-gradient-to-r from-[#7621B0] via-[#9B00FF] to-[#E000D6] hover:brightness-110 shadow-[0_0_30px_rgba(155,0,255,0.4)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+              className="hero-cta-btn font-semibold text-xs sm:text-sm tracking-wide text-white cursor-pointer flex items-center gap-2"
+              style={{
+                background: 'linear-gradient(to right, #7621B0, #9B00FF, #E000D6)',
+                borderRadius: '9999px',
+                padding: '0.75rem 1.5rem',
+                boxShadow: '0 0 30px rgba(155,0,255,0.4)',
+                transition: 'all 0.3s'
+              }}
             >
               <span>Explore Platform</span>
-              <ChevronDown className="w-4 h-4 animate-bounce" />
+              <ChevronDown className="w-4 h-4" style={{ animation: 'customBounce 1s infinite' }} />
             </button>
           </motion.div>
         </div>

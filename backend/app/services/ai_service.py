@@ -69,14 +69,28 @@ def _get_client() -> AsyncOpenAI:
     flaky upstream can't hang a user request indefinitely — without them the
     default client waits ~10 minutes before giving up, which manifests to the
     user as the whole feature being frozen."""
-    global _client
-    if _client is None:
+_client_key = None
+
+async def _get_client():
+    global _client, _client_key
+    
+    api_key = settings.NVIDIA_API_KEY
+    try:
+        from app.models.settings import SystemSettings
+        sys_settings = await SystemSettings.find_one()
+        if sys_settings and sys_settings.nvidia_nim_api_key:
+            api_key = sys_settings.nvidia_nim_api_key
+    except Exception:
+        pass
+        
+    if _client is None or _client_key != api_key:
         _client = AsyncOpenAI(
             base_url=settings.NVIDIA_BASE_URL,
-            api_key=settings.NVIDIA_API_KEY,
+            api_key=api_key,
             timeout=60.0,
             max_retries=2,
         )
+        _client_key = api_key
     return _client
 
 
@@ -108,7 +122,7 @@ def _log_api_metric(**fields) -> None:
 
 async def _call_llm_with_tracking(**kwargs):
     """Wraps client.chat.completions.create to track API latency and success rates."""
-    client = _get_client()
+    client = await _get_client()
     start_time = time.time()
 
     # Auto-detect caller function name

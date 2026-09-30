@@ -13,17 +13,16 @@ logger = logging.getLogger(__name__)
 async def convert_pdf_to_images(pdf_content: bytes) -> List[str]:
     """Convert PDF pages to base64 encoded images."""
     try:
-        doc = fitz.open(stream=pdf_content, filetype="pdf")
-        images_base64 = []
-        for i in range(len(doc)):
-            page = doc.load_page(i)
-            # High resolution for better OCR
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            img_bytes = pix.tobytes("png")
-            b64 = base64.b64encode(img_bytes).decode("utf-8")
-            images_base64.append(b64)
-        doc.close()
-        return images_base64
+        with fitz.open(stream=pdf_content, filetype="pdf") as doc:
+            images_base64 = []
+            for i in range(len(doc)):
+                page = doc.load_page(i)
+                # High resolution for better OCR
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                img_bytes = pix.tobytes("png")
+                b64 = base64.b64encode(img_bytes).decode("utf-8")
+                images_base64.append(b64)
+            return images_base64
     except Exception as e:
         logger.error(f"Failed to convert PDF to images: {e}")
         raise ValueError(f"Failed to process PDF: {str(e)}")
@@ -46,11 +45,11 @@ async def extract_latex_from_pdf(pdf_content: bytes) -> str:
     # Extract hyperlinks from the PDF to help the vision model since it can't see embedded URLs
     extracted_urls = set()
     try:
-        doc = fitz.open(stream=pdf_content, filetype="pdf")
-        for page in doc:
-            for link in page.get_links():
-                if "uri" in link:
-                    extracted_urls.add(link["uri"])
+        with fitz.open(stream=pdf_content, filetype="pdf") as doc:
+            for page in doc:
+                for link in page.get_links():
+                    if "uri" in link:
+                        extracted_urls.add(link["uri"])
     except Exception as e:
         logger.warning(f"Failed to extract links from PDF: {e}")
         

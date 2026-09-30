@@ -60,6 +60,13 @@ def get_file_url(key: str) -> str:
         return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{safe_key}"
     return f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/{settings.R2_BUCKET_NAME}/{safe_key}"
 
+def get_file(key: str) -> bytes:
+    """Download a file from R2 and return its bytes."""
+    client = _get_client()
+    response = client.get_object(Bucket=settings.R2_BUCKET_NAME, Key=key)
+    return response["Body"].read()
+
+
 
 def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
     """Generate a presigned URL for temporary file access."""

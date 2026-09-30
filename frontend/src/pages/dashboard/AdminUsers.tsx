@@ -182,7 +182,7 @@ export default function AdminUsers() {
   if (loading) {
     return (
       <div className="dashboard-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <div className="spinner" />
+        <div className="loading-spinner" />
       </div>
     );
   }

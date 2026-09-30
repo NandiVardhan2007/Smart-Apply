@@ -104,17 +104,17 @@ export default function AdminResumeTemplates() {
             <div style={{ display: 'flex', gap: 16 }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 500 }}>Name</label>
-                <input required className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Modern Tech" />
+                <input required className="input-field" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Modern Tech" />
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 500 }}>Description</label>
-                <input className="input" value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" />
+                <input className="input-field" value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" />
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontSize: 13, fontWeight: 500 }}>Required Fields (Comma separated)</label>
-              <input required className="input" value={requiredFields} onChange={e => setRequiredFields(e.target.value)} placeholder="e.g. Name, Email, Phone, Experience" />
+              <input required className="input-field" value={requiredFields} onChange={e => setRequiredFields(e.target.value)} placeholder="e.g. Name, Email, Phone, Experience" />
               <p className="text-faint" style={{ fontSize: 12, margin: 0 }}>These will be replaced in LaTeX as {'{{FieldName}}'}</p>
             </div>
 
@@ -122,7 +122,7 @@ export default function AdminResumeTemplates() {
               <label style={{ fontSize: 13, fontWeight: 500 }}>LaTeX Code</label>
               <textarea
                 required
-                className="input"
+                className="input-field"
                 style={{ height: 200, fontFamily: 'monospace', fontSize: 12 }}
                 value={latexCode}
                 onChange={e => setLatexCode(e.target.value)}

@@ -103,11 +103,14 @@ const THEMES = [
   },
 ];
 
-function useMicTester() {
+function useMicTester(status: string) {
   const [volume, setVolume] = useState(0);
   const [isMicWorking, setIsMicWorking] = useState(false);
+  const [micPermissionDenied, setMicPermissionDenied] = useState(false);
 
   useEffect(() => {
+    if (status === 'connected') return;
+    
     let audioCtx: AudioContext | null = null;
     let analyser: AnalyserNode | null = null;
     let micStream: MediaStream | null = null;
@@ -137,6 +140,7 @@ function useMicTester() {
         checkVolume();
       } catch (e) {
         setIsMicWorking(false);
+        setMicPermissionDenied(true);
       }
     }
 
@@ -147,9 +151,9 @@ function useMicTester() {
       if (micStream) micStream.getTracks().forEach((t) => t.stop());
       if (audioCtx) audioCtx.close();
     };
-  }, []);
+  }, [status]);
 
-  return { volume, isMicWorking };
+  return { volume, isMicWorking, micPermissionDenied };
 }
 
 interface CodeExecResponse {
@@ -177,9 +181,12 @@ function CodeEditorFeature({
   const [activeTab, setActiveTab] = useState<'editor' | 'problem'>('editor');
   const { showToast } = useToast();
 
+  const codeCacheRef = useRef<Record<string, string>>({});
+
   const handleLanguageChange = (lang: string) => {
+    codeCacheRef.current[language] = code;
     setLanguage(lang);
-    setCode(getBoilerplate(lang));
+    setCode(codeCacheRef.current[lang] || getBoilerplate(lang));
   };
 
   const handleRunCode = async () => {
@@ -310,7 +317,7 @@ function CodeEditorFeature({
   );
 }
 
-function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+function FacialAnalysisHUD({ videoRef, isVideoOff, onTelemetryUpdate }: { videoRef?: React.RefObject<HTMLVideoElement | null>; isVideoOff: boolean; onTelemetryUpdate?: (conf: number, blinks: number) => void }) {
   const [emotion, setEmotion] = useState<string>('Focused');
   const [confidenceScore, setConfidenceScore] = useState<number>(88);
   const [eyeContact, setEyeContact] = useState<string>('Direct (Optimal)');
@@ -326,6 +333,14 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
 
     const interval = setInterval(() => {
       try {
+        if (isVideoOff) {
+          setPosture('Camera Paused');
+          setEyeContact('N/A');
+          setConfidenceScore(85);
+          setEmotion('Neutral');
+          onTelemetryUpdate?.(85, blinkCounterRef.current);
+          return;
+        }
       if (videoRef?.current && ctx && videoRef.current.videoWidth > 0) {
         const width = 160;
         const height = 120;
@@ -399,11 +414,11 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
 
           // Horizontal alignment check
           if (avgX < width * 0.38) {
-            gazeStatus = 'Glancing Left';
-            postureStatus = 'Leaning Left';
-          } else if (avgX > width * 0.62) {
             gazeStatus = 'Glancing Right';
             postureStatus = 'Leaning Right';
+          } else if (avgX > width * 0.62) {
+            gazeStatus = 'Glancing Left';
+            postureStatus = 'Leaning Left';
           }
 
           // Vertical posture check
@@ -435,11 +450,13 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
         setEmotion(emotionStatus);
         setEyeContact(gazeStatus);
         setPosture(postureStatus);
+        onTelemetryUpdate?.(finalConfidence, blinkCounterRef.current);
       } else {
         setConfidenceScore(86);
         setEmotion('Focused');
         setEyeContact('Direct (Optimal)');
         setPosture('Upright & Engaged');
+        onTelemetryUpdate?.(86, blinkCounterRef.current);
       }
       } catch {
         // Frame sampling can fail (e.g. a tainted canvas / detached video).
@@ -448,8 +465,9 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
         setEmotion('Focused');
         setEyeContact('Direct (Optimal)');
         setPosture('Upright & Engaged');
+        onTelemetryUpdate?.(86, blinkCounterRef.current);
       }
-    }, 1200);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [videoRef]);
@@ -486,9 +504,8 @@ function FacialAnalysisHUD({ videoRef }: { videoRef?: React.RefObject<HTMLVideoE
 export default function LiveInterview() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { volume: micVolume, isMicWorking } = useMicTester();
-
   const [status, setStatus] = useState<'idle' | 'connected'>('idle');
+  const { volume: micVolume, isMicWorking, micPermissionDenied } = useMicTester(status);
   const [theme, setTheme] = useState<string>('HR');
   const [aiState, setAiState] = useState<'speaking' | 'listening' | 'thinking'>('listening');
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -510,7 +527,13 @@ export default function LiveInterview() {
   const isListeningRef = useRef(false);
   const isCallActiveRef = useRef(false);
   const conversationRef = useRef<Array<{ role: string; content: string }>>([]);
+  const telemetryRef = useRef({ confidences: [] as number[], blinks: 0 });
   const { showToast } = useToast();
+
+  const handleTelemetryUpdate = (conf: number, blinks: number) => {
+    telemetryRef.current.confidences.push(conf);
+    telemetryRef.current.blinks = blinks;
+  };
 
   useEffect(() => {
     if (transcriptEndRef.current) {
@@ -609,14 +632,21 @@ export default function LiveInterview() {
     }
 
     setAiState('speaking');
+    try { recognitionRef.current?.stop(); } catch (e) {}
+    isListeningRef.current = false;
 
     utterance.onend = () => {
       setAiState('listening');
+      setTimeout(() => {
+        isListeningRef.current = true;
+        try { recognitionRef.current?.start(); } catch (e) {}
+      }, 400);
     };
 
     utterance.onerror = (e) => {
       console.warn('Speech synthesis utterance error:', e);
       setAiState('listening');
+      isListeningRef.current = true;
     };
 
     if (isCallActiveRef.current) {
@@ -688,6 +718,9 @@ export default function LiveInterview() {
       recognition.lang = 'en-US';
 
       recognition.onresult = (event: any) => {
+        if (aiState === 'speaking' || window.speechSynthesis.speaking) {
+          return;
+        }
         let interimText = '';
         let finalSpeech = '';
 
@@ -728,14 +761,22 @@ export default function LiveInterview() {
       } catch (e) {}
     } else {
       showToast('info', 'Voice recognition is best supported in Chrome, Edge, or Brave. You can also type your answers in the chat input.');
+      window.alert('Voice recognition is best supported in Chrome, Edge, or Brave. You can also type your answers in the chat input.');
     }
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        mediaStreamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      })
-      .catch((err) => console.warn('Camera error:', err));
+    const getMedia = async () => {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      } catch (err) {
+        console.warn('Video acquisition failed, falling back to audio-only', err);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setIsVideoOff(true);
+      }
+      mediaStreamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    };
+    getMedia().catch(err => console.warn('Audio acquisition failed:', err));
 
     return () => {
       isListeningRef.current = false;
@@ -817,13 +858,18 @@ export default function LiveInterview() {
         
         localStorage.setItem(`sa_transcript_${roomName}`, JSON.stringify(formattedTranscript));
         
+        const avgConf = telemetryRef.current.confidences.length > 0 
+          ? telemetryRef.current.confidences.reduce((a, b) => a + b, 0) / telemetryRef.current.confidences.length / 100 
+          : 0.88;
+        const blinkCount = telemetryRef.current.blinks || 14;
+
         await apiFetch('/interview/analyze', {
           method: 'POST',
           body: JSON.stringify({
             user_id: String(user.id),
             room_name: roomName,
             transcript: formattedTranscript,
-            telemetry: { avg_confidence: 0.88, blink_count: 14 }
+            telemetry: { avg_confidence: avgConf, blink_count: blinkCount }
           })
         });
         
@@ -875,6 +921,11 @@ export default function LiveInterview() {
           )}
 
           <div className="interview-mic-check">
+            {micPermissionDenied && (
+              <div style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#fca5a5', fontSize: '13px', marginBottom: '12px' }}>
+                <strong>Microphone Access Denied:</strong> Please allow microphone permissions in your browser settings to use Voice AI.
+              </div>
+            )}
             <div className="mic-check-content">
               <div className="mic-check-label">
                 <Volume2 size={14} color="#818cf8" /> MICROPHONE INPUT METERS
@@ -1016,7 +1067,7 @@ export default function LiveInterview() {
           )}
 
           {/* AI Vision HUD */}
-          <FacialAnalysisHUD videoRef={videoRef} />
+          <FacialAnalysisHUD videoRef={videoRef} isVideoOff={isVideoOff} onTelemetryUpdate={handleTelemetryUpdate} />
 
           {/* Candidate PIP Video Tile */}
           <div className="candidate-pip-tile">
@@ -1088,7 +1139,7 @@ export default function LiveInterview() {
               <Subtitles size={20} />
             </button>
 
-            {theme === 'Technical' && (
+            {(theme === 'Technical' || isEditorOpen) && (
               <button
                 onClick={() => setIsEditorOpen(!isEditorOpen)}
                 className={`call-btn ${isEditorOpen ? 'active' : ''}`}

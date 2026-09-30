@@ -121,7 +121,7 @@ export default function AdminSettings() {
   if (loading) {
     return (
       <div className="dashboard-content flex items-center justify-center h-full">
-        <div className="spinner" />
+        <div className="loading-spinner" />
       </div>
     );
   }

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import GradientBlinds from './reactbits/GradientBlinds';
 import { useTheme } from '../context/ThemeContext';
 
 export default function AnimatedBackground() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  const defaultColors = useMemo(() => ['#FF9FFC', '#5227FF'], []);
 
   return (
     <div
@@ -22,7 +24,7 @@ export default function AnimatedBackground() {
     >
       <div style={{ width: '100%', height: '100%', position: 'relative' }}>
         <GradientBlinds
-          gradientColors={['#FF9FFC', '#5227FF']}
+          gradientColors={defaultColors}
           angle={0}
           noise={0.3}
           blindCount={16}

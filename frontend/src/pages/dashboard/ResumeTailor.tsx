@@ -122,6 +122,12 @@ export default function ResumeTailor() {
   const [compileError, setCompileError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
 
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
   const handleCompile = async (codeToCompile: string = latexCode) => {
     if (!codeToCompile.trim()) return;
     setCompiling(true);
@@ -136,6 +142,7 @@ export default function ResumeTailor() {
 
       if (res.ok) {
         const blob = await res.blob();
+        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(URL.createObjectURL(blob));
       } else {
         try {

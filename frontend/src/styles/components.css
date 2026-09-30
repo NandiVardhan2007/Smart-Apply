@@ -764,3 +764,16 @@ textarea.input-field {
 
 
 
+
+.waveform-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+}
+.waveform-bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 9999px;
+  transition: height 0.15s ease;
+}

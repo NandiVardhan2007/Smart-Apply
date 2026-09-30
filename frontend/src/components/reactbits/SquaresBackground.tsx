@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 interface SquaresBackgroundProps {
   direction?: 'diagonal' | 'up' | 'down' | 'left' | 'right';
@@ -21,6 +22,13 @@ export default function SquaresBackground({
 }: SquaresBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: -1000, y: -1000 });
+  const { theme } = useTheme();
+  const colorsRef = useRef({ border: '#e4e5e9', accent: '#3452f4' });
+
+  useEffect(() => {
+    colorsRef.current.border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#e4e5e9';
+    colorsRef.current.accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3452f4';
+  }, [theme]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,8 +82,8 @@ export default function SquaresBackground({
       const startY = Math.floor(gridOffset.y) - squareSize;
 
       // Extract colors from computed style or fallback
-      const compBorder = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#e4e5e9';
-      const compAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3452f4';
+      const compBorder = colorsRef.current.border;
+      const compAccent = colorsRef.current.accent;
 
       ctx.lineWidth = 0.6;
       ctx.strokeStyle = compBorder;

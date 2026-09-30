@@ -51,6 +51,7 @@ export function getApiBaseUrl(endpoint?: string): string {
     } else if (
       cleanEndpoint.startsWith('/resume-maker') ||
       cleanEndpoint.startsWith('/cover-letter') ||
+      cleanEndpoint.startsWith('/code') ||
       cleanEndpoint.startsWith('/code-execution') ||
       cleanEndpoint.startsWith('/upload')
     ) {
@@ -120,7 +121,15 @@ export async function apiFetch<T = unknown>(
   }
 
   if (response.status === 401) {
-    _onUnauthorized?.();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    response = await fetch(`${baseUrl}${endpoint}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
+    if (response.status === 401) {
+      _onUnauthorized?.();
+    }
   }
 
   let data: T;

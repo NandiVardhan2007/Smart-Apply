@@ -194,9 +194,9 @@ export default function Landing() {
 
   useEffect(() => {
     const onScroll = () => {
-      // Reveal standard navbar when scrolling into landing features (past ~2.5 screens)
-      const heroThreshold = window.innerHeight * 2.5;
-      setInHeroTrack(window.scrollY < heroThreshold);
+      // Reveal standard navbar when scrolling into landing features
+      const threshold = (landingContentRef.current?.offsetTop || window.innerHeight * 2.5) - 80;
+      setInHeroTrack(window.scrollY < threshold);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -372,7 +372,7 @@ export default function Landing() {
           </div>
 
           {/* ── Interactive Live Product Showcase HUD ────────────────── */}
-          <div id="demo" style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
+          <div id="interview-studio" style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
             <TiltedCard maxTilt={4} scale={1.01} perspective={1400} glareEffect={true}>
               <div
                 style={{
@@ -422,6 +422,9 @@ export default function Landing() {
                       padding: 4,
                       borderRadius: 10,
                       border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid var(--border)',
+                      overflowX: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      maxWidth: '100%',
                     }}
                   >
                     {[
@@ -808,7 +811,13 @@ export default function Landing() {
                               <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
                                 Structured Cursor / v0 Build Prompt
                               </span>
-                              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)' }}>Copy Prompt</span>
+                              <button
+                                type="button"
+                                onClick={() => navigator.clipboard.writeText("Create a Go service implementing a token bucket rate limiter with Redis backend. Include unit tests simulating 100 concurrent goroutines and verifying burst capacity semantics...")}
+                                style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
+                              >
+                                Copy Prompt
+                              </button>
                             </div>
                             <pre
                               style={{

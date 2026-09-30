@@ -15,6 +15,7 @@ from app.rate_limiter import limiter
 from app.config import settings, assert_secure_config
 from app.database import close_db, init_db
 from app.routers import resume_maker, cover_letter, code_execution, upload
+from app.websockets.manager import manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
@@ -24,7 +25,9 @@ async def lifespan(app: FastAPI):
     assert_secure_config()
 
     await init_db()
+    await manager.start_pubsub()
     yield
+    await manager.stop_pubsub()
     await close_db()
 
 app = FastAPI(
@@ -61,7 +64,7 @@ if settings.ENVIRONMENT != "production":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_origin_regex=r"https://smartapply[a-z-]*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

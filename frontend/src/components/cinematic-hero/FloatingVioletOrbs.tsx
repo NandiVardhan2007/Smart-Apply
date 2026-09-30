@@ -153,8 +153,9 @@ function SingleOrb({
 
   return (
     <motion.div
-      className="absolute pointer-events-none"
+      className="pointer-events-none"
       style={{
+        position: 'absolute',
         left: orb.x,
         top: orb.y,
         x,

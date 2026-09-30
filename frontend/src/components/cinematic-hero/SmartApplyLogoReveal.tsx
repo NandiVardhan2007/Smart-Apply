@@ -115,9 +115,9 @@ export default function SmartApplyLogoReveal({ scrollYProgress }: Props) {
         <img
           src="/logo.png"
           alt="SmartApply Logo"
-          className="w-[140px] h-[140px] sm:w-[170px] sm:h-[170px] md:w-[210px] md:h-[210px] object-contain drop-shadow-[0_12px_32px_rgba(155,0,255,0.28)]"
+          className="object-contain drop-shadow-[0_12px_32px_rgba(155,0,255,0.28)]"
           style={{
-            maxWidth: '100%',
+            width: 'clamp(120px, 16vw, 180px)',
             height: 'auto',
             aspectRatio: '1 / 1',
           }}

@@ -60,7 +60,14 @@ async def ats_check(
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
             
         try:
-            content = await resume_file.read()
+            size = 0
+            chunks = []
+            while chunk := await resume_file.read(1024 * 1024):
+                size += len(chunk)
+                if size > 10 * 1024 * 1024:
+                    raise HTTPException(status_code=400, detail="File exceeds maximum size")
+                chunks.append(chunk)
+            content = b"".join(chunks)
             resume_text = await run_in_threadpool(extract_pdf_text, content)
         except Exception:
             logger.warning("Resume PDF parse failed", exc_info=True)
@@ -115,7 +122,14 @@ async def parse_resume(
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
         try:
-            content = await resume_file.read()
+            size = 0
+            chunks = []
+            while chunk := await resume_file.read(1024 * 1024):
+                size += len(chunk)
+                if size > 10 * 1024 * 1024:
+                    raise HTTPException(status_code=400, detail="File exceeds maximum size")
+                chunks.append(chunk)
+            content = b"".join(chunks)
             resume_text = await run_in_threadpool(extract_pdf_text, content)
         except Exception:
             logger.warning("Resume PDF parse failed", exc_info=True)

@@ -121,12 +121,17 @@ async def verify_otp(request: Request, response: Response, body: OtpVerifyReques
 
     session_id = get_session_id(request)
 
+    if getattr(user, "failed_otp_attempts", 0) >= 5:
+        raise HTTPException(status_code=403, detail="Account locked due to too many failed OTP attempts")
+
     if (
         not user.otp_code
         or not secrets.compare_digest(user.otp_code, body.otp_code)
         or user.otp_expires_at is None
         or datetime.now(timezone.utc) > user.otp_expires_at.replace(tzinfo=timezone.utc)
     ):
+        user.failed_otp_attempts = getattr(user, "failed_otp_attempts", 0) + 1
+        await user.save()
         if session_id:
             await manager.send_event(session_id, "otp_failed", {
                 "email": body.email,

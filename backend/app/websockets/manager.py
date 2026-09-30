@@ -86,9 +86,10 @@ class ConnectionManager:
         self._connections.pop(session_id, None)
         if self._redis:
             try:
-                # best-effort cleanup of any user->session set this session was added to
-                async for key in self._redis.scan_iter("sa:ws:sessions:*"):
-                    await self._redis.srem(key, session_id)
+                email = await self._redis.get(f"sa:ws:session_user:{session_id}")
+                if email:
+                    await self._redis.srem(f"sa:ws:sessions:{email}", session_id)
+                    await self._redis.delete(f"sa:ws:session_user:{session_id}")
             except Exception as e:
                 logger.warning(f"Failed Redis cleanup on disconnect: {e}")
 
@@ -98,6 +99,7 @@ class ConnectionManager:
                 key = f"sa:ws:sessions:{email}"
                 await self._redis.sadd(key, session_id)
                 await self._redis.expire(key, SESSION_TTL)
+                await self._redis.set(f"sa:ws:session_user:{session_id}", email, ex=SESSION_TTL)
             except Exception as e:
                 logger.warning(f"Failed Redis associate_email: {e}")
 

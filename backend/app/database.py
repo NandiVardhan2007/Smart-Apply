@@ -26,7 +26,7 @@ async def init_db() -> None:
     await init_beanie(
         database=database,
         document_models=[User, Resume, InterviewReport, SystemSettings, APILog, ResumeTemplate],
-        allow_index_dropping=True,
+        allow_index_dropping=getattr(settings, "ENVIRONMENT", "production") == "development",
     )
 
 

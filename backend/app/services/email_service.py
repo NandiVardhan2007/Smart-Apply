@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 import logging
+import html
 import urllib.parse
 
 from app.config import settings
@@ -115,23 +116,23 @@ async def send_otp_email(to_email: str, otp_code: str) -> bool:
 async def send_interview_report_email(to_email: str, report_data: dict) -> bool:
     """Send an interview report summary email via Brevo."""
     score = report_data.get("final_score", "N/A")
-    feedback = report_data.get("overall_feedback", "")
+    feedback = html.escape(str(report_data.get("overall_feedback", "")))
     room_name = report_data.get("room_name", "")
     encoded_room_name = urllib.parse.quote(room_name)
     report_url = f"{settings.FRONTEND_URL}/dashboard/live-interview/report/{encoded_room_name}"
 
     areas_html = "".join(
-        f"<li style='margin-bottom:12px;'>{item}</li>"
+        f"<li style='margin-bottom:12px;'>{html.escape(str(item))}</li>"
         for item in report_data.get("areas_for_improvement", [])
     )
     weaknesses_html = "".join(
-        f"<li style='margin-bottom:12px;'>{item}</li>"
+        f"<li style='margin-bottom:12px;'>{html.escape(str(item))}</li>"
         for item in report_data.get("weaknesses", [])
     )
     telemetry = report_data.get("telemetry_summary", {})
     avg_conf = round(telemetry.get("avg_confidence", 0) * 100)
     blinks = telemetry.get("blink_count", 0)
-    comm_feedback = report_data.get("communication_feedback", "No grammatical issues found.")
+    comm_feedback = html.escape(str(report_data.get("communication_feedback", "No grammatical issues found.")))
 
     body = f"""
     <div style="background: #0a0a0d; border: 1px solid #38bdf8; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 32px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);">
@@ -177,6 +178,14 @@ async def send_interview_report_email(to_email: str, report_data: dict) -> bool:
         <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; color: #f87171; letter-spacing: 0.05em;">IMPROVE ON</h3>
         <ul style="font-size: 15px; padding-left: 20px; margin: 0; color: #e2e8f0; line-height: 1.6;">
             {areas_html}
+        </ul>
+    </div>
+
+    <!-- Weaknesses -->
+    <div style="background: #0a0a0d; border: 1px solid #1a1a24; border-radius: 16px; padding: 24px; margin-bottom: 32px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; color: #f87171; letter-spacing: 0.05em;">WEAKNESSES</h3>
+        <ul style="font-size: 15px; padding-left: 20px; margin: 0; color: #e2e8f0; line-height: 1.6;">
+            {weaknesses_html}
         </ul>
     </div>
 

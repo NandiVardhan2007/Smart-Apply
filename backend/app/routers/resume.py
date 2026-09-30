@@ -34,9 +34,14 @@ async def upload_new_resume(
     if file.content_type not in ALLOWED_RESUME_TYPES:
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
-    contents = await file.read()
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
+    size = 0
+    chunks = []
+    while chunk := await file.read(1024 * 1024):
+        size += len(chunk)
+        if size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
+        chunks.append(chunk)
+    contents = b"".join(chunks)
 
     kind = filetype.guess(contents)
     if kind is None or kind.mime not in ALLOWED_RESUME_TYPES:
@@ -66,10 +71,6 @@ async def upload_new_resume(
     )
     url = storage_service.get_file_url(key)
 
-    # Check if this is their first resume
-    existing_count = await Resume.find({"user_id": user.id}).count()
-    is_primary = existing_count == 0
-
     # Save to Resume collection
     resume = Resume(
         user_id=user.id,
@@ -77,12 +78,19 @@ async def upload_new_resume(
         file_url=url,
         file_key=key,
         extracted_text=resume_text,
-        is_primary=is_primary,
+        is_primary=False,
     )
     await resume.insert()
 
-    # If it's primary, update the User model for legacy fallback
-    if is_primary:
+    existing_primary = await Resume.find_one(
+        Resume.user_id == user.id, 
+        Resume.is_primary == True,
+        Resume.id != resume.id
+    )
+    
+    if not existing_primary:
+        resume.is_primary = True
+        await resume.save()
         user.resume_url = url
         await user.save()
 

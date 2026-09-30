@@ -206,7 +206,7 @@ async def execute_code(
 
     return ExecuteResponse(
         stdout=stdout,
-        stderr=stderr,
+        stderr=stderr or compile_err or (status_info.get("description", "") if isinstance(status_info, dict) else ""),
         exit_code=exit_code,
         execution_time=exec_time or elapsed,
         language=runtime["name"],

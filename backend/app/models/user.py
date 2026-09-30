@@ -20,12 +20,14 @@ class User(Document):
     # OTP fields
     otp_code: Optional[str] = None
     otp_expires_at: Optional[datetime] = None
+    failed_otp_attempts: int = 0
 
     # Profile fields
     profile_pic_url: Optional[str] = None
     resume_url: Optional[str] = None
     phone: Optional[str] = None
     bio: Optional[str] = None
+    headline: Optional[str] = None
     skills: List[str] = Field(default_factory=list)
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None

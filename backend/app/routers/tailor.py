@@ -31,11 +31,9 @@ async def extract_latex(request: Request, resume_id: str = Body(..., embed=True)
         if not resume or resume.user_id != user.id:
             raise HTTPException(status_code=404, detail="Resume not found")
             
-        # Download the PDF from file_url to memory
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(resume.file_url)
-            resp.raise_for_status()
-            pdf_content = resp.content
+        # Download the PDF from R2 to memory
+        from app.services import storage_service
+        pdf_content = storage_service.get_file(resume.file_key)
             
         # Extract LaTeX
         latex_code = await latex_service.extract_latex_from_pdf(pdf_content)
@@ -60,11 +58,9 @@ async def extract_html(request: Request, resume_id: str = Body(..., embed=True),
         if not resume or resume.user_id != user.id:
             raise HTTPException(status_code=404, detail="Resume not found")
             
-        # Download the PDF from file_url to memory
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(resume.file_url)
-            resp.raise_for_status()
-            pdf_content = resp.content
+        # Download the PDF from R2 to memory
+        from app.services import storage_service
+        pdf_content = storage_service.get_file(resume.file_key)
             
         # Extract HTML
         from app.services import html_service
@@ -110,10 +106,8 @@ async def auto_apply_tailor(request: Request, req: TailorRequest, user: User = D
         
         # If not extracted yet, extract it first
         if not latex_code:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(resume.file_url)
-                resp.raise_for_status()
-                pdf_content = resp.content
+            from app.services import storage_service
+            pdf_content = storage_service.get_file(resume.file_key)
             latex_code = await latex_service.extract_latex_from_pdf(pdf_content)
             resume.latex_code = latex_code
             await resume.save()

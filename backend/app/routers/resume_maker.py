@@ -146,88 +146,20 @@ async def compile_template(
         value = _latex_escape(str(data.get(field, "")))
         latex_content = latex_content.replace(f"{{{{{field}}}}}", value)
 
-    def run_pdflatex():
-        temp_dir = tempfile.mkdtemp()
-        tex_file_path = os.path.join(temp_dir, "resume.tex")
-        pdf_file_path = os.path.join(temp_dir, "resume.pdf")
-
-        # Restrict TeX file I/O to the working directory so an injected
-        # \input/\openout can't escape to arbitrary paths, and never enable
-        # shell-escape (blocks \write18 RCE).
-        tex_env = {
-            **os.environ,
-            "openin_any": "p",
-            "openout_any": "p",
-        }
-        pdflatex_cmd = [
-            "pdflatex",
-            "-interaction=nonstopmode",
-            "-no-shell-escape",
-            "resume.tex",
-        ]
-
-        try:
-            with open(tex_file_path, "w", encoding="utf-8") as f:
-                f.write(latex_content)
-
-            try:
-                subprocess.run(
-                    pdflatex_cmd,
-                    cwd=temp_dir,
-                    env=tex_env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    check=True,
-                    timeout=15
-                )
-                subprocess.run(
-                    pdflatex_cmd,
-                    cwd=temp_dir,
-                    env=tex_env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    check=True,
-                    timeout=15
-                )
-            except subprocess.CalledProcessError as e:
-                # Log the full LaTeX log server-side only; never return it to the
-                # client (it can echo injected file contents and leak paths).
-                log_path = os.path.join(temp_dir, "resume.log")
-                log_content = ""
-                if os.path.exists(log_path):
-                    with open(log_path, "r", encoding="utf-8", errors="replace") as f:
-                        log_content = f.read()
-                logger.error(
-                    "LaTeX compile failed (template=%s): %s\n%s",
-                    template_id, e.stderr.decode("utf-8", "replace"), log_content,
-                )
-                raise ValueError("LaTeX compilation failed. Check your input values.")
-            except FileNotFoundError:
-                raise ValueError("pdflatex command not found. Please ensure a TeX distribution is installed.")
-            except subprocess.TimeoutExpired:
-                raise ValueError("LaTeX compilation timed out.")
-
-            if not os.path.exists(pdf_file_path):
-                raise ValueError("PDF file was not generated.")
-        except BaseException:
-            # Clean up the temp dir on any failure; on success the caller removes
-            # it via a BackgroundTask after the FileResponse has been streamed.
-            shutil.rmtree(temp_dir, ignore_errors=True)
-            raise
-
-        return pdf_file_path, temp_dir
-
+    from fastapi.responses import Response
+    from app.services import latex_service
+    
     try:
-        pdf_path, temp_dir = await run_in_threadpool(run_pdflatex)
+        pdf_bytes = await latex_service.compile_latex_to_pdf(latex_content)
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="LaTeX compilation failed.")
 
-    return FileResponse(
-        path=pdf_path,
+    return Response(
+        content=pdf_bytes,
         media_type="application/pdf",
-        filename="resume.pdf",
         headers={"Content-Disposition": "attachment; filename=resume.pdf"},
-        background=BackgroundTask(shutil.rmtree, temp_dir, ignore_errors=True),
     )
 
 @router.post("/templates/{template_id}/smart-fill")
