@@ -189,17 +189,11 @@ export default function Landing() {
 
   const role = SAMPLE_ROLES.find((r) => r.id === selectedRole) || SAMPLE_ROLES[0];
 
-  const [inHeroTrack, setInHeroTrack] = useState(true);
+  const [inHeroTrack, setInHeroTrack] = useState(false);
   const landingContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onScroll = () => {
-      // Reveal standard navbar when scrolling into landing features
-      const threshold = (landingContentRef.current?.offsetTop || window.innerHeight * 2.5) - 80;
-      setInHeroTrack(window.scrollY < threshold);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    
   }, []);
 
     return (
@@ -1269,5 +1263,6 @@ export default function Landing() {
     </div>
   );
 }
+
 
 
