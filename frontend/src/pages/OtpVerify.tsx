@@ -1,3 +1,5 @@
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -42,7 +44,7 @@ export default function OtpVerify() {
     if (verifiedRef.current) return;
     if (lastAuthEvent?.type === 'otp_verified') {
       verifiedRef.current = true;
-      login((lastAuthEvent.data.token as string) || '', (lastAuthEvent.data.user || lastAuthEvent.data) as unknown as User);
+      signInWithCustomToken(auth, (lastAuthEvent.data.token as string) || '').catch(console.error);
       setSuccess(true);
       setTimeout(() => navigate(lastAuthEvent.data.has_onboarded ? '/dashboard' : '/onboarding'), 1000);
     }
@@ -94,7 +96,7 @@ export default function OtpVerify() {
 
       if (res.ok) {
         verifiedRef.current = true;
-        login(res.data.access_token, res.data.user);
+        await signInWithCustomToken(auth, res.data.access_token);
         setSuccess(true);
         showToast('success', 'Email verified!');
         setTimeout(() => navigate(res.data.user.has_onboarded ? '/dashboard' : '/onboarding'), 1000);

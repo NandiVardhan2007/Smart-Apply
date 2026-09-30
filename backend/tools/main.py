@@ -15,6 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from app.rate_limiter import limiter
 from app.config import settings, assert_secure_config
 from app.database import close_db, init_db
+from app.services import firebase_service  # Initialized on import
 from app.routers import resume_maker, cover_letter, code_execution, upload
 from app.websockets.manager import manager
 

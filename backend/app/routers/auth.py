@@ -144,7 +144,9 @@ async def verify_otp(request: Request, response: Response, body: OtpVerifyReques
     user.otp_expires_at = None
     await user.save()
 
-    token = create_access_token({"sub": user.email})
+    from firebase_admin import auth as fb_auth
+    custom_token_bytes = fb_auth.create_custom_token(str(user.id), developer_claims={"email": user.email})
+    token = custom_token_bytes.decode('utf-8') if isinstance(custom_token_bytes, bytes) else custom_token_bytes
 
     if session_id:
         # NOTE: never send the JWT over the WebSocket. The socket is keyed only on a
@@ -208,7 +210,9 @@ async def login(request: Request, response: Response, body: LoginRequest):
             detail="Email not verified. A new OTP has been sent.",
         )
 
-    token = create_access_token({"sub": user.email})
+    from firebase_admin import auth as fb_auth
+    custom_token_bytes = fb_auth.create_custom_token(str(user.id), developer_claims={"email": user.email})
+    token = custom_token_bytes.decode('utf-8') if isinstance(custom_token_bytes, bytes) else custom_token_bytes
 
     if session_id:
         await manager.associate_email(session_id, user.email)
@@ -323,6 +327,63 @@ async def resend_otp(request: Request, body: ForgotPasswordRequest):
         })
 
     return MessageResponse(message="A new OTP has been sent to your email.")
+
+@router.post("/sync", response_model=dict)
+@limiter.limit("10/minute")
+async def sync_user(request: Request):
+    """Sync a Firebase user with our MongoDB."""
+    auth_header = request.headers.get("authorization", "")
+    token = auth_header.removeprefix("Bearer ").strip() or None
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    from firebase_admin import auth as fb_auth
+    try:
+        decoded_token = fb_auth.verify_id_token(token)
+    except Exception as e:
+        logger.error(f"Firebase token verification failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    email = decoded_token.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    user = await User.find_one(User.email == email)
+    if not user:
+        user = User(
+            email=email,
+            full_name=decoded_token.get("name", ""),
+            is_verified=decoded_token.get("email_verified", False),
+            profile_pic_url=decoded_token.get("picture", ""),
+            hashed_password=""  # Not used with Firebase
+        )
+        await user.insert()
+    else:
+        # Update user fields if needed
+        updated = False
+        if "picture" in decoded_token and not user.profile_pic_url:
+            user.profile_pic_url = decoded_token.get("picture")
+            updated = True
+        if "name" in decoded_token and not user.full_name:
+            user.full_name = decoded_token.get("name")
+            updated = True
+        
+        if updated:
+            await user.save()
+
+    return {"user": _user_dict(user)}
 
 @router.post("/logout", response_model=MessageResponse)
 async def logout(response: Response):

@@ -4,55 +4,74 @@ import {
   useState,
   useRef,
   useCallback,
+  useEffect,
   type ReactNode,
 } from 'react';
 import { configureClient, apiFetch } from '../api/client';
 import { useAuthSocket, type AuthSocketEvent } from '../hooks/useAuthSocket';
 import type { User } from '../api/types';
+import { auth, onAuthStateChanged, signOut } from '../lib/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  firebaseUser: FirebaseUser | null;
+  loading: boolean;
   sessionId: string;
   isAuthenticated: boolean;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   lastAuthEvent: AuthSocketEvent | null;
+  login: (token: string, user: User) => void; // Keep this just in case, though it may not be used
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const stored = localStorage.getItem('sa_user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      // Corrupt/malformed localStorage should not crash the app at boot.
-      return null;
-    }
-  });
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('sa_token');
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [lastAuthEvent, setLastAuthEvent] = useState<AuthSocketEvent | null>(null);
 
-  const login = useCallback((newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('sa_token', newToken);
-    localStorage.setItem('sa_user', JSON.stringify(newUser));
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
+      setFirebaseUser(fUser);
+      if (fUser) {
+        try {
+          const token = await fUser.getIdToken();
+          const res = await apiFetch('/auth/sync', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setUser(res.data as User);
+          } else {
+            setUser(null);
+          }
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const logout = useCallback(() => {
+  const login = useCallback((newToken: string, newUser: User) => {
+    // This is essentially a no-op now, because Firebase handles login.
+    // However, to satisfy TypeScript / any old callers, we can leave it.
+  }, []);
+
+  const logout = useCallback(async () => {
     try {
       sessionStorage.setItem('sa_logging_out', '1');
     } catch {}
-    setToken(null);
+    await signOut(auth);
     setUser(null);
-    localStorage.removeItem('sa_token');
-    localStorage.removeItem('sa_user');
+    setFirebaseUser(null);
     apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
     if (typeof window !== 'undefined' && window.location.pathname !== '/' && window.location.pathname !== '/landing') {
       window.location.replace('/');
@@ -64,10 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLastAuthEvent(event);
 
       switch (event.type) {
-        // NOTE: the auth WebSocket never carries the JWT (the socket is keyed only on a
-        // client-chosen session id and is otherwise unauthenticated). The token is
-        // delivered by the REST login/verify responses, which call login() directly.
-        // These events are informational only (e.g. so a waiting tab can update its UI).
         case 'session_expired':
           logout();
           break;
@@ -78,19 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { sessionId } = useAuthSocket({ onEvent: handleAuthEvent });
 
-  // Stable refs so configureClient's getters always read the latest state
-  // without needing to be re-registered on every render.
-  const tokenRef = useRef(token);
   const sessionIdRef = useRef(sessionId);
   const logoutRef = useRef(logout);
-  tokenRef.current = token;
   sessionIdRef.current = sessionId;
   logoutRef.current = logout;
 
-  // Wired up synchronously during render — see the note in api/client.ts
-  // for why this can't move into a useEffect.
   configureClient({
-    getToken: () => tokenRef.current,
     getSessionId: () => sessionIdRef.current,
     onUnauthorized: () => logoutRef.current(),
   });
@@ -99,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...updates };
-      localStorage.setItem('sa_user', JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -108,7 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
+        firebaseUser,
+        loading,
         sessionId,
         isAuthenticated: Boolean(user),
         login,

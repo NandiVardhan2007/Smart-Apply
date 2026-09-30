@@ -6,6 +6,11 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
+    # ── Firebase ──
+    FIREBASE_PROJECT_ID: str = ""
+    FIREBASE_PRIVATE_KEY: str = ""
+    FIREBASE_CLIENT_EMAIL: str = ""
+
     # ── JWT ──
     SECRET_KEY: str = "change-this-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours

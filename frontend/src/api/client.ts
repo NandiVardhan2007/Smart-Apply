@@ -1,3 +1,4 @@
+import { auth } from '../lib/firebase';
 /**
  * API client — a thin fetch wrapper that attaches the auth token and the
  * realtime session id to every request, and reports 401s back up so the
@@ -13,16 +14,13 @@
  * brief window before configureClient runs.
  */
 
-let _getToken: (() => string | null) | null = null;
 let _getSessionId: (() => string | null) | null = null;
 let _onUnauthorized: (() => void) | null = null;
 
 export function configureClient(opts: {
-  getToken: () => string | null;
   getSessionId: () => string | null;
   onUnauthorized: () => void;
 }) {
-  _getToken = opts.getToken;
   _getSessionId = opts.getSessionId;
   _onUnauthorized = opts.onUnauthorized;
 }
@@ -88,7 +86,11 @@ export async function apiFetch<T = unknown>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const token = (_getToken ? _getToken() : null) || localStorage.getItem('sa_token');
+  let token = null;
+  try {
+    if (auth.currentUser) token = await auth.currentUser.getIdToken();
+  } catch {}
+  if (!token) token = localStorage.getItem('sa_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -159,7 +161,11 @@ export async function apiFetchRaw(endpoint: string, options: RequestInit = {}): 
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const token = (_getToken ? _getToken() : null) || localStorage.getItem('sa_token');
+  let token = null;
+  try {
+    if (auth.currentUser) token = await auth.currentUser.getIdToken();
+  } catch {}
+  if (!token) token = localStorage.getItem('sa_token');
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const sessionId = _getSessionId?.();

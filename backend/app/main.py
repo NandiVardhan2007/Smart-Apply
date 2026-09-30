@@ -13,6 +13,7 @@ from app.rate_limiter import limiter
 from app.config import settings, assert_secure_config
 
 from app.database import close_db, init_db
+from app.services import firebase_service  # Initialized on import
 from app.routers import ai, auth, upload, user, resume, projects, interview, tailor, stats, cover_letter, jobs, linkedin, code_execution, admin, resume_maker
 from app.websockets.auth_ws import router as ws_router
 from app.websockets.manager import manager

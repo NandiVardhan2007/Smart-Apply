@@ -1,3 +1,5 @@
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -40,7 +42,7 @@ export default function Login() {
       });
 
       if (res.ok) {
-        login(res.data.access_token, res.data.user);
+        await signInWithCustomToken(auth, res.data.access_token);
         showToast('success', `Welcome back, ${res.data.user.full_name.split(' ')[0]}!`);
         navigate(res.data.user.has_onboarded ? '/dashboard' : '/onboarding');
       } else if (res.status === 403) {
