@@ -120,14 +120,8 @@ export default function FloatingVioletOrbs({ scrollYProgress }: Props) {
 
   return (
     <motion.div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        zIndex: 3,
-        opacity,
-      }}
+      className="absolute inset-0 pointer-events-none overflow-hidden z-[3]"
+      style={{ opacity }}
     >
       {orbs.map((orb) => (
         <SingleOrb key={orb.id} orb={orb} scrollYProgress={scrollYProgress} sx={sx} sy={sy} />
@@ -159,9 +153,9 @@ function SingleOrb({
 
   return (
     <motion.div
+      className="pointer-events-none"
       style={{
         position: 'absolute',
-        pointerEvents: 'none',
         left: orb.x,
         top: orb.y,
         x,

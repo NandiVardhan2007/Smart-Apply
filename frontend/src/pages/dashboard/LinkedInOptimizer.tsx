@@ -6,6 +6,7 @@ import { apiFetch, apiErrorMessage } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { PageLoader, ButtonSpinner } from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 
 interface OptimizationResult {
   headline_suggestions: string[];
@@ -141,7 +142,7 @@ export default function LinkedInOptimizer() {
         </div>
 
         {/* Results Pane */}
-        <div className="card" style={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
+        <SpotlightCard className="card" style={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
           <AnimatePresence mode="wait">
             {!result && !analyzing && (
               <motion.div
@@ -205,7 +206,7 @@ export default function LinkedInOptimizer() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </SpotlightCard>
       </div>
 
       <style>{`

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,9 +24,8 @@ import {
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
+import CinematicHeroSection from '../components/cinematic-hero/CinematicHeroSection';
 import AnimatedBackground from '../components/AnimatedBackground';
-import SplashScreen from './SplashScreen';
-import SplashCursor from '../components/reactbits/SplashCursor';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -184,80 +183,48 @@ export default function Landing() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [introActive, setIntroActive] = useState(() => {
-    try {
-      return sessionStorage.getItem('sa_intro_seen') !== '1';
-    } catch {
-      return false;
-    }
-  });
-
-  const handleIntroComplete = () => {
-    try {
-      sessionStorage.setItem('sa_intro_seen', '1');
-    } catch {}
-    setIntroActive(false);
-  };
   const [activeTab, setActiveTab] = useState<'ats' | 'interview' | 'latex' | 'projects'>('ats');
   const [selectedRole, setSelectedRole] = useState<string>('backend');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const role = SAMPLE_ROLES.find((r) => r.id === selectedRole) || SAMPLE_ROLES[0];
 
+  const [inHeroTrack, setInHeroTrack] = useState(true);
+  const landingContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => {
+      // Reveal standard navbar when scrolling into landing features
+      const threshold = (landingContentRef.current?.offsetTop || window.innerHeight * 2.5) - 80;
+      setInHeroTrack(window.scrollY < threshold);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleExploreClick = () => {
+    if (landingContentRef.current) {
+      landingContentRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div
       style={{
         position: 'relative',
+        overflow: 'hidden',
         minHeight: '100vh',
         background: 'transparent',
         color: 'var(--ink)',
       }}
     >
-      <AnimatePresence>
-        {introActive && (
-          <motion.div
-            key="landing-intro-overlay"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              width: '100vw',
-              height: '100vh',
-              zIndex: 99999,
-              background: '#000000',
-              overflow: 'hidden',
-            }}
-          >
-            <SplashScreen onComplete={handleIntroComplete} standalone={false} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── Cinematic Hero Sequence (Sticky 380vh Scroll Runway) ────── */}
+      <CinematicHeroSection onExploreClick={handleExploreClick} />
 
       <AnimatedBackground />
-      <SplashCursor
-        DENSITY_DISSIPATION={3.5}
-        VELOCITY_DISSIPATION={2}
-        PRESSURE={0.1}
-        CURL={3}
-        SPLAT_RADIUS={0.2}
-        SPLAT_FORCE={6000}
-        COLOR_UPDATE_SPEED={10}
-        SHADING
-        RAINBOW_MODE={false}
-        COLOR="#A855F7"
-      />
-      <Navbar visible={true} />
+      <Navbar visible={!inHeroTrack} />
 
-      <div
-        id="features-overview"
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          zIndex: 10,
-        }}
-      >
+      <div ref={landingContentRef} id="features-overview">
         {/* ── Hero Section ────────────────────────────────────────────── */}
         <section style={{ padding: '130px 24px 70px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
         <motion.div
@@ -361,7 +328,6 @@ export default function Landing() {
             >
               Read Documentation
             </Link>
-
           </div>
 
           {/* Value Pills */}
@@ -406,7 +372,7 @@ export default function Landing() {
           </div>
 
           {/* ── Interactive Live Product Showcase HUD ────────────────── */}
-          <div id="demo" style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
+          <div id="interview-studio" style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
             <TiltedCard maxTilt={4} scale={1.01} perspective={1400} glareEffect={true}>
               <div
                 style={{
@@ -456,6 +422,9 @@ export default function Landing() {
                       padding: 4,
                       borderRadius: 10,
                       border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid var(--border)',
+                      overflowX: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      maxWidth: '100%',
                     }}
                   >
                     {[
@@ -842,7 +811,13 @@ export default function Landing() {
                               <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
                                 Structured Cursor / v0 Build Prompt
                               </span>
-                              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)' }}>Copy Prompt</span>
+                              <button
+                                type="button"
+                                onClick={() => navigator.clipboard.writeText("Create a Go service implementing a token bucket rate limiter with Redis backend. Include unit tests simulating 100 concurrent goroutines and verifying burst capacity semantics...")}
+                                style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
+                              >
+                                Copy Prompt
+                              </button>
                             </div>
                             <pre
                               style={{

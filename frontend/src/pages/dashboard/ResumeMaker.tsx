@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiFetch, getApiBaseUrl } from '../../api/client';
+import { apiFetch, apiFetchRaw } from '../../api/client';
 import { useToast } from '../../components/Toast';
 import PageHeader from '../../components/PageHeader';
 import { SkeletonCard, ButtonSpinner } from '../../components/LoadingSpinner';
@@ -64,14 +64,11 @@ export default function ResumeMaker() {
 
     setCompiling(true);
     try {
-      const token = localStorage.getItem('sa_token');
+      // apiFetchRaw returns the raw Response so we can read the PDF blob, while
+      // still attaching the same auth token / session id / credentials as apiFetch.
       const endpoint = `/resume-maker/templates/${selectedTemplate._id}/compile`;
-      const response = await fetch(`${getApiBaseUrl(endpoint)}${endpoint}`, {
+      const response = await apiFetchRaw(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify(formData)
       });
 

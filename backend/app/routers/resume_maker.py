@@ -1,12 +1,14 @@
 import json
+import logging
 import os
+import shutil
 import subprocess
 import tempfile
-import logging
 from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 from beanie import PydanticObjectId
 import urllib.parse
@@ -17,16 +19,43 @@ from app.middleware.admin_middleware import get_admin_user
 from app.models.resume_template import ResumeTemplate
 from app.models.resume import Resume
 from app.models.user import User
-from app.services import storage_service, ai_service, latex_service
+from app.services import storage_service, ai_service
 from app.rate_limiter import limiter
 from pydantic import BaseModel
-
-logger = logging.getLogger(__name__)
 
 class SmartFillRequest(BaseModel):
     resume_id: Optional[str] = None
 
 router = APIRouter(prefix="/api/resume-maker", tags=["resume-maker"])
+
+logger = logging.getLogger(__name__)
+
+# Order matters: the backslash must be escaped first, otherwise the backslashes
+# we introduce for the other characters would themselves be re-escaped.
+_LATEX_ESCAPES = [
+    ("\\", r"\textbackslash{}"),
+    ("&", r"\&"),
+    ("%", r"\%"),
+    ("$", r"\$"),
+    ("#", r"\#"),
+    ("_", r"\_"),
+    ("{", r"\{"),
+    ("}", r"\}"),
+    ("~", r"\textasciitilde{}"),
+    ("^", r"\textasciicircum{}"),
+]
+
+
+def _latex_escape(value: str) -> str:
+    """Neutralize LaTeX control characters in untrusted user input.
+
+    Without this, a field value like ``\\input{/etc/passwd}`` would be compiled
+    verbatim, letting a user read arbitrary server files into the generated PDF
+    (or hang the compiler with a recursive macro)."""
+    for target, replacement in _LATEX_ESCAPES:
+        value = value.replace(target, replacement)
+    return value
+
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -114,73 +143,23 @@ async def compile_template(
     # Replace placeholders. e.g. {{Name}} -> John Doe
     latex_content = template.latex_code
     for field in template.required_fields:
-        value = data.get(field, "")
-        value = str(value).replace("&", "\\&").replace("%", "\\%").replace("$", "\\$")
+        value = _latex_escape(str(data.get(field, "")))
         latex_content = latex_content.replace(f"{{{{{field}}}}}", value)
 
-    def run_pdflatex():
-        temp_dir = tempfile.mkdtemp()
-        tex_file_path = os.path.join(temp_dir, "resume.tex")
-        pdf_file_path = os.path.join(temp_dir, "resume.pdf")
-
-        with open(tex_file_path, "w", encoding="utf-8") as f:
-            f.write(latex_content)
-
-        try:
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "resume.tex"],
-                cwd=temp_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                timeout=15
-            )
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "resume.tex"],
-                cwd=temp_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                timeout=15
-            )
-        except subprocess.CalledProcessError as e:
-            log_path = os.path.join(temp_dir, "resume.log")
-            log_content = ""
-            if os.path.exists(log_path):
-                with open(log_path, "r", encoding="utf-8") as f:
-                    log_content = f.read()
-            raise ValueError(f"LaTeX compilation failed: {e.stderr.decode('utf-8')}\nLog: {log_content}")
-        except FileNotFoundError:
-            raise ValueError("pdflatex command not found.")
-        except subprocess.TimeoutExpired:
-            raise ValueError("LaTeX compilation timed out.")
-
-        if not os.path.exists(pdf_file_path):
-            raise ValueError("PDF file was not generated.")
-
-        with open(pdf_file_path, "rb") as pf:
-            return pf.read()
-
-    # Prefer cloud compilation (works on Render without texlive), fallback to local pdflatex
-    pdf_bytes = None
-    cloud_error = None
+    from fastapi.responses import Response
+    from app.services import latex_service
+    
     try:
         pdf_bytes = await latex_service.compile_latex_to_pdf(latex_content)
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        cloud_error = str(e)
-        logger.warning(f"Cloud LaTeX compilation failed ({cloud_error}), falling back to local pdflatex...")
-
-    if not pdf_bytes:
-        try:
-            pdf_bytes = await run_in_threadpool(run_pdflatex)
-        except Exception as local_e:
-            err_msg = cloud_error or str(local_e)
-            raise HTTPException(status_code=500, detail=f"Failed to compile LaTeX: {err_msg}")
+        raise HTTPException(status_code=500, detail="LaTeX compilation failed.")
 
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=resume.pdf"}
+        headers={"Content-Disposition": "attachment; filename=resume.pdf"},
     )
 
 @router.post("/templates/{template_id}/smart-fill")
@@ -223,7 +202,8 @@ async def smart_fill_template(
         
         return {"filled_data": filled_data}
         
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=500, detail=f"Failed to smart fill: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Smart fill failed for template %s", template_id)
+        raise HTTPException(status_code=502, detail="Could not auto-fill the template right now. Please try again.")

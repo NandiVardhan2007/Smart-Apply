@@ -68,6 +68,32 @@
   color: var(--ink-soft);
 }
 
+.auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.auth-consent input[type='checkbox'] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.auth-consent a {
+  color: var(--accent);
+  font-weight: 600;
+}
+.auth-consent a:hover {
+  text-decoration: underline;
+}
+
 .auth-links a {
   color: var(--accent);
   font-weight: 600;

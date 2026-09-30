@@ -63,7 +63,7 @@ export default function AnnouncementBanner() {
             zIndex: 9999,
             borderRadius: 999,
             boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-            border: `1px solid ${textColor}30`,
+            border: `1px solid color-mix(in srgb, ${textColor} 30%, transparent)`,
             maxWidth: '90vw',
             pointerEvents: 'auto'
           }}

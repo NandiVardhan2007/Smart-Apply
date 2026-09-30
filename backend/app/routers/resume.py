@@ -1,6 +1,6 @@
 from typing import List
 
-import fitz  # PyMuPDF
+import logging
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request, BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from app.rate_limiter import limiter
@@ -10,10 +10,13 @@ from app.middleware.auth_middleware import get_current_user
 from app.models.resume import Resume
 from app.models.user import User
 from app.services import storage_service, ai_service
+from app.utils.pdf import extract_pdf_text
 import filetype
 import urllib.parse
 
 router = APIRouter(prefix="/api/resumes", tags=["resumes"])
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_RESUME_TYPES = {"application/pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -31,23 +34,25 @@ async def upload_new_resume(
     if file.content_type not in ALLOWED_RESUME_TYPES:
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
-    contents = await file.read()
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
+    size = 0
+    chunks = []
+    while chunk := await file.read(1024 * 1024):
+        size += len(chunk)
+        if size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit")
+        chunks.append(chunk)
+    contents = b"".join(chunks)
 
     kind = filetype.guess(contents)
     if kind is None or kind.mime not in ALLOWED_RESUME_TYPES:
         raise HTTPException(status_code=400, detail="Only PDF files are allowed based on file content")
 
-    # Extract text from PDF
+    # Extract text from PDF (off the event loop — fitz is blocking)
     try:
-        doc = fitz.open(stream=contents, filetype="pdf")
-        resume_text = ""
-        for page in doc:
-            resume_text += page.get_text() + "\n"
-        doc.close()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+        resume_text = await run_in_threadpool(extract_pdf_text, contents)
+    except Exception:
+        logger.warning("Resume PDF parse failed", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
 
     if not resume_text.strip():
         raise HTTPException(
@@ -66,10 +71,6 @@ async def upload_new_resume(
     )
     url = storage_service.get_file_url(key)
 
-    # Check if this is their first resume
-    existing_count = await Resume.find({"user_id": user.id}).count()
-    is_primary = existing_count == 0
-
     # Save to Resume collection
     resume = Resume(
         user_id=user.id,
@@ -77,22 +78,36 @@ async def upload_new_resume(
         file_url=url,
         file_key=key,
         extracted_text=resume_text,
-        is_primary=is_primary,
+        is_primary=False,
     )
     await resume.insert()
 
-    # If it's primary, update the User model for legacy fallback
-    if is_primary:
+    existing_primary = await Resume.find_one(
+        Resume.user_id == user.id, 
+        Resume.is_primary == True,
+        Resume.id != resume.id
+    )
+    
+    if not existing_primary:
+        resume.is_primary = True
+        await resume.save()
         user.resume_url = url
         await user.save()
 
     async def _populate_parsed_data(r_id: PydanticObjectId, txt: str):
-        parsed = await ai_service.parse_resume_for_profile(txt)
-        r = await Resume.get(r_id)
-        if r:
-            r.parsed_data = parsed
-            await r.save()
-            
+        # Runs after the response is sent; an unhandled error here would vanish
+        # silently, leaving the resume permanently without parsed_data.
+        try:
+            parsed = await ai_service.parse_resume_for_profile(txt)
+            if not isinstance(parsed, dict) or not parsed:
+                logger.warning("Resume %s: parser returned no usable data", r_id)
+                return
+            r = await Resume.get(r_id)
+            if r:
+                r.parsed_data = parsed
+                await r.save()
+        except Exception:
+            logger.exception("Background parse failed for resume %s", r_id)
     background_tasks.add_task(_populate_parsed_data, resume.id, resume_text)
 
     return {"message": "Resume uploaded successfully", "resume": resume}

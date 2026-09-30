@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -40,15 +40,16 @@ export default function OtpVerify() {
   // Auto-verify if a sibling tab / the OTP email link confirms via WebSocket
   useEffect(() => {
     if (verifiedRef.current) return;
-    if (lastAuthEvent?.type === 'otp_verified' && lastAuthEvent.data.token) {
+    if (lastAuthEvent?.type === 'otp_verified') {
       verifiedRef.current = true;
+      login((lastAuthEvent.data.token as string) || '', (lastAuthEvent.data.user || lastAuthEvent.data) as unknown as User);
       setSuccess(true);
       setTimeout(() => navigate(lastAuthEvent.data.has_onboarded ? '/dashboard' : '/onboarding'), 1000);
     }
     if (lastAuthEvent?.type === 'otp_failed') {
       setError((lastAuthEvent.data.reason as string) || 'Invalid OTP');
     }
-  }, [lastAuthEvent, navigate]);
+  }, [lastAuthEvent, navigate, login]);
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d?$/.test(value)) return;
@@ -125,8 +126,7 @@ export default function OtpVerify() {
   };
 
   if (!email) {
-    navigate('/signup');
-    return null;
+    return <Navigate to="/signup" replace />;
   }
 
   return (

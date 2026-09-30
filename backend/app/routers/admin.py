@@ -56,9 +56,11 @@ async def search_users(q: str = "", admin: User = Depends(get_admin_user)):
     if not q or len(q) < 2:
         return {"users": []}
     
+    import re
+    safe_q = re.escape(q)
     query = {"$or": [
-        {"email": {"$regex": q, "$options": "i"}},
-        {"full_name": {"$regex": q, "$options": "i"}}
+        {"email": {"$regex": safe_q, "$options": "i"}},
+        {"full_name": {"$regex": safe_q, "$options": "i"}}
     ]}
     
     users = await User.find(query).limit(10).to_list()
@@ -75,6 +77,11 @@ async def search_users(q: str = "", admin: User = Depends(get_admin_user)):
 @router.get("/export/users")
 async def export_users_csv(admin: User = Depends(get_admin_user)):
     """Export all users as a CSV file."""
+    def _sanitize_csv(value: str) -> str:
+        if value and value[0] in ('=', '+', '-', '@', '\t', '\r'):
+            return "'" + value
+        return value
+
     users = await User.find_all().to_list()
     
     output = io.StringIO()
@@ -85,8 +92,8 @@ async def export_users_csv(admin: User = Depends(get_admin_user)):
     for user in users:
         writer.writerow([
             str(user.id),
-            user.email,
-            user.full_name or "",
+            _sanitize_csv(user.email),
+            _sanitize_csv(user.full_name or ""),
             "Yes" if user.is_verified else "No",
             "Yes" if user.is_admin else "No",
             user.created_at.isoformat() if user.created_at else ""
@@ -143,7 +150,20 @@ async def delete_user(user_id: PydanticObjectId, admin: User = Depends(get_admin
     if user.id == admin.id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
-    await Resume.find({"user_id": user_id}).delete()
+    from starlette.concurrency import run_in_threadpool
+    from app.services import storage_service
+    from app.models.interview import InterviewReport
+
+    resumes = await Resume.find(Resume.user_id == user.id).to_list()
+    for resume in resumes:
+        if resume.file_key:
+            try:
+                await run_in_threadpool(storage_service.delete_file, resume.file_key)
+            except Exception:
+                pass
+        await resume.delete()
+
+    await InterviewReport.find(InterviewReport.user_id == str(user.id)).delete()
     await user.delete()
     
     return {"ok": True, "detail": "User deleted successfully"}
@@ -216,12 +236,16 @@ class SettingsUpdateRequest(BaseModel):
 
 @router.get("/settings")
 async def get_settings(admin: User = Depends(get_admin_user)):
-    """Get global system settings."""
+    """Get global system settings. The stored API key is never returned; only
+    whether one is configured, so it can't leak in an admin API response."""
     settings = await SystemSettings.find_one()
     if not settings:
         settings = SystemSettings()
         await settings.insert()
-    return settings
+    data = settings.model_dump()
+    data["nvidia_nim_api_key_set"] = bool(data.get("nvidia_nim_api_key"))
+    data.pop("nvidia_nim_api_key", None)
+    return data
 
 @router.put("/settings")
 async def update_settings(req: SettingsUpdateRequest, admin: User = Depends(get_admin_user)):
@@ -232,7 +256,10 @@ async def update_settings(req: SettingsUpdateRequest, admin: User = Depends(get_
     
     settings.maintenance_mode = req.maintenance_mode
     settings.allow_new_signups = req.allow_new_signups
-    settings.nvidia_nim_api_key = req.nvidia_nim_api_key
+    # Only overwrite the stored API key when a new one is explicitly supplied,
+    # otherwise a toggle of maintenance/signups (which omits the key) wipes it.
+    if req.nvidia_nim_api_key is not None:
+        settings.nvidia_nim_api_key = req.nvidia_nim_api_key
     settings.announcement_active = req.announcement_active
     settings.announcement_message = req.announcement_message
     settings.announcement_type = req.announcement_type

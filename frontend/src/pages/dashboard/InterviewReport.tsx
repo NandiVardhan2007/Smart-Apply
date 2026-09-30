@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, AlertTriangle, TrendingUp, MessageCircle, Clock } from 
 
 import { apiFetch } from '../../api/client';
 import { InlineLoader } from '../../components/LoadingSpinner';
+import SpotlightCard from '../../components/reactbits/SpotlightCard';
 import type { InterviewReportData } from '../../api/types';
 
 function scoreTone(score: number): { color: string; bg: string } {
@@ -32,6 +33,8 @@ export default function InterviewReport() {
     }
   }, [roomName]);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     let timer: any = null;
 
@@ -56,7 +59,16 @@ export default function InterviewReport() {
     fetchReport();
 
     // Poll every 3s if report is still generating
+    let retryCount = 0;
+    const maxRetries = 12;
     timer = setInterval(() => {
+      retryCount++;
+      if (retryCount > maxRetries) {
+        clearInterval(timer);
+        setError('Report generation timed out. Please try again.');
+        setLoading(false);
+        return;
+      }
       fetchReport();
     }, 3000);
 
@@ -64,6 +76,17 @@ export default function InterviewReport() {
       if (timer) clearInterval(timer);
     };
   }, [roomName]);
+
+  if (error) {
+    return (
+      <div className="container-narrow text-center pt-15">
+        <h2 className="text-lg mb-3 text-danger">{error}</h2>
+        <button className="btn btn-primary" onClick={() => navigate('/dashboard/live-interview')}>
+          <ArrowLeft size={15} /> Back to live interview
+        </button>
+      </div>
+    );
+  }
 
   if (loading && !cachedTranscript) return <InlineLoader title="Loading your report" />;
 
@@ -76,7 +99,7 @@ export default function InterviewReport() {
 
         <div className="card mb-6" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
           <div className="flex items-center gap-3">
-            <Clock className="animate-spin" size={20} style={{ color: 'var(--accent)' }} />
+            <Clock className="spin" size={20} style={{ color: 'var(--accent)' }} />
             <div>
               <h4 className="text-sm font-semibold m-0" style={{ color: 'var(--accent)' }}>AI Performance Analysis in Progress</h4>
               <p className="text-xs m-0 text-muted" style={{ marginTop: 2 }}>
@@ -110,7 +133,7 @@ export default function InterviewReport() {
           className="rounded-full flex items-center justify-center mx-auto mb-6 shrink-0"
           style={{ width: 56, height: 56, background: 'var(--accent-soft)', color: 'var(--accent)' }}
         >
-          <Clock size={26} />
+          <Clock className="spin" size={26} />
         </div>
         <h2 className="text-lg mb-3">Your report is being generated</h2>
         <p className="text-muted text-sm mb-6">
@@ -148,7 +171,7 @@ export default function InterviewReport() {
       </motion.div>
 
       <div className="grid-auto-fit mb-6">
-        <div className="card">
+        <SpotlightCard className="card">
           <div className="flex items-center gap-2 mb-2">
             <Eye size={16} style={{ color: 'var(--accent)' }} />
             <span className="eyebrow">Avg. confidence</span>
@@ -156,23 +179,23 @@ export default function InterviewReport() {
           <div className="stat-number" style={{ fontSize: 26 }}>
             {Math.round((report.telemetry_summary?.avg_confidence || 0.88) * 100)}%
           </div>
-        </div>
-        <div className="card">
+        </SpotlightCard>
+        <SpotlightCard className="card">
           <div className="flex items-center gap-2 mb-2">
             <Eye size={16} style={{ color: 'var(--accent)' }} />
             <span className="eyebrow">Blink count</span>
           </div>
           <div className="stat-number" style={{ fontSize: 26 }}>{report.telemetry_summary?.blink_count ?? 14}</div>
-        </div>
+        </SpotlightCard>
       </div>
 
-      <div className="card mb-6">
+      <SpotlightCard className="card mb-6">
         <div className="flex items-center gap-2 mb-3">
           <MessageCircle size={16} style={{ color: 'var(--accent)' }} />
           <h3 className="text-sm font-semibold m-0">Communication & Grammar Feedback</h3>
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--ink-soft)' }}>{report.communication_feedback}</p>
-      </div>
+      </SpotlightCard>
 
       {report.areas_for_improvement?.length > 0 && (
         <div className="card mb-6">

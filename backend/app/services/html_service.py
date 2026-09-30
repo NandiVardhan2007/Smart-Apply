@@ -35,11 +35,11 @@ async def extract_html_from_pdf(pdf_content: bytes) -> str:
     # Extract hyperlinks from the PDF
     extracted_urls = set()
     try:
-        doc = fitz.open(stream=pdf_content, filetype="pdf")
-        for page in doc:
-            for link in page.get_links():
-                if "uri" in link:
-                    extracted_urls.add(link["uri"])
+        with fitz.open(stream=pdf_content, filetype="pdf") as doc:
+            for page in doc:
+                for link in page.get_links():
+                    if "uri" in link:
+                        extracted_urls.add(link["uri"])
     except Exception as e:
         logger.warning(f"Failed to extract links from PDF: {e}")
         

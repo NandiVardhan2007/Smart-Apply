@@ -1,77 +1,77 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Form, UploadFile, File, Request
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
-import fitz # PyMuPDF
+from starlette.concurrency import run_in_threadpool
 from beanie import PydanticObjectId
 from app.models.resume import Resume
 from app.models.user import User
 
 from app.services import ai_service
 from app.middleware.auth_middleware import get_current_user
+from app.rate_limiter import limiter
+from app.utils.pdf import extract_pdf_text
 
 router = APIRouter(prefix="/api/cover-letter", tags=["Cover Letter"])
+
+logger = logging.getLogger(__name__)
 
 class CoverLetterResponse(BaseModel):
     cover_letter: str
 
 @router.post("/generate", response_model=CoverLetterResponse)
+@limiter.limit("10/minute")
 async def generate_cover_letter(
+    request: Request,
     job_description: str = Form(""),
-    resume_id: Optional[str] = Form(None),
-    resume_file: Optional[UploadFile] = File(None),
-    tone: Optional[str] = Form(None),
-    company_name: Optional[str] = Form(None),
-    role_title: Optional[str] = Form(None),
+    resume_id: str = Form(None),
+    resume_file: UploadFile = File(None),
     user: User = Depends(get_current_user)
 ):
     """Generate a tailored cover letter using the AI service."""
-    if not job_description or not job_description.strip():
+    if not job_description.strip():
         raise HTTPException(status_code=400, detail="Job description is required.")
 
     resume_text = ""
-    clean_resume_id = (resume_id or "").strip()
 
-    if clean_resume_id and clean_resume_id not in ("null", "undefined", "new"):
+    if resume_id:
         try:
-            resume = await Resume.get(PydanticObjectId(clean_resume_id))
+            resume = await Resume.get(PydanticObjectId(resume_id))
             if not resume or resume.user_id != user.id:
-                raise HTTPException(status_code=404, detail="Resume not found.")
-            resume_text = resume.extracted_text or ""
+                raise HTTPException(status_code=404, detail="Resume not found")
+            resume_text = resume.extracted_text
         except HTTPException:
             raise
         except Exception:
-            raise HTTPException(status_code=400, detail="Invalid resume ID.")
-    elif resume_file and resume_file.filename:
+            raise HTTPException(status_code=400, detail="Invalid resume ID")
+    elif resume_file:
         if not resume_file.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files are supported.")
-
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+            
         try:
-            content = await resume_file.read()
-            doc = fitz.open(stream=content, filetype="pdf")
-            for page in doc:
-                resume_text += page.get_text() + "\n"
-            doc.close()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+            size = 0
+            chunks = []
+            while chunk := await resume_file.read(1024 * 1024):
+                size += len(chunk)
+                if size > 10 * 1024 * 1024:
+                    raise HTTPException(status_code=400, detail="File exceeds maximum size")
+                chunks.append(chunk)
+            content = b"".join(chunks)
+            resume_text = await run_in_threadpool(extract_pdf_text, content)
+        except Exception:
+            logger.warning("Cover-letter PDF parse failed", exc_info=True)
+            raise HTTPException(status_code=400, detail="Failed to parse the PDF file.")
     else:
-        raise HTTPException(status_code=400, detail="Either an existing resume or a PDF file must be provided.")
-
-    if not resume_text.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Could not extract readable text from the provided resume. Please ensure the PDF is text-based and contains readable content."
-        )
+        raise HTTPException(status_code=400, detail="Either a resume ID or a PDF file must be provided")
 
     try:
         content = await ai_service.generate_cover_letter(
-            resume_text=resume_text.strip(),
-            job_description=job_description.strip(),
-            tone=tone.strip() if tone else None,
-            company_name=company_name.strip() if company_name else None,
-            role_title=role_title.strip() if role_title else None,
+            resume_text=resume_text,
+            job_description=job_description
         )
         return {"cover_letter": content}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate cover letter: {str(e)}")
+    except Exception:
+        logger.exception("Cover-letter generation failed")
+        raise HTTPException(status_code=500, detail="Could not generate the cover letter. Please try again.")
 

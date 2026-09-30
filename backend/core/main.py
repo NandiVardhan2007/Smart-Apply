@@ -13,7 +13,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.rate_limiter import limiter
-from app.config import settings
+from app.config import settings, assert_secure_config
 from app.database import close_db, init_db
 from app.routers import auth, user, resume, projects, jobs, linkedin, admin, stats, cover_letter, code_execution, resume_maker
 from app.websockets.auth_ws import router as ws_router
@@ -24,8 +24,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle for Core API."""
-    if settings.ENVIRONMENT == "production":
-        assert settings.SECRET_KEY != "change-this-in-production", "SECRET_KEY must be changed in production"
+    assert_secure_config()
 
     await init_db()
     await manager.start_pubsub()
@@ -67,7 +66,7 @@ if settings.ENVIRONMENT != "production":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_origin_regex=r"https://smartapply[a-z-]*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

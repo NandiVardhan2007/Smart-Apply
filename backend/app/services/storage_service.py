@@ -1,10 +1,13 @@
 import uuid
 from typing import Optional
+import logging
 
 import boto3
 from botocore.config import Config as BotoConfig
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _s3_client = None
 
@@ -22,6 +25,8 @@ def _get_client():
             config=BotoConfig(
                 signature_version="s3v4",
                 retries={"max_attempts": 3, "mode": "standard"},
+                connect_timeout=10,
+                read_timeout=30,
             ),
         )
     return _s3_client
@@ -55,6 +60,13 @@ def get_file_url(key: str) -> str:
         return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{safe_key}"
     return f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/{settings.R2_BUCKET_NAME}/{safe_key}"
 
+def get_file(key: str) -> bytes:
+    """Download a file from R2 and return its bytes."""
+    client = _get_client()
+    response = client.get_object(Bucket=settings.R2_BUCKET_NAME, Key=key)
+    return response["Body"].read()
+
+
 
 def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
     """Generate a presigned URL for temporary file access."""
@@ -73,4 +85,5 @@ def delete_file(key: str) -> bool:
         client.delete_object(Bucket=settings.R2_BUCKET_NAME, Key=key)
         return True
     except Exception:
+        logger.exception("Failed to delete R2 object %r", key)
         return False

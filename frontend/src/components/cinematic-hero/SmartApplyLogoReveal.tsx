@@ -5,169 +5,125 @@ interface Props {
 }
 
 export default function SmartApplyLogoReveal({ scrollYProgress }: Props) {
-  // ── Scene 5 & 6: Logo Reveal Progress (0.22 -> 0.68) ──────────────────────
-  // Scale with slight organic overshoot
+  // ── Scene 5 & 6: Logo Reveal Progress (0.38 -> 0.78) ──────────────────────
+  // Scale from 68% up to 100%
   const logoScale = useTransform(
     scrollYProgress,
-    [0.22, 0.55, 0.68],
-    [0.55, 1.05, 1.0],
+    [0.38, 0.72],
+    [0.68, 1.0],
     { clamp: true }
   );
 
   // Fade in smoothly as typography separates
   const logoOpacity = useTransform(
     scrollYProgress,
-    [0.22, 0.44],
+    [0.38, 0.58],
     [0, 1],
     { clamp: true }
   );
 
-  // Upward motion into center (+50px -> 0px)
+  // Slight upward motion into center (+65px -> 0px)
   const logoY = useTransform(
     scrollYProgress,
-    [0.22, 0.62],
-    [50, 0],
+    [0.38, 0.72],
+    [65, 0],
     { clamp: true }
   );
 
-  // Settling rotation (-4° -> 0°)
+  // Extremely subtle initial rotation settling cleanly to 0° (-3.5° -> 0°)
   const logoRotate = useTransform(
     scrollYProgress,
-    [0.22, 0.62],
-    [-4, 0],
+    [0.38, 0.72],
+    [-3.5, 0],
     { clamp: true }
   );
 
   // Ambient purple/magenta backglow behind logo
   const glowOpacity = useTransform(
     scrollYProgress,
-    [0.28, 0.55, 0.85, 1],
-    [0, 0.9, 1, 0.85],
+    [0.45, 0.70, 0.92, 1],
+    [0, 0.85, 0.95, 0.8],
     { clamp: true }
   );
 
   const glowScale = useTransform(
     scrollYProgress,
-    [0.28, 0.68],
-    [0.75, 1.2],
+    [0.45, 0.75],
+    [0.8, 1.15],
     { clamp: true }
   );
 
-  // ── Scene 7: Wordmark & Tagline Reveal (0.58 -> 0.88) ────────────────────
+  // ── Scene 7: Wordmark & Tagline Reveal (0.68 -> 0.92) ────────────────────
   const wordmarkOpacity = useTransform(
     scrollYProgress,
-    [0.58, 0.78],
+    [0.68, 0.84],
     [0, 1],
     { clamp: true }
   );
 
   const wordmarkY = useTransform(
     scrollYProgress,
-    [0.58, 0.78],
-    [22, 0],
+    [0.68, 0.84],
+    [24, 0],
     { clamp: true }
   );
 
   const taglineOpacity = useTransform(
     scrollYProgress,
-    [0.68, 0.86],
-    [0, 0.95],
+    [0.76, 0.90],
+    [0, 0.92],
     { clamp: true }
   );
 
   const taglineY = useTransform(
     scrollYProgress,
-    [0.68, 0.86],
-    [14, 0],
+    [0.76, 0.90],
+    [16, 0],
     { clamp: true }
   );
 
   return (
-    <div className="cinematic-logo-container">
-      {/* ── Background Dynamic Ambient Violet/Magenta Glow Halo ───────── */}
+    <div className="relative flex flex-col items-center justify-center text-center select-none pointer-events-none z-20">
+      {/* ── Background Subtle Ambient Violet Glow (Held behind logo) ── */}
       <motion.div
+        className="absolute pointer-events-none -z-10 rounded-full"
         style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
           width: 'clamp(280px, 42vw, 480px)',
           height: 'clamp(280px, 42vw, 480px)',
           opacity: glowOpacity,
           scale: glowScale,
           background:
-            'radial-gradient(circle, rgba(224, 0, 214, 0.45) 0%, rgba(155, 0, 255, 0.35) 30%, rgba(48, 0, 107, 0.18) 60%, transparent 72%)',
-          filter: 'blur(54px)',
-          borderRadius: '50%',
-          transform: 'translate(-50%, -50%)',
-          pointerEvents: 'none',
-          zIndex: -1,
+            'radial-gradient(circle, rgba(155, 0, 255, 0.42) 0%, rgba(224, 0, 214, 0.22) 38%, rgba(48, 0, 107, 0.12) 60%, transparent 72%)',
+          filter: 'blur(52px)',
+          transform: 'translate3d(0, -10px, 0)',
         }}
       />
 
-      {/* ── Animated Pulsing Energy Ripple Ring ───────────────────────── */}
-      <motion.div
-        animate={{
-          scale: [0.9, 1.22, 0.9],
-          opacity: [0.35, 0.75, 0.35],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 3,
-          ease: 'easeInOut',
-        }}
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          width: 'clamp(200px, 28vw, 320px)',
-          height: 'clamp(200px, 28vw, 320px)',
-          border: '1.5px solid rgba(255, 53, 232, 0.4)',
-          borderRadius: '50%',
-          transform: 'translate(-50%, -50%)',
-          boxShadow: '0 0 35px rgba(224, 0, 214, 0.45), inset 0 0 25px rgba(155, 0, 255, 0.3)',
-          pointerEvents: 'none',
-          zIndex: -1,
-        }}
-      />
-
-      {/* ── Logo Container with Floating Levitation ──────────────────── */}
+      {/* ── Logo Container with Precise Geometry & Unaltered Colors ── */}
       <motion.div
         style={{
           scale: logoScale,
           opacity: logoOpacity,
           y: logoY,
           rotate: logoRotate,
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
         }}
-        className="will-change-transform"
+        transition={{
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        className="relative flex items-center justify-center will-change-transform"
       >
-        {/* Idle floating breathing effect */}
-        <motion.div
-          animate={{
-            y: [0, -8, 0],
+        <img
+          src="/logo.png"
+          alt="SmartApply Logo"
+          className="object-contain drop-shadow-[0_12px_32px_rgba(155,0,255,0.28)]"
+          style={{
+            width: 'clamp(120px, 16vw, 180px)',
+            height: 'auto',
+            aspectRatio: '1 / 1',
           }}
-          transition={{
-            repeat: Infinity,
-            duration: 3.2,
-            ease: 'easeInOut',
-          }}
-          style={{ position: 'relative' }}
-        >
-          <img
-            src="/logo.png"
-            alt="SmartApply Logo"
-            className="cinematic-logo-img"
-            loading="eager"
-            decoding="async"
-            style={{
-              filter:
-                'drop-shadow(0 16px 45px rgba(155, 0, 255, 0.5)) drop-shadow(0 0 25px rgba(255, 53, 232, 0.4))',
-            }}
-          />
-        </motion.div>
+          loading="eager"
+          decoding="async"
+        />
       </motion.div>
 
       {/* ── Scene 7: Wordmark ── */}
@@ -175,12 +131,17 @@ export default function SmartApplyLogoReveal({ scrollYProgress }: Props) {
         style={{
           opacity: wordmarkOpacity,
           y: wordmarkY,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
         }}
+        className="mt-6 sm:mt-8 flex flex-col items-center"
       >
-        <h2 className="cinematic-wordmark">
+        <h2
+          className="font-bold tracking-[0.24em] text-[#F7F2FF] uppercase leading-none"
+          style={{
+            fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+            fontSize: 'clamp(1.75rem, 3.8vw, 3rem)',
+            textShadow: '0 2px 20px rgba(155, 0, 255, 0.3)',
+          }}
+        >
           SmartApply
         </h2>
 
@@ -189,8 +150,9 @@ export default function SmartApplyLogoReveal({ scrollYProgress }: Props) {
           style={{
             opacity: taglineOpacity,
             y: taglineY,
+            fontFamily: "'Inter', sans-serif",
           }}
-          className="cinematic-tagline"
+          className="mt-3 sm:mt-3.5 text-[#EAD7FF] font-medium tracking-[0.32em] sm:tracking-[0.36em] uppercase text-[10px] sm:text-xs md:text-sm"
         >
           AI-POWERED JOB APPLICATIONS
         </motion.p>

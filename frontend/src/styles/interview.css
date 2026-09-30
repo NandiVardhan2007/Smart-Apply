@@ -1415,6 +1415,12 @@
 
   .interview-container {
     grid-template-columns: 1fr !important;
+    overflow-y: auto;
+  }
+  
+  .editor-panel, .transcript-panel {
+    min-height: 400px;
+    height: auto;
   }
 
   .candidate-pip-tile {

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 
+from app.rate_limiter import limiter
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 from app.models.resume import Resume
@@ -91,8 +92,9 @@ async def update_profile(
 
 
 @router.put("/settings/password", response_model=MessageResponse)
+@limiter.limit("5/minute")
 async def change_password(
-    body: ChangePasswordRequest, user: User = Depends(get_current_user)
+    request: Request, body: ChangePasswordRequest, user: User = Depends(get_current_user)
 ):
     """Change the current user's password."""
     if not verify_password(body.current_password, user.hashed_password):

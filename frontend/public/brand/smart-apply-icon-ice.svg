@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Smart Apply icon, white and ice variant">
+  <defs>
+    <linearGradient id="iceTile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef0fd"/>
+    </linearGradient>
+    <linearGradient id="markGrad" x1="0.1" y1="0.05" x2="0.9" y2="0.95">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="944" height="944" rx="210" fill="url(#iceTile)"
+        stroke="#e1e4f4" stroke-width="3"/>
+  <g fill="none" stroke="url(#markGrad)" stroke-width="108"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M294 546 L438 690 L738 354"/>
+    <path d="M567 410 L738 354 L700 530"/>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Smart Apply icon, monochrome black variant">
+  <rect x="40" y="40" width="944" height="944" rx="210" fill="#111111"/>
+  <g fill="none" stroke="#ffffff" stroke-width="108"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M294 546 L438 690 L738 354"/>
+    <path d="M567 410 L738 354 L700 530"/>
+  </g>
+</svg>

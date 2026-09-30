@@ -158,6 +158,8 @@ async def create_report(request: Request, body: ReportCreateRequest, current_use
         report = InterviewReport(**body.model_dump())
         await report.insert()
         return {"status": "success", "id": str(report.id)}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
