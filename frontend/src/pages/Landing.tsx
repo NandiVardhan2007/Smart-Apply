@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
- from '../components/cinematic-hero/CinematicHeroSection';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -1263,6 +1262,7 @@ export default function Landing() {
     </div>
   );
 }
+
 
 
 
