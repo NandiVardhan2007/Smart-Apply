@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
-import CinematicHeroSection from '../components/cinematic-hero/CinematicHeroSection';
+ from '../components/cinematic-hero/CinematicHeroSection';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -202,13 +202,7 @@ export default function Landing() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleExploreClick = () => {
-    if (landingContentRef.current) {
-      landingContentRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  return (
+    return (
     <div
       style={{
         position: 'relative',
@@ -1275,4 +1269,5 @@ export default function Landing() {
     </div>
   );
 }
+
 
