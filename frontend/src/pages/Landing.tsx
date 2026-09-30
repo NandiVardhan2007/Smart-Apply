@@ -219,7 +219,6 @@ export default function Landing() {
       }}
     >
       {/* ── Cinematic Hero Sequence (Sticky 380vh Scroll Runway) ────── */}
-      <CinematicHeroSection onExploreClick={handleExploreClick} />
 
       <AnimatedBackground />
       <Navbar visible={!inHeroTrack} />
@@ -1276,3 +1275,4 @@ export default function Landing() {
     </div>
   );
 }
+
