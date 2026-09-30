@@ -54,6 +54,12 @@ services:
         value: https://smartapplies.app
 
   # ── AI API: ai, interview, tailor ──
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
   - type: web
     name: smartapply-ai
     runtime: python
@@ -99,6 +105,12 @@ services:
         value: https://smartapplies.app
 
   # ── Tools API: resume_maker, cover_letter, code_execution, upload ──
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
   - type: web
     name: smartapply-tools
     runtime: python
@@ -162,6 +174,18 @@ services:
         value: https://smartapplies.app
 
   # ── Frontend: React + Vite static site ──
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
   - type: web
     name: smartapply-frontend
     runtime: static
@@ -194,7 +218,20 @@ services:
           name: smartapply-core
           envVarKey: RENDER_EXTERNAL_URL
 
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false
   - type: redis
     name: smartapply-redis
     ipAllowList: [] # Internal only
     plan: free
+
