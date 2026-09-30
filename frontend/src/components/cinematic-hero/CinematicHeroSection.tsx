@@ -1,5 +1,5 @@
-﻿import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, useScroll } from 'framer-motion';
 import { Play, Pause, ChevronDown } from 'lucide-react';
 import CinematicParticleCanvas from './CinematicParticleCanvas';
 import FloatingVioletOrbs from './FloatingVioletOrbs';
@@ -9,6 +9,8 @@ interface Props {
 }
 
 export default function CinematicHeroSection({ onExploreClick }: Props) {
+  const { scrollYProgress } = useScroll();
+
   return (
     <section
       id="cinematic-hero"
@@ -41,7 +43,7 @@ export default function CinematicHeroSection({ onExploreClick }: Props) {
 
       {/* ── Layer 2: Floating Ambient Parallax Orbs ───────────────────── */}
       <div className="absolute inset-0 z-[3] pointer-events-none">
-        <FloatingVioletOrbs scrollYProgress={null as any} />
+        <FloatingVioletOrbs scrollYProgress={scrollYProgress} />
       </div>
 
       {/* ── Layer 3: Radial Vignette Overlay ──────────────────────────── */}
