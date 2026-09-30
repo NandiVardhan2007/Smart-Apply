@@ -193,6 +193,9 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     routes:
+      - type: proxy
+        source: /__/auth/*
+        destination: https://smartapply-e308e.firebaseapp.com/__/auth/*
       - type: rewrite
         source: /*
         destination: /index.html

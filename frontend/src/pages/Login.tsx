@@ -1,6 +1,6 @@
-import { signInWithCustomToken, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { signInWithCustomToken, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -30,41 +30,29 @@ export default function Login() {
   const { login } = useAuth();
   const { showToast } = useToast();
 
-  // Handle the result when user returns from Google redirect
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (!result) return; // No redirect result (normal page load)
-        setLoading(true);
-        try {
-          const token = await result.user.getIdToken();
-          const res = await apiFetch<User>('/auth/sync', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (res.ok) {
-            showToast('success', `Welcome back, ${res.data.full_name.split(' ')[0]}!`);
-            navigate(res.data.has_onboarded ? '/dashboard' : '/onboarding');
-          } else {
-            setError(apiErrorMessage(res, 'Failed to sync Google account.'));
-            await auth.signOut();
-          }
-        } catch {
-          setError('Google sign-in failed. Please try again.');
-        } finally {
-          setLoading(false);
-        }
-      })
-      .catch((e: any) => {
-        if (e.code !== 'auth/popup-closed-by-user') {
-          setError('Google sign-in failed. Please try again.');
-        }
-      });
-  }, [navigate, showToast]);
-
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setError('');
-    signInWithRedirect(auth, googleProvider);
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const token = await result.user.getIdToken();
+      const res = await apiFetch<User>('/auth/sync', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showToast('success', `Welcome back, ${res.data.full_name.split(' ')[0]}!`);
+        navigate(res.data.has_onboarded ? '/dashboard' : '/onboarding');
+      } else {
+        setError(apiErrorMessage(res, 'Failed to sync Google account.'));
+        await auth.signOut();
+      }
+    } catch (e: any) {
+      if (e.code === 'auth/popup-closed-by-user') return;
+      setError('Google sign-in failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
